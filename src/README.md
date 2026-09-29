@@ -989,9 +989,15 @@ only.  The global-halo look is the edge *underlay*, which is still a
 global pass.  Edge layers stroke the edge geometry at width + 2 × padding (every
 family — haystack offsets and the triangle taper included), the
 underlay under the edges and the overlay over edges + arrows, both
-under the nodes; strokes are solid with butt caps (v3 rounds stroke
-ends — a recorded deviation), and `overlay-shape`/`-corner-radius`
-stay node-only.  Two more things about that stroke, both found by
+under the nodes; strokes are solid with **round caps, as v3's**
+(round 88.1 — they were butt caps, a recorded deviation, until the
+maintainer saw the difference on screen): the straight quad and the
+curved and route strips reach half the stroke width past each end,
+and the fragment stage shades the capsule about the span.  Self
+edges are rounded too — v3 butt-caps a self edge only on its no-paths
+fallback, which its path cache makes the rare case, and v4 does not
+copy that exception; a straight-triangle layer keeps its taper and
+flat base.  `overlay-shape`/`-corner-radius` stay node-only.  Two more things about that stroke, both found by
 round 58's parity scenes: since round 58 it stops where the drawn
 line does (the draw trim; it used to run node centre to node centre
 on the straight stream), and its **width formula diverges from v3's**
@@ -6448,8 +6454,7 @@ draws solid** — v3's drawOutline erase strokes at *border* width / 3
 v3 behaviour to match and the keyword reads back but adds no stripe.
 
 **`border-cap` / `border-join` drop** (the sitting's third sub-call):
-dash ends are perpendicular cuts by construction, the same butt-cut
-deviation the edge layers record.  Rows are in the migration guide.
+dash ends are perpendicular cuts by construction.  Rows are in the migration guide.
 `text-border-style` stays out — the label-box border is a different
 pipeline and nothing here makes it free (the docs-first call the plan
 reserved).
@@ -6567,8 +6572,7 @@ fragment premium is **unmeasurable at scene level** on real hardware
     `mid-*-arrow-width` is to be implemented.
 - **A hollow head's back corners are radiused**, where canvas2d miters
   them: v4 strokes by offsetting a distance field, and that rounds a join
-  by construction.  Same family as the butt-cap note the edge layers
-  carry.  It is the whole of the close-up hollow parity scene's 0.898%
+  by construction.  It is the whole of the close-up hollow parity scene's 0.898%
   residual — the same scene with `arrow-fill: filled` reads 0.000%.
 - **The arrow trim reaches every consumer since round 58** (2026-08-09,
   closing PLAN.md's open call 24), under one rule: *ink hugs the draw

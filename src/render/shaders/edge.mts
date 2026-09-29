@@ -111,6 +111,17 @@ struct EdgeVSOut {
 // straight-triangle (kind 7 — it resolves its own boundary tips and
 // tapers to a point, so a trim would cut the apex off).
 fn drawnSpanW(slot: u32, pa: vec2f, pb: vec2f) -> vec4f {
+  return spanTrimmedW(slot, pa, pb, true);
+}
+
+// The same span shortened by v3's plain gap only (arrowGapW) — where
+// v3's rs.allpts ends, which is what its overlay strokes (round 88.3):
+// no head erase reaches a layer drawn after the heads.
+fn gapSpanW(slot: u32, pa: vec2f, pb: vec2f) -> vec4f {
+  return spanTrimmedW(slot, pa, pb, false);
+}
+
+fn spanTrimmedW(slot: u32, pa: vec2f, pb: vec2f, drawTrim: bool) -> vec4f {
   let word = arrowWordOf(widths[slot]);
   let wModel = widths[slot].x;
   let scale = scaleOfWord(word);
@@ -129,8 +140,13 @@ fn drawnSpanW(slot: u32, pa: vec2f, pb: vec2f) -> vec4f {
   let srcShows = ((word >> ${ARROW_SHIFT_SRC_SHOWS_LINE}u) & 1u) == 1u;
   let tgtShows = ((word >> ${ARROW_SHIFT_TGT_SHOWS_LINE}u) & 1u) == 1u;
 
-  var ts = arrowDrawTrimW(srcShapeOf(word), srcShows, wModel, scale);
-  var tt = arrowDrawTrimW(tgtShapeOf(word), tgtShows, wModel, scale);
+  var ts = arrowGapW(srcShapeOf(word), wModel, scale);
+  var tt = arrowGapW(tgtShapeOf(word), wModel, scale);
+
+  if (drawTrim) {
+    ts = arrowDrawTrimW(srcShapeOf(word), srcShows, wModel, scale);
+    tt = arrowDrawTrimW(tgtShapeOf(word), tgtShows, wModel, scale);
+  }
 
   // Heads bigger than the edge they sit on: v3 shortens each end
   // independently, so its two line ends cross and it draws a short
@@ -325,12 +341,16 @@ fn fsEdgePick(in: EdgeVSOut) -> @location(0) u32 {
 // Overlay/underlay strokes (round 13 A2): the edge geometry re-extruded
 // at the layer's stroke width (edge width + 2 x padding, pre-derived),
 // riding the same visible list — disabled instances collapse in the VS.
-// Solid (no dashes; v3 strokes overlays solid with round caps — v4 keeps
-// butt caps, a recorded deviation), alpha = the folded layer opacity.
-@vertex
-fn vsEdgeLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
+// Solid (no dashes), alpha = the folded layer opacity.
+//
+// Round caps (round 88): v3 strokes these with lineCap 'round', so the
+// quad reaches half the stroke width past each end and the fragment
+// stage shades the capsule about the span — u is the device-px distance
+// along the span from its start (negative on the source cap), totalLen
+// the span's device-px length.  A straight-triangle layer keeps its
+// taper and its flat base: it has no span end to round.
+fn layerVertex(slot: u32, vi: u32, spanTrim: bool) -> EdgeVSOut {
   var out: EdgeVSOut;
-  let slot = visible[ii];
   let rec = edgeLayer[slot];
 
   if ((rec.x >> 24u) == 0u) { // disabled: degenerate, clipped
@@ -353,8 +373,9 @@ fn vsEdgeLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32)
   let corner = quadCorner(vi);
   let t = (corner.x + 1.0) * 0.5;
   var taper = 1.0;
+  let isTriangle = params.w == 7.0;
 
-  if (params.w == 7.0) { // straight-triangle layers taper like the fill
+  if (isTriangle) { // straight-triangle layers taper like the fill
     var bd = pb - pa;
     let bl = max(length(bd), 1e-6);
 
@@ -364,12 +385,20 @@ fn vsEdgeLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32)
     taper = 1.0 - t;
   } else if (params.w != 6.0) {
     // Round 58: the layer stroke hugs the drawn line — boundary points
-    // plus the draw trim, the same drawnSpanW the line itself spans —
-    // where it used to run node centre to node centre.  v3 strokes its
-    // overlay/underlay/casing along the *shortened* path and its head
-    // erase reaches the layers too, so the draw trim (not the accessor
-    // gap) is the right distance here.
-    let sp = drawnSpanW(slot, pa, pb);
+    // plus the draw trim, the same drawnSpanW the line itself spans.
+    // v3 strokes its layers along the *shortened* path and its head
+    // erase reaches the ones drawn before the heads, so the draw trim
+    // is the right distance for the underlay.  The overlay draws after
+    // the heads in both libraries, nothing erases it, and v3's reaches
+    // its path's gap-shortened end (round 88.3): spanTrim false spans
+    // the accessor gap instead.
+    var sp: vec4f;
+
+    if (spanTrim) {
+      sp = drawnSpanW(slot, pa, pb);
+    } else {
+      sp = gapSpanW(slot, pa, pb);
+    }
 
     pa = sp.xy;
     pb = sp.zw;
@@ -383,22 +412,47 @@ fn vsEdgeLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32)
   let dir = ab / len;
   let n = vec2f(-dir.y, dir.x);
   let s = corner.y * (halfW + 1.0);
+  // the cap's reach past each end (none on a triangle's taper)
+  let cap = select(widthPx * 0.5 + 1.0, 0.0, isTriangle);
+  let along = corner.x * cap;
 
-  out.position = vec4f(pxToClip(frame, mix(a, b, t) + n * s), EDGE_Z, 1.0);
+  out.position = vec4f(pxToClip(frame, mix(a, b, t) + dir * along + n * s), EDGE_Z, 1.0);
   out.v = s;
   out.halfWidth = halfW;
   out.alphaComp = 1.0;
   out.instance = slot;
   out.kind = params.w;
-  out.u = 0.0;
+  out.u = t * len + along;
+  out.totalLen = len;
   out.casing = 0u;
   return out;
+}
+
+@vertex
+fn vsEdgeUnderlay(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
+  return layerVertex(visible[ii], vi, true);
+}
+
+@vertex
+fn vsEdgeOverlay(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> EdgeVSOut {
+  return layerVertex(visible[ii], vi, true); // 88.3 measures before the gap span
 }
 
 @fragment
 fn fsEdgeLayer(in: EdgeVSOut) -> @location(0) vec4f {
   let c = unpack4x8unorm(edgeLayer[in.instance].x);
-  let alpha = c.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+  // capsule distance about the span: the perpendicular offset inside
+  // it, the distance to the nearer end past it (a straight-triangle's
+  // taper has no cap, and its quad does not reach past the span)
+  var d = abs(in.v);
+
+  if (in.kind != 7.0) {
+    let past = max(max(-in.u, in.u - in.totalLen), 0.0);
+
+    d = length(vec2f(past, in.v));
+  }
+
+  let alpha = c.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, d));
 
   return vec4f(c.rgb * alpha, alpha); // premultiplied
 }
@@ -697,7 +751,7 @@ fn fsCurvedEdgePick(in: CurvedVSOut) -> @location(0) u32 {
 // the layer strokes and the paired casing draw (124.4) share it.
 // withLen walks the polyline for the dash distance and the full
 // length, which only the line instance needs.
-fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32, withLen: bool) -> CurvedVSOut {
+fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32, withLen: bool, capPx: f32) -> CurvedVSOut {
   var out: CurvedVSOut;
   let seg = vi >> 2u;
   let corner = quadCorner(vi & 3u);
@@ -710,6 +764,9 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
   var miterScale = 1.0;
   var uLen = 0.0;
   var totLen = 0.0;
+  // the path's direction at this vertex, for a round cap's reach past
+  // the first and last vertex (round 88)
+  var endDir = vec2f(1.0, 0.0);
 
   // Round 58: the layer stroke hugs the drawn line — the same draw trim
   // the strip itself spans — where it used to ride the untrimmed path.
@@ -739,6 +796,7 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
     if (tl < 1e-6) { tangent = vec2f(1.0, 0.0); } else { tangent = tangent / tl; }
 
     n = vec2f(-tangent.y, tangent.x);
+    endDir = tangent;
 
     if (withLen) {
       var prev = g.s;
@@ -782,6 +840,7 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
 
     n = m / max(length(m), 1e-6);
     miterScale = 1.0 / clamp(dot(n, nIn), 0.1666, 1.0);
+    endDir = select(dirIn / lIn, dirOut / lOut, tIdx == 0u);
 
     if (withLen) {
       var prev = route.q[0u];
@@ -799,14 +858,27 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
 
   let halfW = widthPx * 0.5;
   let s = corner.y * (halfW + pad + 1.0);
+  // a round cap (layers only, capPx > 0): the first and last vertex
+  // reach capPx past the path's end, and u/totalLen switch to device px
+  // so the fragment stage can shade the capsule about the span
+  var along = 0.0;
 
-  out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s * miterScale), EDGE_Z, 1.0);
+  if (tIdx == 0u) { along = -capPx; }
+  if (tIdx == CURVE_SEGS_U) { along = capPx; }
+
+  out.position = vec4f(pxToClip(frame, modelToPx(frame, p) + n * s * miterScale + endDir * along), EDGE_Z, 1.0);
   out.v = s;
   out.halfWidth = halfW;
   out.alphaComp = alphaComp;
   out.instance = slot;
   out.u = uLen;
   out.totalLen = max(totLen, 1e-4);
+
+  if (capPx > 0.0) {
+    out.u = uLen * frame.zoomDpr + along;
+    out.totalLen = totLen * frame.zoomDpr;
+  }
+
   out.casing = 0u;
   return out;
 }
@@ -823,7 +895,9 @@ fn vsCurvedLayer(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
     return out;
   }
 
-  return curvedVertexFused(slot, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0, 0.0, false);
+  let widthPx = f32(rec.y) / 256.0 * frame.zoomDpr;
+
+  return curvedVertexFused(slot, vi, widthPx, 1.0, 0.0, true, widthPx * 0.5 + 1.0);
 }
 
 // The paired draw on the curved stream (124.4): even instances the
@@ -844,7 +918,7 @@ fn vsCurvedCased(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
       return out;
     }
 
-    var out = curvedVertexFused(slot, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0, 0.0, false);
+    var out = curvedVertexFused(slot, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0, 0.0, false, 0.0);
 
     out.casing = 1u;
     return out;
@@ -853,13 +927,17 @@ fn vsCurvedCased(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
   let widthPx = max(widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
   let alphaComp = min(widths[slot].x * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
 
-  return curvedVertexFused(slot, vi, widthPx, alphaComp, frame.pickPadPx, true);
+  return curvedVertexFused(slot, vi, widthPx, alphaComp, frame.pickPadPx, true, 0.0);
 }
 
 @fragment
 fn fsCurvedLayer(in: CurvedVSOut) -> @location(0) vec4f {
   let c = unpack4x8unorm(edgeLayer[in.instance].x);
-  let alpha = c.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, abs(in.v)));
+  // capsule distance about the span (round 88): u and totalLen are
+  // device px here, u negative on the source cap
+  let past = max(max(-in.u, in.u - in.totalLen), 0.0);
+  let d = length(vec2f(past, in.v));
+  let alpha = c.a * (1.0 - smoothstep(in.halfWidth - 0.75, in.halfWidth + 0.75, d));
 
   return vec4f(c.rgb * alpha, alpha); // premultiplied
 }

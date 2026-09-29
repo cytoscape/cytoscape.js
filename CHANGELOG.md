@@ -699,7 +699,7 @@ reaches the browser's default only).
 ### Known deviations
 
 Accepted differences from v3's rendering and semantics — arrow tips on
-approximate boundaries for some shapes, butt caps on layer strokes, outline
+approximate boundaries for some shapes, outline
 dash phase on polygon-family shapes, a conservative edge-label bounding term, no
 decimation on the curved edge stream, and others — are enumerated in
 `src/README.md` under "Known deviations from v3". Each is recorded where the

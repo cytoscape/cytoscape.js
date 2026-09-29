@@ -3748,8 +3748,7 @@ test.describe('v3-vs-v4 render parity', () => {
    * **0.000%**, so what is left is entirely the hollow *stroke*.  v4
    * strokes by offsetting a distance field, which rounds a join by
    * construction, where canvas2d miters it — so v3's back corners come
-   * to a point and v4's are radiused.  A recorded deviation, of the same
-   * family as the butt-cap note the edge layers already carry.
+   * to a point and v4's are radiused.  A recorded deviation.
    */
   const CLOSE_UP_BOUND = {
     gap: 0.003,
@@ -3761,6 +3760,7 @@ test.describe('v3-vs-v4 render parity', () => {
     midarrow: 0.002,
     bends: 0.0003,
     labels: 0.004,
+    layerCaps: 0.002,
   };
 
   let deviceErrors = [];
@@ -5305,9 +5305,10 @@ test.describe('v3-vs-v4 render parity', () => {
   }, testInfo) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
-    // v3 strokes edge overlays with round caps; v4 keeps butt caps (a
-    // recorded deviation confined to the stroke ends) — the bound
-    // absorbs the caps while the stroke body must agree
+    // Both libraries round the caps since round 88; the bound absorbs
+    // the band-width formula (v3 strokes 2 x padding, v4 width + 2 x
+    // padding — PLAN.md item 27, kept) while the stroke body must
+    // agree.  The close-up layer scenes cancel that term instead.
     const elements = [
       { data: { id: 'a' }, position: { x: -120, y: -60 } },
       { data: { id: 'b' }, position: { x: 120, y: -60 } },
@@ -5578,8 +5579,9 @@ test.describe('v3-vs-v4 render parity', () => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
     // straight, bezier-pair and taxi edges under an 8px casing; the
-    // casing strokes with butt caps in v4 (v3 rounds stroke ends —
-    // the recorded edge-layer deviation, confined to the ends)
+    // casing takes the line's own line-cap in v3 — butt by default,
+    // which is what v4's casing draws — unlike the overlay/underlay,
+    // which v3 always rounds
     const elements = [
       { data: { id: 'a' }, position: { x: -130, y: -80 } },
       { data: { id: 'b' }, position: { x: 130, y: -80 } },
@@ -7271,6 +7273,123 @@ test.describe('v3-vs-v4 render parity', () => {
       v3Style,
       v4Style,
       { zoom: 4, minInk: 4000, bound: CLOSE_UP_BOUND.layers },
+    );
+  });
+
+  /*
+   * Round 88: the edge-layer strokes — caps, joins and arrow reach.
+   *
+   * v3 strokes an edge overlay/underlay at `2 x padding`; v4 at
+   * `width + 2 x padding` (PLAN.md item 27, kept as a deliberate
+   * deviation at the eleventh sitting).  These scenes are about the
+   * stroke's *ends and corners*, so they cancel the width term rather
+   * than absorb it: v4's padding is v3's minus half the line width, and
+   * the two bands are the same width.  A bound failure here therefore
+   * means caps, joins or reach — never the recorded formula.
+   */
+  const layerSheets = (nodeStyle, edgeStyle, layers) => {
+    const w = edgeStyle.width;
+    const v3Layers = {};
+    const v4Layers = {};
+
+    for (const [name, { color, opacity, padding }] of Object.entries(layers)) {
+      v3Layers[`${name}-color`] = color;
+      v3Layers[`${name}-opacity`] = opacity;
+      v3Layers[`${name}-padding`] = padding;
+      v4Layers[`${name}-color`] = color;
+      v4Layers[`${name}-opacity`] = opacity;
+      v4Layers[`${name}-padding`] = padding - w / 2;
+    }
+
+    // edges carrying `data.kind` take it as their curve style, on both
+    // sides; the rest are straight
+    const kinds = ['straight', 'unbundled-bezier', 'segments', 'taxi'];
+
+    return {
+      v3Style: [
+        { selector: 'node', style: { shape: 'ellipse', ...nodeStyle } },
+        {
+          selector: 'edge',
+          style: { 'curve-style': 'straight', ...edgeStyle, ...v3Layers },
+        },
+        ...kinds.map((kind) => ({
+          selector: `edge[kind = "${kind}"]`,
+          style: { 'curve-style': kind },
+        })),
+      ],
+      v4Style: {
+        nodes: { ...nodeStyle },
+        edges: {
+          ...edgeStyle,
+          ...v4Layers,
+          'curve-style': {
+            case: kinds.map((kind) => ({
+              when: { data: 'kind', eq: kind },
+              then: kind,
+            })),
+            else: 'straight',
+          },
+        },
+      },
+    };
+  };
+
+  /** An invisible node: the band's ends are the scene, so nothing may
+   * paint over them (v3 and v4 both draw layers under the nodes). */
+  const LAYER_NODE = { width: 8, height: 8, 'background-opacity': 0 };
+
+  test('parity close-up: layer strokes end in round caps on every family (round 88)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    // Measured 2026-09-29 (SwiftShader): **0.000%** with the round caps,
+    // **6.526%** with butt caps (HEAD before round 88) and **1.918%**
+    // with the capped quads kept but the capsule coverage switched off
+    // (square caps) — the control fails the 0.2% bound by 9.6x.
+
+    // One edge per family — straight, bezier, route — each carrying a
+    // translucent overlay *and* underlay, magnified, on invisible nodes
+    // so both ends of both bands are in frame and uncovered.  Translucent
+    // because an opaque stroke at zoom 1 painted most of this difference
+    // over (round 55's lesson); the bends are gentle so 88.2's corners
+    // stay out of this scene.
+    const elements = [
+      { data: { id: 'a' }, position: { x: -48, y: -34 } },
+      { data: { id: 'b' }, position: { x: 48, y: -34 } },
+      { data: { id: 'c' }, position: { x: -48, y: 2 } },
+      { data: { id: 'd' }, position: { x: 48, y: 2 } },
+      { data: { id: 'f' }, position: { x: -48, y: 34 } },
+      { data: { id: 'g' }, position: { x: 48, y: 34 } },
+      { data: { id: 'e1', source: 'a', target: 'b' } },
+      {
+        data: { id: 'e2', kind: 'unbundled-bezier', source: 'c', target: 'd' },
+      },
+      { data: { id: 'e3', kind: 'segments', source: 'f', target: 'g' } },
+    ];
+    const { v3Style, v4Style } = layerSheets(
+      LAYER_NODE,
+      {
+        width: 3,
+        'line-color': '#2c3e50',
+        'control-point-distances': 8,
+        'control-point-weights': 0.5,
+        'segment-distances': '5 -5',
+        'segment-weights': '0.3 0.7',
+      },
+      {
+        overlay: { color: '#e67e22', opacity: 0.45, padding: 6 },
+        underlay: { color: '#16a085', opacity: 0.5, padding: 10 },
+      },
+    );
+
+    await runParity(
+      page,
+      testInfo,
+      'parity-closeup-layer-caps',
+      elements,
+      v3Style,
+      v4Style,
+      { zoom: 3, minInk: 4000, bound: CLOSE_UP_BOUND.layerCaps },
     );
   });
 

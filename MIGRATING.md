@@ -358,7 +358,7 @@ ignores one silently.)*
 | `mid-source-arrow-fill`, `mid-target-arrow-fill` | **dropped.** Mid arrows are always filled |
 | `mid-source-arrow-width`, `mid-target-arrow-width` | **not yet ported** — planned; mid arrows use the standard width until then |
 | `text-border-style` | **not yet ported** — see [Not ported](#not-ported); `border-style` and `outline-style` themselves work (round 38) |
-| `border-cap`, `border-join` | **dropped.** Dash ends are perpendicular cuts by construction (the same butt-cut deviation the edge layers record); `border-style`, `border-dash-pattern` and `border-dash-offset` all port |
+| `border-cap`, `border-join` | **dropped.** Dash ends are perpendicular cuts by construction; `border-style`, `border-dash-pattern` and `border-dash-offset` all port |
 
 Also renamed or re-scoped without being rejected:
 

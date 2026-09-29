@@ -45,7 +45,10 @@ const EDGE_COLUMNS: { id: ColumnId; stages: number }[] = [
 export class EdgePipeline {
   private pipeline: GPURenderPipeline;
   private pickPipeline: GPURenderPipeline;
-  private layerPipeline: GPURenderPipeline;
+  /** the layer strokes (round 13 A2), one per layer since round 88.3:
+   * the overlay spans the gap-shortened path, the underlay the draw trim */
+  private underlayPipeline: GPURenderPipeline;
+  private overlayPipeline: GPURenderPipeline;
   /** the paired casing-then-line draw (round 124.4) */
   private casedPipeline: GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
@@ -57,9 +60,10 @@ export class EdgePipeline {
   >;
 
   /**
-   * Compiles the edge shader and builds the three pipelines that share
-   * one bind group layout: the scene draw, the r32uint pick draw and the
-   * overlay/underlay/casing stroke draw.  The pick pipeline has no
+   * Compiles the edge shader and builds the pipelines that share one
+   * bind group layout: the scene draw, the r32uint pick draw, the
+   * per-edge casing draw and one stroke draw per layer (overlay,
+   * underlay).  The pick pipeline has no
    * depthStencil — the pick pass renders without a depth attachment, and
    * its topmost-wins ordering comes from overwrite order alone.
    *
@@ -143,24 +147,35 @@ export class EdgePipeline {
       primitive: { topology: 'triangle-list' },
     });
 
-    // overlay/underlay strokes (round 13 A2): one pipeline, two bind
-    // groups (each layer's record column at the last binding)
-    this.layerPipeline = device.createRenderPipeline({
-      label: 'cy-gpu:edge-layer-pipeline',
-      layout,
-      vertex: { module, entryPoint: 'vsEdgeLayer' },
-      fragment: {
-        module,
-        entryPoint: 'fsEdgeLayer',
-        targets: [{ format, blend: PREMULTIPLIED_BLEND }],
-      },
-      primitive: { topology: 'triangle-list' },
-      depthStencil: {
-        format: DEPTH_FORMAT,
-        depthWriteEnabled: false,
-        depthCompare: 'less',
-      },
-    });
+    // overlay/underlay strokes (round 13 A2): a pipeline per layer, each
+    // with its own vertex entry point (the two span different lengths —
+    // round 88.3) and its record column at the last binding
+    const layerPipeline = (label: string, entryPoint: string) =>
+      device.createRenderPipeline({
+        label,
+        layout,
+        vertex: { module, entryPoint },
+        fragment: {
+          module,
+          entryPoint: 'fsEdgeLayer',
+          targets: [{ format, blend: PREMULTIPLIED_BLEND }],
+        },
+        primitive: { topology: 'triangle-list' },
+        depthStencil: {
+          format: DEPTH_FORMAT,
+          depthWriteEnabled: false,
+          depthCompare: 'less',
+        },
+      });
+
+    this.underlayPipeline = layerPipeline(
+      'cy-gpu:edge-underlay-pipeline',
+      'vsEdgeUnderlay',
+    );
+    this.overlayPipeline = layerPipeline(
+      'cy-gpu:edge-overlay-pipeline',
+      'vsEdgeOverlay',
+    );
 
     // the per-edge casing draw (round 124.4): the scene shader over two
     // instances per edge, edge.casing bound as the layer record
@@ -308,7 +323,8 @@ export class EdgePipeline {
   }
 
   /** The overlay/underlay stroke draw (round 13 A2), off the same
-   * visible list — disabled instances collapse in the VS. */
+   * visible list — disabled instances collapse in the VS.  Each layer
+   * has its own pipeline (round 88.3). */
   drawLayer(
     pass: GPURenderPassEncoder,
     device: GPUDevice,
@@ -316,16 +332,15 @@ export class EdgePipeline {
     mirror: ColumnMirror,
     instances: number,
     cull: CulledGroup,
-    layer:
-      | typeof COL.EDGE_OVERLAY
-      | typeof COL.EDGE_UNDERLAY
-      | typeof COL.EDGE_CASING,
+    layer: typeof COL.EDGE_OVERLAY | typeof COL.EDGE_UNDERLAY,
   ): void {
     if (instances === 0) {
       return;
     }
 
-    pass.setPipeline(this.layerPipeline);
+    pass.setPipeline(
+      layer === COL.EDGE_OVERLAY ? this.overlayPipeline : this.underlayPipeline,
+    );
     pass.setBindGroup(0, this.ensureBindGroup(device, uniform, mirror, layer));
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');

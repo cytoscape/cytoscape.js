@@ -591,45 +591,45 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
       const layout = cy.layout(LONG_RUN);
       let resolved = false;
 
-      const f0 = cy.stats().frames;
-
       layout.run();
       layout.promise().then(() => {
         resolved = true;
       });
 
-      // the main thread's availability while the worker integrates: rAF
-      // ticks over the sample — a blocked thread counts none
+      // the main thread's availability while the worker integrates: a
+      // 5 ms interval's tick count over the sample — a held thread counts
+      // none, a free one about one per 5 ms (round 129.3's instrument).
+      // Not rAF: begin-frames are paced by the GPU process, and on a
+      // SwiftShader runner loaded past its workers a free main thread
+      // read 9 and 10 rAF ticks over 700 ms with the worker drawing —
+      // rAF read the rasterizer, not the thread.  framesDuring below is
+      // what reads the drawing
       let ticks = 0;
-      let sampling = true;
-      const tick = () => {
-        ticks++;
 
-        if (sampling) {
-          requestAnimationFrame(tick);
-        }
-      };
-
-      // the run opens with the force pipelines' compile stall (one frame
-      // drawn), then 60 fps.  The stall is ~300 ms on the RX 580 but ~4 s
-      // on SwiftShader, where it holds the GPU process and so rAF too
-      // (the main thread's timers run on) — measured 2026-09-25.  A fixed
-      // 700 ms window from run() fell inside it on CI every time, so wait
-      // (bounded) for the second frame, then sample 700 ms from there
-      const waitStart = performance.now();
-
-      while (
-        cy.stats().frames - f0 < 2 &&
-        performance.now() - waitStart < 20000
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
+      // the run opens with the force pipelines' compile stall, then
+      // 60 fps.  The stall is ~300 ms on the RX 580 but up to ~4 s on
+      // SwiftShader, where it holds the GPU process and so rAF too (the
+      // main thread's timers run on) — measured 2026-09-25.  A fixed
+      // 700 ms window from run() fell inside it on CI every time.  Nor is
+      // "the second frame" past it: the counter counts submits, and the
+      // run's first two frames are submitted before the device has run
+      // the first, so under a loaded runner the window still fell in the
+      // stall (0 frames, or 4 rAF ticks, in 700 ms — 2026-09-29).  A
+      // viewport-count readback resolves only once the device has run
+      // everything before it, so the window opens after the stall
+      await cy.viewportCounts();
 
       const f1 = cy.stats().frames;
 
-      requestAnimationFrame(tick);
+      const t1 = performance.now();
+      const interval = setInterval(() => {
+        ticks++;
+      }, 5);
+
       await new Promise((resolve) => setTimeout(resolve, 700));
-      sampling = false;
+      clearInterval(interval);
+
+      const sampleMs = performance.now() - t1;
 
       const framesDuring = cy.stats().frames - f1;
       const midRun = { ...cy.$id('n7').position() };
@@ -650,6 +650,7 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
 
       return {
         ticks,
+        sampleMs,
         framesDuring,
         staleDuring,
         stillRunning,
@@ -667,8 +668,8 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
     ).toBeGreaterThan(3);
     expect(
       result.ticks,
-      'the main thread ticked through the run',
-    ).toBeGreaterThan(10);
+      `the main thread ticked through the run: ${result.ticks} timer ticks over ${result.sampleMs.toFixed(0)} ms`,
+    ).toBeGreaterThan(Math.max(4, result.sampleMs / 20));
     expect(result.staleDuring, 'CPU reads stale mid-run (the lease)').toBe(
       true,
     );

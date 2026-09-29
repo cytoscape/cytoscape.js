@@ -473,3 +473,17 @@ the new fingerprint.
 - The builders' in-thread share (item 69).
 - The worker host's images and fonts (item 51's two remaining
   deferrals) and the GPU tween proxy (item 68).
+
+**Follow-up (2026-09-29).**  The worker-host force spec failed in the
+full `renderer` project under `CI=1` (three runs out of three: 4 and 8
+rAF ticks, then 0 frames, in its 700 ms window).  Its gate, "the second
+frame", is not past the force pipelines' compile stall: the counter
+counts submits, and the run's first two frames are submitted before the
+device has run the first, so under load the window opened inside the
+stall (the gate removed outright failed 15 of 16 at 16-way).  The window
+now opens after a `cy.viewportCounts()` readback, which resolves only
+once the device has run everything before it, and the thread is read
+by 129.3's instrument — a 5 ms timer, `> max(4, window / 20)` ticks —
+since rAF is paced by the GPU process (9 and 10 ticks with the worker
+drawing, at 16-way); the held-thread control reads 0.  32 of 32 at
+16-way, 10/10 under `CI=1` and on the RX 580.

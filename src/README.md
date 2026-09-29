@@ -3194,7 +3194,12 @@ each is deliberate, not a pass-1 deferral:
     `border-width` at 0), as v3 does via each property's `min`/`max`, and
     color bytes clamp on pack.
   - **Transient lease**: a tweened column is GPU-owned while the tween
-    runs (the mirror skips its CPU uploads), so the CPU column is stale
+    runs (the mirror skips the CPU uploads of the slots it tweens — round
+    144 made that per slot: the runtime keeps a count per slot, and a
+    span still uploads the slots at zero, so a node outside a subset
+    layout's tween, or one stopped out of it, draws where it is moved
+    mid-flight; before, such a write was skipped and never re-uploaded),
+    so the CPU column is stale
     during the animation — pick/extent/box selection for position,
     `style('background-color')` for paint.  **`position()` is the
     exception since round 144**: it reads the value the last frame drew

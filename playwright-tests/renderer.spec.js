@@ -5693,7 +5693,7 @@ test.describe('WebGPU renderer', () => {
     );
   });
 
-  test('GPU position tween holds the lease: CPU position stays stale while the node moves', async ({
+  test('GPU position tween holds the lease: the CPU column stays at the start while position() reads the tween (round 144)', async ({
     page,
   }) => {
     await page.goto(PAGE);
@@ -5736,10 +5736,22 @@ test.describe('WebGPU renderer', () => {
     );
 
     // ...but the CPU position column is still the start value: the GPU owns
-    // node.position during the tween (the lease), so sync reads are stale
-    expect(await page.evaluate(() => window.cy.$id('a').position().x)).toBe(
-      -120,
-    );
+    // node.position during the tween (the lease) — while position() reads
+    // the value the last frame drew (round 144, v3's answer), strictly
+    // between the ends
+    const read = await page.evaluate(() => {
+      const cy = window.cy;
+      const slot = cy.$id('a')._refs[0].slot;
+
+      return {
+        column: cy._store.column('node.position')[slot * 2],
+        x: cy.$id('a').position().x,
+      };
+    });
+
+    expect(read.column).toBe(-120);
+    expect(read.x).toBeGreaterThan(-120);
+    expect(read.x).toBeLessThan(120);
 
     // grabbing is forbidden while it animates
     expect(await page.evaluate(() => window.cy.$id('a').grabbed())).toBe(false);

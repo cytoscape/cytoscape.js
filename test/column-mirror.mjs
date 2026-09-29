@@ -165,6 +165,51 @@ describe('gpu/render: ColumnMirror', function () {
     expect(mock.writes).to.have.length(0);
   });
 
+  it('a tween-owned column with a mask uploads the slots no tween moves (round 144)', function () {
+    for (let i = 0; i < 6; i++) {
+      store.addNode('m' + i, 0, 0);
+    }
+
+    store.takeDelta();
+    mirror.sync({
+      ...store.takeDelta(),
+      resized: { nodes: true, edges: true },
+    });
+    mock.writes.length = 0;
+
+    // slots 1 and 3 are the kernel's; the span covers 0..5
+    const mask = new Uint16Array(4);
+
+    mask[1] = 1;
+    mask[3] = 2;
+    mirror.setTweenOwned(['node.position'], new Map([['node.position', mask]]));
+
+    for (let slot = 0; slot < 6; slot++) {
+      store.setPosition(slot, 100 + slot, 0);
+    }
+
+    mirror.sync(store.takeDelta());
+
+    const bps = columnSpec('node.position').bytesPerSlot;
+    const runs = mock.writes
+      .filter((w) => w.buffer === mirror.buffer('node.position'))
+      .map((w) => [w.bufferOffset / bps, w.size / bps]);
+
+    // [0], [2], [4, 5] — the last run past the mask's end reads zero
+    expect(runs).to.deep.equal([
+      [0, 1],
+      [2, 1],
+      [4, 2],
+    ]);
+
+    // without a mask the owned column is skipped whole (the force lease)
+    mock.writes.length = 0;
+    mirror.setTweenOwned(['node.position']);
+    store.setPosition(0, 1, 1);
+    mirror.sync(store.takeDelta());
+    expect(mock.writes).to.have.length(0);
+  });
+
   it('uploads coalesced spans as one write', function () {
     mock.writes.length = 0;
 

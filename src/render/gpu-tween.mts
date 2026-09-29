@@ -36,6 +36,9 @@ tween wins over a mapper writing the same channel.
 
 const WG_SIZE = 256;
 export const TWEEN_PARAMS_BYTES = 48;
+/** The slot-buffer sentinel of an entry detached mid-flight (round 144);
+ * every kernel skips it.  No store reaches 2^32 − 1 slots. */
+export const TWEEN_DETACHED = 0xffffffff;
 
 /** Narrow device surface (mock-testable, matching MapperRuntime). */
 export interface TweenDevice {
@@ -74,6 +77,9 @@ struct TweenParams {
 }
 
 @group(0) @binding(0) var<uniform> params: TweenParams;
+
+// an entry detached mid-flight (round 144): the kernel skips it
+const DETACHED = 0xffffffffu;
 @group(0) @binding(1) var<storage, read> slots: array<u32>;
 // (x, y) progression pairs for the points kind; a 1-pair dummy otherwise
 @group(0) @binding(4) var<storage, read> easingPoints: array<vec2f>;
@@ -226,9 +232,13 @@ const POSITION_SHADER =
 fn csTween(@builtin(global_invocation_id) gid: vec3u) {
   if (gid.x >= arrayLength(&slots)) { return; }
 
+  let slot = slots[gid.x];
+
+  if (slot == DETACHED) { return; }
+
   let ft = fromTo[gid.x];
 
-  dst[slots[gid.x]] = mix(ft.xy, ft.zw, progress());
+  dst[slot] = mix(ft.xy, ft.zw, progress());
 }
 `;
 
@@ -250,9 +260,13 @@ const SCALAR_SHADER =
 fn csTween(@builtin(global_invocation_id) gid: vec3u) {
   if (gid.x >= arrayLength(&slots)) { return; }
 
+  let slot = slots[gid.x];
+
+  if (slot == DETACHED) { return; }
+
   let ft = fromTo[gid.x];
 
-  dst[slots[gid.x]] = clamp(mix(ft.x, ft.y, progress()), 0.0, 1.0);
+  dst[slot] = clamp(mix(ft.x, ft.y, progress()), 0.0, 1.0);
 }
 `;
 
@@ -268,9 +282,13 @@ const COLOR_SHADER =
 fn csTween(@builtin(global_invocation_id) gid: vec3u) {
   if (gid.x >= arrayLength(&slots)) { return; }
 
+  let slot = slots[gid.x];
+
+  if (slot == DETACHED) { return; }
+
   let v = mix(fromTo[gid.x * 2u], fromTo[gid.x * 2u + 1u], progress());
 
-  dst[slots[gid.x]] = pack4x8unorm(vec4f(oklabToSrgbNorm(v.xyz), v.w));
+  dst[slot] = pack4x8unorm(vec4f(oklabToSrgbNorm(v.xyz), v.w));
 }
 `;
 
@@ -293,6 +311,9 @@ interface Channel {
   column: ColumnId;
   kind: GpuWriteKind;
   count: number;
+  /** what the slot buffer holds: the write's slots, a detached entry
+   * set to the sentinel (round 144) — the mask bookkeeping reads it */
+  slots: Uint32Array;
   slotBuffer: GPUBuffer;
   dataBuffer: GPUBuffer;
   bindGroup: GPUBindGroup | null;
@@ -319,6 +340,13 @@ export class GpuTweenRuntime {
   private layout: GPUBindGroupLayout;
   private pipelines: Record<GpuWriteKind, GPUComputePipeline>;
   private batches = new Map<number, Batch>();
+  /**
+   * Round 144: per owned column, how many live batch entries tween each
+   * slot.  The mirror uploads a span of an owned column for the slots
+   * at zero — a node outside the tween, or detached from it, moved
+   * mid-flight — and skips the rest, which the kernel owns.
+   */
+  private masks = new Map<ColumnId, Uint16Array>();
   /** stands in at binding 4 for easings that need no progression array */
   private dummyPoints: GPUBuffer;
   private destroyed = false;
@@ -473,23 +501,39 @@ export class GpuTweenRuntime {
         );
       }
 
+      // the labels end in the batch id, which the GPU ledger drops,
+      // so every batch pools under one row per column (round 144)
       const slotBuffer = dev.createBuffer({
-        label: `cy-gpu:tween-slots:${id}:${w.column}`,
+        label: `cy-gpu:tween-slots:${w.column}-${id}`,
         size: Math.max(4, w.slots.byteLength),
         usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
       });
       const dataBuffer = dev.createBuffer({
-        label: `cy-gpu:tween-data:${id}:${w.column}`,
+        label: `cy-gpu:tween-data:${w.column}-${id}`,
         size: Math.max(16, w.data.byteLength),
         usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
       });
+      // an entry detached before registration (a pause, reverse or
+      // demotion re-registers a column animation that lost nodes) goes
+      // up as the sentinel
+      const slots = Uint32Array.from(w.slots);
+
+      if (w.off != null) {
+        for (let i = 0; i < slots.length; i++) {
+          if (w.off[i] !== 0) {
+            slots[i] = TWEEN_DETACHED;
+          }
+        }
+      }
+
+      this.count(w.column as ColumnId, slots, 1);
 
       dev.queue.writeBuffer(
         slotBuffer,
         0,
-        w.slots.buffer,
-        w.slots.byteOffset,
-        w.slots.byteLength,
+        slots.buffer,
+        slots.byteOffset,
+        slots.byteLength,
       );
       dev.queue.writeBuffer(
         dataBuffer,
@@ -503,6 +547,7 @@ export class GpuTweenRuntime {
         column: w.column as ColumnId,
         kind: w.kind,
         count: w.slots.length,
+        slots,
         slotBuffer,
         dataBuffer,
         bindGroup: null,
@@ -519,7 +564,7 @@ export class GpuTweenRuntime {
 
     if (points != null) {
       pointsBuffer = dev.createBuffer({
-        label: `cy-gpu:tween-points:${id}`,
+        label: `cy-gpu:tween-points-${id}`,
         size: points.byteLength,
         usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.COPY_DST,
       });
@@ -536,7 +581,7 @@ export class GpuTweenRuntime {
     this.batches.set(id, {
       channels,
       paramsBuffer: dev.createBuffer({
-        label: `cy-gpu:tween-params:${id}`,
+        label: `cy-gpu:tween-params-${id}`,
         size: TWEEN_PARAMS_BYTES,
         usage: BUFFER_USAGE.UNIFORM | BUFFER_USAGE.COPY_DST,
       }),
@@ -567,6 +612,7 @@ export class GpuTweenRuntime {
     }
 
     for (const c of b.channels) {
+      this.count(c.column, c.slots, -1);
       c.slotBuffer.destroy();
       c.dataBuffer.destroy();
     }
@@ -578,6 +624,96 @@ export class GpuTweenRuntime {
     }
 
     this.batches.delete(id);
+  }
+
+  /**
+   * Stop writing some entries of a batch (round 144): an element
+   * detached mid-flight — stopped, evicted, locked or removed — while
+   * the rest of the animation runs on.  Each entry's slot goes to the
+   * sentinel the kernels skip, in one upload over the changed range,
+   * and leaves the column's mask, so the CPU's value for it (the
+   * frozen one the caller wrote) uploads on the next sync.  Unknown ids
+   * and columns are a no-op.
+   *
+   * @param id — the batch
+   * @param column — the channel's column
+   * @param indices — entry indices into the write the batch registered
+   */
+  detach(id: number, column: string, indices: readonly number[]): void {
+    const c = this.batches.get(id)?.channels.find((ch) => ch.column === column);
+
+    if (c == null || this.destroyed) {
+      return;
+    }
+
+    let lo = Infinity;
+    let hi = -1;
+
+    for (const i of indices) {
+      const slot = c.slots[i];
+
+      if (i >= c.slots.length || slot === TWEEN_DETACHED) {
+        continue;
+      }
+
+      this.countOne(c.column, slot, -1);
+      c.slots[i] = TWEEN_DETACHED;
+      lo = Math.min(lo, i);
+      hi = Math.max(hi, i);
+    }
+
+    if (hi >= lo) {
+      this.device.queue.writeBuffer(
+        c.slotBuffer,
+        lo * 4,
+        c.slots.buffer,
+        c.slots.byteOffset + lo * 4,
+        (hi - lo + 1) * 4,
+      );
+    }
+  }
+
+  /**
+   * The owned columns' tween masks (round 144): per slot, how many live
+   * entries tween it.  The mirror uploads an owned column's spans for
+   * the slots at zero.
+   *
+   * @returns the mask per owned column; a slot past a mask's end is zero
+   */
+  slotMasks(): ReadonlyMap<ColumnId, Uint16Array> {
+    return this.masks;
+  }
+
+  /** Add `delta` to the mask of every live slot of a channel. */
+  private count(column: ColumnId, slots: Uint32Array, delta: 1 | -1): void {
+    for (let i = 0; i < slots.length; i++) {
+      if (slots[i] !== TWEEN_DETACHED) {
+        this.countOne(column, slots[i], delta);
+      }
+    }
+  }
+
+  private countOne(column: ColumnId, slot: number, delta: 1 | -1): void {
+    let mask = this.masks.get(column);
+
+    if (mask == null || slot >= mask.length) {
+      if (delta < 0) {
+        return;
+      }
+
+      const grown = new Uint16Array(
+        Math.max(slot + 1, (mask?.length ?? 0) * 2, 64),
+      );
+
+      if (mask != null) {
+        grown.set(mask);
+      }
+
+      mask = grown;
+      this.masks.set(column, mask);
+    }
+
+    mask[slot] += delta;
   }
 
   /**

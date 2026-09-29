@@ -126,6 +126,8 @@ export class ColumnMirror {
   private destroyed: boolean;
   private gpuOwned: ReadonlySet<ColumnId>;
   private tweenOwned: ReadonlySet<ColumnId>;
+  /** round 144: per tween-owned column, the slots the kernel writes */
+  private tweenMasks: ReadonlyMap<ColumnId, Uint16Array> | null = null;
   /** the four blob buffers (curve 12b, poly 13 C3, image 15.3, chart 23) */
   private blobs: Map<BlobKind, GPUBuffer>;
   /** lazy columns allocated at capacity (the rest are placeholders) */
@@ -240,9 +242,25 @@ export class ColumnMirror {
    * Columns the GPU tween runtime owns while an animation runs (a
    * separate set from the mapper-owned one so the two can't clobber each
    * other); span uploads skip a column owned by either.
+   *
+   * Round 144: a tween owns the slots it moves, not the whole column.
+   * With a mask for a column, a span still uploads its slots whose count
+   * is zero — a node outside a subset layout's tween, or one stopped out
+   * of it, moved mid-flight — and skips the rest.  Before, every such
+   * write was skipped and lost: nothing re-uploaded it when the tween
+   * ended, so the node drew where it stood before until it moved again.
+   *
+   * @param ids — the columns the runtime owns
+   * @param masks — per owned column, the live tween count per slot (a
+   *   slot past the mask's end reads zero); a column with none is
+   *   skipped whole, as a force run's lease needs
    */
-  setTweenOwned(ids: Iterable<ColumnId>): void {
+  setTweenOwned(
+    ids: Iterable<ColumnId>,
+    masks?: ReadonlyMap<ColumnId, Uint16Array>,
+  ): void {
     this.tweenOwned = new Set(ids);
+    this.tweenMasks = masks ?? null;
   }
 
   /**
@@ -365,9 +383,19 @@ export class ColumnMirror {
         continue;
       } // covered by the full re-upload
 
-      if (this.gpuOwned.has(span.column) || this.tweenOwned.has(span.column)) {
+      if (this.gpuOwned.has(span.column)) {
         continue;
       } // owned on-GPU
+
+      if (this.tweenOwned.has(span.column)) {
+        const mask = this.tweenMasks?.get(span.column);
+
+        if (mask != null) {
+          this.uploadUnmasked(span, spec.bytesPerSlot, mask);
+        }
+
+        continue;
+      } // the tween's slots are the kernel's
 
       if (LAZY.has(span.column) && !this.materialised.has(span.column)) {
         // a placeholder takes no spans; a span that brings the first
@@ -431,6 +459,42 @@ export class ColumnMirror {
         byteStart,
         data.buffer,
         data.byteOffset + byteStart,
+        byteLength,
+      );
+      this.uploadedBytes += byteLength;
+    }
+  }
+
+  /** Upload a span's runs of slots no tween entry moves (round 144). */
+  private uploadUnmasked(
+    span: StoreDelta['spans'][number],
+    bytesPerSlot: number,
+    mask: Uint16Array,
+  ): void {
+    const arr = this.view.column(span.column);
+    const buffer = this.buffer(span.column);
+    let slot = span.start;
+
+    while (slot < span.end) {
+      if (slot < mask.length && mask[slot] !== 0) {
+        slot++;
+        continue;
+      }
+
+      const from = slot;
+
+      while (slot < span.end && (slot >= mask.length || mask[slot] === 0)) {
+        slot++;
+      }
+
+      const byteStart = from * bytesPerSlot;
+      const byteLength = (slot - from) * bytesPerSlot;
+
+      this.device.queue.writeBuffer(
+        buffer,
+        byteStart,
+        arr.buffer,
+        arr.byteOffset + byteStart,
         byteLength,
       );
       this.uploadedBytes += byteLength;

@@ -7,7 +7,12 @@ import {
   EASING_KIND,
   resolveEasing,
 } from '../src/easing.mjs';
-import { GpuTweenRuntime, TWEEN_SHADERS } from '../src/render/gpu-tween.mjs';
+import {
+  GpuTweenRuntime,
+  TWEEN_DETACHED,
+  TWEEN_SHADERS,
+} from '../src/render/gpu-tween.mjs';
+import { ledgerLabel } from '../src/gpu/gpu-ledger.mjs';
 import { GraphStore } from '../src/store/graph-store.mjs';
 
 // Animations tick deterministically via explicit `now` values; the
@@ -366,8 +371,8 @@ describe('gpu/animation', function () {
         createComputePipeline: (d) => ({ label: d.label }),
         createBindGroup: () => ({}),
         queue: {
-          writeBuffer(b, off, data) {
-            writes.push({ label: b.label, off, data });
+          writeBuffer(b, off, data, dOff, size) {
+            writes.push({ label: b.label, off, data, dOff, size });
           },
         },
       };
@@ -456,7 +461,7 @@ describe('gpu/animation', function () {
 
       // the params uniform carries the clock plus the whole curve
       const params = mock.writes.find(
-        (w) => w.label === 'cy-gpu:tween-params:1',
+        (w) => w.label === 'cy-gpu:tween-params-1',
       );
       const f = new Float32Array(params.data.buffer);
       const u = new Uint32Array(params.data.buffer);
@@ -468,6 +473,138 @@ describe('gpu/animation', function () {
 
       rt.unregister(1);
       expect(rt.active()).to.be.false;
+    });
+
+    it('a detached entry goes up as the sentinel over its range, and leaves the mask (round 144)', function () {
+      const mock = makeMock();
+      const rt = new GpuTweenRuntime(
+        mock.device,
+        (id) => ({ label: id }),
+        () => 0,
+      );
+
+      rt.register(
+        7,
+        [
+          write(
+            'node.position',
+            'position',
+            [4, 9, 2, 6],
+            new Array(16).fill(0),
+          ),
+        ],
+        0,
+        100,
+        compileEasing('linear'),
+      );
+
+      const mask = rt.slotMasks().get('node.position');
+
+      expect([mask[4], mask[9], mask[2], mask[6], mask[0]]).to.deep.equal([
+        1, 1, 1, 1, 0,
+      ]);
+
+      mock.writes.length = 0;
+      rt.detach(7, 'node.position', [1, 2]);
+
+      // one write over entries 1..2 of the slot buffer, both the sentinel
+      expect(mock.writes).to.have.length(1);
+      expect(mock.writes[0].label).to.equal(
+        'cy-gpu:tween-slots:node.position-7',
+      );
+      expect(mock.writes[0].off).to.equal(4);
+      expect(mock.writes[0].size).to.equal(8);
+
+      const uploaded = new Uint32Array(
+        mock.writes[0].data,
+        mock.writes[0].dOff,
+        2,
+      );
+
+      expect([...uploaded]).to.deep.equal([TWEEN_DETACHED, TWEEN_DETACHED]);
+      expect([mask[4], mask[9], mask[2], mask[6]]).to.deep.equal([1, 0, 0, 1]);
+
+      // detaching again, an unknown batch or column: nothing
+      mock.writes.length = 0;
+      rt.detach(7, 'node.position', [1]);
+      rt.detach(8, 'node.position', [0]);
+      rt.detach(7, 'node.opacity', [0]);
+      expect(mock.writes).to.have.length(0);
+
+      rt.unregister(7);
+      expect([mask[4], mask[6]]).to.deep.equal([0, 0]);
+    });
+
+    it('registers an entry detached before registration as the sentinel', function () {
+      const mock = makeMock();
+      const rt = new GpuTweenRuntime(
+        mock.device,
+        (id) => ({ label: id }),
+        () => 0,
+      );
+      const w = write(
+        'node.position',
+        'position',
+        [3, 5],
+        new Array(8).fill(0),
+      );
+
+      w.off = new Uint8Array([0, 1]);
+      rt.register(2, [w], 0, 100, compileEasing('linear'));
+
+      const slots = mock.writes.find(
+        (x) => x.label === 'cy-gpu:tween-slots:node.position-2',
+      );
+
+      expect([...new Uint32Array(slots.data, slots.dOff, 2)]).to.deep.equal([
+        3,
+        TWEEN_DETACHED,
+      ]);
+      expect(rt.slotMasks().get('node.position')[5]).to.equal(0);
+      expect(w.slots[1]).to.equal(5); // the write itself is not touched
+    });
+
+    it('every kernel skips the detached sentinel', function () {
+      for (const [kind, code] of Object.entries(TWEEN_SHADERS)) {
+        expect(code, kind).to.include('if (slot == DETACHED) { return; }');
+      }
+    });
+
+    it('labels its buffers so the GPU ledger pools every batch under one row', function () {
+      const mock = makeMock();
+      const labels = [];
+      const device = {
+        ...mock.device,
+        createBuffer: (d) => {
+          labels.push(d.label);
+
+          return mock.device.createBuffer(d);
+        },
+      };
+      const rt = new GpuTweenRuntime(
+        device,
+        (id) => ({ label: id }),
+        () => 0,
+      );
+
+      for (const id of [11, 12]) {
+        rt.register(
+          id,
+          [write('node.position', 'position', [0], [0, 0, 1, 1])],
+          0,
+          100,
+          compileEasing('spring(0.3)'),
+        );
+      }
+
+      const rows = new Set(labels.slice(1).map(ledgerLabel));
+
+      expect([...rows].sort()).to.deep.equal([
+        'cy-gpu:tween-data:node.position',
+        'cy-gpu:tween-params',
+        'cy-gpu:tween-points',
+        'cy-gpu:tween-slots:node.position',
+      ]);
     });
 
     it('owns every tweened column and dispatches per channel', function () {
@@ -641,21 +778,21 @@ describe('gpu/animation', function () {
       const w = () => [write('node.opacity', 'scalar', [1], [1, 0])];
 
       rt.register(1, w(), 0, 100, compileEasing('ease-in-out'));
-      expect(created.some((b) => b.label === 'cy-gpu:tween-points:1')).to.be
+      expect(created.some((b) => b.label === 'cy-gpu:tween-points-1')).to.be
         .false;
 
       const spring = compileEasing('spring(0.4)');
 
       rt.register(2, w(), 0, 100, spring);
 
-      const points = created.find((b) => b.label === 'cy-gpu:tween-points:2');
+      const points = created.find((b) => b.label === 'cy-gpu:tween-points-2');
 
       expect(points.size).to.equal(spring.points.byteLength);
 
       rt.encode(mock.pass, 50, 'paint');
 
       const params = mock.writes
-        .filter((p) => p.label === 'cy-gpu:tween-params:2')
+        .filter((p) => p.label === 'cy-gpu:tween-params-2')
         .pop();
 
       expect(new Uint32Array(params.data.buffer)[3]).to.equal(

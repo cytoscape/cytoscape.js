@@ -273,10 +273,23 @@ export function frameBody(rd: Renderer): void {
       ? rd.forceRuntime.ownedColumns()
       : [];
 
-  mirror.setTweenOwned([
-    ...(rd.tweenRuntime?.ownedColumns() ?? []),
-    ...forceOwned,
-  ] as Parameters<ColumnMirror['setTweenOwned']>[0]);
+  // the tween's masks (round 144) let a span upload the slots no tween
+  // entry moves; a presenting force run owns its column whole, so a
+  // column it shares with a tween takes no mask
+  const tweenMasks = rd.tweenRuntime?.slotMasks();
+
+  mirror.setTweenOwned(
+    [...(rd.tweenRuntime?.ownedColumns() ?? []), ...forceOwned] as Parameters<
+      ColumnMirror['setTweenOwned']
+    >[0],
+    tweenMasks == null || forceOwned.length === 0
+      ? tweenMasks
+      : new Map(
+          [...tweenMasks].filter(
+            ([id]) => !(forceOwned as string[]).includes(id),
+          ),
+        ),
+  );
 
   if (rd.forceRuntime != null) {
     // a non-presenting run batches by what the device kept up with

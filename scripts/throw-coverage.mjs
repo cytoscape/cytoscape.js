@@ -91,11 +91,11 @@ export const UNREACHABLE = {
     'constructs the Renderer synchronously, whose ctor calls init() ' +
     'whose first statement reads navigator.gpu again — nothing can run ' +
     'between the two, so no caller can pass one and fail the other',
-  'src/render/column-mirror.mts:262':
+  'src/render/column-mirror.mts:280':
     'column spec/group mismatch — an internal invariant; every caller ' +
     'passes a ColumnId the mirror was built from, and no public input ' +
     'chooses the id',
-  'src/render/gpu-tween.mts:471':
+  'src/render/gpu-tween.mts:499':
     'geometry write-kind invariant — barred one layer up by the ' +
     'all-or-nothing eligibility rule (round 25.1), which keeps a lane/' +
     'padding/fontSize write off the device by refusing the whole ' +

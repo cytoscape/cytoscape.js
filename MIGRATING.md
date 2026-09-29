@@ -384,6 +384,14 @@ ignores one silently.)*
 
 Also renamed or re-scoped without being rejected:
 
+- **Gradients port whole** (the requests in #2091, #3407 and #2207): v3's
+  `background-fill` (`solid | linear-gradient | radial-gradient`) with
+  `background-gradient-stop-colors`/`-stop-positions`/`-direction`, and
+  `line-fill` with `line-gradient-stop-colors`/`-stop-positions`, keep
+  their names and values.  What changes: at most **5 stops** an element,
+  and stop lists are **constants-only** (the fill kind and direction take
+  mappers); stops interpolate in sRGB, as v3's canvas does.  A
+  whole-scene gradient costs ~1% of frame time on the GPU (round 76.1).
 - **`padding-left`/`-right`/`-top`/`-bottom` port** (round 85.4) — in the
   `parents` sheet group only, constants only, each a number of px or `'N%'`
   resolved per `padding-relative-to`; an unset side takes the uniform

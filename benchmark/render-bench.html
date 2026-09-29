@@ -83,6 +83,24 @@
         };
         const ARROW_STYLE_V4 = Object.assign( {}, ARROW_STYLE_V3 );
 
+        // round 76.1: the gradient pair.  Both sides carry the same stop
+        // lists and differ only in the fill kind, so `solid` is the
+        // baseline branch and `gradient` prices the stop walk in the
+        // node and edge fragment shaders (and, in v4, the gradient
+        // columns, which are allocated only once a gradient is used).
+        // v3 has had both props since 3.6/3.7, so the pair is v3's too.
+        const FILL_STYLE = ( kind ) => ( {
+          node: {
+            'background-fill': kind === 'gradient' ? 'linear-gradient' : 'solid',
+            'background-gradient-stop-colors': '#1abc9c #f1c40f #8e44ad',
+            'background-gradient-direction': 'to-right'
+          },
+          edge: {
+            'line-fill': kind === 'gradient' ? 'linear-gradient' : 'solid',
+            'line-gradient-stop-colors': '#e74c3c #3498db'
+          }
+        } );
+
         function v3Style( labels, spec = {} ){
           const node = { 'width': 12, 'height': 12, 'background-color': '#4a7dbd' };
 
@@ -304,6 +322,12 @@
               }
             }
 
+            // round 76.1: the gradient pair — same constants both sides
+            if( scene.spec.fills ){
+              Object.assign( style[ 0 ].style, FILL_STYLE( scene.spec.fills ).node );
+              Object.assign( style[ 1 ].style, FILL_STYLE( scene.spec.fills ).edge );
+            }
+
             // round 38: the border-style pair — same constants both sides
             if( scene.spec.borders ){
               Object.assign( style[ 0 ].style, {
@@ -354,6 +378,10 @@
               } );
             }
 
+            if( scene.spec.fills ){
+              nodesStyle = Object.assign( {}, nodesStyle, FILL_STYLE( scene.spec.fills ).node );
+            }
+
             if( scene.spec.wrap === true && labels ){
               nodesStyle = Object.assign( {}, nodesStyle, {
                 'label': WRAP_LABEL, 'text-wrap': 'wrap', 'text-max-width': WRAP_MAX_WIDTH
@@ -394,6 +422,10 @@
                   'target-arrow-fill': { case: [ { when: { data: 'hollow', eq: 1 }, then: 'hollow' } ], else: 'filled' }
                 } );
               }
+            }
+
+            if( scene.spec.fills ){
+              edgesStyle = Object.assign( {}, edgesStyle, FILL_STYLE( scene.spec.fills ).edge );
             }
 
             cy = cytoscape( {

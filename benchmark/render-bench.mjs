@@ -144,6 +144,22 @@ const SCENES = [
     label: 'generated 25k × 50k hexagon borders (dashed)',
     page: { n: 25000, m: 50000, borders: 'dashed' },
   },
+  // round 76.1: the gradient fragment path, which no row priced — a
+  // pair over one geometry and one set of stop lists, differing only in
+  // the fill kind (`background-fill` and `line-fill`), so the pair's
+  // device-row delta is the stop walk.  Compare device rows, as with the
+  // border pair.  No close-up variant: a gradient error is a ramp, not a
+  // boundary effect, so magnification buys a diff nothing.
+  {
+    key: 'gen-25k-fills-solid',
+    label: 'generated 25k × 50k fills (solid)',
+    page: { n: 25000, m: 50000, fills: 'solid' },
+  },
+  {
+    key: 'gen-25k-fills-gradient',
+    label: 'generated 25k × 50k fills (linear gradients)',
+    page: { n: 25000, m: 50000, fills: 'gradient' },
+  },
 ];
 
 // --layout: instead of the pan scenarios, run the round-18 force layout

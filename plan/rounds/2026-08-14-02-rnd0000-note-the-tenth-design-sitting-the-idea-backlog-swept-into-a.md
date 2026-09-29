@@ -58,7 +58,11 @@ z-index, classes, selector strings, style functions).
   exist, unexposed), wheel/gesture tuning toggles (#1905 family —
   explicit toggles are the sanctioned mechanism; 41.5 declined
   preventDefault, not toggles), viewport counts (#2283).
-- **Small style wins bundle** — gradients (#2091/#3407),
+- **Small style wins bundle** — gradients (#2091/#3407; *corrected by
+  round 76.1: the premise was stale — v3 has had `background-fill` and
+  `line-fill` gradients since 3.6/3.7 and v4 shipped them in round 13
+  C2, with a golden and a live parity scene; the item closed as docs and
+  a benchmark pair*),
   zoom-invariant screen-space sizing (#789), `text-border-style`
   (the one recorded not-yet style gap), and the ledger-23
   arrow-precision/17th-arrowhead decision.

@@ -24,6 +24,13 @@ that compile and then behave differently.
 
 ### Added
 
+- **A price for the gradient path** (round 76.1).  `background-fill` and
+  `line-fill` gradients landed in round 13 C2 as v3's own props (#2091,
+  #3407 and #2207 are answered by them — v3 has had both since
+  3.6/3.7); the renderer benchmark now prices them as a pair over one
+  geometry: 25k nodes × 50k edges, every fill a linear gradient, costs
+  **+0.7–1.2% device time** against solid fills (≈0.04 ms a frame, RX 580,
+  two runs); v3 on the same pair goes from 632 to 1171 ms a fit-all frame.
 - **`text-border-style`** (round 76.3): v3's `solid | dashed | dotted |
   double` on the label box, on node and edge labels, mapper-capable.
   Dashes use v3's hardcoded patterns (`[4, 2]`, dotted `[1, 1]`, model

@@ -1225,6 +1225,21 @@ fill/direction enums take mappers.  The depth prepass skips
 gradient fills conservatively, and plain-LOD far-zoom discs show
 the flat base color (both recorded).
 
+Priced in round 76.1 (2026-09-29), after no row had ever exercised
+the gradient fragment path: a render-bench pair over one geometry
+and one set of stop lists, differing only in the fill kind
+(`gen-25k-fills-solid` / `-gradient`, 25k nodes × 50k edges, every
+node and edge filled).  Device p50, two runs, i9-9900K + RX 580
+(Chromium on Vulkan, render scale pinned 1): fit-all 3.70 → 3.74 ms,
+zoomed-in 4.78 → 4.83, far-zoom 0.686 → 0.707, with labels 3.97 →
+3.99 and 5.19 → 5.22 — **+0.7% to +3%**, about 0.04 ms a frame; the
+wall rows sit on the vsync floor on both sides.  The border pair's
+precedent (a fragment premium unmeasurable at scene level) nearly
+held: the stop walk is measurable, and negligible.  v3 on the same
+pair: 632 → 1171 ms a fit-all frame.  No close-up scene: a gradient
+error is a ramp, not a boundary effect, so magnification buys a diff
+nothing — the `gradients` golden and the live parity scene stand.
+
 Custom polygons (round 13 C3): `shape: 'polygon'` with
 `shape-polygon-points` — flat unit pairs in v3's [-1, 1] space —
 stored per element in a second curve-blob pool whose packed

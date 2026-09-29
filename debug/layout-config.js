@@ -424,13 +424,16 @@ var layoutConfig = (function () {
     };
   }
 
-  // Past this many elements the hover panel stays off: a neighbourhood
-  // emphasis is a per-element bypass over everything *outside* it, and
-  // the 465k-edge fixture is the measurement, not the demo.
+  // Past this many elements the app spellings stay off: dim and hide
+  // write every element *outside* the neighbourhood, and on the
+  // 465k-edge fixture that is seconds per hover change (round 102
+  // measured 2.9 s and 160 ms).  `emphasize` — round 102's
+  // cy.emphasize(), O(neighbourhood) — is allowed at any size; that
+  // fixture is its demo.
   var HOVER_MAX_ELEMENTS = 100000;
 
-  function hoverAllowed(count) {
-    return count <= HOVER_MAX_ELEMENTS;
+  function hoverAllowed(count, mode) {
+    return mode === 'emphasize' || count <= HOVER_MAX_ELEMENTS;
   }
 
   return {

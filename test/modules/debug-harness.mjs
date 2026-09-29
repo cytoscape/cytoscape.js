@@ -1487,11 +1487,23 @@ describe('debug harness (round 43)', function () {
 
     it('gates the hover panel by element count', function () {
       expect(
-        layoutConfig.hoverAllowed(layoutConfig.HOVER_MAX_ELEMENTS),
+        layoutConfig.hoverAllowed(layoutConfig.HOVER_MAX_ELEMENTS, 'dim'),
       ).to.equal(true);
       expect(
-        layoutConfig.hoverAllowed(layoutConfig.HOVER_MAX_ELEMENTS + 1),
+        layoutConfig.hoverAllowed(layoutConfig.HOVER_MAX_ELEMENTS + 1, 'dim'),
       ).to.equal(false);
+      expect(
+        layoutConfig.hoverAllowed(layoutConfig.HOVER_MAX_ELEMENTS + 1, 'hide'),
+      ).to.equal(false);
+    });
+
+    it('never gates cy.emphasize (round 102: O(neighbourhood))', function () {
+      expect(
+        layoutConfig.hoverAllowed(
+          layoutConfig.HOVER_MAX_ELEMENTS * 10,
+          'emphasize',
+        ),
+      ).to.equal(true);
     });
 
     it('no load-time layout animates — the synchronous snapshot stands on it', function () {

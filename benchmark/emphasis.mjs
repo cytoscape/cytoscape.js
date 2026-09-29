@@ -315,19 +315,24 @@ query('query: the rest (elements().not)', (cy, node) =>
 // -- 3. design (a): the dim as a styled flag bit --
 
 {
-  let refs = null;
+  // the complement per target, built outside the timed write: an app
+  // has to name the rest somehow, and a native setter would walk the
+  // slots instead — so the row prices the write alone and the query row
+  // above prices the naming
+  const rest = new WeakMap(); // one instance per row and target
+  const refsOf = (cy, node) => {
+    if (!rest.has(cy)) {
+      rest.set(cy, cy.elements().not(node.closedNeighborhood())._refs);
+    }
+
+    return rest.get(cy);
+  };
 
   row('(a) state dim: set over the rest', {
     style: stateDim,
-    on: (cy, node) => {
-      // the complement is built outside the flag write's cost would
-      // be dishonest: an app has to name the rest somehow, and a
-      // native setter would walk the slots instead — so the row prices
-      // the write alone and the query row above prices the naming
-      refs ??= cy.elements().not(node.closedNeighborhood())._refs;
-      cy._store.flagRefs(refs, FLAG_SELECTED, true);
-    },
-    off: (cy) => cy._store.flagRefs(refs, FLAG_SELECTED, false),
+    on: (cy, node) => cy._store.flagRefs(refsOf(cy, node), FLAG_SELECTED, true),
+    off: (cy, node) =>
+      cy._store.flagRefs(refsOf(cy, node), FLAG_SELECTED, false),
     check: (cy, node) =>
       opacityOf(farNode(cy, node)) === 0.15 && opacityOf(node) === 1
         ? null
@@ -335,7 +340,6 @@ query('query: the rest (elements().not)', (cy, node) =>
     afterOff: (cy, node) =>
       opacityOf(farNode(cy, node)) === 1 ? null : 'the clear left a dim',
   });
-  refs = null;
 }
 
 row('(a) state dim: neighbourhood delta', {

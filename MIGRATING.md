@@ -144,6 +144,30 @@ node.data( 'highlighted', true );
 The style updates automatically: a data write re-derives exactly the mapped
 channels that depend on the written key.
 
+The commonest class in v3 apps — the hover highlight, a `.faded` class on
+everything outside the hovered neighbourhood — is not a class or a data write
+in v4 but one call, because writing every element on each hover does not
+scale (round 102 measured 2.9 s per hover change on a 484k-element graph):
+
+```js
+// v3
+cy.on( 'mouseover', 'node', e => {
+  cy.elements().not( e.target.closedNeighborhood() ).addClass( 'faded' );
+} );
+cy.on( 'mouseout', 'node', () => cy.elements().removeClass( 'faded' ) );
+// style: { selector: '.faded', style: { opacity: 0.15 } }
+
+// v4
+cy.on( 'mouseover', ele => ele.isNode(), e =>
+  cy.emphasize( e.target.closedNeighborhood() ) );
+cy.on( 'mouseout', ele => ele.isNode(), () => cy.unemphasize() );
+// style: { core: { 'dim-opacity': 0.15 } } — and, to style the set itself,
+// { when: { emphasized: true } } on any prop
+```
+
+The rest is dimmed by the renderer as one composite, not by a style, so
+`style( 'opacity' )` on a dimmed element reads its own value.
+
 ### 3. The stylesheet is an object, not a list of selector blocks
 
 ```js

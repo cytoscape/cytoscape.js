@@ -1,31 +1,43 @@
 /* eslint-disable no-console */
 /* global $, layoutConfig */
 
-// The hover section (round 114.7): emphasize the hovered node's closed
-// neighbourhood by dimming or hiding everything else — the gesture every
-// flagship app implements, and the one round 102 measured the cost of.
+// The hover section (round 114.7; round 102's API since): emphasize the
+// hovered node's closed neighbourhood and dim or hide everything else —
+// the gesture every flagship app implements.
 //
-// This is "the app spelling today" from that round: v4 has no classes,
-// so the outside set takes a per-element opacity bypass (dim) or hide()
-// on every hover change and is restored on leave.  The console timings
-// around apply and restore are the measurement; the select turns itself
-// off above layoutConfig.HOVER_MAX_ELEMENTS.  It is on the page for
-// judging a layout's edges: with the rest dimmed, what a node connects
-// to and how the edges route is all that is left to see.
+// Three spellings, side by side, each timed in the console per hover
+// change ('hover apply' / 'hover restore'):
+//
+// - **Emphasize** — `cy.emphasize( node.closedNeighborhood() )` and
+//   `cy.unemphasize()`, round 102's core API.  The set is a flag bit and
+//   the dim is the renderer's two-tier composite, so a change costs
+//   O(neighbourhood) at any graph size; this is the one to hover on
+//   ndex-x-large.
+// - **Dim** / **Hide** — "the app spelling" before it: a per-element
+//   opacity bypass or `hide()` over everything *outside* the
+//   neighbourhood, restored on leave.  O(graph) per hover change (round
+//   102 measured 2.9 s and 160 ms on ndex-x-large), so both are off above
+//   layoutConfig.HOVER_MAX_ELEMENTS.  Kept as the comparison.
+//
+// It is on the page for judging a layout's edges too: with the rest
+// dimmed, what a node connects to and how the edges route is all that
+// is left to see.
 
 (function () {
   const select = $('#hover-select');
   let rest = null; // the collection last dimmed or hidden
-  let mode = null; // how it was dimmed or hidden
+  let mode = null; // how the current emphasis was applied
 
   const restore = (cy) => {
-    if (rest == null) {
+    if (mode == null) {
       return;
     }
 
     console.time('hover restore');
 
-    if (mode === 'hide') {
+    if (mode === 'emphasize') {
+      cy.unemphasize();
+    } else if (mode === 'hide') {
       rest.show();
     } else {
       cy.batch(() => rest.removeStyle('opacity'));
@@ -42,7 +54,10 @@
     // over can precede out: clear the previous emphasis first
     restore(cy);
 
-    if (wanted === 'none' || !layoutConfig.hoverAllowed(cy.elements().length)) {
+    if (
+      wanted === 'none' ||
+      !layoutConfig.hoverAllowed(cy.elements().length, wanted)
+    ) {
       return;
     }
 
@@ -50,16 +65,37 @@
 
     const keep = node.closedNeighborhood();
 
-    rest = cy.elements().not(keep);
     mode = wanted;
 
-    if (mode === 'hide') {
-      rest.hide();
+    if (mode === 'emphasize') {
+      cy.emphasize(keep);
     } else {
-      cy.batch(() => rest.style({ opacity: 0.15 }));
+      rest = cy.elements().not(keep);
+
+      if (mode === 'hide') {
+        rest.hide();
+      } else {
+        cy.batch(() => rest.style({ opacity: 0.15 }));
+      }
     }
 
     console.timeEnd('hover apply');
+  };
+
+  const noteFor = (cy) => {
+    const big = !layoutConfig.hoverAllowed(cy.elements().length, 'dim');
+
+    $('#hover-note').textContent = big
+      ? 'dim and hide are off above ' +
+        layoutConfig.HOVER_MAX_ELEMENTS +
+        ' elements'
+      : '';
+
+    for (const option of select.options) {
+      option.disabled =
+        !layoutConfig.hoverAllowed(cy.elements().length, option.value) &&
+        option.value !== 'none';
+    }
   };
 
   window.onCy((cy) => {
@@ -75,11 +111,7 @@
       () => restore(cy),
     );
 
-    if (!layoutConfig.hoverAllowed(cy.elements().length)) {
-      select.disabled = true;
-      $('#hover-note').textContent =
-        'off above ' + layoutConfig.HOVER_MAX_ELEMENTS + ' elements';
-    }
+    noteFor(cy);
 
     // switching to none while something is emphasized clears it
     select.addEventListener('change', () => {

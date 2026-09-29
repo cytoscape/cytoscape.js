@@ -2510,7 +2510,7 @@ each is deliberate, not a pass-1 deferral:
     compiled to the matcher IR — `cy.nodes({ selected: true })`,
     `cy.filter({ group: 'edges' })`, `eles.filter({ selected: false })`,
     the **state booleans** (`selected`, `selectable`, `locked`,
-    `grabbed`, `grabbable`, `active`, `hovered`, plus the structural
+    `grabbed`, `grabbable`, `active`, `hovered`, `emphasized`, plus the structural
     `parent`, `childless`, `child`, `orphan` — nodes only, and an
     explicitly-edges query with one of those throws), answered as pure
     flag scans, and data conditions over the sidecar columns (round 10):
@@ -2635,7 +2635,10 @@ each is deliberate, not a pass-1 deferral:
   stream split).  If real demand for raise-above-the-crowd styling
   ever appears, the logged extension is a single boolean elevated
   tier (one extra batch per group) — never arbitrary integer
-  stacking.
+  stacking.  Round 102 built exactly that tier, scoped to one
+  purpose: while `cy.emphasize()` is set, the emphasized set draws in
+  a second cull-and-draw above the dimmed rest (see "Transient
+  emphasis").  It is not a styling prop, and it raises nothing else.
 - **A locked node holds its place, everywhere** (round 114.3).  v3's
   rule, and what `locked()`'s doc always promised: a locked node — or
   every node under `cy.autolock( true )` — ignores `position()` /
@@ -4189,8 +4192,9 @@ cytoscape({
 ```
 
 The vocabulary is `selected`, `selectable`, `locked`, `grabbed`,
-`grabbable`, `active`, `hovered`, plus the structural `parent`, `child`
-and their v3-named negations `childless` and `orphan`.  Every one takes
+`grabbable`, `active`, `hovered`, `emphasized` (round 102), plus the
+structural `parent`, `child` and their v3-named negations `childless`
+and `orphan`.  Every one takes
 a boolean, so `{ selected: false }` is v3's `:unselected`, `{ grabbed:
 false }` its `:free`, and so on — one key per state rather than v3's
 pair.
@@ -4253,6 +4257,123 @@ not a flag), and `:visible` / `:hidden` / `:transparent` (computed *from*
 style, so a rule conditioned on one would be circular).  `:animated`,
 `:backgrounding`, `:removed` and `:inside` have no stable bit and no
 obvious use in a sheet.
+
+## Transient emphasis (round 102)
+
+The hover highlight every graph app implements — emphasize the hovered
+node's neighbourhood, dim everything else, restore on leave — as core
+API, on the eleventh design sitting's call:
+
+```js
+cy.on('mouseover', (ele) => ele.isNode(), (e) =>
+  cy.emphasize(e.target.closedNeighborhood()),
+);
+cy.on('mouseout', (ele) => ele.isNode(), () => cy.unemphasize());
+```
+
+`cy.emphasize( eles )` makes `eles` exactly the emphasized set (only
+what enters or leaves is written) and turns the dim on;
+`cy.unemphasize()` clears both; `eles.emphasized()` reads the bit.  The
+look is split by what it costs:
+
+- **The emphasized set is a state** — `FLAG_EMPHASIZED`, a
+  `CONDITION_FLAGS` entry like `hovered`, so `{ when: { emphasized: true
+  } }` styles it (a thicker border, an opaque edge) and `{ emphasized:
+  true }` queries it.  A change restyles the set through the round-61
+  diff path: O(set).
+- **Everything else is dimmed by the renderer**, as one composite.
+  While an emphasis is set every cull kernel runs twice — the first
+  tier admits only elements *without* the bit, the second only elements
+  *with* it (`emphasisKeeps` in the WGSL prelude, reading the owner's
+  flags word) — and between the two draws a fullscreen veil composites
+  the first tier at the core `dim-opacity` (default 0.15) over the
+  cleared background (`src/render/emphasis-veil.mts` has the algebra: on
+  screen it is a plain scale, in an export it re-mixes the `bg`).  The
+  second tier gets a fresh depth attachment, so the emphasized set draws
+  *above* the dimmed rest: an emphasized edge crossing a dimmed node is
+  on top.  That is the single boolean elevated tier the no-z-index
+  record logged, and nothing else uses it.
+
+**Decided by measurement** (the plan's rule; `benchmark/emphasis.mjs`,
+ndex-x-large — 19,607 nodes / 464,657 edges — through the built bundle,
+i9-9900K, Node 24.18; per hover change, emphasize + restore, at a
+degree-11 node / at the 733-degree hub):
+
+| spelling | per hover change | upload |
+| --- | --: | --: |
+| app today: opacity bypass over the rest | 2,922 / 2,888 ms | 3.9 MB |
+| app today: `hide()` the rest | 171 / 164 ms | 3.9 MB |
+| (a) dim as a state bit over the rest (set, or derived) | 1,125 / 1,142 ms | 7.7 MB |
+| (a) the neighbourhood's own records only | 0.05 / 2.7 ms | 4.7 / 7.2 MB |
+| **(b) `cy.emphasize` (shipped)** | **0.015 / 0.42 ms** | 2.3 / 3.6 MB |
+| (b) + a sheet styling `emphasized` | 0.14 / 4.3 ms | 5.4 / 8.2 MB |
+| the query, `closedNeighborhood()` | 0.025 / 0.64 ms | — |
+
+A dim that is a style — a bit on every non-emphasized element, or one
+*derived* from "an emphasis is on" — rewrites every element's record on
+the frame the emphasis turns on or off; at this scale that is 1.1 s
+(the edge `opacity` has no narrow writer, so each edge takes the full
+write) and no writer makes an O(V) toggle fit a frame.  So the dim is
+the renderer's (b), and the half of (a) that is O(set) — the
+emphasized state — stays in the sheet.  The query does not dominate,
+so no slot-native neighbourhood walk was needed.  The upload column is
+the dirty-span hull, which a scattered neighbourhood widens; it is the
+flags column, 1.9 MB at most.  On the GPU (Chromium on the RX 580, the
+debug page, hub emphasized) the second tier costs **0.64 ms per frame**
+(6.54 → 7.18 ms median `gpuFrameMs`, 40 frames each); the frame
+timer's reading spans both tiers, so the adaptive scale prices it.
+
+The calls taken in the round:
+
+- **Naming** — `emphasize` / `unemphasize` / `emphasized`, the plan's
+  own spelling (American, as `neighborhood()`), over highlight and
+  spotlight.  The core prop is `dim-opacity`.
+- **`dimmed` is derived, never stored** — it is "an emphasis is set and
+  this element is not in it", and it has no state key: a `{ when: {
+  dimmed: true } }` rule would *be* the O(V) toggle the measurement
+  ruled out.  `style()` on a dimmed element reads the element's own
+  values; the composite is view, not truth.
+- **Replace, not add.**  `cy.emphasize( eles )` replaces the set — the
+  gesture is one call per hover change — and there is no additive
+  `eles.emphasize()`: a second write path into one view state would
+  make "what is emphasized" depend on call order.
+- **An empty collection is an emphasis** (everything dims), and the
+  emphasis stays set through removals and adds until `unemphasize()`;
+  a new element is not emphasized.
+- **"Dim unselected" is not a mode.**  The plan asked whether select
+  gets the same treatment; it gets the same *API*:
+  `cy.on('select unselect', () => cy.emphasize(cy.elements({ selected:
+  true })))` is O(selection) per change.
+- **View state** (the round-106 rule: a clone owns its view state):
+  never serialized, never carried by `clone()` (the wire and the carried
+  flags exclude it, as they do hover and selection), kept by `patch()` on
+  survivors and never read from a payload.  `png()`/`jpg()` draw it as
+  the screen does.  A worker renderer receives it as one more batch
+  scalar (`emphasisDim`), beside the flags span.
+- **Picking ignores it.**  A dimmed node still picks and hovers (so the
+  pointer can move to it), and where an emphasized edge is raised over a
+  dimmed node the node wins the pick — `pick()`'s documented structural
+  order, left alone rather than made emphasis-dependent.
+- `viewportCounts()` sums both tiers (the partition is exact).
+
+Controls: `test/emphasis.mjs` counts the per-element work of a hover
+change at two graph sizes ten times apart and asserts it equal (a
+counted probe, not a timing — `node:test` runs files concurrently); the
+control, the dim-bit spelling, grows 11.1× under the same probe.  In the
+browser, `renderer.spec.js` asserts the pixels of both tiers (the veil
+removed: the rest reads undimmed; the second tier removed: the raised
+edge is gone; the export's `bg` ignored: the dimmed body reads
+(0, 0, 38) where (217, 217, 255) is right), the
+`emphasis-tiers` golden moves 11.4% when the dim opacity changes to 0.25
+and 8.1% without the second tier, and the worker host's export matches
+the same-thread one exactly (and differs from the plain scene — a
+scalar that never crossed makes it fail).
+
+Follow-up hooks, not built: a dim *colour* (the veil composites toward
+the background; a tint would need a second constant); an `emphasize`
+event; a transition on the dim (it switches in one frame); and round
+104's label decluttering, which should treat the emphasized set's labels
+as top priority.
 
 ## Background images (round 15, landing)
 

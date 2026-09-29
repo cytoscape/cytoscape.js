@@ -291,6 +291,13 @@ that compile and then behave differently.
   `follow: true | { throttle }` keeps it current by a throttled
   `clone.patch( cy.serialize() )`, driven by a new dirty-stream consumer on
   the source; the clone owns its selection, hover, sheet and viewport.
+- **`cy.emphasize( eles )` / `cy.unemphasize()`** (round 102) — the hover
+  highlight as view state: the set is an `emphasized` state the sheet can
+  style and a query can find, and everything else is dimmed by the
+  renderer as one composite at the core `dim-opacity`, the set drawn above
+  it — O(set) per change (0.42 ms at a 733-degree hub on a 484k-element
+  graph, against 2.9 s for the per-element opacity spelling).  Not
+  serialized, not shared by `clone()`; `png()`/`jpg()` draw it.
 - **Style transitions** (`transition-property`/`-duration`/`-delay`/
   `-timing-function`) and animation controls (`pause`/`resume`/`reverse`,
   read-only `progress`/`paused`).

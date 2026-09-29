@@ -53,6 +53,7 @@ routes, these files explain.
   - `scripts/quiet-run.mjs`: the round-101 capture wrapper behind the `:quiet` scripts for tools with no quiet mode (rolldown, oxlint, tsc, playwright install) — green prints nothing, red replays the captured output byte-for-byte and preserves the exit code.  Its `node:test` twin is `test/quiet-reporter.mjs` (failures-only reporter; note in its header why it replays the failing *file's* output, not the failing test's) and its Playwright twin is `playwright-tests/quiet-reporter.mjs`.
   - `scripts/theme.mjs`: the design tokens and `esc`, shared by the benchmark report and the status site so the two read as one system.
   - `scripts/wgsl-minify.mjs`: the round-52 build transform behind the WGSL note in `docs/agents/rendering.md` — `minifyWgslTemplate`/`transformWgslTags` are pure and spec'd (`test/modules/wgsl-minify.mjs`); `wgslMinifyPlugin()` is what `rolldown.config.mjs` wires into every bundle.
+  - `scripts/const-inline.mjs`: the round-126 build transform that runs before it, on the AST — `COL.X`/`PROP.X`/`TWEEN_COL.X` become their string literals (PLAN.md item 63: the tables no longer ship), and a module-level number interpolated into a `wgsl`/`glsl` literal is spliced into its text.  Spec'd by `test/modules/const-inline.mjs`, which evaluates every inlined shader module against the original.
 
 ## `.github/workflows/`
 

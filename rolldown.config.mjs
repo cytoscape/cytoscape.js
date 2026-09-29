@@ -2,6 +2,7 @@ import replace from '@rollup/plugin-replace';
 import license from 'rollup-plugin-license';
 import path from 'path';
 
+import { constInlinePlugin } from './scripts/const-inline.mjs';
 import { wgslMinifyPlugin } from './scripts/wgsl-minify.mjs';
 
 import { fileURLToPath } from 'url';
@@ -83,6 +84,17 @@ const licenseHeaderOptions = {
   },
 };
 
+/**
+ * The source transforms every bundle gets, in order (round 126): the
+ * constant vocabularies and the shader constants inlined from the AST
+ * (`scripts/const-inline.mjs`, PLAN.md item 63), then the shader
+ * literals minified (`scripts/wgsl-minify.mjs`, round 52).  Both run in
+ * development builds too, so the Playwright projects exercise what ships.
+ *
+ * @returns {object[]} fresh plugin instances
+ */
+const sourcePlugins = () => [constInlinePlugin(), wgslMinifyPlugin()];
+
 // Node resolution and CommonJS interop are handled natively by rolldown.
 const configs = [
   {
@@ -97,7 +109,7 @@ const configs = [
       sourcemap: SOURCEMAPS ? 'inline' : false,
     },
     plugins: [
-      wgslMinifyPlugin(),
+      ...sourcePlugins(),
       replace(replaceOptions),
       license(licenseHeaderOptions),
     ],
@@ -115,7 +127,7 @@ const configs = [
       minify: true,
     },
     plugins: [
-      wgslMinifyPlugin(),
+      ...sourcePlugins(),
       replace(replaceOptions),
       license(licenseHeaderOptions),
     ],
@@ -132,7 +144,7 @@ const configs = [
       minify: true,
     },
     plugins: [
-      wgslMinifyPlugin(),
+      ...sourcePlugins(),
       replace(replaceOptions),
       license(licenseHeaderOptions),
     ],
@@ -145,7 +157,7 @@ const configs = [
     transform: transformNonEsm,
     output: { file: 'build/cytoscape.cjs.js', format: 'cjs' },
     plugins: [
-      wgslMinifyPlugin(),
+      ...sourcePlugins(),
       replace(replaceOptions),
       license(licenseHeaderOptions),
     ],
@@ -158,7 +170,7 @@ const configs = [
     transform,
     output: { file: 'build/cytoscape.esm.mjs', format: 'es' },
     plugins: [
-      wgslMinifyPlugin(),
+      ...sourcePlugins(),
       replace(replaceOptions),
       license(licenseHeaderOptions),
     ],
@@ -167,7 +179,7 @@ const configs = [
 
 for (const entry of SLIM_ENTRIES) {
   const plugins = () => [
-    wgslMinifyPlugin(),
+    ...sourcePlugins(),
     replace(replaceOptions),
     license(licenseHeaderOptions),
   ];

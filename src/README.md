@@ -2703,7 +2703,19 @@ each is deliberate, not a pass-1 deferral:
   hyphenated property literal or a group-name literal outside its
   declaration, with a control per rule and the walk's size pinned.  The price: the minified bundle
   grew 1.0% (1.2% gzipped), since the minifier mangles `PROP` but not
-  `.BACKGROUND_COLOR`; the round record has the numbers.
+  `.BACKGROUND_COLOR`; the round record has the numbers.  **Round 126
+  took the price back** (PLAN.md item 63): `scripts/const-inline.mjs`
+  runs before every bundle's minifier and rewrites `COL.X`, `PROP.X`
+  and `TWEEN_COL.X` to their literals from the module's AST — the
+  import followed through re-exports to the `as const` table it names,
+  a shadowed name left alone, a missing member or a write a build
+  error — so the source keeps the constant and the bundle ships the
+  literal, and the tables themselves no longer ship.  1,520 sites in
+  the full build; its minified ESM 8,908 bytes smaller and 3,428
+  gzipped, more than round 127 recorded as the cost.  The scalar
+  constants (`DATA_SOURCE`, `GROUP_NODES`) were already one mangled
+  name each; rolldown's `inlineConst: 'all'` would inline them too, and
+  was measured at +3.8 KB raw for −0.7 KB gzip, so it is not on.
 - **Strictness resolves at the type layer at the constructor, and at
   runtime everywhere else** (decided 2026-08-04, fifth design sitting;
   pinned by round 37.3).  v4 fails loudly on an unknown sheet key,

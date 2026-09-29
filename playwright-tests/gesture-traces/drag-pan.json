@@ -119,7 +119,7 @@
         "pointerout:d",
         "pointerdown:cy",
         "tapstart:cy",
-        "~dragpan:cy pointermove:cy tapdrag:cy",
+        "~pointermove:cy tapdrag:cy",
         "pointerup:cy",
         "tapend:cy"
       ]

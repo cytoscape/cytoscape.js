@@ -787,8 +787,7 @@ export const GESTURES = [
       'pointerdown',
       'cxttapstart',
       '[pointermove, tapdrag, cxtdrag, cxtdragover / cxtdragout]',
-      'pointerup',
-      'tapend',
+      'pointerup (on the press target; no tapend since round 142, as v3)',
       'cxttapend',
       '[cxttap, when it did not move]',
     ],
@@ -992,7 +991,10 @@ export const GESTURES = [
       'userZoomingEnabled (the zoom)',
       'userPanningEnabled (the midpoint pan)',
     ],
-    events: ['per move: zoom, viewport, pinchzoom, pan, viewport'],
+    events: [
+      '[free, freeon, (dragfree, dragfreeon) on a press it takes over — round 142]',
+      'per move: zoom, viewport, pinchzoom, pan, viewport',
+    ],
     state: ['viewport'],
     src: [
       'src/interact/pointer-handlers.mts',

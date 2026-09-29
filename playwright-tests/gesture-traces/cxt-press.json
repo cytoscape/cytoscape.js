@@ -9,7 +9,6 @@
         "pointerdown:a",
         "cxttapstart:a",
         "pointerup:a",
-        "tapend:a",
         "cxttapend:a",
         "cxttap:a"
       ]
@@ -26,7 +25,6 @@
         "cxtdragover:b",
         "~cxtdrag:a pointermove:a tapdrag:a",
         "pointerup:a",
-        "tapend:a",
         "cxttapend:a"
       ]
     },
@@ -39,8 +37,7 @@
         "pointerover:ab",
         "pointerdown:cy",
         "cxttapstart:cy",
-        "pointerup:ab",
-        "tapend:ab",
+        "pointerup:cy",
         "cxttapend:cy",
         "cxttap:cy"
       ]

@@ -193,16 +193,26 @@ export async function resolvePressTarget(
 }
 
 /**
- * Undo a grab the async press target overruled (round 97.1).  Only a
- * *parent* grab is ever provisional — a leaf answers the pick outright
- * — and only while the press has not moved, so nothing has been dragged
- * and there is no `dragfree` to emit; the `free`/`freeon` pair still
- * balances the `grab`/`grabon` the press emitted (17.2).
+ * End a press's grab, whichever way the press ends: clear the grabbed
+ * flag on every node it held (the whole drag set, not only the pressed
+ * node) and emit the release half of the drag-state family (17.2) —
+ * `free` on each held node, `freeon` on the pressed one, and the
+ * `dragfree` pair when the gesture had moved them.  One place, so every
+ * `grab`/`grabon` a press emitted is balanced: a release, a cancel, an
+ * overruled parent press, and (round 142) a second finger that turns
+ * the press into a pinch, a touch cxt or a touch box — which had
+ * cleared the pressed node's flag alone and emitted nothing.
+ *
+ * @param ph — the handler
+ * @param down — the press being ended
+ * @param pos — the rendered position the release events carry
+ * @param dragged — whether to emit `dragfree` / `dragfreeon`
  */
-export function dropProvisionalGrab(
+export function releaseGrab(
   ph: PointerHandler,
   down: DownState,
   pos: Position,
+  dragged: boolean,
 ): void {
   if (down.dragSet != null) {
     for (let i = 0; i < down.dragSet.length; i++) {
@@ -215,7 +225,27 @@ export function dropProvisionalGrab(
   if (down.mode === 'grab' && down.grabbed != null) {
     ph.emitDragState('free', down.grabbed, down.dragSet, pos);
     ph.emitDragState('freeon', down.grabbed, null, pos);
+
+    if (dragged) {
+      ph.emitDragState('dragfree', down.grabbed, down.dragSet, pos);
+      ph.emitDragState('dragfreeon', down.grabbed, null, pos);
+    }
   }
+}
+
+/**
+ * Undo a grab the async press target overruled (round 97.1).  Only a
+ * *parent* grab is ever provisional — a leaf answers the pick outright
+ * — and only while the press has not moved, so nothing has been dragged
+ * and there is no `dragfree` to emit; the `free`/`freeon` pair still
+ * balances the `grab`/`grabon` the press emitted (17.2).
+ */
+export function dropProvisionalGrab(
+  ph: PointerHandler,
+  down: DownState,
+  pos: Position,
+): void {
+  releaseGrab(ph, down, pos, false);
 
   down.mode = 'pan';
   down.grabbed = null;
@@ -277,9 +307,24 @@ export function tap(
 
   multiClick(ph, target, position);
 
+  // v3's `unselect(['tapunselect'])`: every element a tap deselects —
+  // the background tap's clear, a single-mode tap's others, the toggle
+  // — gets tapunselect after its unselect (round 142, the tap-select
+  // trace against v3: v4 had emitted it for the toggle alone)
+  const tapUnselect = (eles: Collection): void => {
+    eles.unselect();
+
+    for (let i = 0; i < eles.length; i++) {
+      cy._emitOnEle('tapunselect', eles[i], undefined, {
+        position,
+        originalEvent: ph.domEvent ?? undefined,
+      });
+    }
+  };
+
   if (target == null) {
     if (selectionEnabled && !additive) {
-      cy.elements({ selected: true }).unselect();
+      tapUnselect(cy.elements({ selected: true }));
     }
 
     return;
@@ -290,14 +335,10 @@ export function tap(
   }
 
   if (target.selected()) {
-    target.unselect(); // toggle off
-    cy._emitOnEle('tapunselect', target, undefined, {
-      position,
-      originalEvent: ph.domEvent ?? undefined,
-    }); // 17.3
+    tapUnselect(target); // toggle off (17.3)
   } else {
     if (!additive) {
-      cy.elements({ selected: true }).difference(target).unselect();
+      tapUnselect(cy.elements({ selected: true }).difference(target));
     }
 
     target.select();

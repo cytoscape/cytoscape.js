@@ -2276,3 +2276,44 @@ directions".*
     plus the three places the label bounds read the padding; (b) and
     (c) change every round box and every label's width.  **The call**:
     which of the three to match.
+88. **Gesture events against v3: the orders and targets the traces
+    found** (logged 2026-09-29 by round 142).  The gesture traces
+    replay the mouse traces on v3 and list each difference in
+    `V3_DIVERGENCES` (`playwright-tests/lib/gesture-traces.mjs`), which
+    the spec holds to still differ.  Those that are orders or targets,
+    not bugs: (a) **the release order** — v3 emits `tap` and the
+    selection events before it frees, and each `-on` variant first
+    (`freeon`, `free`, `dragfreeon`, `dragfree`); v4 frees first, plain
+    form first, then taps; (b) v3's mouse box unselects the outsiders
+    before it emits `box`; v4 emits `box` first; (c) v3's `tapend` goes
+    to the element under the release point, v4's to the pressed element
+    (the capture's target); (d) v3's `dbltap` fires on any second tap in
+    the window, whatever its target — v4 needs the same target, as
+    documented; (e) a multiple-select-key press on a node grabs it (and
+    the selection) in v3, freed at release or box start; v4 decides box
+    mode at the press and grabs nothing; (f) a drag from a locked node
+    pans in v4 (round 10's default, `a locked node does not drag; the
+    gesture pans instead`) and does nothing in v3; (g) v3 samples its
+    first wheel deltas and clamps them while it does, v4 zooms every
+    tick by 10^(Δ/500); (h) the fingers a pinch or touch cxt consumes
+    get no `pointerup` / `tapend` in v4, where v3 emits `tapend` when
+    the last finger lifts.  All in the migration guide's re-check
+    table.  (a), (b) and (h) are cheap (the emit order in
+    `onPointerUp` / `boxEnd`, a release emit in `endTouch`); (c)–(g) are
+    behaviour.  **The call**: which to match; each one matched removes
+    its `V3_DIVERGENCES` entry, which the spec then requires.
+89. **An edge press starts on the core** (logged 2026-09-29 by round
+    142, behaviour 3 of round 136's six).  The press path picks nodes
+    synchronously on the CPU and edges through the async GPU pick, so a
+    press on an edge emits `pointerdown` and `tapstart` on the **core**;
+    the edge takes `pointerup`, `tapend` and `tap` once the pick has
+    answered (from the hover pick, or the press's own), and a right
+    press never takes an edge at all (`cxttapstart` / `cxttap` on the
+    core).  v3 hit-tests edges synchronously and targets the edge from
+    the press.  The traces pin both (`tap-select`'s additive phase,
+    `cxt-press`'s end).  **Options**: a synchronous CPU edge hit test
+    for the press — the routed geometry is CPU-canonical, the box query
+    already walks it — or deferring `pointerdown` / `tapstart` until the
+    pick answers (a frame of latency on every background press).  The
+    WebGL2 backend (round 137) inherits whichever is chosen, since the
+    pick seam is shared.

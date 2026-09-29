@@ -20,6 +20,7 @@ import {
   hideActiveBg,
   resolvePressTarget,
   panStarted,
+  releaseGrab,
   tap,
 } from './pointer-press.mjs';
 import {
@@ -433,7 +434,13 @@ export function onPointerMove(ph: PointerHandler, e: PointerEvent): void {
   down.lastY = pos.y;
 
   if (down.mode === 'pan') {
-    if (ph.cy.userPanningEnabled() === true) {
+    // both toggles, as v3: with panningEnabled off panBy is a no-op, and
+    // a dragpan for a pan that did not happen is a false report (round
+    // 142, the drag-pan trace)
+    if (
+      ph.cy.panningEnabled() === true &&
+      ph.cy.userPanningEnabled() === true
+    ) {
       ph.cy.panBy({ x: dx, y: dy });
       ph.cy.emit({
         type: 'dragpan',
@@ -473,20 +480,24 @@ export function onPointerUp(ph: PointerHandler, e: PointerEvent): void {
   }
 
   // the official re-emit + the normalized release (17.1), ahead of
-  // the tap/selection flow (v3's ordering: up -> tapend -> tap)
+  // the tap/selection flow (v3's ordering: up -> tapend -> tap).  A
+  // right-button release is the cxt press's: its pointerup goes to the
+  // target its pointerdown went to (the core included), and it gets no
+  // tapend — the press emitted no tapstart, and v3 ends a right press
+  // with the cxt family alone (round 142, the cxt-press trace)
   {
     const pos = ph.eventPos(e);
-    const hadPress =
-      (ph.down != null && ph.down.pointerId === e.pointerId) ||
-      (ph.cxtDown != null && ph.cxtDown.pointerId === e.pointerId);
-    const target =
-      ph.down?.grabbed ??
-      ph.cxtDown?.target ??
-      (ph.lastPick?.inside() ? ph.lastPick : null);
+    const leftPress = ph.down != null && ph.down.pointerId === e.pointerId;
+    const cxtPress = ph.cxtDown != null && ph.cxtDown.pointerId === e.pointerId;
+    const target = cxtPress
+      ? (ph.cxtDown as NonNullable<typeof ph.cxtDown>).target
+      : (ph.down?.grabbed ??
+        ph.cxtDown?.target ??
+        (ph.lastPick?.inside() ? ph.lastPick : null));
 
     ph.emitGesture('pointerup', target, pos);
 
-    if (hadPress) {
+    if (leftPress) {
       ph.emitGesture('tapend', target, pos);
     }
   }
@@ -518,28 +529,10 @@ export function onPointerUp(ph: PointerHandler, e: PointerEvent): void {
   ph.clearTaphold();
   ph.dragHover = null; // 17.3: the gesture ended
 
-  if (down.dragSet != null) {
-    for (let i = 0; i < down.dragSet.length; i++) {
-      ph.setFlagOn(down.dragSet[i], FLAG_GRABBED, false);
-    }
-  } else if (down.grabbed != null) {
-    ph.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-  }
-
   // release side of the drag-state family (17.2): 'free' on every
   // grabbed node, 'freeon' on the direct one; the dragfree pair only
   // when the gesture actually moved them
-  if (down.mode === 'grab' && down.grabbed != null) {
-    const pos = ph.eventPos(e);
-
-    ph.emitDragState('free', down.grabbed, down.dragSet, pos);
-    ph.emitDragState('freeon', down.grabbed, null, pos);
-
-    if (down.moved) {
-      ph.emitDragState('dragfree', down.grabbed, down.dragSet, pos);
-      ph.emitDragState('dragfreeon', down.grabbed, null, pos);
-    }
-  }
+  releaseGrab(ph, down, ph.eventPos(e), down.moved);
 
   if (!down.moved) {
     const fallback = (): Collection | null =>
@@ -598,21 +591,8 @@ export function onPointerCancel(ph: PointerHandler, e: PointerEvent): void {
   ph.down = null;
   ph.clearTaphold();
 
-  if (down.dragSet != null) {
-    for (let i = 0; i < down.dragSet.length; i++) {
-      ph.setFlagOn(down.dragSet[i], FLAG_GRABBED, false);
-    }
-  } else if (down.grabbed != null) {
-    ph.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-  }
-
   // a cancelled gesture still frees (17.2); no dragfree — it aborted
-  if (down.mode === 'grab' && down.grabbed != null) {
-    const pos = ph.eventPos(e);
-
-    ph.emitDragState('free', down.grabbed, down.dragSet, pos);
-    ph.emitDragState('freeon', down.grabbed, null, pos);
-  }
+  releaseGrab(ph, down, ph.eventPos(e), false);
 
   if (ph.boxEl != null) {
     ph.boxEl.style.display = 'none';

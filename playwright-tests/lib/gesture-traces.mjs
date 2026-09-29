@@ -665,8 +665,6 @@ const EDGE_PRESS =
   'an edge press: v3 hit-tests edges synchronously, so tapstart / cxttapstart go to the edge; v4 picks nodes synchronously and edges on the GPU, so the press starts on the core and the edge takes the release and the tap (a right press never takes an edge)';
 const DBLTAP =
   "v3's dbltap fires on any second tap inside multiClickDebounceTime, whatever its target; v4's needs the same target (the trace widens the window to 2 s so the background double tap lands on both)";
-const TAPUNSELECT =
-  'v3 emits tapunselect on every element a tap deselects (the others, the background clear); v4 only on a toggled-off target';
 const SHIFT_PRESS =
   'a multiple-select-key press on a node: v3 grabs it (and the selection with it) and frees at release or when a box starts; v4 decides box mode at the press and grabs nothing';
 const LOCKED_PRESS =
@@ -675,16 +673,16 @@ const LOCKED_PRESS =
 /**
  * Where v3 and v4 differ on a trace, keyed `trace/phase/field`, each
  * with the reason.  The spec asserts every entry still differs, so a
- * difference that closes turns its entry red until it is removed.
+ * difference that closes turns its entry red until it is removed.  The
+ * orders and targets are PLAN.md item 88's call, the edge press item
+ * 89's.  (Round 142.2 removed the two `cxt-press` entries for the right
+ * release's `tapend`, and `tapunselect` from two reasons, by fixing
+ * them.)
  */
 export const V3_DIVERGENCES = {
   'drag/node/events': RELEASE_ORDER,
   'drag/end/events': RELEASE_ORDER,
   'grab-and-throw/end/events': RELEASE_ORDER,
-  'cxt-press/click/events':
-    'v4 emits a tapend on the right release, after a press that emitted no tapstart; v3 ends a right press with the cxt family alone',
-  'cxt-press/drag/events':
-    'v4 emits a tapend on the right release, after a press that emitted no tapstart; v3 ends a right press with the cxt family alone',
   'cxt-press/end/events': EDGE_PRESS,
   'wheel-zoom/zoom-mode/viewport':
     'the wheel rate: v3 samples its first wheel deltas and clamps them to ±5 while it does (then scales by the device step it found), so its first ticks zoom ×1.047 where v4 applies one rate, ×10^(Δ/500) per tick',
@@ -694,9 +692,9 @@ export const V3_DIVERGENCES = {
   'drag-pan/locked/events':
     "v3's tapend goes to the element under the release point (here the background: the pointer left d); v4's to the pressed element",
   'drag-pan/end/viewport': `${LOCKED_PRESS} (carried from the locked phase)`,
-  'tap-select/single/events': `${RELEASE_ORDER}; ${DBLTAP}; ${TAPUNSELECT}`,
+  'tap-select/single/events': `${RELEASE_ORDER}; ${DBLTAP}`,
   'tap-select/modifiers/events': `${SHIFT_PRESS}; ${DBLTAP}`,
-  'tap-select/additive/events': `${EDGE_PRESS}; ${DBLTAP}; ${TAPUNSELECT}`,
+  'tap-select/additive/events': `${EDGE_PRESS}; ${DBLTAP}`,
   'tap-select/additive-type/events': `${RELEASE_ORDER}; ${DBLTAP}`,
   'tap-select/end/events': RELEASE_ORDER,
 };

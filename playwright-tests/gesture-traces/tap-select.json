@@ -35,6 +35,7 @@
         "freeon:b",
         "tap:b",
         "unselect:a",
+        "tapunselect:a",
         "select:b",
         "tapselect:b"
       ]
@@ -98,6 +99,8 @@
         "tap:ab",
         "unselect:b",
         "unselect:e",
+        "tapunselect:b",
+        "tapunselect:e",
         "select:ab",
         "tapselect:ab",
         "~pointermove:ab",
@@ -109,6 +112,7 @@
         "tapend:cy",
         "tap:cy",
         "unselect:ab",
+        "tapunselect:ab",
         "pointerdown:cy",
         "tapstart:cy",
         "pointerup:cy",

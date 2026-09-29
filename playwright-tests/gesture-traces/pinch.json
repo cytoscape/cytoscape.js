@@ -29,6 +29,8 @@
         "grab:a",
         "pointerdown:a",
         "tapstart:a",
+        "free:a",
+        "freeon:a",
         "~pan:cy pinchzoom:cy pointermove:cy viewport:cy zoom:cy"
       ]
     },
@@ -44,7 +46,7 @@
         "~pan:cy viewport:cy zoom:cy",
         "pointerdown:cy",
         "tapstart:cy",
-        "~pan:cy pinchzoom:cy pointermove:cy viewport:cy"
+        "~pan:cy pointermove:cy viewport:cy"
       ]
     }
   }

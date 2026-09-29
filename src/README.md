@@ -7955,6 +7955,45 @@ fragment premium is **unmeasurable at scene level** on real hardware
   **Dragging a selected node drags every
   draggable selected node** (the whole set moves via one bulk shift
   per pointer move, all flagged grabbed).
+- **The gesture traces** (round 142, item 31).  Ten scripted traces
+  (`playwright-tests/lib/gesture-traces.mjs`) replay on every v4 host
+  and on v3 and are compared as numbers — positions, selection,
+  viewport, grabbed and hovered sets, the ordered events — against a
+  checked-in record per trace (`playwright-tests/gesture-traces/`).
+  They pinned the six behaviours round 136 read from the code, and four
+  were fixed as bugs:
+  - a second finger that takes a press over (pinch, touch cxt, touch
+    box) now **releases the grab** through the same path as a release —
+    `free`/`freeon` (and `dragfree`/`dragfreeon` when it had dragged)
+    on the whole drag set, every held node's grabbed flag cleared —
+    where it had cleared the pressed node's flag alone, silently, and
+    left a drag set's companions flagged (`releaseGrab`,
+    `pointer-press.mts`);
+  - a **right release** emits `pointerup` on the target its
+    `pointerdown` had (the core included) and **no `tapend`** — the
+    press emits no `tapstart`, and v3 ends a right press with the cxt
+    family alone;
+  - **`dragpan` and `pinchzoom` need both toggles**, as v3: a drag with
+    `panningEnabled( false )` (and box selection off) reported a
+    `dragpan` for a pan that did not happen, and a pinch with
+    `zoomingEnabled( false )` a `pinchzoom`;
+  - **`tapunselect` fires on every element a tap deselects** — a
+    single-mode tap's others and the background clear, after their
+    `unselect` — as v3's `unselect( ['tapunselect'] )`; it had fired on
+    a toggled-off target only.
+
+  Confirmed as v3's and kept: a shift box is always additive and a box
+  replaces only when it began because panning was off; `tap` still
+  fires on the release after a `taphold`; `scrollzoom` fires at the
+  zoom clamp.  Kept and recorded (PLAN.md items 88 and 89): an edge
+  press starts on the core (`pointerdown`/`tapstart`), the edge taking
+  the release and the tap once the GPU pick answers, and a right press
+  never takes an edge; the fingers a pinch or touch cxt consumes get no
+  `pointerup`/`tapend`; and the differences the traces found against
+  v3 — the release order, v3's any-target `dbltap`, v3's grab on a
+  multiple-select-key press, a drag from a locked node (v4 pans, v3
+  does nothing), v3's `tapend` at the release point and v3's adaptive
+  wheel rate — each listed in the traces' `V3_DIVERGENCES`.
 - **Pointer transparency: the `events` prop** (round 20.2): v3's
   `events: 'yes' | 'no'` on both groups (default `'yes'`), constants
   or `case` mappers (CPU-evaluated — the channel is a store-managed

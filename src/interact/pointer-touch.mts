@@ -1,7 +1,6 @@
 // The touch gestures (round 130 split): the two-finger cxt, pinch, the
 // shared touch end and the three-finger box.
 
-import { FLAG_GRABBED } from '../contract.mjs';
 import type { Collection } from '../collection.mjs';
 import type { Position } from '../public-types.mjs';
 import {
@@ -10,9 +9,29 @@ import {
   TOUCH_PADS,
 } from './pointer.mjs';
 import type { PointerHandler } from './pointer.mjs';
-import { hideActiveBg } from './pointer-press.mjs';
+import { hideActiveBg, releaseGrab } from './pointer-press.mjs';
 import { showBoxRect } from './pointer-box.mjs';
 import { dragHoverPick } from './pointer-hover.mjs';
+
+/**
+ * A second (or third) finger takes over the one-finger press: its grab
+ * is released through {@link releaseGrab} — every held node's flag
+ * cleared and `free` / `freeon` (plus `dragfree` / `dragfreeon` when it
+ * had dragged) emitted, as v3's pinch does — and the press is dropped.
+ * Before round 142 only the pressed node's flag was cleared, silently:
+ * a `grab` with no `free`, and a drag set's companions left flagged
+ * grabbed (the pinch trace's over-a-grab phase).
+ */
+export function endPress(ph: PointerHandler): void {
+  const down = ph.down;
+
+  if (down == null) {
+    return;
+  }
+
+  ph.down = null;
+  releaseGrab(ph, down, { x: down.lastX, y: down.lastY }, down.moved);
+}
 
 /**
  * A close second finger starts v3's touch cxt gesture: 'cxttapstart'
@@ -20,15 +39,7 @@ import { dragHoverPick } from './pointer-hover.mjs';
  * pan/grab in progress cancelled like a pinch's.
  */
 export function beginTouchCxt(ph: PointerHandler): void {
-  const down = ph.down;
-
-  if (down != null) {
-    if (down.grabbed != null) {
-      ph.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-    }
-
-    ph.down = null;
-  }
+  endPress(ph);
 
   ph.clearTaphold();
   hideActiveBg(ph);
@@ -92,15 +103,7 @@ export function touchCxtMove(ph: PointerHandler): void {
 
 /** A second finger turns any pan/grab into a pinch. */
 export function beginPinch(ph: PointerHandler): void {
-  const down = ph.down;
-
-  if (down != null) {
-    if (down.grabbed != null) {
-      ph.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-    }
-
-    ph.down = null;
-  }
+  endPress(ph);
 
   ph.updateHover(null); // a pinch is a viewport-only gesture
   ph.pinch = pinchBase(ph);
@@ -121,7 +124,14 @@ export function pinchMove(ph: PointerHandler): void {
   const pinch = ph.pinch!;
   const { dist, mid } = pinchBase(ph);
 
-  if (pinch.dist > 0 && dist > 0 && ph.cy.userZoomingEnabled() === true) {
+  // both toggles, as v3 (round 142, the pinch trace): with zoomingEnabled
+  // off the zoom call is a no-op, and a pinchzoom for it a false report
+  if (
+    pinch.dist > 0 &&
+    dist > 0 &&
+    ph.cy.zoomingEnabled() === true &&
+    ph.cy.userZoomingEnabled() === true
+  ) {
     ph.cy.zoom({
       level: ((ph.cy.zoom() as number) * dist) / pinch.dist,
       renderedPosition: mid,
@@ -133,7 +143,7 @@ export function pinchMove(ph: PointerHandler): void {
     }); // 17.4
   }
 
-  if (ph.cy.userPanningEnabled() === true) {
+  if (ph.cy.panningEnabled() === true && ph.cy.userPanningEnabled() === true) {
     ph.cy.panBy({ x: mid.x - pinch.mid.x, y: mid.y - pinch.mid.y });
   }
 
@@ -233,15 +243,7 @@ export function touchBoxMove(ph: PointerHandler): void {
   const cyPx = (a.y + b.y + c.y) / 3;
 
   if (ph.touchBox == null) {
-    const down = ph.down;
-
-    if (down != null) {
-      if (down.grabbed != null) {
-        ph.setFlagOn(down.grabbed, FLAG_GRABBED, false);
-      }
-
-      ph.down = null;
-    }
+    endPress(ph);
 
     ph.clearTaphold();
     hideActiveBg(ph);

@@ -335,8 +335,17 @@ canvas keeps a description resolved before its face on the fallback,
 which the atlas's font epoch now escapes).  WebKit here has no WebGPU,
 so it verifies the worker mechanics, not the host.  Item 51 is closed;
 the round logged **item 85**, the superlinear data-mapped string write
-the spike had priced as decode.  Item 63 is carried
-by round 126.  What follows is the sweep before it.
+the spike had priced as decode.  Round 126 (landed 2026-09-29, shader
+minification, carrying **item 63**) measured the WGSL-aware minifiers
+against the real shaders and kept round 52's shared-fragment
+representation — assembling complete modules for miniray or wgslender
+grew the full minified bundle by +50 to +61 KB — and shipped what pays
+instead: the constant tables inlined at build time (**item 63
+closed**), numeric shader constants spliced, float literals shortened
+and a `glsl` tag for round 137; the full minified ESM is 10,306 bytes
+smaller (3,606 gzipped), and `headless-gpu` stands at 641,040 bytes
+against its 600 KB target.  It raised no new item.  What follows is the
+sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
@@ -1832,6 +1841,15 @@ directions".*
     **Call taken (2026-09-28, the eleventh sitting): folded into round
     126** — inline only through a real (non-regex) transform, otherwise
     accept the 2.7 KB.
+    **Closed 2026-09-29 (round 126.5): inlined.**  The transform exists
+    — a rolldown plugin on rolldown's own oxc parser
+    (`scripts/const-inline.mjs`) — and rewrites `COL.X`, `PROP.X` and
+    `TWEEN_COL.X` to their literals at 1,520 sites in the full build;
+    the tables no longer ship, and the full minified ESM is 8,908 bytes
+    smaller raw and 3,428 gzipped, more than the recorded cost.  The
+    scalar constants stay mangled names (rolldown's `inlineConst:
+    'all'` measured +3.8 KB raw / −0.7 KB gzip).  The record:
+    `plan/rounds/2026-09-15-02-rnd0126-landed-shader-minification.md`.
 64. **Group names as constants?** (logged 2026-09-15, round 127;
     **taken by round 127.6, 2026-09-17: yes** — the maintainer's one-
     line answer, and the gate's fourth rule went in the same sitting.)
@@ -2101,8 +2119,10 @@ directions".*
     is that `cy.layout({ name })` for an unregistered name must reject
     naming the build, as the GPU registry's `'gpu'` does.  The same
     open list names the full bundle's levers — round 126's shader
-    minification and item 63's constants price — which stay with those
-    rounds.  **First measurement**: the minified bytes per layout in
+    minification and item 63's constants price — both taken by round
+    126 (2026-09-29), which left `headless-gpu` at 641,040 bytes against
+    its 600 KB target: the remaining levers are model-side, this item's
+    among them.  **First measurement**: the minified bytes per layout in
     the headless build, and which layouts the flagship apps' headless
     paths call.
 78. **Viewport animations emit `viewport` twice per tick** (logged by

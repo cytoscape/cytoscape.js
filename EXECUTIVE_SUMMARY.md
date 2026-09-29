@@ -5,8 +5,17 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 141 finished the worker
-  host: under `renderer: { worker: true }` background images now draw —
+- **Last updated**: 2026-09-29, after round 126 made the bundles
+  smaller without touching what they draw: the column and style
+  property names that were spelled once as constants now ship as plain
+  strings again, their tables gone from the download, and shader
+  numbers are shortened — the full minified build is 10 KB smaller,
+  3.5 KB gzipped, and the slim builds nearly as much, pixel for pixel
+  the same.  The obvious next step, running the shaders through a
+  WGSL minifier, was measured and does not pay here: it needs each
+  shader whole, and whole shaders repeat the code the bundle now
+  shares, so the bundle grew by 50–61 KB.  Earlier the same day round
+  141 finished the worker host: under `renderer: { worker: true }` background images now draw —
   decoded in the worker, so a style change that brings in 1,000 new
   images costs the page 5 ms instead of a 124–142 ms stall — and labels
   use the fonts the app lists in `renderer.fonts`, since a worker does
@@ -231,12 +240,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,155 unit · 1,103 module · 38 soak · 586 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,155 unit · 1,124 module · 38 soak · 586 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 50 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 137 of 212 are set by some golden, and the 75 no golden sets are counted and gated · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 29 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
 | Style parity | v4 accepts 159 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet); the rest dropped by decision |
-| Bundle | Three builds as of 28 Sep (after rounds 107, 106 and 103), minified / gzipped: `cytoscape` 898 / 255 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 539 / 167 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 616 / 185 KiB. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time; round 127's constants cost 0.7% minified, 1.4% gzipped |
+| Bundle | Three builds as of 29 Sep, minified / gzipped: `cytoscape` 937 / 268 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 549 / 170 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 626 / 189 KiB, against a 600 KB target. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time, and the spelled-once constants are inlined back to literals |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run all three builds headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS of each, and CI. Edge isolates run `cytoscape/headless` (a WinterTC-shaped isolate every run, Cloudflare's `workerd` in CI); Deno's native WebGPU runs `cytoscape/headless-gpu`'s kernels and force integrator (green locally on an RX 580; a best-effort CI step). Every other environment has a row in `src/README.md`'s support matrix — CI-gated, re-checked at release, or unsupported with the failing assertion named |
 | CI | Green as of 2026-08-06; `npm test` passes from a clean checkout; since 28 Aug the bundles are smoked under Bun and Deno per push, at latest stable plus a pinned floor |
 
@@ -1185,9 +1194,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Buys a rename that touches one line, a "who reads this column"
     search that needs no spelling, and a property table the docs and
     tools can read instead of regex-mining the engine.
-  - The price: 0.7% of the minified bundle and 1.4% gzipped, because
-    the minifier mangles a table's name but not its member names.
-    Recorded, not hidden; the maintainer's call (item 63).
+  - The price was 0.7% of the minified bundle and 1.4% gzipped, because
+    the minifier mangles a table's name but not its member names; since
+    29 Sep the build writes the literals back and the tables no longer
+    ship, so the source keeps the constants at no cost.
   - The finding: two source-scanning tools failed on the second full
     run — the feature inventory had regex-mined the read registries'
     literals and found an empty surface; two `file:line` allowlist
@@ -1673,6 +1683,20 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - Also found: a data write to a key a string style maps grows faster
     than linearly with the number of distinct values (33 ms a write at
     4,000 distinct image urls); logged.
+- **29 Sep** — smaller bundles, the same pixels
+  - The constant tables no longer ship: the build writes each
+    `COL.…`/`PROP.…` back as its string, and shader constants and
+    float literals are shortened.  The full minified build is 10 KB
+    smaller (3.5 KB gzipped); the two slim builds 9 KB (3.2 KB).
+  - A WGSL minifier that renames identifiers was measured on every
+    complete shader and not taken: it needs each shader whole, whole
+    shaders repeat the code the bundle shares once, and the bundle
+    grew 50–61 KB.  One candidate could not parse the shaders at all.
+  - Ready for the WebGL2 renderer: GLSL literals get the same build-time
+    minification under GLSL's rules; the GLSL minifier the plan had
+    named cannot parse what that renderer will need.
+  - `cytoscape/headless-gpu` is 641 KB against its 600 KB target; the
+    rest of the gap is library code, not shaders.
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929

@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–75, 79, 85–98, 100–104, 106–124, 127–136, 138–141 |
-| planned | 49–51, 71, 76–78, 80–84, 99, 105, 125–126, 137 |
+| landed | 7–48, 52–70, 72–75, 79, 85–98, 100–104, 106–124, 126–136, 138–141 |
+| planned | 49–51, 71, 76–78, 80–84, 99, 105, 125, 137 |
 
 ## The sections
 
@@ -191,7 +191,7 @@ A round can land with an item held open; the round file says which.
 | 162 | 123 | 2026-09-09 | landed | [Component packing on the discrete layouts, the pack layout, and breadthfirst's trees as blocks](rounds/2026-09-09-03-rnd0123-landed-component-packing-on-the-discrete-layouts-the-pack-layout-and-breadthfirst-s-trees-as-blocks.md) |
 | 163 | 124 | 2026-09-10 | landed | [Taxi tracks: automatic turn distances per bundle, the per-edge casing, and flow's corridors](rounds/2026-09-10-01-rnd0124-landed-taxi-tracks-automatic-turn-distances-per-bundle-the-per-edge-casing-and-flow-s-corridors.md) |
 | 164 | 125 | 2026-09-15 | plan | [The layout quality audit: one sub-round per layout, each signed off by the maintainer](rounds/2026-09-15-01-rnd0125-plan-the-layout-quality-audit-one-sub-round-per-layout-each-signed-off-by-the-maintainer.md) |
-| 165 | 126 | 2026-09-15 | plan | [Shader minification](rounds/2026-09-15-02-rnd0126-plan-shader-minification.md) |
+| 165 | 126 | 2026-09-15 | landed | [Shader minification](rounds/2026-09-15-02-rnd0126-landed-shader-minification.md) |
 | 166 | 127 | 2026-09-15 | landed | [String keys become constants](rounds/2026-09-15-03-rnd0127-landed-string-keys-become-constants.md) |
 | 167 | 128 | 2026-09-18 | landed | [Cancellation: `.cancel()` on the async algorithm runs, `layout.cancel()` beside `stop()`, and destroy as the last cancel](rounds/2026-09-18-01-rnd0128-landed-cancellation-cancel-on-the-async-runs-layout-cancel-beside-stop-destroy-as-the-last-cancel.md) |
 | 168 | 129 | 2026-09-18 | landed | [The UI thread kept free: one worker for the in-thread algorithms, `startForce` across the worker host, the CPU sim on a worker](rounds/2026-09-18-02-rnd0129-landed-the-ui-thread-kept-free-one-worker-for-the-in-thread-algorithms-startforce-across-the-worker-host-the-cpu-sim-on-a-worker.md) |

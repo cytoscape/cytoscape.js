@@ -64,6 +64,8 @@ const EXPECTED_EXPORTS = new Set([
   'ElementsInput',
   'ExportOptions',
   'ForceLayoutOptions',
+  'GpuErrorInfo', // round 138.3: the device-error report
+  'GpuMemoryStats', // round 138.3: the allocation counts
   'FlowLayoutOptions',
   'GridLayoutOptions',
   'LayoutBaseOptions',

@@ -280,8 +280,16 @@ tiers: 135 counts the style properties no golden sets (75 of 212,
 pinned) ahead of the SVG and WebGL parity work, and 136 inventories the
 gestures (30; 3 with no coverage at either tier) for the trace tier
 before the WebGL implementation; neither raised a new item.
-Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
-sweep before it.
+Round 73 (the WebGL2 fallback, scoped; landed 2026-09-29 on the
+sitting's calls — full parity at alpha, the scoping now, the spikes on
+the benchmark machine) wrote the feasibility record and planned the
+implementation as **round 137**: vertex pulling from data textures
+measured free, the compute cull replaced by a vertex-stage collapse
+(+0.03–0.33 ms of GPU, no CPU walk), the pick readback no slower than
+WebGPU's, and the reach gap fetched (WebGL2 96.4%, WebGPU 85.7% full,
+concentrated in Linux, Firefox off Windows and older Safari).  It
+**closed item 18** and raised no new item.  Item 63 is carried by round
+126.  What follows is the sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
@@ -443,6 +451,15 @@ resolved by measurement and its entry has left.
     **Deferred to round 73 (2026-09-28, the eleventh sitting)**: the
     fallback's capability selection decides whether software WebGPU
     adapters go to WebGL2, which has nothing to warm.
+    **Closed by round 73 (2026-09-29): not warmed.**  The data the item asked for: Chromium exposes no
+    software WebGPU adapter to users (SwiftShader needs
+    `--enable-unsafe-webgpu`, CPU adapters are blocklisted,
+    `isFallbackAdapter` is "always false on users' devices"), so the
+    population is harnesses and CI; and the capability selection
+    round 73 designed (`'auto'` takes WebGPU only on a non-fallback
+    adapter, else WebGL2) sends a fallback adapter to WebGL2, which
+    has no compute stage to warm.  The reach table and the rule are in
+    round 73's record; round 137.1 builds the rule.
 19. **v3's derived parent box is 1 px larger per side than v4's** (round
     55, 2026-08-06).  Measured on a parent with two 30x30 ellipse
     children and padding 10: v4's box is the children's union plus

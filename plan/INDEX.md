@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72, 74–75, 79, 85–98, 101–104, 106–124, 127–136 |
-| planned | 49–51, 71, 73, 76–78, 80–84, 99–100, 105, 125–126 |
+| landed | 7–48, 52–70, 72–75, 79, 85–98, 101–104, 106–124, 127–136 |
+| planned | 49–51, 71, 76–78, 80–84, 99–100, 105, 125–126, 137 |
 
 ## The sections
 
-176 sections.
+177 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -131,7 +131,7 @@ A round can land with an item held open; the round file says which.
 | 102 | 71 | 2026-08-14 | plan | [cyext: the extension toolchain](rounds/2026-08-14-01-rnd0071-plan-cyext-the-extension-toolchain.md) |
 | 103 | — | 2026-08-14 | note | [The tenth design sitting — the idea backlog swept into a shortlist](rounds/2026-08-14-02-rnd0000-note-the-tenth-design-sitting-the-idea-backlog-swept-into-a.md) |
 | 104 | 72 | 2026-08-14 | landed | [The algorithm perf follow-ups, gathered](rounds/2026-08-14-03-rnd0072-landed-the-algorithm-perf-follow-ups-gathered.md) |
-| 105 | 73 | 2026-08-14 | plan | [The WebGL2 fallback, scoped](rounds/2026-08-14-04-rnd0073-plan-the-webgl2-fallback-scoped.md) |
+| 105 | 73 | 2026-08-14 | landed | [The WebGL2 fallback, scoped](rounds/2026-08-14-04-rnd0073-landed-the-webgl2-fallback-scoped.md) |
 | 106 | 74 | 2026-08-14 | landed | [The worker-pool CPU executor](rounds/2026-08-14-05-rnd0074-landed-the-worker-pool-cpu-executor.md) |
 | 107 | 75 | 2026-08-14 | landed | [The DX polish bundle](rounds/2026-08-14-06-rnd0075-landed-the-dx-polish-bundle.md) |
 | 108 | 76 | 2026-08-14 | plan | [The small style wins bundle](rounds/2026-08-14-07-rnd0076-plan-the-small-style-wins-bundle.md) |
@@ -203,3 +203,4 @@ A round can land with an item held open; the round file says which.
 | 174 | 134 | 2026-09-29 | landed | [Ledger item 70: the k-clusterings' offload lane](rounds/2026-09-29-01-rnd0134-landed-item-70-the-k-clusterings-offload-lane.md) |
 | 175 | 135 | 2026-09-29 | landed | [Ledger item 30, tier 1: what no golden sees, enumerated](rounds/2026-09-29-02-rnd0135-landed-item-30-tier-1-the-golden-coverage-enumerator.md) |
 | 176 | 136 | 2026-09-29 | landed | [Ledger item 31, the inventory: every gesture, its events and the specs that hold it](rounds/2026-09-29-03-rnd0136-landed-item-31-the-gesture-inventory.md) |
+| 177 | 137 | 2026-09-29 | plan | [The WebGL2 renderer, full parity at alpha](rounds/2026-09-29-04-rnd0137-plan-the-webgl2-renderer-full-parity-at-alpha.md) |

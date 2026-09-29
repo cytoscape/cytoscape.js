@@ -5,7 +5,19 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after rounds 135 and 136 measured what
+- **Last updated**: 2026-09-29, after round 73 scoped rendering without
+  WebGPU: a WebGL2 renderer can draw everything the WebGPU one draws,
+  measured on the benchmark machine's RX 580 — reading the columns
+  from data textures costs nothing measurable, the GPU culling pass
+  is replaced by a vertex-stage test that costs 0.03–0.33 ms of GPU
+  from 100k to 800k elements, and the edge pick reads back no slower
+  than WebGPU's; the layouts' GPU force, the GPU tweens and the GPU
+  mapper evaluation take the CPU paths they already have.  The reach
+  gap, fetched the same day: WebGL2 96.4% of users, WebGPU 85.7% (plus
+  3% partial), the gap in Linux desktops, Firefox off Windows and
+  Apple Silicon, and Safari before 26.  The build is planned as its own
+  round, after the drawn features settle.  Earlier the same day
+  rounds 135 and 136 measured what
   the tests cannot see, ahead of the SVG-export and WebGL parity work:
   every visual golden now records the style properties its scene sets,
   and 75 of the 212 properties are set by no golden (56 of them
@@ -1699,8 +1711,9 @@ accessibility (an app responsibility) and a core PDF export (an SVG→PDF recipe
 public but experimental until 4.x.
 Cluster hulls become a compound shape style, so a hull is a parent
 node (collapse, labels, picking and drag-and-drop come with it), and
-the WebGL fallback is full parity at alpha, its scoping run now beside
-SVG export.
+the WebGL fallback is full parity at alpha — scoped on 29 Sep, where
+the tween pipelines were also decided not to be warmed at start-up (no
+user is served a software WebGPU adapter; one would get WebGL2).
 
 ## Not yet built
 
@@ -1726,7 +1739,7 @@ round, and is regenerated rather than maintained:
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement).  The official JSON schemas landed 28 Sep; their `$id` base waits on the documentation site |
 | Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case); a small style-wins bundle.  The DX polish bundle landed 28 Sep |
-| WebGL2 fallback | Scoped: what a browser without WebGPU gets |
+| WebGL2 renderer | Full parity with the WebGPU renderer, for browsers without WebGPU; scoped 29 Sep (backend, capability selection, the measured substitutes, the reach table), built after the drawn-feature rounds and held to a live WebGL-vs-WebGPU parity suite |
 | Ecosystem rounds | One plan serving the flagship apps, approved in direction: parallel-edge scale plus a real GeneMANIA fixture.  The other five landed: the id-keyed `patch()` reconcile, N viewers by cloning (`cy.clone()`, kept current through `patch()` — the minimap) and progressive loading (`cy.load()`, a first frame before the last byte) on 28 Sep, and transient hover emphasis (`cy.emphasize()`) and priority-driven label decluttering (`label-declutter`, `label-priority`) on 29 Sep.  Decided alongside: CX2 conversion stays extension territory, not core |
 
 - Logged as directions, unscheduled: splitting the largest implementation

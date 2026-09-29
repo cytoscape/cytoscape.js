@@ -2507,6 +2507,24 @@ before it was built.
 Decisions made for the v4 direction and reflected in this prototype;
 each is deliberate, not a pass-1 deferral:
 
+- **WebGPU is not required at 4.0: a WebGL2 renderer draws everything
+  it draws (round 73, scoped; round 137, planned).**  Full parity at
+  alpha, the eleventh sitting's call; today the package still requires
+  WebGPU to mount a renderer, and this entry changes when round 137
+  lands.  The feasibility record is round 73's file
+  (`plan/rounds/2026-08-14-04-rnd0073-landed-the-webgl2-fallback-scoped.md`):
+  per pipeline, what WebGL2 binds instead (data textures read with
+  `texelFetch`, measured free against instanced attributes); the
+  compute cull replaced by a vertex-stage collapse (+0.03–0.33 ms of GPU
+  from 100k to 800k elements, no CPU walk); the edge pick through an
+  `R32UI` tile, a PBO ring and a fence (no slower than WebGPU's); the
+  GPU-only subsystems — mapper eval, tweens, force, the algorithm tier —
+  on the CPU paths they already have; and the dated reach table the
+  choice rests on.  Capability selection: `renderer.backend: 'auto'`
+  takes WebGPU only on a non-fallback adapter that yields a device,
+  else WebGL2 — which is also why the tween pipelines are **not warmed
+  at init** (PLAN.md item 18, closed): no user is served a software
+  WebGPU adapter.
 - **Copying is priced, not assumed away (round 110).**  A copy is
   removed only when its measured cost clears an absolute gate (1 ms per
   frame sustained, or 5% of init) — never for a ratio.  The census

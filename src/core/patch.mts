@@ -25,7 +25,7 @@ import {
 import type { PatchMode, PatchPayload, PatchPlan } from '../store/patch.mjs';
 import type { FlagOverride } from '../columnar.mjs';
 import type { Core } from '../core.mjs';
-import { _applyStyle } from './batching.mjs';
+import { _applyStyle, endBatch } from './batching.mjs';
 import { _applyFlagOverrides, _newId } from './elements.mjs';
 import { _assertGpuFit } from './gpu-fit.mjs';
 
@@ -309,7 +309,8 @@ export function patch(
 
   const store = core._store;
   const survivorParents = plan.parents.filter((p) => plan.nodeSlots[p.at] >= 0);
-  let diff: PatchDiff;
+  let diff: PatchDiff | null = null;
+  let done = false;
 
   core.startBatch();
 
@@ -413,13 +414,21 @@ export function patch(
         core._emitOnEle('position', core._ele(GROUP_NODES, slot));
       }
     }
+
+    done = true;
   } finally {
-    core.endBatch();
+    // the summary fires after the flush (fresh style) and, when this
+    // batch is the outermost, before its `batchend` — the transaction's
+    // last event (round 139); a patch that threw has no summary
+    endBatch(
+      core,
+      done
+        ? () => core.emit({ type: 'patch', diff: diff as PatchDiff })
+        : undefined,
+    );
   }
 
-  core.emit({ type: 'patch', diff });
-
-  return diff;
+  return diff as PatchDiff;
 }
 
 /** The added elements as one collection, nodes before edges. */

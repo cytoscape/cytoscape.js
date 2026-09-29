@@ -940,6 +940,51 @@ the batch's synchronous block anyway.
 v3's `notify`/`noNotifications`
 have no v4 counterpart for the same reason.
 
+**Transaction events** (round 139, PLAN.md item 41's alpha part; v3
+has none).  The outermost `startBatch()`/`endBatch()` pair is a
+transaction, and the core fires **`batchstart`** and **`batchend`**
+around it — the hooks an app's undo stack records against.  The
+contract, each clause pinned in `test/batch.mjs` with its control:
+
+- **Nesting: the outermost pair only.**  Only the outermost close
+  flushes, so only it is an observable boundary; an inner pair is part
+  of the enclosing transaction, as it is part of the enclosing flush.
+  A depth counter on the event would hand every recorder the job of
+  ignoring the inner ones.
+- **`batchstart` fires after the depth is taken and before any
+  mutation** — `batching()` is true, nothing of the batch has landed,
+  so a listener reads the state the transaction starts from (the
+  snapshot point), and whatever it mutates belongs to the transaction.
+- **The element events fire between the pair, unchanged** (they
+  already fired during a batch).  They are the transaction's content.
+- **`batchend` is the transaction's last event**: after the flush and
+  the compaction check (style reads are fresh, `batching()` is false),
+  and after a `patch` summary the batch produced.  A `cy.patch()` is
+  one transaction — `batchstart`, its element events, `patch`,
+  `batchend` — and inside an app's batch it joins that one.
+- **`batchend` carries no diff.**  A diff on it would oblige every
+  mutating path — data, bypasses, classes, hierarchy moves, add,
+  remove — to report into the batch: the completeness obligation of
+  the inverse-operation log, which is the fork the snapshot measurement
+  below decides.  `patch` keeps its own `event.diff`.
+- **No rollback**: a `batch( fn )` whose `fn` throws still closes, and
+  still fires `batchend`, with what landed before the throw.  An
+  unbalanced `endBatch()` fires nothing.
+- **Not transactions**: a `cy.load()` spans macrotasks and has its own
+  lifecycle (`loadstart` … `loadstop`); layouts, animations and
+  gestures write outside any batch unless the app wraps them.  A
+  follower's sync (round 106) is a batch on the follower, so a follower
+  sees one transaction per sync.
+- **The sheet is inside the transaction but outside any snapshot**:
+  `cy.style( sheet )` in a batch applies at the flush, before
+  `batchend`; the wire format carries no style, so an app undoing sheet
+  changes keeps its own sheet history.
+
+The snapshot undo those events allow is four lines —
+`cy.on( 'batchstart', () => stack.push( cy.serialize() ) )`, and
+`cy.patch( stack.pop() )` to undo — and what it costs at 100k elements
+is measured under "Undo: the snapshot price" below.
+
 Style getters read the **stored channels** — the resolved values the
 renderer draws from — not the sheet's declarations: `style(name)`
 returns numbers for numeric props, `rgb()`/`rgba()` strings for colors
@@ -5710,7 +5755,8 @@ The rules, fixed at planning and decided at the eleventh sitting:
   a listener never sees a half-applied payload — then one core-level
   `patch` event carrying the diff as `event.diff` (sitting 11: the
   summary beside the per-element events).  An identity patch fires only
-  the summary.
+  the summary.  Round 139 brackets the whole as one transaction:
+  `batchstart` first, `batchend` after `patch`.
 - **Validation before mutation**: a repeated id, an edge naming no node,
   a column that does not fit its count, a corrupt packed id section, an
   unknown option or mode — all throw from the planner, with the graph

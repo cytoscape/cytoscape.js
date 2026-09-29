@@ -126,10 +126,18 @@ export function _remapPool(
  * Pairs nest — only the outermost `endBatch()` flushes.  Prefer
  * `batch( fn )`, which cannot leak a depth on an exception.
  *
+ * The outermost open fires `batchstart` on the core (round 139), after
+ * the depth is taken — so a listener sees `batching()` true, and its own
+ * mutations belong to the transaction — and before any mutation of the
+ * batch has landed, which is where an undo recorder takes its snapshot.
+ * A nested open fires nothing.
+ *
  * @returns this core, for chaining
  */
 export function startBatch(core: Core): Core {
-  if (core._batchDepth === 0) {
+  const outermost = core._batchDepth === 0;
+
+  if (outermost) {
     core._batchPending = {
       sheet: false,
       style: [],
@@ -139,6 +147,10 @@ export function startBatch(core: Core): Core {
   }
 
   core._batchDepth++;
+
+  if (outermost && core._hasListeners('batchstart')) {
+    core.emit('batchstart');
+  }
 
   return core;
 }
@@ -154,11 +166,18 @@ export function startBatch(core: Core): Core {
  * unless the diff fell back to the whole-sheet pass, which subsumes
  * them.
  *
+ * The outermost close then fires `batchend` on the core (round 139),
+ * the transaction's last event: after the flush and the compaction
+ * check, so a listener reads fresh style and `batching()` false.
+ *
  * Unbalanced calls are a no-op rather than an error, matching v3.
  *
+ * @param summary — internal: a summary event the batch's owner emits
+ *   after the flush and before `batchend` (`patch`, round 107); inside
+ *   an enclosing batch it runs at once, as the owner's code did before
  * @returns this core, for chaining
  */
-export function endBatch(core: Core): Core {
+export function endBatch(core: Core, summary?: () => void): Core {
   if (core._batchDepth === 0) {
     return core;
   }
@@ -166,9 +185,24 @@ export function endBatch(core: Core): Core {
   core._batchDepth--;
 
   if (core._batchDepth > 0) {
+    summary?.();
+
     return core;
   }
 
+  _flushBatch(core);
+  core._maybeCompact(); // removals inside the batch deferred to here
+  summary?.();
+
+  if (core._hasListeners('batchend')) {
+    core.emit('batchend');
+  }
+
+  return core;
+}
+
+/** The outermost close's deferred style work (see `endBatch`). */
+function _flushBatch(core: Core): void {
   const pending = core._batchPending as BatchPending;
 
   core._batchPending = null;
@@ -181,9 +215,7 @@ export function endBatch(core: Core): Core {
     // batch's unstyled additions in full itself, but the data writes
     // deferred here still owe their mapped channels a refresh
     if (core._styleEngine.applySheet(pending.style)) {
-      core._maybeCompact();
-
-      return core;
+      return;
     }
   } else {
     const nodeSlots: number[] = [];
@@ -216,10 +248,6 @@ export function endBatch(core: Core): Core {
 
   core._styleEngine.refreshMapped(GROUP_NODES, mappedNodes, keys);
   core._styleEngine.refreshMapped(GROUP_EDGES, mappedEdges, keys);
-
-  core._maybeCompact(); // removals inside the batch deferred to here
-
-  return core;
 }
 
 /** Refresh style channels computed from data() (mapped channels + labels), deferred while batching. */

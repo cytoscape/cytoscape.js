@@ -146,3 +146,203 @@ describe('gpu/batch', function () {
     expect(cy.$id('b').data('weight')).to.equal(20);
   });
 });
+
+/*
+Round 139 (PLAN.md item 41, the alpha part): the transaction events.
+`batchstart` fires at the outermost open, `batchend` at the outermost
+close after the flush — the transaction's last event, after a patch's
+summary.  Each spec asserts an order or a count the emission decides, so
+removing the emission (or swapping `patch` and `batchend`) fails it.
+*/
+describe('batch/transaction events (round 139)', function () {
+  let cy;
+  let log;
+
+  const record = (types) => {
+    for (const type of types) {
+      cy.on(type, (evt) => {
+        const id = evt.target === cy ? '' : ':' + evt.target.id();
+
+        log.push(type + id);
+      });
+    }
+  };
+
+  beforeEach(function () {
+    cy = cytoscape({
+      elements: [
+        { data: { id: 'a', weight: 1 }, position: { x: 0, y: 0 } },
+        { data: { id: 'b', weight: 2 }, position: { x: 10, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+    });
+    log = [];
+  });
+
+  it('fires once per outermost pair, never for a nested one', function () {
+    record(['batchstart', 'batchend']);
+
+    cy.startBatch();
+    cy.startBatch();
+    cy.batch(() => {});
+    cy.endBatch();
+    expect(log).to.deep.equal(['batchstart']);
+    cy.endBatch();
+
+    expect(log).to.deep.equal(['batchstart', 'batchend']);
+
+    cy.batch(() => {});
+    expect(log).to.deep.equal([
+      'batchstart',
+      'batchend',
+      'batchstart',
+      'batchend',
+    ]);
+  });
+
+  it('an unbalanced endBatch fires nothing', function () {
+    record(['batchstart', 'batchend']);
+    cy.endBatch();
+
+    expect(log).to.deep.equal([]);
+  });
+
+  it('brackets the element events: batchstart before the first mutation, batchend after the flush', function () {
+    record(['batchstart', 'batchend', 'add', 'data', 'remove']);
+
+    let atStart = null;
+    let atEnd = null;
+
+    cy.on('batchstart', () => {
+      // the pre-state: nothing of the batch has landed yet
+      atStart = { batching: cy.batching(), count: cy.elements().length };
+    });
+    cy.on('batchend', () => {
+      // after the flush: the added node carries its style
+      atEnd = { batching: cy.batching(), width: cy.$id('c').width() };
+    });
+
+    cy.batch(() => {
+      cy.add({ data: { id: 'c' } });
+      cy.$id('a').data('weight', 5);
+      cy.$id('ab').remove();
+    });
+
+    expect(log).to.deep.equal([
+      'batchstart',
+      'add:c',
+      'data:a',
+      'remove:ab',
+      'batchend',
+    ]);
+    expect(atStart).to.deep.equal({ batching: true, count: 3 });
+    expect(atEnd).to.deep.equal({ batching: false, width: 30 });
+  });
+
+  it('a sheet set inside the batch is applied before batchend', function () {
+    let width = null;
+
+    cy.on('batchend', () => {
+      width = cy.$id('a').width();
+    });
+
+    cy.batch(() => {
+      cy.style({ nodes: { width: 77 } });
+      expect(cy.$id('a').width()).to.equal(30); // deferred to the flush
+    });
+
+    expect(width).to.equal(77);
+  });
+
+  it('batch( fn ) that throws still fires batchend, with what landed', function () {
+    record(['batchstart', 'batchend', 'add']);
+
+    expect(() =>
+      cy.batch(() => {
+        cy.add({ data: { id: 'c' } });
+        throw new Error('app error');
+      }),
+    ).to.throw('app error');
+
+    expect(log).to.deep.equal(['batchstart', 'add:c', 'batchend']);
+    expect(cy.batching()).to.be.false;
+    expect(cy.hasElementWithId('c')).to.be.true; // no rollback
+  });
+
+  it('a patch is one transaction: batchstart, element events, patch, then batchend', function () {
+    record(['batchstart', 'batchend', 'patch', 'add', 'remove', 'data']);
+
+    cy.patch({
+      nodes: [{ data: { id: 'a', weight: 9 } }, { data: { id: 'c' } }],
+      edges: [],
+    });
+
+    expect(log).to.deep.equal([
+      'batchstart',
+      'remove:ab',
+      'remove:b',
+      'add:c',
+      'data:a',
+      'patch',
+      'batchend',
+    ]);
+  });
+
+  it('a patch inside an app batch joins it: its summary fires inside, one pair around both', function () {
+    record(['batchstart', 'batchend', 'patch', 'add']);
+
+    let patchBatching = null;
+
+    cy.on('patch', () => {
+      patchBatching = cy.batching();
+    });
+
+    cy.batch(() => {
+      cy.add({ data: { id: 'x' } });
+      cy.patch({ nodes: [{ data: { id: 'y' } }] }, { mode: 'merge' });
+    });
+
+    expect(log).to.deep.equal([
+      'batchstart',
+      'add:x',
+      'add:y',
+      'patch',
+      'batchend',
+    ]);
+    expect(patchBatching).to.be.true;
+  });
+
+  it('a patch refused by its planner opens no transaction', function () {
+    record(['batchstart', 'batchend', 'patch']);
+
+    expect(() =>
+      cy.patch({ edges: [{ data: { id: 'e', source: 'a', target: 'nope' } }] }),
+    ).to.throw();
+
+    expect(log).to.deep.equal([]);
+  });
+
+  it('is enough for a snapshot undo: serialize at batchstart, patch back', function () {
+    const undo = [];
+
+    cy.on('batchstart', () => undo.push(cy.serialize()));
+
+    cy.batch(() => {
+      cy.$id('a').data('weight', 50).position({ x: 99, y: 99 });
+      cy.$id('b').remove();
+      cy.add({ data: { id: 'c', weight: 3 } });
+    });
+
+    expect(undo).to.have.length(1);
+    expect(cy.hasElementWithId('b')).to.be.false;
+
+    cy.patch(undo.pop()); // itself a transaction: it pushes a redo point
+
+    expect(cy.nodes().map((n) => n.id())).to.have.members(['a', 'b']);
+    expect(cy.$id('ab').source().id()).to.equal('a');
+    expect(cy.$id('a').data('weight')).to.equal(1);
+    expect(cy.$id('a').position()).to.deep.equal({ x: 0, y: 0 });
+    expect(cy.hasElementWithId('c')).to.be.false;
+    expect(undo).to.have.length(1);
+  });
+});

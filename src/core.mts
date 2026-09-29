@@ -496,6 +496,11 @@ export class Core {
   stale inside it.  Renderer scheduling needs no deferral: the dirty
   tracker already coalesces per microtask, after the batch's synchronous
   block.
+
+  Transaction events (round 139, PLAN.md item 41): the outermost pair is
+  a transaction, bracketed by `batchstart` and `batchend` on the core —
+  the hooks an app's undo stack records against.  batching.mts carries
+  the ordering contract.
   */
 
   /**
@@ -569,6 +574,13 @@ export class Core {
    * Pairs nest — only the outermost `endBatch()` flushes.  Prefer
    * `batch( fn )`, which cannot leak a depth on an exception.
    *
+   * The outermost open is a **transaction** and fires **`batchstart`** on
+   * the core (round 139) — before any of the batch's mutations, with
+   * `batching()` already true, so a listener sees the state the
+   * transaction starts from (the place to take an undo snapshot) and
+   * anything it mutates belongs to the transaction.  A nested open fires
+   * nothing.
+   *
    * @returns this core, for chaining
    */
   startBatch(): this {
@@ -586,6 +598,13 @@ export class Core {
    * unless the diff fell back to the whole-sheet pass, which subsumes
    * them.
    *
+   * The outermost close then fires **`batchend`** (round 139), the
+   * transaction's last event: after every element event of the batch,
+   * after the flush (style reads are fresh, `batching()` is false) and
+   * after a `patch` summary the batch produced.  It carries no diff —
+   * the element events between the pair are the transaction's content.
+   * A nested close, or an unbalanced one, fires nothing.
+   *
    * Unbalanced calls are a no-op rather than an error, matching v3.
    *
    * @returns this core, for chaining
@@ -596,7 +615,10 @@ export class Core {
 
   /**
    * Run `fn` inside a `startBatch()`/`endBatch()` pair.  The batch closes
-   * even if `fn` throws, so this is the form to prefer.
+   * even if `fn` throws, so this is the form to prefer.  As the outermost
+   * pair it is one transaction, `batchstart` … `batchend` (round 139);
+   * v4 has no rollback, so a throwing `fn` still ends in `batchend`, with
+   * the mutations that landed before the throw.
    *
    * @param fn — the mutations to batch; its return value is discarded
    * @returns this core, for chaining
@@ -763,7 +785,10 @@ export class Core {
    * event carries the diff as `event.diff` — for an app that only wants
    * the summary.  A patch whose payload equals the state fires no
    * element event, writes nothing and returns an empty diff (its
-   * `patch` event still fires).
+   * `patch` event still fires).  The patch is one transaction:
+   * `batchstart`, the element events, `patch`, then `batchend` (round
+   * 139); inside an app's batch it joins that one, and `patch` fires
+   * before the app's `batchend`.
    *
    * **Cost**: at 100k elements and 90% id overlap a patch is 1.7–2.4×
    * cheaper than destroy + recreate, and a payload equal to the state

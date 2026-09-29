@@ -1,5 +1,7 @@
-// Ledger items 35 and 36 (measured 2026-09-18): the scale ceiling and
-// the VRAM price, on a real adapter through the built UMD bundle.
+// Ledger items 34, 35 and 36 (measured 2026-09-18; re-run by round 138,
+// 2026-09-29, after the limits were requested): the scale ceiling, the
+// VRAM price and the renderer soak, on a real adapter through the built
+// UMD bundle.
 //
 //   npm run build
 //   node benchmark/scale-ceiling.mjs                      # the bisect: 1M, 2M, 5M edges
@@ -7,7 +9,18 @@
 //   node benchmark/scale-ceiling.mjs --price               # bytes per node / edge / label
 //   node benchmark/scale-ceiling.mjs --inject              # item 36: an allocation failure mid-session
 //   node benchmark/scale-ceiling.mjs --oom                 # item 36: real VRAM exhaustion, then a load
+//   node benchmark/scale-ceiling.mjs --soak                # item 34: 10,000 churn cycles, the ledger sampled
+//   node benchmark/scale-ceiling.mjs --soak --cycles 2000 --block 100 --leak 4096
 //   node benchmark/scale-ceiling.mjs --allow-software
+//
+// Since round 138 every device requests its adapter's own limits and
+// `cy.add()` refuses growth past them (a `GpuUnfitError`), so a scene too
+// large for the device reads "refused" — `cy.ready` rejects at mount —
+// rather than rendering blank; the renderer's `gpuerror` events and its
+// own allocation ledger (`cy.stats().gpu`) are recorded beside the
+// probe's instruments.  `--soak` runs `playwright-tests/lib/renderer-soak.mjs`
+// (the driver `soak.spec.js` runs at CI size) and prints the ledger's
+// samples and the verdict.
 //
 // Every scene runs in a *fresh browser process* with its own timeout, so
 // a scene that hangs or takes the GPU process down is a row of the table
@@ -42,6 +55,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
+import { soakInPage, trend } from '../playwright-tests/lib/renderer-soak.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(DIR, '..');
@@ -59,7 +73,9 @@ const mode = flag('--price')
     ? 'inject'
     : flag('--oom')
       ? 'oom'
-      : 'bisect';
+      : flag('--soak')
+        ? 'soak'
+        : 'bisect';
 const SCENE_TIMEOUT_MS = Number(opt('--timeout', 300000));
 const labels = flag('--labels');
 
@@ -114,6 +130,8 @@ const launch = () =>
     args: [
       '--enable-unsafe-webgpu',
       '--enable-precise-memory-info',
+      // --soak collects before each heap reading (renderer-soak.mjs)
+      '--js-flags=--expose-gc',
       ...(process.platform === 'linux'
         ? ['--use-gl=angle', '--use-angle=vulkan', '--enable-features=Vulkan']
         : []),
@@ -219,6 +237,9 @@ const scene = async ({ n, m, mode, labels, sceneIndex, oomCap }) => {
     out.limits = {
       maxBufferSize: dev.limits.maxBufferSize,
       maxStorageBufferBindingSize: dev.limits.maxStorageBufferBindingSize,
+      maxComputeWorkgroupsPerDimension:
+        dev.limits.maxComputeWorkgroupsPerDimension,
+      requested: desc?.requiredLimits ?? null,
     };
     dev.addEventListener('uncapturederror', (e) => {
       const err = e.error;
@@ -320,7 +341,9 @@ const scene = async ({ n, m, mode, labels, sceneIndex, oomCap }) => {
     } catch (err) {
       out.phases[name + 'Ms'] = +(now() - t0).toFixed(0);
       out.failedAt = name;
-      out.errors.push(`${name} threw: ${err.message.slice(0, 300)}`);
+      out.errors.push(
+        `${name} threw ${err.name}: ${err.message.slice(0, 300)}`,
+      );
       throw err;
     }
   };
@@ -332,6 +355,14 @@ const scene = async ({ n, m, mode, labels, sceneIndex, oomCap }) => {
       cy = cytoscape({ container, elements, style });
       cy.on('error', (e, msg) => {
         out.errors.push(`cy error event: ${String(msg).slice(0, 300)}`);
+      });
+      // round 138: refusals, uncaptured errors and degradations
+      cy.on('gpuerror', (e, info) => {
+        out.events.push(
+          `cy gpuerror[${info.kind}] ${info.label ?? ''} ${info.bytes ?? ''}` +
+            `${info.degraded ? ` degraded=${info.degraded}` : ''}: ` +
+            String(info.message).slice(0, 200),
+        );
       });
       cy.on('devicelost', () => out.events.push('cy devicelost'));
       cy.on('devicerestored', () => out.events.push('cy devicerestored'));
@@ -516,6 +547,11 @@ const scene = async ({ n, m, mode, labels, sceneIndex, oomCap }) => {
         cpuFrameMs: +st.cpuFrameMs.toFixed(2),
         gpuFrameMs: +st.gpuFrameMs.toFixed(2),
         uploadedMB: +(st.uploadedBytes / 1e6).toFixed(1),
+        // round 138: the renderer's own ledger
+        ledgerLiveMB: +(st.gpu.liveBytes / 1e6).toFixed(1),
+        ledgerPeakMB: +(st.gpu.peakBytes / 1e6).toFixed(1),
+        ledgerErrors: st.gpu.errors,
+        degraded: [...(cy.renderer()?.degraded ?? [])],
       }
     : null;
   out.heapAfterMB = heap();
@@ -553,6 +589,69 @@ const adapterOf = async (page) =>
 
 const results = [];
 let adapterName = null;
+
+if (mode === 'soak') {
+  // item 34: one long run at a fixed size, the ledger sampled per block
+  const browser = await launch();
+  const page = await (
+    await browser.newContext({ viewport: { width: 1280, height: 800 } })
+  ).newPage();
+
+  await page.goto(PAGE);
+  adapterName = await adapterOf(page);
+
+  if (!allowSoftware && /swiftshader|software|llvmpipe/i.test(adapterName)) {
+    console.error(
+      `adapter "${adapterName}" is a software rasterizer; pass --allow-software to measure it anyway`,
+    );
+    process.exit(1);
+  }
+
+  const opts = {
+    cycles: Number(opt('--cycles', 10000)),
+    block: Number(opt('--block', 500)),
+    nodes: Number(opt('--nodes', 400)),
+    edges: Number(opt('--edges', 800)),
+    churn: Number(opt('--churn', 20)),
+    leakBytes: Number(opt('--leak', 0)),
+  };
+  const { ms, samples } = await page.evaluate(soakInPage, opts);
+
+  console.log(JSON.stringify(opts));
+  console.log(
+    'cycle   liveBytes  allocations buffers textures errors nodes edges heapMB',
+  );
+
+  for (const x of samples) {
+    console.log(
+      [
+        String(x.cycle).padStart(5),
+        String(x.liveBytes).padStart(11),
+        String(x.allocations).padStart(11),
+        String(x.buffers).padStart(7),
+        String(x.textures).padStart(8),
+        String(x.errors).padStart(6),
+        String(x.nodes).padStart(5),
+        String(x.edges).padStart(5),
+        String(x.heapMB).padStart(6),
+      ].join(' '),
+    );
+  }
+
+  for (const figure of ['liveBytes', 'allocations', 'buffers', 'textures']) {
+    console.log(
+      `${figure}: ${JSON.stringify(trend(samples.map((x) => x[figure])))}`,
+    );
+  }
+
+  console.log(
+    `\n${opts.cycles} cycles in ${(ms / 1000).toFixed(1)} s ` +
+      `(${(ms / opts.cycles).toFixed(2)} ms a cycle); adapter: ${adapterName}`,
+  );
+  await browser.close();
+  server.close();
+  process.exit(0);
+}
 
 for (let i = 0; i < sizes.length; i++) {
   const { n, m } = sizes[i];
@@ -618,11 +717,15 @@ for (let i = 0; i < sizes.length; i++) {
     /Invalid CommandBuffer from CommandEncoder "cy-gpu:frame"/.test(e),
   );
 
-  row.outcome ??= row.failedAt
-    ? `failed at ${row.failedAt}`
-    : frameRejected
-      ? 'blank — the frame was rejected by the device'
-      : 'rendered';
+  const refused = (row.errors ?? []).some((e) => /GpuUnfitError/.test(e));
+
+  row.outcome ??= refused
+    ? `refused at ${row.failedAt} — GpuUnfitError`
+    : row.failedAt
+      ? `failed at ${row.failedAt}`
+      : frameRejected
+        ? 'blank — the frame was rejected by the device'
+        : 'rendered';
   results.push(row);
   console.log(
     `\n== ${n} nodes × ${m} edges (${mode}${labels ? ', labels' : ''}) — ${row.outcome} in ${row.wallS} s ==`,

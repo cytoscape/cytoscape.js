@@ -649,6 +649,16 @@ a wheel does and an inert wheel scrolls the page again, and
 `cy.viewportCounts()` reads the cull's visible counts back.  See "The DX
 polish bundle (round 75)" below.
 
+Round 138 (2026-09-29, PLAN.md items 34–36, on the eleventh sitting's
+calls) requested every device's own limits and made growth past them
+throw from `cy.add()` — a `GpuUnfitError`, the store unchanged — which
+moved the element ceiling from 4,194,304 to 16,776,960 per group on the
+RX 580; gave the renderer an allocation ledger (`cy.stats().gpu`) and a
+`gpuerror` event; degrades labels, then charts and images, then
+gradients instead of blanking the canvas; and soaks the GPU side over
+the ledger, which found the label shaping memo unbounded.  See "Device
+limits, the degradation order and the renderer soak" below.
+
 ## API scope (pass 1)
 
 v3's method **aliases** are kept throughout (`each`/`forEach`,
@@ -6636,6 +6646,49 @@ degrade in item 36's order.
   `Map` only a font change cleared, so churned labels grew the reachable
   heap ~15 KB a cycle, linearly; it is two generations of 4,096 now
   (`src/render/shape-memo.mts`).
+
+**The ceiling, measured** (2026-09-29, `benchmark/scale-ceiling.mjs`,
+the RX 580 through Chromium's hardware adapter, the built UMD, a columnar
+payload with n = m/4, each scene in a fresh browser; VRAM is the
+renderer's ledger, which agreed with the probe's own `createBuffer`
+instrument to the tenth of a megabyte on every row):
+
+| scene | init | ready | VRAM | JS heap | GPU frame | outcome |
+| --- | --: | --: | --: | --: | --: | --- |
+| 1,048,576 × 4,194,305 | 4.0 s | 1.02 s | 1,357 MB | 2.47 GB | 23.8 ms | rendered (blank before) |
+| 1.25M × 5M | 5.0 s | 1.18 s | 1,466 MB | 2.90 GB | 29.3 ms | rendered (blank before) |
+| 2M × 8M | 7.9 s | 1.11 s | 1,466 MB | 3.24 GB | 48.4 ms | rendered |
+| 2.5M × 10M | 10.5 s | 2.31 s | 2,926 MB | 5.46 GB | 61.4 ms | rendered |
+| 4,194,240 × 16,776,960 | 17.9 s | 2.12 s | 2,926 MB | 6.02 GB | 106.2 ms | rendered |
+| 4,194,240 × 16,776,961 | 17.9 s | — | — | 6.02 GB | — | `cy.ready` rejects: GpuUnfitError |
+| 1M × 3M, labelled | 4.4 s | 0.57 s | 1,306 MB | 1.81 GB | 33.0 ms | rendered (blank before) |
+| 2M × 2M, labelled | 6.3 s | 0.48 s | 1,776 MB | 1.97 GB | 41.8 ms | rendered |
+| 2.5M × 2.5M, labelled | 8.3 s | 0.99 s | 1,247 MB | 2.94 GB | 30.2 ms | rendered, labels degraded |
+
+So **the ceiling is 16,776,960 elements per group** — 4× round 35's
+4,194,304 — bisected exactly, and it is no longer a buffer: it is one
+dispatch's reach, 65,535 workgroups × 256, which binds before the 4 GiB
+binding would (2²⁴ slots × 16 bytes is 256 MiB).  With labels it is
+16,776,960 glyphs per stream, ~2M labelled nodes at this label length (8×
+round 35's 2,097,152); past it the labels degrade and the rest draws
+(the 2.5M row: a 33.5M-glyph stream refused, the gigabyte the stream held
+released, 1,073.7 MB of its 2,321 MB peak).  The JS heap is not the
+limiter item 35 projected: 6.02 GB at 21M elements, past the ~4 GB it
+read as V8's cap.  The per-slot price falls with the lazy gradient
+columns — node 196 -> 164 bytes, edge 164 -> 132 — and the measured
+totals with it: 14 / 121 / 899 MB -> 12.6 / 100.8 / 735.4 MB unlabelled,
+23 / 193 / 1,470 -> 21.5 / 172.1 / 1,306.1 MB labelled, at 10k × 30k /
+100k × 300k / 1M × 3M.  The next limiter is the dispatch: a
+two-dimensional dispatch over the per-slot kernels (cull, mapper, tween)
+would move it to the card's memory — logged, not built.
+
+**The soak, measured** (`--soak`, the same machine): 10,000 cycles at
+400 nodes / 800 edges, 20 nodes churned a cycle, 16.8 ms a cycle.  The
+ledger settles by cycle 500 — the glyph streams' one doubling, +418 KB in
+11 allocations — and reads 6,047,797 bytes, 142 allocations, 125 buffers
+and 5 textures at every sample from 500 to 10,000.  The heap, collected
+before each reading, ranges 13.8–18.2 MB over the same span; before the
+memo was bounded it rose 12.4 -> 52.2 MB over 3,000 cycles.
 
 What round 137's WebGL2 renderer inherits from this contract, recorded in
 its plan: report a `DeviceFit` from the WebGL2 context's limits (the

@@ -5824,6 +5824,69 @@ Ten mutations of the implementation were run against the file; two
 first stayed green (a source-only rewire and a compound parent written
 after its children), and each gained the spec that now fails.
 
+## Undo: the snapshot price (round 139, item 41)
+
+v4 ships **no undo stack**; it ships the transaction events above
+(`batchstart`/`batchend`) and this measurement, and whether core ever
+ships a stack is the maintainer's call on these numbers (PLAN.md item
+41 and the ledger line that follows it).  The design fork item 41
+names: **snapshots** (simple, priced in memory and a per-transaction
+copy) against an **inverse-operation log** (cheap per op, but every
+mutating path must emit its inverse — a completeness obligation the
+audits would have to learn).
+
+**Measured** (`benchmark/undo-cost.mjs`, built headless bundle,
+i9-9900K, Node 24.18, 100k elements — 25k nodes, 75k edges, round 107's
+fixture under a mapped sheet with labels — median of 5, three runs;
+the range is across the runs):
+
+| | ms | bytes |
+|---|---:|---:|
+| snapshot: `cy.serialize()` | 26.9–27.4 | 3.07 MB |
+| (v3-shaped: `JSON.stringify( eles.jsons() )`) | 107.7–110.3 | 21.2 MB |
+| restore `cy.patch( snapshot )`: nothing changed | 19.9–20.3 | |
+| … after one data value | 17.9–18.2 | |
+| … after 1% of nodes moved | 17.6–19.2 | |
+| … after 10% of nodes' data | 23.1–24.2 | |
+| … after 1% of nodes removed (cascades re-added) | 27.8–30.9 | |
+| restore by recreating the instance | 200.7–208.1 | |
+| core floor: every store column + data column, `slice` | 6.2–6.5 | 17.2 MB |
+| … written back, `set` | 1.8–2.0 | |
+| … the model subset (positions, flags, endpoints, gen, data) | 0.7–1.1 | 2.57 MB |
+
+Inverse log, per op, over the public API (2,000 ops in one batch):
+recording `data()`'s old value costs nothing measurable (−0.4 to +0.2
+µs on a 4.3–4.7 µs op — noise), `position()`'s 0.2 µs on 1.1 µs, and a
+node `remove()`'s — which must capture the removed closure as
+definitions, since v4 cannot restore a removed element — 14–15 µs on a
+16 µs op.
+
+What the numbers say:
+
+- **The snapshot undo an app can write today works and is priced at
+  ~27 ms per transaction and 3 MB per history step at 100k** —
+  `cy.on( 'batchstart', () => stack.push( cy.serialize() ) )` and
+  `cy.patch( stack.pop() )`.  The tax is paid at *every* transaction,
+  one data value included, and it is 1.6 frames; a 50-step history is
+  ~150 MB.  Restoring is 18–31 ms whatever the edit, because a patch
+  scans the whole payload (its identity cost, round 107).  Fine for
+  discrete editor actions at 100k, not for a transaction per pointer
+  move, and linear in the graph (5.7 ms / 0.6 MB at 20k).
+- **Core could make the snapshot ~25× cheaper to take, not to
+  restore.**  The model columns copy in ~1 ms (2.57 MB), but that floor
+  omits the id map, adjacency, hierarchy, blob pools, label sidecars and
+  untyped data, and a restore must rebuild those, re-apply style and
+  repair handles — work a patch already does in the 18–31 ms above.  A
+  core snapshot stack would buy the take, not the undo.
+- **The inverse log is orders of magnitude cheaper per transaction**
+  — ten node removals record in ~150 µs, ten data writes in
+  unmeasurable time, against the snapshot's 27 ms — and its cost is
+  the completeness obligation, not time: every mutator (data,
+  position, bypasses, classes, hierarchy moves, add, remove, the sheet)
+  must record its inverse, and the per-element events cannot carry it today — they fire
+  after the write, with no old value.  That is where "transaction hooks
+  in the core" would have to go if core undo is wanted.
+
 ## N viewers, by cloning (round 106)
 
 A second view of a graph is a **second instance**, not a second renderer

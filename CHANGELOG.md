@@ -24,6 +24,17 @@ that compile and then behave differently.
 
 ### Added
 
+- **Transaction events: `batchstart` and `batchend`** (round 139, PLAN.md
+  item 41).  The outermost `startBatch()`/`endBatch()` pair — and so
+  `cy.batch()` and every `cy.patch()` — is bracketed on the core:
+  `batchstart` before the batch's first mutation, `batchend` last, after
+  the style flush and after a patch's `patch` summary.  Nested pairs fire
+  nothing, `batchend` carries no diff, and a throwing `cy.batch()` still
+  ends in `batchend` (no rollback).  They are the hooks an app's undo
+  stack records against; v4 ships no stack, and `benchmark/undo-cost.mjs`
+  prices the snapshot one at 100k elements (`cy.serialize()` 27 ms and
+  3.07 MB a step, `cy.patch()` back 18–31 ms) — see "Undo: the snapshot
+  price" in `src/README.md`.
 - **Device limits, `GpuUnfitError` and `gpuerror`** (round 138, PLAN.md
   items 34–36).  Every device requests its adapter's own buffer and
   dispatch limits (the default 128 MiB storage binding blanked every

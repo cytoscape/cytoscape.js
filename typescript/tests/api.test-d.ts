@@ -31,6 +31,8 @@ import type {
   Stylesheet,
   Position,
   RendererStats,
+  ViewportCounts,
+  WheelBehavior,
 } from '../../build/dts/index.js';
 
 // -- the factory --
@@ -120,6 +122,24 @@ const wire: ArrayBuffer = cytoscape.serializeElements(columnar);
 
 cytoscape.deserializeElements(wire);
 cy.add(wire);
+
+// -- round 75: the sync node pick, the wheel mode, the viewport counts --
+
+const hit: Collection | null = cy.nodeAt(10, 20);
+const aliasHit: Collection | null = cy.pickNode(10, 20);
+const wheel: WheelBehavior = 'modifier-zoom';
+
+void hit;
+void aliasHit;
+cy.wheelBehavior(wheel);
+cytoscape({ wheelBehavior: 'pan' });
+// @ts-expect-error the sitting chose 'modifier-zoom' over 'ctrl-zoom'
+cytoscape({ wheelBehavior: 'ctrl-zoom' });
+void cy.viewportCounts().then((counts: ViewportCounts | null) => {
+  const visible: number = counts == null ? 0 : counts.nodes + counts.edges;
+
+  void visible;
+});
 
 // -- iteration (round 75.3): collections are iterable; add takes iterables --
 

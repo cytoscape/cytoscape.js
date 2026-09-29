@@ -991,6 +991,20 @@ export type BoxSelectionMode = 'contain' | 'overlap';
 export type WheelBehavior = 'zoom' | 'pan' | 'modifier-zoom';
 
 /**
+ * What `cy.viewportCounts()` resolves with (round 75.6): how many nodes
+ * and edges the renderer's cull kept for one drawn frame — the elements
+ * actually drawn, after the viewport test, `visibility` and the level of
+ * detail (a node below `hidePx`, a decimated hairline edge).  Compound
+ * parents count as nodes; labels are not counted.
+ */
+export interface ViewportCounts {
+  /** visible nodes, compound parents included */
+  nodes: number;
+  /** visible edges, straight and curved */
+  edges: number;
+}
+
+/**
  * What the pointer is doing and what it is over, as the cursor map reads
  * it (round 89.1).  `gesture` is the press mode the interaction layer
  * decided at pointerdown — a press outranks hover, so a drag that

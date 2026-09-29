@@ -808,6 +808,10 @@ export class CullKernels {
 export class CulledGroup {
   /** drawIndexedIndirect args, written by the scan dispatch */
   indirect: GPUBuffer;
+  /** how many times encode() has dispatched — a frame compares it
+   * before and after its cull pass to know the args are that frame's
+   * (round 75.6's viewport counts) */
+  encodes = 0;
 
   private kernels: CullKernels;
   private kind: CullKind;
@@ -874,7 +878,9 @@ export class CulledGroup {
     this.indirect = device.createBuffer({
       label: `cy-gpu:${label}-indirect`,
       size: 60, // strip args + the single-quad block + the paired block
-      usage: BUFFER_USAGE.STORAGE | BUFFER_USAGE.INDIRECT,
+      // COPY_SRC (round 75.6): cy.viewportCounts() reads instanceCount back
+      usage:
+        BUFFER_USAGE.STORAGE | BUFFER_USAGE.INDIRECT | BUFFER_USAGE.COPY_SRC,
     });
   }
 
@@ -991,6 +997,8 @@ export class CulledGroup {
 
     const numWg = Math.ceil(highWater / WG_SIZE);
     const kind = this.kind;
+
+    this.encodes++;
 
     pass.setPipeline(this.kernels.countPipelines[kind]);
     pass.setBindGroup(0, this.cullBind);

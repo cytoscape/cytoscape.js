@@ -24,6 +24,10 @@ that compile and then behave differently.
 
 ### Added
 
+- **`cy.viewportCounts()`** (round 75.6, #2283): the visible node and
+  edge counts of the next drawn frame, read back from the GPU cull —
+  after the viewport test, `visibility` and level of detail.  Async;
+  resolves null headless.
 - **`wheelBehavior`** (option and `cy.wheelBehavior()`, round 75.5):
   `'zoom'` (default), `'pan'` (the wheel pans and emits the new
   `scrollpan`; a ctrl/meta wheel — the trackpad pinch — still zooms) or

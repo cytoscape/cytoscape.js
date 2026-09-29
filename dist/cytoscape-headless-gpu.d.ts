@@ -1645,6 +1645,19 @@ type BoxSelectionMode = 'contain' | 'overlap';
  */
 type WheelBehavior = 'zoom' | 'pan' | 'modifier-zoom';
 /**
+ * What `cy.viewportCounts()` resolves with (round 75.6): how many nodes
+ * and edges the renderer's cull kept for one drawn frame — the elements
+ * actually drawn, after the viewport test, `visibility` and the level of
+ * detail (a node below `hidePx`, a decimated hairline edge).  Compound
+ * parents count as nodes; labels are not counted.
+ */
+interface ViewportCounts {
+  /** visible nodes, compound parents included */
+  nodes: number;
+  /** visible edges, straight and curved */
+  edges: number;
+}
+/**
  * What the pointer is doing and what it is over, as the cursor map reads
  * it (round 89.1).  `gesture` is the press mode the interaction layer
  * decided at pointerdown — a press outranks hover, so a drag that
@@ -8095,6 +8108,9 @@ interface RendererLike {
    * or null — what the pointer's pan-vs-grab uses, public as
    * {@link Core.nodeAt} (round 75.4) */
   pickNodeSync(x: number, y: number, padPx?: number): number | null;
+  /** the next drawn frame's visible counts, read back from the cull
+   * (round 75.6) — public as {@link Core.viewportCounts} */
+  viewportCounts(): Promise<ViewportCounts | null>;
   requestRender(): void;
   resize(): void;
   stats(): RendererStats;
@@ -8934,6 +8950,27 @@ declare class Core {
   nodeAt(x: number, y: number): Collection | null;
   pickNode: this['nodeAt'];
   /**
+   * How many nodes and edges the renderer draws — the visible counts of
+   * the next frame, after the viewport test, `visibility` and the level
+   * of detail (round 75.6, #2283).  Async because the counts live on the
+   * GPU: the cull writes them into its indirect draw arguments, and this
+   * reads them back.  Schedules a frame when nothing is pending, so it
+   * resolves on a graph at rest too; concurrent calls share one readback.
+   * Compound parents count as nodes; labels are not counted (the glyph
+   * streams count glyphs, not labels).
+   *
+   * **Resolves null headless** (the eleventh sitting: an honest "no
+   * renderer", as `cy.pick()` answers), and on destroy or device loss
+   * before a frame answered.  The synchronous, geometric alternative is
+   * `cy.elementsInBox( e.x1, e.y1, e.x2, e.y2 )` with `e = cy.extent()`:
+   * model-space containment, which sees no hide or level-of-detail
+   * thresholds — a node too small to draw is in the box and not in these
+   * counts.
+   *
+   * @returns `{ nodes, edges }` for the next frame drawn, or null
+   */
+  viewportCounts(): Promise<ViewportCounts | null>;
+  /**
    * The renderer's frame statistics, or null when headless.  The snapshot
    * carries the frame timings, cache hit rates and pass counters — note
    * that `cpuFrameMs` is encode/submit cost only (submission is
@@ -9520,4 +9557,4 @@ declare namespace cytoscape {
   export { CancelledError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type WheelBehavior, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, cytoscape as default };

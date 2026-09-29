@@ -7,7 +7,11 @@ import type {
   LabelStream,
 } from '../contract.mjs';
 import type { GraphStore } from '../store/graph-store.mjs';
-import type { RendererOptions, RendererStats } from '../public-types.mjs';
+import type {
+  RendererOptions,
+  RendererStats,
+  ViewportCounts,
+} from '../public-types.mjs';
 import type { ExportView } from './renderer.mjs';
 import type { ArrowEndFlags } from './host.mjs';
 import type { ForceParams } from '../layout/force-sim.mjs';
@@ -184,6 +188,8 @@ export type MainMessage =
       nodePadPx: number;
     }
   | { kind: 'export'; id: number; view: ExportView }
+  // the engine's next frame's visible counts (round 75.6)
+  | { kind: 'counts'; id: number }
   | { kind: 'render' }
   | { kind: 'destroy' }
   // the force integrator across the boundary (129.2): one start per
@@ -206,6 +212,7 @@ export type WorkerMessage =
   | { kind: 'initerror'; message: string }
   | { kind: 'frame'; stats: RendererStats }
   | { kind: 'pickresult'; id: number; hit: number | null }
+  | { kind: 'countsresult'; id: number; counts: ViewportCounts | null }
   | {
       kind: 'exportresult';
       id: number;

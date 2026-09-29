@@ -10248,5 +10248,123 @@ test.describe('WebGPU renderer', () => {
         events: [],
       });
     });
+
+    const COUNT_GRAPH = {
+      elements: [
+        { data: { id: 'a' }, position: { x: -300, y: 0 } },
+        { data: { id: 'b' }, position: { x: -150, y: 0 } },
+        { data: { id: 'c' }, position: { x: 150, y: 0 } },
+        { data: { id: 'd' }, position: { x: 300, y: 0 } },
+        { data: { id: 'p' } },
+        { data: { id: 'e', parent: 'p' }, position: { x: 0, y: -150 } },
+        { data: { id: 'f', parent: 'p' }, position: { x: 0, y: 150 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 'cd', source: 'c', target: 'd' } },
+        { data: { id: 'bc', source: 'b', target: 'c' } },
+      ],
+      style: {
+        nodes: { width: 40, height: 40 },
+        edges: { width: 4 },
+      },
+      zoom: 1,
+    };
+
+    /** The count scene, with bc on the curved stream (a bypass). */
+    const makeCountCy = async (page) => {
+      await makeReadyCy(page, COUNT_GRAPH);
+      await page.evaluate(() =>
+        window.cy.$id('bc').style('curve-style', 'unbundled-bezier'),
+      );
+      await centerPan(page);
+    };
+
+    test('75.6: cy.viewportCounts reads the cull back exactly — parents as nodes, curved edges as edges', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeCountCy(page);
+      await waitFrames(page);
+
+      // the precondition that bc takes the curved stream
+      expect(
+        await page.evaluate(() => window.cy.$id('bc').style('curve-style')),
+      ).toBe('unbundled-bezier');
+
+      // at rest: the request itself schedules the frame that answers
+      expect(await page.evaluate(() => window.cy.viewportCounts())).toEqual({
+        nodes: 7,
+        edges: 3,
+      });
+
+      // concurrent requests share a readback and agree
+      const [one, two] = await page.evaluate(() =>
+        Promise.all([window.cy.viewportCounts(), window.cy.viewportCounts()]),
+      );
+
+      expect(one).toEqual({ nodes: 7, edges: 3 });
+      expect(two).toEqual(one);
+
+      // the last parent stops being one: the parent stream is no longer
+      // dispatched, and its stale args (1) must not be read — p now
+      // counts once, through the leaf stream
+      const flattened = await page.evaluate(async () => {
+        window.cy.$id('e').move({ parent: null });
+        window.cy.$id('f').move({ parent: null });
+
+        return {
+          parents: window.cy.nodes().filter((n) => n.isParent()).length,
+          counts: await window.cy.viewportCounts(),
+        };
+      });
+
+      expect(flattened).toEqual({ parents: 0, counts: { nodes: 7, edges: 3 } });
+    });
+
+    test('75.6: panning half the graph out moves the counts; visibility hidden is excluded', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeCountCy(page);
+
+      // c (x 150) and d (x 300) leave the right edge; cd goes with them,
+      // bc still crosses into view
+      const panned = await page.evaluate(async () => {
+        window.cy.pan({ x: 700, y: 300 });
+
+        return await window.cy.viewportCounts();
+      });
+
+      expect(panned).toEqual({ nodes: 5, edges: 2 });
+
+      const hidden = await page.evaluate(async () => {
+        window.cy.pan({ x: 400, y: 300 });
+        window.cy.$id('a').style('visibility', 'hidden');
+
+        return await window.cy.viewportCounts();
+      });
+
+      // a is not drawn, and neither is ab, whose endpoint is hidden
+      expect(hidden).toEqual({ nodes: 6, edges: 2 });
+    });
+
+    test('75.6: viewportCounts resolves null once the renderer is gone', async ({
+      page,
+    }) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+      await makeCountCy(page);
+
+      const answer = await page.evaluate(() => {
+        const pending = window.cy.viewportCounts();
+
+        window.cy.destroy(); // before any frame could answer it
+
+        return pending;
+      });
+
+      expect(answer).toBe(null);
+    });
   });
 });

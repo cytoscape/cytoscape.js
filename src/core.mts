@@ -46,6 +46,7 @@ import type {
   Stylesheet,
   Position,
   RendererStats,
+  ViewportCounts,
   WheelBehavior,
 } from './public-types.mjs';
 import type { EleFilterFn } from './collection.mjs';
@@ -78,6 +79,9 @@ export interface RendererLike {
    * or null — what the pointer's pan-vs-grab uses, public as
    * {@link Core.nodeAt} (round 75.4) */
   pickNodeSync(x: number, y: number, padPx?: number): number | null;
+  /** the next drawn frame's visible counts, read back from the cull
+   * (round 75.6) — public as {@link Core.viewportCounts} */
+  viewportCounts(): Promise<ViewportCounts | null>;
   requestRender(): void;
   resize(): void;
   stats(): RendererStats;
@@ -1595,6 +1599,30 @@ export class Core {
   }
 
   declare pickNode: this['nodeAt'];
+
+  /**
+   * How many nodes and edges the renderer draws — the visible counts of
+   * the next frame, after the viewport test, `visibility` and the level
+   * of detail (round 75.6, #2283).  Async because the counts live on the
+   * GPU: the cull writes them into its indirect draw arguments, and this
+   * reads them back.  Schedules a frame when nothing is pending, so it
+   * resolves on a graph at rest too; concurrent calls share one readback.
+   * Compound parents count as nodes; labels are not counted (the glyph
+   * streams count glyphs, not labels).
+   *
+   * **Resolves null headless** (the eleventh sitting: an honest "no
+   * renderer", as `cy.pick()` answers), and on destroy or device loss
+   * before a frame answered.  The synchronous, geometric alternative is
+   * `cy.elementsInBox( e.x1, e.y1, e.x2, e.y2 )` with `e = cy.extent()`:
+   * model-space containment, which sees no hide or level-of-detail
+   * thresholds — a node too small to draw is in the box and not in these
+   * counts.
+   *
+   * @returns `{ nodes, edges }` for the next frame drawn, or null
+   */
+  viewportCounts(): Promise<ViewportCounts | null> {
+    return this._renderer?.viewportCounts() ?? Promise.resolve(null);
+  }
 
   /**
    * Decode a renderer pick id to a live element (round 86.2, moved here

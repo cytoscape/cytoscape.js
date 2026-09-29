@@ -27,6 +27,7 @@ import type {
   ExportOptions,
   RendererOptions,
   RendererStats,
+  ViewportCounts,
 } from '../public-types.mjs';
 
 /*
@@ -267,6 +268,10 @@ export class WorkerRenderer implements ForceHostLike {
   private lastStats: RendererStats;
   private nextRequestId = 1;
   private pendingPicks = new Map<number, (hit: number | null) => void>();
+  private pendingCounts = new Map<
+    number,
+    (counts: ViewportCounts | null) => void
+  >();
   private pendingExports = new Map<
     number,
     {
@@ -708,6 +713,25 @@ export class WorkerRenderer implements ForceHostLike {
   }
 
   /**
+   * The worker engine's next frame's visible counts (round 75.6), over
+   * the message channel: the engine reads them back from its own cull.
+   *
+   * @returns the counts, or null when the worker or its device is gone
+   */
+  viewportCounts(): Promise<ViewportCounts | null> {
+    if (this.destroyed) {
+      return Promise.resolve(null);
+    }
+
+    const id = this.nextRequestId++;
+
+    return new Promise((resolve) => {
+      this.pendingCounts.set(id, resolve);
+      this.post({ kind: 'counts', id });
+    });
+  }
+
+  /**
    * Export an image: the view resolves here (container CSS size, model
    * bounds, viewport), the worker validates it against the device,
    * renders and transfers the pixels back.
@@ -761,6 +785,12 @@ export class WorkerRenderer implements ForceHostLike {
     }
 
     this.pendingPicks.clear();
+
+    for (const resolve of this.pendingCounts.values()) {
+      resolve(null);
+    }
+
+    this.pendingCounts.clear();
 
     for (const { reject } of this.pendingExports.values()) {
       reject(
@@ -865,6 +895,14 @@ export class WorkerRenderer implements ForceHostLike {
         this.lastStats = msg.stats;
         // round 103: through the core, which wakes `_nextFrame()` first
         this.cy._frameDrawn();
+        break;
+      }
+
+      case 'countsresult': {
+        const resolve = this.pendingCounts.get(msg.id);
+
+        this.pendingCounts.delete(msg.id);
+        resolve?.(msg.counts);
         break;
       }
 

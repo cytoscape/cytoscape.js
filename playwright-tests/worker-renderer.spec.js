@@ -377,6 +377,59 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
     await destroyCy(page);
   });
 
+  test('round 75 through the worker: nodeAt, viewportCounts and the observer resize event', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -60, y: 0 } },
+        { data: { id: 'b' }, position: { x: 60, y: 0 } },
+        { data: { id: 'far' }, position: { x: 5000, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: { width: 40, height: 40 },
+        edges: { width: 6 },
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+      renderer: { worker: true },
+    });
+
+    const answers = await page.evaluate(async () => {
+      const cy = window.cy;
+      const resized = new Promise((resolve) => {
+        cy.one('resize', () => resolve(true));
+        setTimeout(() => resolve(false), 3000);
+      });
+
+      const out = {
+        // 75.4: the proxy's canonical-column pick, synchronously
+        node: cy.nodeAt(140, 150)?.id() ?? null,
+        edge: cy.nodeAt(200, 150)?.id() ?? null,
+        // 75.6: the engine's cull, over the message channel
+        counts: await cy.viewportCounts(),
+      };
+
+      // 75.1: the proxy's observer emits resize without cy.resize()
+      document.getElementById('cytoscape').style.width = '250px';
+      out.resized = await resized;
+
+      return out;
+    });
+
+    expect(answers).toEqual({
+      node: 'a',
+      edge: null,
+      counts: { nodes: 2, edges: 1 },
+      resized: true,
+    });
+    await destroyCy(page);
+  });
+
   test('create/destroy cycles leave no stuck worker instance', async ({
     page,
   }) => {

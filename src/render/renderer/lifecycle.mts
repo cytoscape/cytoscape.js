@@ -4,6 +4,7 @@
 import type { RendererStats } from '../../public-types.mjs';
 import { GROUP_EDGES, GROUP_NODES } from '../../contract.mjs';
 import type { Renderer } from '../renderer.mjs';
+import * as countsImpl from './counts.mjs';
 
 /**
  * Tear the renderer down: unsubscribe every listener and timer, reject
@@ -40,6 +41,7 @@ export function destroy(rd: Renderer): void {
     rd.onFontsLoadingDone = null;
   }
   rd.picking?.destroy();
+  countsImpl.destroyCounts(rd); // waiting viewport counts resolve null
   rd.gpuTimer?.destroy();
   rd.labelLayer?.destroy();
   rd.imageArrays?.destroy();

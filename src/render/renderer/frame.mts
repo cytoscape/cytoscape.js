@@ -30,6 +30,7 @@ import { drawScene, encodeCulls } from './scene.mjs';
 import { drawPickPasses, writePickUniform } from './pick.mjs';
 import { renderExport } from './export.mjs';
 import { checkFonts } from './fonts.mjs';
+import { encodeCountCopy, finishCounts, markCounts } from './counts.mjs';
 import {
   ensureSceneTarget,
   ensureDepthTarget,
@@ -397,7 +398,12 @@ export function frameBody(rd: Renderer): void {
     }
 
     // compact each group's visible slots + indirect args before drawing
+    const countMarks = markCounts(rd);
+
     encodeCulls(rd, encoder, rd.uniform as GPUBuffer, rd.sceneCull, true, t0);
+
+    // a viewport-count request (75.6) reads this frame's instanceCounts
+    const countJob = encodeCountCopy(rd, encoder, countMarks);
 
     // render scale < 1: draw into a low-res offscreen target, then a
     // Catmull-Rom upscale pass resamples it to the swapchain
@@ -457,6 +463,7 @@ export function frameBody(rd: Renderer): void {
 
     device.queue.submit([encoder.finish()]);
     finishTiming?.();
+    finishCounts(rd, countJob);
 
     rd.inFlightFrames++;
 

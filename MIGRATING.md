@@ -712,6 +712,12 @@ instances are not emitters.
   contract.  v3 ordered the same three by `z-index`/`z-compound-depth`,
   neither of which v4 has, so an app that relied on a deeply nested v3
   parent out-ranking a shallower edge will now get the edge.
+- **`cy.viewportCounts()`** (round 75.6) — how many nodes and edges the
+  renderer actually draws in the next frame, after culling, `visibility`
+  and level of detail; async (a GPU readback), null headless.  v3 had no
+  equivalent (#2283); the geometric approximation apps used,
+  `cy.elementsInBox()` over `cy.extent()`, still works and still ignores
+  what is too small to draw.
 - **`cy.nodeAt( x, y )`** (alias `cy.pickNode`, round 75.4) — the node
   under a rendered point, answered synchronously on the CPU, where
   `cy.pick()` is async because an edge hit is a GPU question.  v3 never

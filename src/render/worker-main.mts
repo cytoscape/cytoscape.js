@@ -199,6 +199,21 @@ export function runRenderWorker(
         break;
       }
 
+      case 'counts': {
+        const id = msg.id;
+
+        if (engine == null) {
+          post({ kind: 'countsresult', id, counts: null });
+          break;
+        }
+
+        engine.viewportCounts().then(
+          (counts) => post({ kind: 'countsresult', id, counts }),
+          () => post({ kind: 'countsresult', id, counts: null }),
+        );
+        break;
+      }
+
       case 'export': {
         const id = msg.id;
 

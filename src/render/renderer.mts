@@ -25,6 +25,7 @@ import type {
   ExportOptions,
   RendererOptions,
   RendererStats,
+  ViewportCounts,
 } from '../public-types.mjs';
 import { COL } from '../contract.mjs';
 import type { ColumnId } from '../contract.mjs';
@@ -35,6 +36,7 @@ import * as forceImpl from './renderer/force.mjs';
 import * as targetsImpl from './renderer/targets.mjs';
 import * as lifecycleImpl from './renderer/lifecycle.mjs';
 import * as fontsImpl from './renderer/fonts.mjs';
+import * as countsImpl from './renderer/counts.mjs';
 export { resolveExportView } from './renderer/export-view.mjs';
 /*
 The frame graph: a render-on-dirty rAF loop.
@@ -253,6 +255,12 @@ export class Renderer {
   /** a `document.fonts.ready` belt is armed for a provisional atlas
    * (75.2) @internal */
   fontsReadyArmed = false;
+  /** viewport-count requests waiting for a frame's copy (75.6) @internal */
+  countWaiters: ((counts: ViewportCounts | null) => void)[] = [];
+  /** the 16-byte staging buffer the counts map through (75.6) @internal */
+  countStaging: GPUBuffer | null = null;
+  /** a counts readback holds the staging buffer (75.6) @internal */
+  countBusy = false;
   /** wired by the factory: an external device loss hands recovery to the core */
   onDeviceLost: ((message: string) => void) | null = null;
   /** @internal */
@@ -608,6 +616,18 @@ export class Renderer {
       y * this.dpr,
       padPx * this.dpr,
     );
+  }
+
+  /**
+   * The visible node and edge counts of the next frame drawn (round
+   * 75.6): the scene cull's instance counts, read back from the indirect
+   * args.  Schedules a frame when the scene is clean; concurrent requests
+   * coalesce; resolves null on destroy or device loss.
+   *
+   * @returns the counts, or null when no frame could answer
+   */
+  viewportCounts(): Promise<ViewportCounts | null> {
+    return countsImpl.viewportCounts(this);
   }
 
   /** @internal */

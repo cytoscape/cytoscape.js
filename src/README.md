@@ -2387,6 +2387,37 @@ before it was built.
   the zoom-disabled, `'modifier-zoom'` and `'pan'` specs; the swapped
   branches fail the two mode specs).  The debug harness has a
   `wheelBehavior` select and logs `scrollpan`.
+- **Viewport counts, async because the code says so (75.6, #2283):
+  `cy.viewportCounts(): Promise<{ nodes, edges } | null>`.**  The
+  visible counts exist only on the device — the cull's scan writes each
+  group's `instanceCount` into its indirect draw args — so the answer is
+  a readback (`src/render/renderer/counts.mts`).  The cull groups'
+  indirect args gained `COPY_SRC` (valid under Dawn: the renderer
+  project's validation-error listener stayed empty); a request copies the
+  `instanceCount` word of the four element groups (node + parent,
+  straight + curved edge — disjoint by their predicates) into one
+  16-byte staging buffer after the scene cull pass, in the same
+  submission, so the numbers are exactly that frame's, then maps it.  A
+  group the frame did not dispatch (the parent stream once the last
+  parent is gone) left stale args, so `CulledGroup.encodes` is compared
+  across the pass and an undispatched group reads 0.  A clean scene gets
+  a frame scheduled; concurrent requests coalesce onto one copy; destroy
+  and a failed map resolve null; the worker proxy forwards the request
+  to its engine (`counts` / `countsresult`).  **Headless it resolves
+  null** (the eleventh sitting weighed null, zeros and a geometric
+  count).  Glyph streams are excluded — their counts are glyphs, not
+  labels.  The JSDoc names the sync alternative, `cy.elementsInBox()`
+  over `cy.extent()`, and the difference: model-space geometry, no hide
+  or LOD.  One cost to know: on a scene at rest a request draws one full
+  frame (a counts-only frame, culling without drawing, is the cheaper
+  path the plan named and was not needed).  Specs: exact counts on a
+  scene with a compound parent and a curved edge, concurrent requests,
+  the last parent flattened (stale args), half the graph panned out,
+  `visibility: hidden` (with its edge), null on destroy — controls: the
+  args read at offset 0 (`indexCount`) fail both count specs (7/3 read
+  as 12/198), and every group treated as dispatched reads 8 nodes for 7
+  — plus `test/viewport-counts.mjs` (headless null) and a worker-host
+  spec.
 
 ## Design decisions (v4 API direction)
 
@@ -7293,6 +7324,12 @@ unbuilt arrow `gap` for a day after **round 56 built it**, which is the
 failure mode the standing closing-sweep rule exists for and which found
 it here in round 57.4.*
 
+- **Viewport counts' mask form** (round 75.6): `cy.viewportCounts()`
+  reads four words back; the *visible list* as a Collection (#2283's
+  larger ask) is a readback of the compacted slot lists with a
+  compaction-order contract to define — logged for its own round, not
+  built.  A counts-only frame (cull without draw) would make a request
+  on a scene at rest cheaper than the full frame it draws now.
 - **The sheet diff's full-pass props** (round 133): a replace that
   changes a prop without a round-61 narrow writer — `width`/`height`,
   the label family, shapes, curve props, the edge `opacity`/

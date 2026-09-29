@@ -1,0 +1,30 @@
+{
+  "golden": "compound-loops",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 21228,
+      "elements": 4
+    },
+    "nodes/border-color": {
+      "moved": 3993,
+      "elements": 4
+    },
+    "nodes/border-width": {
+      "moved": 5477,
+      "elements": 4
+    },
+    "nodes/width": {
+      "moved": 5809,
+      "elements": 4
+    },
+    "edges/line-color": {
+      "moved": 1265,
+      "elements": 3
+    },
+    "edges/width": {
+      "moved": 816,
+      "elements": 3
+    }
+  }
+}

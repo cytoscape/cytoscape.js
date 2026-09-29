@@ -1,0 +1,34 @@
+{
+  "golden": "shapes-27-round",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 25788,
+      "elements": 10
+    },
+    "nodes/border-color": {
+      "moved": 7040,
+      "elements": 10
+    },
+    "nodes/border-width": {
+      "moved": 7056,
+      "elements": 10
+    },
+    "nodes/corner-radius": {
+      "moved": 2492,
+      "elements": 10
+    },
+    "nodes/height": {
+      "moved": 19434,
+      "elements": 10
+    },
+    "nodes/shape": {
+      "moved": 13616,
+      "elements": 10
+    },
+    "nodes/width": {
+      "moved": 21484,
+      "elements": 10
+    }
+  }
+}

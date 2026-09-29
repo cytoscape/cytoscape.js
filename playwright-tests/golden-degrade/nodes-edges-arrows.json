@@ -1,0 +1,46 @@
+{
+  "golden": "nodes-edges-arrows",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 6280,
+      "elements": 4
+    },
+    "nodes/border-color": {
+      "moved": 2195,
+      "elements": 4
+    },
+    "nodes/border-width": {
+      "moved": 2376,
+      "elements": 4
+    },
+    "nodes/height": {
+      "moved": 3872,
+      "elements": 4
+    },
+    "nodes/opacity": {
+      "moved": 1904,
+      "elements": 1
+    },
+    "nodes/shape": {
+      "moved": 1804,
+      "elements": 2
+    },
+    "nodes/width": {
+      "moved": 5434,
+      "elements": 4
+    },
+    "edges/line-color": {
+      "moved": 2371,
+      "elements": 3
+    },
+    "edges/target-arrow-color": {
+      "moved": 173,
+      "elements": 3
+    },
+    "edges/target-arrow-shape": {
+      "moved": 537,
+      "elements": 3
+    }
+  }
+}

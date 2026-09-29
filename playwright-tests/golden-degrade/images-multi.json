@@ -1,0 +1,55 @@
+{
+  "golden": "images-multi",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 11882,
+      "elements": 1
+    },
+    "nodes/background-height": {
+      "moved": 9042,
+      "elements": 1
+    },
+    "nodes/background-image": {
+      "moved": 10146,
+      "elements": 1,
+      "residue": 624
+    },
+    "nodes/background-image-opacity": {
+      "moved": 3648,
+      "elements": 1
+    },
+    "nodes/background-position-x": {
+      "moved": 10240,
+      "elements": 1
+    },
+    "nodes/background-position-y": {
+      "moved": 13422,
+      "elements": 1
+    },
+    "nodes/background-width": {
+      "moved": 9130,
+      "elements": 1
+    },
+    "nodes/border-color": {
+      "moved": 1692,
+      "elements": 1
+    },
+    "nodes/border-width": {
+      "moved": 1910,
+      "elements": 1
+    },
+    "nodes/height": {
+      "moved": 18431,
+      "elements": 1
+    },
+    "nodes/shape": {
+      "moved": 5876,
+      "elements": 1
+    },
+    "nodes/width": {
+      "moved": 18770,
+      "elements": 1
+    }
+  }
+}

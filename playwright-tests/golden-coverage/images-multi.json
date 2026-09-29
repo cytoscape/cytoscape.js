@@ -6,14 +6,8 @@
     "edges": 0
   },
   "nodes": {
-    "background-clip": [
-      "node node node node"
-    ],
     "background-color": [
       "rgb(236,240,241)"
-    ],
-    "background-fit": [
-      "none none none none"
     ],
     "background-height": [
       "50% 45% 30% 35%"
@@ -21,32 +15,14 @@
     "background-image": [
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASUlEQVR4AaXBQQ2DQAAAwWVTPSVBBg5QUDkVwQs5/BGBA3Bwn52ZrmV+GDh+JyMSSSSRRBJJJNFn3XZG/veXEYkkkkgiiSSS6AV8gQcyZv0HPAAAAABJRU5ErkJggg== data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4AYXBAREAIAzEsPI3mUjABGqRwRysyTr7fQZBBBFEAZdBEEEE0QaYA0GAoqM/AAAAAElFTkSuQmCC data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASUlEQVR4AaXBQQ2DQAAAwWVTPSVBBg5QUDkVwQs5/BGBA3Bwn52ZrmV+GDh+JyMSSSSRRBJJJNFn3XZG/veXEYkkkkgiiSSS6AV8gQcyZv0HPAAAAABJRU5ErkJggg== data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAKklEQVR4AYXBAREAIAzEsPI3mUjABGqRwRysyTr7fQZBBBFEAZdBEEEE0QaYA0GAoqM/AAAAAElFTkSuQmCC"
     ],
-    "background-image-containment": [
-      "inside inside inside inside"
-    ],
     "background-image-opacity": [
       "1 0.800000011920929 1 1"
-    ],
-    "background-image-smoothing": [
-      "yes yes yes yes"
-    ],
-    "background-image-type": [
-      "auto auto auto auto"
-    ],
-    "background-offset-x": [
-      "0 0 0 0"
-    ],
-    "background-offset-y": [
-      "0 0 0 0"
     ],
     "background-position-x": [
       "0% 30% 100% 65%"
     ],
     "background-position-y": [
       "0% 30% 0% 85%"
-    ],
-    "background-repeat": [
-      "no-repeat no-repeat no-repeat no-repeat"
     ],
     "background-width": [
       "50% 45% 30% 35%"

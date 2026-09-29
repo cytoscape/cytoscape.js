@@ -1,0 +1,38 @@
+{
+  "golden": "straight-triangle",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 4736,
+      "elements": 8
+    },
+    "nodes/height": {
+      "moved": 2650,
+      "elements": 8
+    },
+    "nodes/width": {
+      "moved": 3083,
+      "elements": 8
+    },
+    "edges/curve-style": {
+      "moved": 6032,
+      "elements": 4
+    },
+    "edges/line-color": {
+      "moved": 5188,
+      "elements": 4
+    },
+    "edges/target-arrow-color": {
+      "moved": 628,
+      "elements": 1
+    },
+    "edges/target-arrow-shape": {
+      "moved": 628,
+      "elements": 1
+    },
+    "edges/width": {
+      "moved": 5610,
+      "elements": 4
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "golden": "label-outline-closeup",
+  "pixels": 240000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 7768,
+      "elements": 1
+    },
+    "nodes/color": {
+      "moved": 8805,
+      "elements": 1
+    },
+    "nodes/font-family": {
+      "moved": 24794,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "nodes/font-size": {
+      "moved": 29934,
+      "elements": 1
+    },
+    "nodes/height": {
+      "moved": 38800,
+      "elements": 1
+    },
+    "nodes/label": {
+      "moved": 28029,
+      "elements": 1
+    },
+    "nodes/text-outline-color": {
+      "moved": 22542,
+      "elements": 1
+    },
+    "nodes/text-outline-width": {
+      "moved": 22541,
+      "elements": 1
+    }
+  }
+}

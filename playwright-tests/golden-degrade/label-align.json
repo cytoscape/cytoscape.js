@@ -1,0 +1,59 @@
+{
+  "golden": "label-align",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 8902,
+      "elements": 9
+    },
+    "nodes/border-color": {
+      "moved": 1964,
+      "elements": 9
+    },
+    "nodes/border-width": {
+      "moved": 1964,
+      "elements": 9
+    },
+    "nodes/color": {
+      "moved": 726,
+      "elements": 9
+    },
+    "nodes/font-family": {
+      "moved": 1260,
+      "elements": 9,
+      "via": "sheet"
+    },
+    "nodes/font-size": {
+      "moved": 2539,
+      "elements": 9
+    },
+    "nodes/label": {
+      "moved": 1932,
+      "elements": 9
+    },
+    "nodes/text-background-color": {
+      "moved": 1815,
+      "elements": 9
+    },
+    "nodes/text-background-opacity": {
+      "moved": 1815,
+      "elements": 9
+    },
+    "nodes/text-background-padding": {
+      "moved": 819,
+      "elements": 9
+    },
+    "nodes/text-halign": {
+      "moved": 2604,
+      "elements": 6
+    },
+    "nodes/text-valign": {
+      "moved": 2578,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 6516,
+      "elements": 9
+    }
+  }
+}

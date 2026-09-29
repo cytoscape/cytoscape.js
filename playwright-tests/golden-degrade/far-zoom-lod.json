@@ -1,0 +1,18 @@
+{
+  "golden": "far-zoom-lod",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 2400,
+      "elements": 600
+    },
+    "edges/line-color": {
+      "moved": 544,
+      "elements": 580
+    },
+    "edges/width": {
+      "moved": 1152,
+      "elements": 580
+    }
+  }
+}

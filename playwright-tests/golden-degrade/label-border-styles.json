@@ -1,0 +1,191 @@
+{
+  "golden": "label-border-styles",
+  "pixels": 176000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 560,
+      "elements": 12
+    },
+    "nodes/font-family": {
+      "moved": 10674,
+      "elements": 12,
+      "via": "sheet"
+    },
+    "nodes/font-size": {
+      "moved": 25292,
+      "elements": 12,
+      "unresettable": [
+        "l",
+        "r",
+        "l2",
+        "r2"
+      ]
+    },
+    "nodes/height": {
+      "moved": 4447,
+      "elements": 12
+    },
+    "nodes/label": {
+      "moved": 18242,
+      "elements": 8
+    },
+    "nodes/text-background-color": {
+      "moved": 14166,
+      "elements": 12,
+      "unresettable": [
+        "l",
+        "r",
+        "l2",
+        "r2"
+      ]
+    },
+    "nodes/text-background-opacity": {
+      "moved": 17440,
+      "elements": 12,
+      "unresettable": [
+        "l",
+        "r",
+        "l2",
+        "r2"
+      ]
+    },
+    "nodes/text-background-padding": {
+      "moved": 12547,
+      "elements": 12,
+      "unresettable": [
+        "l",
+        "r",
+        "l2",
+        "r2"
+      ]
+    },
+    "nodes/text-background-shape": {
+      "moved": 1765,
+      "elements": 4
+    },
+    "nodes/text-border-color": {
+      "moved": 5361,
+      "elements": 12,
+      "unresettable": [
+        "l",
+        "r",
+        "l2",
+        "r2"
+      ]
+    },
+    "nodes/text-border-opacity": {
+      "moved": 5501,
+      "elements": 12,
+      "unresettable": [
+        "l",
+        "r",
+        "l2",
+        "r2"
+      ]
+    },
+    "nodes/text-border-style": {
+      "moved": 3940,
+      "elements": 6
+    },
+    "nodes/text-border-width": {
+      "moved": 5501,
+      "elements": 12,
+      "unresettable": [
+        "l",
+        "r",
+        "l2",
+        "r2"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 29563,
+      "elements": 12,
+      "unresettable": [
+        "l",
+        "r",
+        "l2",
+        "r2"
+      ]
+    },
+    "nodes/width": {
+      "moved": 2384,
+      "elements": 12
+    },
+    "edges/font-size": {
+      "moved": 8975,
+      "elements": 2
+    },
+    "edges/label": {
+      "moved": 4804,
+      "elements": 2
+    },
+    "edges/line-color": {
+      "moved": 3008,
+      "elements": 2
+    },
+    "edges/mid-source-arrow-color": {
+      "moved": 245,
+      "elements": 2
+    },
+    "edges/mid-source-arrow-shape": {
+      "moved": 245,
+      "elements": 2
+    },
+    "edges/mid-source-arrow-width": {
+      "moved": 0,
+      "elements": 2
+    },
+    "edges/mid-target-arrow-color": {
+      "moved": 387,
+      "elements": 2
+    },
+    "edges/mid-target-arrow-shape": {
+      "moved": 387,
+      "elements": 2
+    },
+    "edges/mid-target-arrow-width": {
+      "moved": 0,
+      "elements": 2
+    },
+    "edges/text-background-color": {
+      "moved": 3867,
+      "elements": 2
+    },
+    "edges/text-background-opacity": {
+      "moved": 4570,
+      "elements": 2
+    },
+    "edges/text-background-padding": {
+      "moved": 3258,
+      "elements": 2
+    },
+    "edges/text-background-shape": {
+      "moved": 815,
+      "elements": 2
+    },
+    "edges/text-border-color": {
+      "moved": 1360,
+      "elements": 2
+    },
+    "edges/text-border-opacity": {
+      "moved": 1399,
+      "elements": 2
+    },
+    "edges/text-border-style": {
+      "moved": 1303,
+      "elements": 2
+    },
+    "edges/text-border-width": {
+      "moved": 1399,
+      "elements": 2
+    },
+    "edges/text-margin-y": {
+      "moved": 8163,
+      "elements": 2
+    },
+    "edges/width": {
+      "moved": 3036,
+      "elements": 2
+    }
+  }
+}

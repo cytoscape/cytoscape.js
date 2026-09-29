@@ -1,0 +1,58 @@
+{
+  "golden": "labels-wrap-edge",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 1000,
+      "elements": 2
+    },
+    "nodes/height": {
+      "moved": 1020,
+      "elements": 2
+    },
+    "nodes/width": {
+      "moved": 971,
+      "elements": 2
+    },
+    "edges/color": {
+      "moved": 485,
+      "elements": 1
+    },
+    "edges/font-size": {
+      "moved": 2045,
+      "elements": 1
+    },
+    "edges/label": {
+      "moved": 1662,
+      "elements": 1
+    },
+    "edges/line-color": {
+      "moved": 679,
+      "elements": 1
+    },
+    "edges/text-background-color": {
+      "moved": 1635,
+      "elements": 1
+    },
+    "edges/text-background-opacity": {
+      "moved": 1634,
+      "elements": 1
+    },
+    "edges/text-background-padding": {
+      "moved": 432,
+      "elements": 1
+    },
+    "edges/text-rotation": {
+      "moved": 1597,
+      "elements": 1
+    },
+    "edges/text-wrap": {
+      "moved": 1863,
+      "elements": 1
+    },
+    "edges/width": {
+      "moved": 808,
+      "elements": 1
+    }
+  }
+}

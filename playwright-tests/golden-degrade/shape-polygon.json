@@ -1,0 +1,34 @@
+{
+  "golden": "shape-polygon",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 7312,
+      "elements": 4
+    },
+    "nodes/border-color": {
+      "moved": 1252,
+      "elements": 4
+    },
+    "nodes/border-width": {
+      "moved": 1258,
+      "elements": 1
+    },
+    "nodes/height": {
+      "moved": 5542,
+      "elements": 3
+    },
+    "nodes/shape": {
+      "moved": 7544,
+      "elements": 4
+    },
+    "nodes/shape-polygon-points": {
+      "moved": 11336,
+      "elements": 4
+    },
+    "nodes/width": {
+      "moved": 6452,
+      "elements": 4
+    }
+  }
+}

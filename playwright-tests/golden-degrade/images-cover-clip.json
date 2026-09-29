@@ -1,0 +1,34 @@
+{
+  "golden": "images-cover-clip",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 260,
+      "elements": 2
+    },
+    "nodes/background-fit": {
+      "moved": 5310,
+      "elements": 2
+    },
+    "nodes/background-image": {
+      "moved": 5598,
+      "elements": 2
+    },
+    "nodes/border-color": {
+      "moved": 1896,
+      "elements": 2
+    },
+    "nodes/border-width": {
+      "moved": 2156,
+      "elements": 2
+    },
+    "nodes/height": {
+      "moved": 4708,
+      "elements": 2
+    },
+    "nodes/width": {
+      "moved": 5784,
+      "elements": 2
+    }
+  }
+}

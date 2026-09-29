@@ -1,0 +1,30 @@
+{
+  "golden": "polygon-shapes",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 16707,
+      "elements": 11
+    },
+    "nodes/border-color": {
+      "moved": 6727,
+      "elements": 11
+    },
+    "nodes/border-width": {
+      "moved": 6749,
+      "elements": 11
+    },
+    "nodes/height": {
+      "moved": 12589,
+      "elements": 11
+    },
+    "nodes/shape": {
+      "moved": 12051,
+      "elements": 11
+    },
+    "nodes/width": {
+      "moved": 14354,
+      "elements": 11
+    }
+  }
+}

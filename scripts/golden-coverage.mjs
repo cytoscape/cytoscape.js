@@ -24,12 +24,17 @@
 // their non-default keywords no golden shows — since `shape` being
 // exercised says nothing about `concave-hexagon`.
 //
-// **What it cannot tell you.**  A property with a non-default value can
-// still move no pixels — painted over, zero-sized, off-canvas.  That is
-// tier 2's degrade control (reset one property, re-render, count moved
-// pixels), which this round deliberately does not build.  So "exercised"
-// here is an upper bound on what the goldens see, and the unexercised
-// count a lower bound on what they miss.
+// **What it cannot tell you, and tier 2.**  A property with a
+// non-default value can still move no pixels — painted over, zero-sized,
+// off-canvas.  Round 143's degrade control
+// (`playwright-tests/lib/degrade-control.mjs`, run as
+// `DEGRADE_CONTROL=1` on the golden pass) resets each exercised
+// property of each golden to its default on the live scene and counts
+// the pixels that move, into `playwright-tests/golden-degrade/`;
+// `degradeReport` reads those records here.  A pair that moves nothing
+// is decoration in its scene, or — when the reset could not move the
+// value at all — a property that reads back a value derived from
+// another (`UNMOVABLE`).
 //
 // The Node gate (`test/modules/golden-coverage.mjs`) pins the counts, so
 // a golden that adds coverage lowers a number consciously and a scene
@@ -314,6 +319,158 @@ export const enumerate = (captures, space, schema, defaults) => {
   };
 };
 
+/** The degrade control's records, one per golden (round 143). */
+export const DEGRADE_DIR = join(ROOT, 'playwright-tests', 'golden-degrade');
+
+/** The groups a degrade pair can be in: core props are reset otherwise, and no golden sets one. */
+export const DEGRADE_GROUPS = ['nodes', 'parents', 'edges'];
+
+/** A capture's (group, property) pairs, as the degrade control keys them. */
+export const pairsOf = (capture) =>
+  DEGRADE_GROUPS.flatMap((group) =>
+    Object.keys(capture[group] ?? {})
+      .sort()
+      .map((prop) => `${group}/${prop}`),
+  );
+
+/**
+ * Pairs a reset cannot move, and why — the property reads back a value
+ * derived from another one, so the capture counts it as set though the
+ * sheet never names it (or names it through a shorthand a per-side reset
+ * cannot undo).  Audited by the gate: every unmoved pair's property is
+ * here, and every entry is still unmoved somewhere.
+ */
+export const UNMOVABLE = {
+  'chart-colors':
+    'reads back the palette its chart-values imply (one colour per value), set or not',
+  'background-gradient-stop-positions':
+    'reads back the even spread its stop colours imply, set or not',
+  'line-gradient-stop-positions':
+    'reads back the even spread its stop colours imply, set or not',
+  'padding-bottom':
+    'set through the `padding` shorthand, which the sheet reset leaves; compound props are parents-group constants, so no per-element bypass can name one',
+  'padding-left':
+    'set through the `padding` shorthand, which the sheet reset leaves; compound props are parents-group constants, so no per-element bypass can name one',
+  'padding-right':
+    'set through the `padding` shorthand, which the sheet reset leaves; compound props are parents-group constants, so no per-element bypass can name one',
+  'padding-top':
+    'set through the `padding` shorthand, which the sheet reset leaves; compound props are parents-group constants, so no per-element bypass can name one',
+};
+
+/**
+ * Pairs that move no pixel by design — the scene sets the property to
+ * pin that it changes nothing — each with its reason.  Audited like
+ * `UNMOVABLE`: a decoration pair not listed here fails the gate, so a
+ * new one is either fixed in its scene or argued for here.
+ */
+export const INTENDED_DECORATION = {
+  'label-border-styles edges/mid-source-arrow-width':
+    'mid heads are always filled and the width strokes only a hollow head (PLAN.md item 21, v3 too): set so the coverage record counts it',
+  'label-border-styles edges/mid-target-arrow-width':
+    'mid heads are always filled and the width strokes only a hollow head (PLAN.md item 21, v3 too): set so the coverage record counts it',
+  'self-loops edges/curve-style':
+    "the scene's claim: a straight-styled loop still draws as a loop (the v4 rule), so resetting the style must move nothing",
+};
+
+/** Every degrade record on disk, sorted by golden name. */
+export const loadDegrades = (dir = DEGRADE_DIR) =>
+  readdirSync(dir)
+    .filter((f) => f.endsWith('.json'))
+    .sort()
+    .map((f) => JSON.parse(readFileSync(join(dir, f), 'utf8')));
+
+/**
+ * Tier 2 (round 143): read the degrade control's records against the
+ * captures.  Each exercised (group, property) pair was reset to its
+ * default on the live scene and the moved pixels counted; a pair that
+ * moved none either could not be moved at all (the reset left the value
+ * — `unmoved`) or moved a value that draws nothing (`decoration`).
+ *
+ * @param captures — the tier-1 records
+ * @param degrades — the degrade records
+ * @returns `{ stale, missing, stopped, pairs, moved, decoration,
+ *   unmoved, residue, seen, unseen, counts }` — `stale` names records
+ *   whose pairs are not their capture's, `unseen` the properties some
+ *   golden sets and no reset of which moved a pixel in any golden
+ */
+export const degradeReport = (captures, degrades) => {
+  const byName = new Map(degrades.map((d) => [d.golden, d]));
+  const stale = [];
+  const missing = [];
+  const stopped = [];
+  const decoration = [];
+  const unmoved = [];
+  const residue = [];
+  const moved = [];
+  const seen = new Set();
+  const exercised = new Set();
+
+  for (const capture of captures) {
+    const record = byName.get(capture.golden);
+
+    if (record == null) {
+      missing.push(capture.golden);
+      continue;
+    }
+
+    const want = pairsOf(capture);
+
+    if (JSON.stringify(Object.keys(record.pairs)) !== JSON.stringify(want)) {
+      stale.push(capture.golden);
+    }
+
+    if (record.stopped != null) {
+      stopped.push(`${capture.golden}: ${record.stopped}`);
+    }
+
+    for (const [pair, r] of Object.entries(record.pairs)) {
+      const key = `${capture.golden} ${pair}`;
+      const prop = pair.slice(pair.indexOf('/') + 1);
+      const took =
+        r.via === 'sheet'
+          ? r.elements
+          : r.elements - (r.unresettable ?? []).length;
+
+      exercised.add(pair);
+
+      if (r.residue != null) {
+        residue.push(`${key} (${r.residue} px)`);
+      }
+
+      if (r.moved > 0) {
+        moved.push(key);
+        seen.add(pair);
+      } else if (took === 0) {
+        unmoved.push({ key, prop });
+      } else {
+        decoration.push(key);
+      }
+    }
+  }
+
+  const unseen = [...exercised].filter((p) => !seen.has(p)).sort();
+
+  return {
+    stale,
+    missing,
+    stopped,
+    moved,
+    decoration,
+    unmoved,
+    residue,
+    unseen,
+    counts: {
+      pairs: moved.length + decoration.length + unmoved.length,
+      moved: moved.length,
+      decoration: decoration.length,
+      unmoved: unmoved.length,
+      exercised: exercised.size,
+      seen: seen.size,
+      unseen: unseen.length,
+    },
+  };
+};
+
 /**
  * Build everything the enumeration needs from the live library — the
  * readable sets and the defaults come from a default-sheet headless
@@ -398,6 +555,47 @@ const main = async () => {
 
   if (result.unknown.length > 0) {
     console.log(`  outside the universe: ${result.unknown.join('; ')}`);
+  }
+
+  // tier 2 (round 143): the degrade control's records
+  const report = degradeReport(loadCaptures(), loadDegrades());
+  const c = report.counts;
+
+  console.log(
+    `degrade control: ${c.pairs} (golden, property) pairs reset — ${c.moved} ` +
+      `moved pixels, ${c.decoration} moved none (decoration), ${c.unmoved} ` +
+      `could not be moved; ${c.seen}/${c.exercised} group-properties move ` +
+      `pixels in some golden`,
+  );
+
+  if (verbose) {
+    for (const key of report.decoration) {
+      console.log(
+        `    decoration   ${key}${key in INTENDED_DECORATION ? ` — ${INTENDED_DECORATION[key]}` : ''}`,
+      );
+    }
+
+    for (const { key, prop } of report.unmoved) {
+      console.log(`    unmovable    ${key} — ${UNMOVABLE[prop] ?? '?'}`);
+    }
+
+    for (const p of report.unseen) {
+      console.log(`    unseen       ${p}`);
+    }
+
+    for (const r of report.residue) {
+      console.log(`    residue      ${r}`);
+    }
+  }
+
+  for (const [what, list] of [
+    ['stale', report.stale],
+    ['missing', report.missing],
+    ['stopped', report.stopped],
+  ]) {
+    if (list.length > 0) {
+      console.log(`  ${what}: ${list.join('; ')}`);
+    }
   }
 };
 

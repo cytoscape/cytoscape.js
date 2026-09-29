@@ -36,9 +36,6 @@
     "text-background-padding": [
       "2"
     ],
-    "text-border-color": [
-      "rgba(0,0,0,0)"
-    ],
     "text-outline-color": [
       "rgb(255,255,255)"
     ],

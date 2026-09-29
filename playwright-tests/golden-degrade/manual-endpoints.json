@@ -1,0 +1,59 @@
+{
+  "golden": "manual-endpoints",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 4080,
+      "elements": 6
+    },
+    "nodes/height": {
+      "moved": 2578,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 2578,
+      "elements": 6
+    },
+    "edges/control-point-distances": {
+      "moved": 1064,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "edges/curve-style": {
+      "moved": 2016,
+      "elements": 1
+    },
+    "edges/edge-distances": {
+      "moved": 1769,
+      "elements": 1
+    },
+    "edges/line-color": {
+      "moved": 2941,
+      "elements": 3
+    },
+    "edges/source-distance-from-node": {
+      "moved": 1531,
+      "elements": 3
+    },
+    "edges/source-endpoint": {
+      "moved": 6064,
+      "elements": 3
+    },
+    "edges/target-arrow-color": {
+      "moved": 242,
+      "elements": 3
+    },
+    "edges/target-arrow-shape": {
+      "moved": 1693,
+      "elements": 3
+    },
+    "edges/target-endpoint": {
+      "moved": 5023,
+      "elements": 3
+    },
+    "edges/width": {
+      "moved": 2402,
+      "elements": 3
+    }
+  }
+}

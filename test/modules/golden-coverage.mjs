@@ -5,14 +5,20 @@ import cytoscape from '../../src/index.mjs';
 import {
   ALIASES,
   COVERAGE_DIR,
+  DEGRADE_DIR,
   GROUPS,
+  INTENDED_DECORATION,
   NO_STATIC_PIXELS,
+  UNMOVABLE,
+  degradeReport,
   enumerate,
   goldenNames,
   keywordsOf,
   loadCaptures,
+  loadDegrades,
   measure,
   pairing,
+  pairsOf,
 } from '../../scripts/golden-coverage.mjs';
 import {
   collectStyleCoverage,
@@ -43,7 +49,12 @@ on an edge) that the compiler accepts and nothing reads; they are inert,
 reported, and not counted.
 
 Tier 2 — the degrade control, which asks whether an exercised property
-moves any pixels — is later, by the eleventh sitting's call.
+moves any pixels — landed in round 143: every golden's exercised pairs
+reset to the default on the live scene, the moved pixels recorded in
+`playwright-tests/golden-degrade/`, read and pinned below.  At landing:
+530 pairs, 520 moving pixels, 3 decoration by design, 7 that no reset
+can move (a value derived from another property); 131 of the 140
+exercised group-properties move pixels in some golden.
 */
 
 /** The pinned counts; change them only with the capture that moves them. */
@@ -52,13 +63,31 @@ moves any pixels — is later, by the eleventh sitting's call.
 // the label-border-styles golden sets all four, and with them the
 // edge label box (text-border-width/-opacity, text-background-shape,
 // text-margin-y) and text-background-shape's round-rectangle on edges
+// round 143: the degrade control's findings corrected the capture —
+// five image properties that read back as the default once per layer
+// (`node node node node`) are no longer counted as set, nor are the
+// label-box colours a labelled element reads with their opacity folded
+// in, nor a parent's auto-sized width and height (+5 unexercised, all
+// paintable: background-clip, -image-containment, -image-smoothing,
+// -offset-x, -repeat)
 const PINNED = {
   universe: 216,
-  unexercised: 71,
-  paintable: 52,
+  unexercised: 76,
+  paintable: 57,
   noStatic: 19,
   keywordGaps: 66,
   inert: 47,
+};
+
+/** Tier 2's pinned counts (round 143), from the degrade records. */
+const PINNED_DEGRADE = {
+  pairs: 530,
+  moved: 520,
+  decoration: 3,
+  unmoved: 7,
+  exercised: 140,
+  seen: 131,
+  unseen: 9,
 };
 
 describe('golden coverage: the enumerator (round 135)', function () {
@@ -231,6 +260,95 @@ describe('golden coverage: the enumerator (round 135)', function () {
   });
 });
 
+describe('golden coverage: the degrade control (round 143)', function () {
+  const captures = loadCaptures();
+  const degrades = loadDegrades();
+  const report = degradeReport(captures, degrades);
+
+  it('has a current degrade record for every golden', () => {
+    expect(degrades.length).to.equal(captures.length);
+    expect(
+      { stale: report.stale, missing: report.missing, stopped: report.stopped },
+      'rerun the golden pass with DEGRADE_CONTROL=1 and commit ' +
+        'playwright-tests/golden-degrade/',
+    ).to.deep.equal({ stale: [], missing: [], stopped: [] });
+
+    const files = readdirSync(DEGRADE_DIR)
+      .filter((f) => f.endsWith('.json'))
+      .sort();
+
+    expect(files).to.deep.equal(captures.map((c) => `${c.golden}.json`));
+  });
+
+  it('pins the counts (the tier-2 numbers)', () => {
+    expect(
+      report.counts,
+      `decoration: ${report.decoration.join(', ')}; unmovable: ` +
+        report.unmoved.map((u) => u.key).join(', '),
+    ).to.deep.equal(PINNED_DEGRADE);
+  });
+
+  it('argues for every pair that moves no pixel', () => {
+    // a decoration pair is either fixed in its scene or argued for in
+    // INTENDED_DECORATION; an unmovable one names why no reset moves it
+    expect(report.decoration.filter((k) => !(k in INTENDED_DECORATION))).to.be
+      .empty;
+    expect(
+      Object.keys(INTENDED_DECORATION).filter(
+        (k) => !report.decoration.includes(k),
+      ),
+      'stale INTENDED_DECORATION entries',
+    ).to.be.empty;
+    expect(report.unmoved.filter((u) => !(u.prop in UNMOVABLE))).to.be.empty;
+    expect(
+      Object.keys(UNMOVABLE).filter(
+        (p) => !report.unmoved.some((u) => u.prop === p),
+      ),
+      'stale UNMOVABLE entries',
+    ).to.be.empty;
+  });
+
+  it('classifies a planted record, and catches a stale one (control)', () => {
+    const capture = captures.find((c) => c.golden === 'nodes-edges-arrows');
+    const record = degrades.find((d) => d.golden === capture.golden);
+    const pair = pairsOf(capture)[0];
+    const planted = {
+      ...record,
+      pairs: { ...record.pairs, [pair]: { moved: 0, elements: 4 } },
+    };
+    const one = degradeReport([capture], [planted]);
+
+    expect(one.decoration).to.deep.equal([`${capture.golden} ${pair}`]);
+
+    const unmoved = degradeReport(
+      [capture],
+      [
+        {
+          ...record,
+          pairs: {
+            ...record.pairs,
+            [pair]: {
+              moved: 0,
+              elements: 4,
+              unresettable: ['a', 'b', 'c', 'd'],
+            },
+          },
+        },
+      ],
+    );
+
+    expect(unmoved.unmoved.map((u) => u.key)).to.deep.equal([
+      `${capture.golden} ${pair}`,
+    ]);
+
+    const { [pair]: _dropped, ...fewer } = record.pairs;
+
+    expect(
+      degradeReport([capture], [{ ...record, pairs: fewer }]).stale,
+    ).to.deep.equal([capture.golden]);
+  });
+});
+
 describe('golden coverage: the capture (round 135)', function () {
   const run = (options) => {
     const cy = cytoscape(options);
@@ -304,6 +422,50 @@ describe('golden coverage: the capture (round 135)', function () {
       edges: {},
       core: {},
     });
+  });
+
+  it('does not count what reads back derived from something else (round 143)', () => {
+    // the three over-counts the degrade control exposed: a labelled
+    // element's label-box colours (read with their opacity folded in), a
+    // parent's auto-sized box, and a per-image list of defaults
+    const out = run({
+      elements: [
+        { data: { id: 'p' } },
+        { data: { id: 'c1', parent: 'p' }, position: { x: -80, y: 0 } },
+        { data: { id: 'c2', parent: 'p' }, position: { x: 80, y: 60 } },
+        { data: { id: 'n' }, position: { x: 300, y: 0 } },
+        { data: { id: 'e', source: 'c1', target: 'n' } },
+      ],
+      style: {
+        nodes: {
+          label: 'x',
+          'background-image': ['a.png', 'b.png', 'c.png'],
+        },
+        edges: { label: 'y' },
+      },
+    });
+
+    expect(Object.keys(out.nodes).sort()).to.deep.equal([
+      'background-image',
+      'label',
+    ]);
+    expect(Object.keys(out.edges)).to.deep.equal(['label']);
+
+    // and each is still counted when it is set (control)
+    const set = run({
+      elements: [{ data: { id: 'n' } }],
+      style: {
+        nodes: {
+          label: 'x',
+          'text-background-color': '#f00',
+          'background-image': ['a.png', 'b.png'],
+          'background-clip': ['none', 'node'],
+        },
+      },
+    });
+
+    expect(set.nodes).to.have.property('text-background-color');
+    expect(set.nodes).to.have.property('background-clip');
   });
 
   it('cuts a long value list and counts the rest', () => {

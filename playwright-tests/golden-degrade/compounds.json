@@ -1,0 +1,75 @@
+{
+  "golden": "compounds",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 24319,
+      "elements": 6
+    },
+    "nodes/border-color": {
+      "moved": 4977,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 6349,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 6230,
+      "elements": 6
+    },
+    "parents/padding": {
+      "moved": 7812,
+      "elements": 3,
+      "via": "sheet"
+    },
+    "parents/padding-bottom": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "gp",
+        "p",
+        "q"
+      ]
+    },
+    "parents/padding-left": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "gp",
+        "p",
+        "q"
+      ]
+    },
+    "parents/padding-right": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "gp",
+        "p",
+        "q"
+      ]
+    },
+    "parents/padding-top": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "gp",
+        "p",
+        "q"
+      ]
+    },
+    "edges/line-color": {
+      "moved": 1237,
+      "elements": 1
+    },
+    "edges/width": {
+      "moved": 868,
+      "elements": 1
+    }
+  }
+}

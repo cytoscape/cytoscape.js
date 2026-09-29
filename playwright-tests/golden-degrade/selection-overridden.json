@@ -1,0 +1,26 @@
+{
+  "golden": "selection-overridden",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 13220,
+      "elements": 5
+    },
+    "nodes/border-color": {
+      "moved": 3144,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 3096,
+      "elements": 6
+    },
+    "nodes/height": {
+      "moved": 11208,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 11208,
+      "elements": 6
+    }
+  }
+}

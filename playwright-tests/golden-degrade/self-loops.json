@@ -1,0 +1,34 @@
+{
+  "golden": "self-loops",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 2368,
+      "elements": 4
+    },
+    "nodes/height": {
+      "moved": 2085,
+      "elements": 4
+    },
+    "nodes/width": {
+      "moved": 1723,
+      "elements": 4
+    },
+    "edges/curve-style": {
+      "moved": 0,
+      "elements": 5
+    },
+    "edges/line-color": {
+      "moved": 2724,
+      "elements": 6
+    },
+    "edges/loop-direction": {
+      "moved": 4592,
+      "elements": 6
+    },
+    "edges/loop-sweep": {
+      "moved": 4936,
+      "elements": 6
+    }
+  }
+}

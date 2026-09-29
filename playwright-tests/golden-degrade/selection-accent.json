@@ -1,0 +1,30 @@
+{
+  "golden": "selection-accent",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 12092,
+      "elements": 2
+    },
+    "nodes/border-color": {
+      "moved": 5264,
+      "elements": 7
+    },
+    "nodes/border-width": {
+      "moved": 6076,
+      "elements": 7
+    },
+    "nodes/height": {
+      "moved": 18348,
+      "elements": 7
+    },
+    "nodes/width": {
+      "moved": 14760,
+      "elements": 7
+    },
+    "edges/width": {
+      "moved": 232,
+      "elements": 1
+    }
+  }
+}

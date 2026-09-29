@@ -1,0 +1,30 @@
+{
+  "golden": "bezier-bundles",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 4000,
+      "elements": 8
+    },
+    "nodes/height": {
+      "moved": 4640,
+      "elements": 8
+    },
+    "nodes/width": {
+      "moved": 4728,
+      "elements": 8
+    },
+    "edges/curve-style": {
+      "moved": 5402,
+      "elements": 8
+    },
+    "edges/line-color": {
+      "moved": 5065,
+      "elements": 8
+    },
+    "edges/line-style": {
+      "moved": 682,
+      "elements": 2
+    }
+  }
+}

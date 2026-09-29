@@ -1,0 +1,74 @@
+{
+  "golden": "border-styles",
+  "pixels": 212800,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 70072,
+      "elements": 40
+    },
+    "nodes/border-color": {
+      "moved": 20174,
+      "elements": 40
+    },
+    "nodes/border-dash-pattern": {
+      "moved": 5074,
+      "elements": 40
+    },
+    "nodes/border-style": {
+      "moved": 14840,
+      "elements": 24
+    },
+    "nodes/border-width": {
+      "moved": 20379,
+      "elements": 24
+    },
+    "nodes/ghost": {
+      "moved": 701,
+      "elements": 1
+    },
+    "nodes/ghost-offset-x": {
+      "moved": 790,
+      "elements": 40
+    },
+    "nodes/ghost-offset-y": {
+      "moved": 775,
+      "elements": 40
+    },
+    "nodes/ghost-opacity": {
+      "moved": 701,
+      "elements": 40
+    },
+    "nodes/height": {
+      "moved": 58346,
+      "elements": 40
+    },
+    "nodes/outline-color": {
+      "moved": 17112,
+      "elements": 16
+    },
+    "nodes/outline-offset": {
+      "moved": 21549,
+      "elements": 40
+    },
+    "nodes/outline-opacity": {
+      "moved": 17112,
+      "elements": 16
+    },
+    "nodes/outline-style": {
+      "moved": 14134,
+      "elements": 40
+    },
+    "nodes/outline-width": {
+      "moved": 17112,
+      "elements": 16
+    },
+    "nodes/shape": {
+      "moved": 48627,
+      "elements": 35
+    },
+    "nodes/width": {
+      "moved": 64904,
+      "elements": 40
+    }
+  }
+}

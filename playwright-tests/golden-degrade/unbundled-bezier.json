@@ -1,0 +1,39 @@
+{
+  "golden": "unbundled-bezier",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 3500,
+      "elements": 7
+    },
+    "nodes/height": {
+      "moved": 3768,
+      "elements": 7
+    },
+    "nodes/width": {
+      "moved": 3516,
+      "elements": 7
+    },
+    "edges/control-point-distances": {
+      "moved": 4786,
+      "elements": 4,
+      "via": "sheet"
+    },
+    "edges/control-point-weights": {
+      "moved": 4147,
+      "elements": 4
+    },
+    "edges/curve-style": {
+      "moved": 4698,
+      "elements": 4
+    },
+    "edges/line-color": {
+      "moved": 2779,
+      "elements": 4
+    },
+    "edges/line-style": {
+      "moved": 437,
+      "elements": 1
+    }
+  }
+}

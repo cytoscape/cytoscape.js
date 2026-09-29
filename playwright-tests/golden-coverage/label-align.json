@@ -36,9 +36,6 @@
     "text-background-padding": [
       "1"
     ],
-    "text-border-color": [
-      "rgba(0,0,0,0)"
-    ],
     "text-halign": [
       "left",
       "right"

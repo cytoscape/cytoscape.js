@@ -1,0 +1,46 @@
+{
+  "golden": "ghost",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 5241,
+      "elements": 3
+    },
+    "nodes/border-color": {
+      "moved": 3376,
+      "elements": 3
+    },
+    "nodes/border-width": {
+      "moved": 3390,
+      "elements": 3
+    },
+    "nodes/ghost": {
+      "moved": 3894,
+      "elements": 3
+    },
+    "nodes/ghost-offset-x": {
+      "moved": 4851,
+      "elements": 3
+    },
+    "nodes/ghost-offset-y": {
+      "moved": 4719,
+      "elements": 3
+    },
+    "nodes/ghost-opacity": {
+      "moved": 3894,
+      "elements": 3
+    },
+    "nodes/height": {
+      "moved": 3134,
+      "elements": 3
+    },
+    "nodes/shape": {
+      "moved": 3219,
+      "elements": 2
+    },
+    "nodes/width": {
+      "moved": 4279,
+      "elements": 3
+    }
+  }
+}

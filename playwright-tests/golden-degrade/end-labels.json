@@ -1,0 +1,115 @@
+{
+  "golden": "end-labels",
+  "pixels": 176000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 3388,
+      "elements": 7
+    },
+    "nodes/border-color": {
+      "moved": 1036,
+      "elements": 7
+    },
+    "nodes/border-width": {
+      "moved": 3398,
+      "elements": 7
+    },
+    "nodes/font-family": {
+      "moved": 1172,
+      "elements": 7,
+      "via": "sheet"
+    },
+    "nodes/height": {
+      "moved": 2685,
+      "elements": 7
+    },
+    "nodes/width": {
+      "moved": 4264,
+      "elements": 7
+    },
+    "edges/color": {
+      "moved": 693,
+      "elements": 5,
+      "unresettable": [
+        "st",
+        "bz1",
+        "bz2",
+        "tx",
+        "lp"
+      ]
+    },
+    "edges/curve-style": {
+      "moved": 4897,
+      "elements": 4
+    },
+    "edges/font-size": {
+      "moved": 2776,
+      "elements": 5,
+      "unresettable": [
+        "st",
+        "bz1",
+        "bz2",
+        "tx",
+        "lp"
+      ]
+    },
+    "edges/line-color": {
+      "moved": 3510,
+      "elements": 5
+    },
+    "edges/source-label": {
+      "moved": 879,
+      "elements": 5
+    },
+    "edges/source-text-margin-y": {
+      "moved": 707,
+      "elements": 5
+    },
+    "edges/source-text-offset": {
+      "moved": 1654,
+      "elements": 5
+    },
+    "edges/source-text-rotation": {
+      "moved": 229,
+      "elements": 2
+    },
+    "edges/target-label": {
+      "moved": 876,
+      "elements": 5
+    },
+    "edges/target-text-offset": {
+      "moved": 1639,
+      "elements": 5
+    },
+    "edges/target-text-rotation": {
+      "moved": 273,
+      "elements": 2
+    },
+    "edges/text-background-color": {
+      "moved": 1529,
+      "elements": 5,
+      "unresettable": [
+        "st",
+        "bz1",
+        "bz2",
+        "tx",
+        "lp"
+      ]
+    },
+    "edges/text-background-opacity": {
+      "moved": 1529,
+      "elements": 5,
+      "unresettable": [
+        "st",
+        "bz1",
+        "bz2",
+        "tx",
+        "lp"
+      ]
+    },
+    "edges/width": {
+      "moved": 3727,
+      "elements": 5
+    }
+  }
+}

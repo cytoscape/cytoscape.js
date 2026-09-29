@@ -1,0 +1,39 @@
+{
+  "golden": "labels-zoom-closeup",
+  "pixels": 240000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 445,
+      "elements": 2
+    },
+    "nodes/color": {
+      "moved": 11564,
+      "elements": 2
+    },
+    "nodes/font-family": {
+      "moved": 18770,
+      "elements": 2,
+      "via": "sheet"
+    },
+    "nodes/font-size": {
+      "moved": 19838,
+      "elements": 2
+    },
+    "nodes/height": {
+      "moved": 2772,
+      "elements": 2
+    },
+    "nodes/label": {
+      "moved": 11586,
+      "elements": 2
+    },
+    "nodes/text-valign": {
+      "moved": 21489,
+      "elements": 2
+    },
+    "nodes/width": {
+      "moved": 2656,
+      "elements": 2
+    }
+  }
+}

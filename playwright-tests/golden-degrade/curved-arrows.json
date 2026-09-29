@@ -1,0 +1,30 @@
+{
+  "golden": "curved-arrows",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 3940,
+      "elements": 5
+    },
+    "edges/control-point-step-size": {
+      "moved": 6659,
+      "elements": 5
+    },
+    "edges/curve-style": {
+      "moved": 4544,
+      "elements": 5
+    },
+    "edges/line-color": {
+      "moved": 3526,
+      "elements": 5
+    },
+    "edges/target-arrow-color": {
+      "moved": 286,
+      "elements": 5
+    },
+    "edges/target-arrow-shape": {
+      "moved": 2702,
+      "elements": 5
+    }
+  }
+}

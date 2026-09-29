@@ -45,9 +45,6 @@
     "text-background-padding": [
       "2"
     ],
-    "text-border-color": [
-      "rgba(0,0,0,0)"
-    ],
     "text-rotation": [
       "autorotate"
     ],

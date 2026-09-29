@@ -1,0 +1,67 @@
+{
+  "golden": "curved-edge-labels",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 1296,
+      "elements": 3
+    },
+    "nodes/font-family": {
+      "moved": 804,
+      "elements": 3,
+      "via": "sheet"
+    },
+    "nodes/height": {
+      "moved": 2678,
+      "elements": 3
+    },
+    "nodes/width": {
+      "moved": 2847,
+      "elements": 3
+    },
+    "edges/color": {
+      "moved": 523,
+      "elements": 3
+    },
+    "edges/control-point-step-size": {
+      "moved": 4892,
+      "elements": 3
+    },
+    "edges/curve-style": {
+      "moved": 3661,
+      "elements": 3
+    },
+    "edges/font-size": {
+      "moved": 1007,
+      "elements": 3
+    },
+    "edges/label": {
+      "moved": 968,
+      "elements": 3
+    },
+    "edges/line-color": {
+      "moved": 2161,
+      "elements": 3
+    },
+    "edges/text-background-color": {
+      "moved": 577,
+      "elements": 3
+    },
+    "edges/text-background-opacity": {
+      "moved": 577,
+      "elements": 1
+    },
+    "edges/text-background-padding": {
+      "moved": 240,
+      "elements": 3
+    },
+    "edges/text-rotation": {
+      "moved": 795,
+      "elements": 2
+    },
+    "edges/width": {
+      "moved": 2417,
+      "elements": 3
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "golden": "segments-families",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 4000,
+      "elements": 8
+    },
+    "nodes/height": {
+      "moved": 3842,
+      "elements": 8
+    },
+    "nodes/width": {
+      "moved": 4807,
+      "elements": 8
+    },
+    "edges/curve-style": {
+      "moved": 6353,
+      "elements": 4
+    },
+    "edges/line-color": {
+      "moved": 3671,
+      "elements": 4
+    },
+    "edges/line-style": {
+      "moved": 397,
+      "elements": 1
+    },
+    "edges/segment-distances": {
+      "moved": 6621,
+      "elements": 4
+    },
+    "edges/segment-radii": {
+      "moved": 484,
+      "elements": 4
+    },
+    "edges/segment-weights": {
+      "moved": 6781,
+      "elements": 4
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "golden": "line-styles",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 1398,
+      "elements": 6
+    },
+    "nodes/height": {
+      "moved": 2827,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 5627,
+      "elements": 6
+    },
+    "edges/line-color": {
+      "moved": 5391,
+      "elements": 4
+    },
+    "edges/line-style": {
+      "moved": 3016,
+      "elements": 3
+    },
+    "edges/width": {
+      "moved": 1674,
+      "elements": 1
+    }
+  }
+}

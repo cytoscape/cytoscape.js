@@ -1,0 +1,71 @@
+{
+  "golden": "gradients",
+  "pixels": 140000,
+  "pairs": {
+    "nodes/background-fill": {
+      "moved": 24131,
+      "elements": 7
+    },
+    "nodes/background-gradient-direction": {
+      "moved": 10648,
+      "elements": 3
+    },
+    "nodes/background-gradient-stop-colors": {
+      "moved": 24131,
+      "elements": 7,
+      "via": "sheet"
+    },
+    "nodes/background-gradient-stop-positions": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "p",
+        "q"
+      ]
+    },
+    "nodes/height": {
+      "moved": 18943,
+      "elements": 7
+    },
+    "nodes/shape": {
+      "moved": 8628,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 24071,
+      "elements": 7
+    },
+    "edges/curve-style": {
+      "moved": 6058,
+      "elements": 2
+    },
+    "edges/line-fill": {
+      "moved": 4306,
+      "elements": 2
+    },
+    "edges/line-gradient-stop-colors": {
+      "moved": 4306,
+      "elements": 2,
+      "via": "sheet"
+    },
+    "edges/line-gradient-stop-positions": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "g1",
+        "g2"
+      ]
+    },
+    "edges/width": {
+      "moved": 3570,
+      "elements": 2
+    }
+  }
+}

@@ -78,22 +78,56 @@ export const collectStyleCoverage = ({ compound, maxValues }) => {
   // globalThis is the page's window; the Node gate sets the same two
   // names on its own global
   const cy = globalThis.cy;
+  // round 143: a labelled twin of each reference too.  A labelled
+  // element's label colours read back from its label entry with their
+  // opacity folded in (`text-background-color` of a default labelled
+  // node reads `rgba(0,0,0,0)`), an unlabelled one's from the sheet
+  // (`rgb(0,0,0)`), so judging a labelled element against an unlabelled
+  // reference counted the label box's colours as set in every labelled
+  // scene — which the degrade control exposed as pairs that moved
+  // nothing because nothing had been set
   const ref = globalThis.cytoscape({
     elements: [
       { data: { id: 'p' } },
       { data: { id: 'c', parent: 'p' } },
       { data: { id: 'n' } },
       { data: { id: 'e', source: 'c', target: 'n' } },
+      { data: { id: 'pl' } },
+      { data: { id: 'cl', parent: 'pl' } },
+      { data: { id: 'nl' } },
+      { data: { id: 'el', source: 'cl', target: 'nl' } },
     ],
   });
+
+  ref.$id('pl').style('label', 'x');
+  ref.$id('nl').style('label', 'x');
+  ref.$id('el').style('label', 'x');
+
   const defaults = {
     node: ref.$id('n').style(),
     parent: ref.$id('p').style(),
     edge: ref.$id('e').style(),
+    labelled: {
+      node: ref.$id('nl').style(),
+      parent: ref.$id('pl').style(),
+      edge: ref.$id('el').style(),
+    },
     core: ref.style().core(),
   };
 
   ref.destroy();
+
+  // a labelled element is judged against the labelled reference, except
+  // for `label` itself, whose default is the unlabelled one's
+  const refFor = (ele, kind) => {
+    const plain = defaults[kind];
+
+    if (ele.style('label') === plain.label) {
+      return plain;
+    }
+
+    return { ...defaults.labelled[kind], label: plain.label };
+  };
 
   const compoundSet = new Set(compound);
   const text = (v) => (typeof v === 'string' ? v : JSON.stringify(v));
@@ -101,13 +135,30 @@ export const collectStyleCoverage = ({ compound, maxValues }) => {
   const note = (group, prop, value) => {
     (groups[group][prop] ??= new Set()).add(text(value));
   };
+  // a per-image list reads back one entry per layer, so a node with
+  // four images reads `node node node node` for an untouched
+  // background-clip — the default, once per layer (round 143: the
+  // degrade control found eight image properties "set" that way that no
+  // reset could move)
+  const isDefault = (v, d) => {
+    const dt = text(d);
+
+    return (
+      text(v) === dt ||
+      (typeof v === 'string' &&
+        typeof dt === 'string' &&
+        dt !== '' &&
+        !dt.includes(' ') &&
+        v.split(' ').every((t) => t === dt))
+    );
+  };
   const sweep = (group, props, def, only) => {
     for (const prop of Object.keys(props)) {
       if (only != null && only(prop) === false) {
         continue;
       }
 
-      if (text(props[prop]) !== text(def[prop])) {
+      if (!isDefault(props[prop], def[prop])) {
         note(group, prop, props[prop]);
       }
     }
@@ -118,18 +169,28 @@ export const collectStyleCoverage = ({ compound, maxValues }) => {
     const props = node.style();
 
     if (node.isParent()) {
+      const def = refFor(node, 'parent');
+
       counts.parents++;
-      sweep('nodes', props, defaults.parent, (p) => !compoundSet.has(p));
-      sweep('parents', props, defaults.parent, (p) => compoundSet.has(p));
+      // a parent's width and height read back its auto-sized box, which
+      // no sheet sets (round 143: the degrade control reset them on the
+      // compound goldens and moved nothing)
+      sweep(
+        'nodes',
+        props,
+        def,
+        (p) => !compoundSet.has(p) && p !== 'width' && p !== 'height',
+      );
+      sweep('parents', props, def, (p) => compoundSet.has(p));
     } else {
       counts.nodes++;
-      sweep('nodes', props, defaults.node, (p) => !compoundSet.has(p));
+      sweep('nodes', props, refFor(node, 'node'), (p) => !compoundSet.has(p));
     }
   });
 
   cy.edges().forEach((edge) => {
     counts.edges++;
-    sweep('edges', edge.style(), defaults.edge);
+    sweep('edges', edge.style(), refFor(edge, 'edge'));
   });
 
   // the core block reads back as the engine's camelCase record

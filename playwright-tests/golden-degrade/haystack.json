@@ -1,0 +1,30 @@
+{
+  "golden": "haystack",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 8320,
+      "elements": 4
+    },
+    "nodes/height": {
+      "moved": 14349,
+      "elements": 4
+    },
+    "nodes/width": {
+      "moved": 11684,
+      "elements": 4
+    },
+    "edges/curve-style": {
+      "moved": 11408,
+      "elements": 8
+    },
+    "edges/haystack-radius": {
+      "moved": 11420,
+      "elements": 8
+    },
+    "edges/line-color": {
+      "moved": 6787,
+      "elements": 8
+    }
+  }
+}

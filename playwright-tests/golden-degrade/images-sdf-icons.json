@@ -1,0 +1,46 @@
+{
+  "golden": "images-sdf-icons",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 10326,
+      "elements": 2
+    },
+    "nodes/background-fit": {
+      "moved": 10966,
+      "elements": 2
+    },
+    "nodes/background-image": {
+      "moved": 8032,
+      "elements": 2
+    },
+    "nodes/background-image-color": {
+      "moved": 8032,
+      "elements": 2
+    },
+    "nodes/background-image-type": {
+      "moved": 8650,
+      "elements": 2
+    },
+    "nodes/border-color": {
+      "moved": 3512,
+      "elements": 2
+    },
+    "nodes/border-width": {
+      "moved": 3512,
+      "elements": 2
+    },
+    "nodes/height": {
+      "moved": 10902,
+      "elements": 2
+    },
+    "nodes/shape": {
+      "moved": 6272,
+      "elements": 2
+    },
+    "nodes/width": {
+      "moved": 10960,
+      "elements": 2
+    }
+  }
+}

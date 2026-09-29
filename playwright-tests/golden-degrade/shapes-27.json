@@ -1,0 +1,30 @@
+{
+  "golden": "shapes-27",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 13828,
+      "elements": 5
+    },
+    "nodes/border-color": {
+      "moved": 3792,
+      "elements": 5
+    },
+    "nodes/border-width": {
+      "moved": 3796,
+      "elements": 5
+    },
+    "nodes/height": {
+      "moved": 9680,
+      "elements": 5
+    },
+    "nodes/shape": {
+      "moved": 6848,
+      "elements": 5
+    },
+    "nodes/width": {
+      "moved": 12186,
+      "elements": 5
+    }
+  }
+}

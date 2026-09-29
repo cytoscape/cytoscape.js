@@ -1,0 +1,22 @@
+{
+  "golden": "mapped-colors",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 12204,
+      "elements": 9
+    },
+    "nodes/height": {
+      "moved": 4509,
+      "elements": 9
+    },
+    "nodes/width": {
+      "moved": 5105,
+      "elements": 9
+    },
+    "edges/line-color": {
+      "moved": 3004,
+      "elements": 8
+    }
+  }
+}

@@ -26,8 +26,7 @@
       "14"
     ],
     "height": [
-      "44",
-      "67"
+      "44"
     ],
     "label": [
       "block",
@@ -45,17 +44,10 @@
     "shape": [
       "round-rectangle"
     ],
-    "text-background-color": [
-      "rgba(0,0,0,0)"
-    ],
-    "text-border-color": [
-      "rgba(0,0,0,0)"
-    ],
     "text-valign": [
       "center"
     ],
     "width": [
-      "127",
       "44"
     ]
   },

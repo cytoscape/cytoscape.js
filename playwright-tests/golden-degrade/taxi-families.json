@@ -1,0 +1,46 @@
+{
+  "golden": "taxi-families",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 4000,
+      "elements": 8
+    },
+    "nodes/height": {
+      "moved": 2619,
+      "elements": 8
+    },
+    "nodes/width": {
+      "moved": 3715,
+      "elements": 8
+    },
+    "edges/curve-style": {
+      "moved": 5647,
+      "elements": 4
+    },
+    "edges/line-color": {
+      "moved": 3150,
+      "elements": 4
+    },
+    "edges/target-arrow-color": {
+      "moved": 232,
+      "elements": 4
+    },
+    "edges/target-arrow-shape": {
+      "moved": 318,
+      "elements": 4
+    },
+    "edges/taxi-direction": {
+      "moved": 1067,
+      "elements": 2
+    },
+    "edges/taxi-radius": {
+      "moved": 212,
+      "elements": 4
+    },
+    "edges/taxi-turn": {
+      "moved": 3819,
+      "elements": 4
+    }
+  }
+}

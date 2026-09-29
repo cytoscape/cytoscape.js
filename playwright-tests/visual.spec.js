@@ -12,6 +12,7 @@ import {
   COMPOUND_PROPS,
   MAX_VALUES,
 } from './lib/style-coverage.mjs';
+import { degradeScene } from './lib/degrade-control.mjs';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -34,6 +35,9 @@ Visual regression specs for the WebGPU prototype, in two families:
   Each golden also writes the style properties its scene exercises to
   playwright-tests/golden-coverage/<name>.json (round 135) and is held to
   it the same way; UPDATE_GOLDEN_COVERAGE=1 rewrites only those records.
+  DEGRADE_CONTROL=1 (round 143) then resets each of those properties in
+  turn on the live scene and records the pixels each moves to
+  playwright-tests/golden-degrade/<name>.json (lib/degrade-control.mjs).
 
 - **v3-vs-v4 parity**: the same fixture rendered by the classic canvas
   renderer and the GPU prototype in the same run, diffed with a tolerance
@@ -78,7 +82,13 @@ const waitFrames = async (page, n = 3) => {
   }, n);
 };
 
+// the last export's options, so the degrade control (round 143)
+// re-exports a golden's scene exactly as the golden was
+let lastExportOpts = {};
+
 const exportPng = async (page, opts = {}) => {
+  lastExportOpts = opts;
+
   return await page.evaluate(async (opts) => await window.cy.png(opts), opts);
 };
 
@@ -198,13 +208,21 @@ test.describe('WebGPU visual goldens', () => {
     // playwright-tests/golden-coverage/<name>.json the way the PNG is
     // held to its golden — the record the golden-coverage enumerator
     // (scripts/golden-coverage.mjs) counts from
-    compareToCoverage(
-      name,
-      await page.evaluate(collectStyleCoverage, {
-        compound: COMPOUND_PROPS,
-        maxValues: MAX_VALUES,
-      }),
-    );
+    const coverage = await page.evaluate(collectStyleCoverage, {
+      compound: COMPOUND_PROPS,
+      maxValues: MAX_VALUES,
+    });
+
+    compareToCoverage(name, coverage);
+
+    // round 143 (item 30, tier 2): DEGRADE_CONTROL=1 resets each
+    // exercised property to its default in turn on this live scene and
+    // counts the pixels that move, into
+    // playwright-tests/golden-degrade/<name>.json
+    if (process.env.DEGRADE_CONTROL) {
+      test.setTimeout(300_000);
+      await degradeScene(page, name, coverage, lastExportOpts);
+    }
   };
 
   test('golden: nodes, borders, opacity, edges, arrows', async ({
@@ -1945,9 +1963,20 @@ test.describe('WebGPU visual goldens', () => {
       }
     });
 
+    // round 143: without the label box the words scene gives its
+    // boxed row — the one element here has no box, so the degrade
+    // control measured the box's colour and padding at 0 px moved:
+    // decoration this golden claimed and did not see
+    const {
+      'text-background-color': _bg,
+      'text-background-opacity': _bgo,
+      'text-background-padding': _bgp,
+      ...closeupNodes
+    } = OUTLINE_WORDS_SCENE.style.nodes;
+
     await makeReadyCy(page, {
       elements: [OUTLINE_WORDS_SCENE.elements[0]],
-      style: OUTLINE_WORDS_SCENE.style,
+      style: { nodes: closeupNodes },
       zoom: 1,
       pan: { x: 400, y: 150 },
     });

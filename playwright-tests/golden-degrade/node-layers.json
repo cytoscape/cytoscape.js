@@ -1,0 +1,46 @@
+{
+  "golden": "node-layers",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 4016,
+      "elements": 3
+    },
+    "nodes/height": {
+      "moved": 3744,
+      "elements": 3
+    },
+    "nodes/overlay-color": {
+      "moved": 5180,
+      "elements": 3
+    },
+    "nodes/overlay-opacity": {
+      "moved": 5180,
+      "elements": 2
+    },
+    "nodes/overlay-padding": {
+      "moved": 1300,
+      "elements": 3
+    },
+    "nodes/overlay-shape": {
+      "moved": 1888,
+      "elements": 3
+    },
+    "nodes/underlay-color": {
+      "moved": 7288,
+      "elements": 3
+    },
+    "nodes/underlay-opacity": {
+      "moved": 7288,
+      "elements": 2
+    },
+    "nodes/underlay-padding": {
+      "moved": 2968,
+      "elements": 3
+    },
+    "nodes/width": {
+      "moved": 5620,
+      "elements": 3
+    }
+  }
+}

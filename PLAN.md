@@ -2343,3 +2343,27 @@ directions".*
     pick answers (a frame of latency on every background press).  The
     WebGL2 backend (round 137) inherits whichever is chosen, since the
     pick seam is shared.
+90. **Label readback: what the degrade control read that the screen
+    did not** (logged 2026-09-29 by round 143).  The degrade control
+    compares read-backs before and after each reset, and three of its
+    reads disagreed with what is drawn — none moves a pixel, all reach
+    `style()`: (a) a labelled element's `text-background-color` and
+    `text-border-color` read back with their opacity folded into the
+    alpha (`rgba(0,0,0,0)` for a default labelled node) while an
+    unlabelled one reads the declared colour (`rgb(0,0,0)`) — the
+    capture was over-counting both on every labelled golden until round
+    143 judged labelled elements against a labelled reference; (b) an
+    edge with only end labels reads its shared text channels (`color`,
+    `font-size`, `text-background-*`) from the sheet, not the element,
+    so a bypass draws but does not read back (the readers look at the
+    main label stream only); (c) on `images-multi`, resetting
+    `background-image` and restoring it brings every value back and
+    leaves 624 px of the frame different — to verify whether a restored
+    image re-packs into another atlas slot or keeps a stale state.
+    Beside them, two read-backs the control classes as derived and
+    leaves: `chart-colors` reads the palette its values imply and the
+    gradient stop positions read the even spread their colours imply,
+    so a golden "sets" both by setting their neighbours.  **The call**:
+    whether readback reports the declared or the resolved value for (a)
+    and those two, and a fix for (b) (read the end streams when the
+    main one is empty — the channels are shared).

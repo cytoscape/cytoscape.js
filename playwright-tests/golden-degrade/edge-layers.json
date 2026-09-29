@@ -1,0 +1,46 @@
+{
+  "golden": "edge-layers",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 3916,
+      "elements": 5
+    },
+    "edges/curve-style": {
+      "moved": 48,
+      "elements": 2
+    },
+    "edges/line-color": {
+      "moved": 3396,
+      "elements": 3
+    },
+    "edges/overlay-color": {
+      "moved": 9149,
+      "elements": 3
+    },
+    "edges/overlay-opacity": {
+      "moved": 9149,
+      "elements": 3
+    },
+    "edges/overlay-padding": {
+      "moved": 7070,
+      "elements": 3
+    },
+    "edges/taxi-turn": {
+      "moved": 181,
+      "elements": 1
+    },
+    "edges/underlay-color": {
+      "moved": 12817,
+      "elements": 3
+    },
+    "edges/underlay-opacity": {
+      "moved": 12817,
+      "elements": 3
+    },
+    "edges/width": {
+      "moved": 7124,
+      "elements": 3
+    }
+  }
+}

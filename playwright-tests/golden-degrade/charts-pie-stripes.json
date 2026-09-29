@@ -1,0 +1,68 @@
+{
+  "golden": "charts-pie-stripes",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 9685,
+      "elements": 6
+    },
+    "nodes/border-color": {
+      "moved": 1040,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 1131,
+      "elements": 1
+    },
+    "nodes/chart": {
+      "moved": 24172,
+      "elements": 6
+    },
+    "nodes/chart-colors": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "full",
+        "partial",
+        "donut",
+        "sv",
+        "sh",
+        "small"
+      ]
+    },
+    "nodes/chart-direction": {
+      "moved": 4584,
+      "elements": 1
+    },
+    "nodes/chart-hole": {
+      "moved": 708,
+      "elements": 1
+    },
+    "nodes/chart-size": {
+      "moved": 3353,
+      "elements": 1
+    },
+    "nodes/chart-start-angle": {
+      "moved": 821,
+      "elements": 1
+    },
+    "nodes/chart-values": {
+      "moved": 24172,
+      "elements": 6,
+      "via": "sheet"
+    },
+    "nodes/height": {
+      "moved": 27021,
+      "elements": 6
+    },
+    "nodes/shape": {
+      "moved": 3896,
+      "elements": 2
+    },
+    "nodes/width": {
+      "moved": 27319,
+      "elements": 6
+    }
+  }
+}

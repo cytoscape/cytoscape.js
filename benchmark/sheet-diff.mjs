@@ -26,11 +26,12 @@
 //      properties whose declaration differs from the installed sheet's
 //      are re-written, per group.
 //
-// Three control rows price what the diff must *not* skip: an identical
-// sheet (the diff is empty — the floor of the compile), an edge `width`
-// change (no narrow writer, so the edge group takes the full pass and
-// the nodes are skipped) and a constant → data-mapper swap of the node
-// colour (the diff evaluates the new mapper per node).
+// Four more rows price the diff's other shapes: an identical sheet (the
+// diff is empty — the floor of the compile), an edge `line-color` change
+// (the widest narrow pass: one writer over 464,657 edges), an edge
+// `width` change (no narrow writer, so the edge group takes the full
+// pass and the nodes are skipped) and a constant → data-mapper swap of
+// the node colour (the diff evaluates the new mapper per node).
 //
 // Every row asserts what it is named for.  The dirty bytes per
 // operation (every column span a renderer would upload, from a
@@ -296,6 +297,27 @@ row('sheet diff: identical sheet', {
 });
 
 {
+  const lineColor = (f) => ({
+    nodes: style.nodes,
+    edges: { ...style.edges, 'line-color': COLORS[f % 2] },
+  });
+
+  row('sheet diff: edge line-color', {
+    op: sheetOp(lineColor),
+    first: lineColor(1),
+    check: (cy) => {
+      const c = cy.edges()[0].style('line-color');
+      const want = LAST_RGB.slice(4, -1); // 'r,g,b'
+
+      return c.includes(`(${want}`)
+        ? null
+        : `edge line-color reads ${c}, expected ${LAST_RGB}`;
+    },
+    compare: (cy, f) => cy.style(lineColor(f)),
+  });
+}
+
+{
   const edgeWidth = (f) => ({
     nodes: style.nodes,
     edges: { ...style.edges, width: 1 + (f % 2) },
@@ -306,7 +328,7 @@ row('sheet diff: identical sheet', {
     first: edgeWidth(1),
     check: (cy) => {
       const w = cy.edges()[0].style('width');
-      const want = `${1 + ((APPLIES - 1) % 2)}px`;
+      const want = 1 + ((APPLIES - 1) % 2);
 
       return w === want ? null : `edge width reads ${w}, expected ${want}`;
     },

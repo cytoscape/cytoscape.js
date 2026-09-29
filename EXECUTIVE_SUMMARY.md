@@ -5,7 +5,21 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 143, what the goldens
+- **Last updated**: 2026-09-29, after round 144, animated layouts at
+  scale: a layout with `animate: true` now moves its nodes as one
+  animation instead of one per node, so a 20,000-node grid tween draws
+  62 frames in its second where it drew 2 (5,000 nodes already drew
+  only 2), and under `renderer: { worker: true }` the tween runs on the
+  worker's GPU — 547 KB crosses to the worker per tween instead of
+  8.75 MB.  Each node stays individually addressable during the tween,
+  as in v3: `animated()`, `position()` (now the drawn value, where it
+  used to read the start), `stop()`, `lock()`, `remove()` and
+  `cy.patch()` act on one node while the rest carry on, and the eight
+  built-in layouts gained the `layout.stop()` they were documented to
+  have.  Two defects the new checks found are fixed: cancelling an
+  animated layout left the GPU animating the nodes forever, and a node
+  outside a layout's tween, moved during it, stayed drawn where it had
+  been.  Earlier the same day round 143, what the goldens
   actually see: every style property a visual golden sets was reset to
   its default, one at a time, and the pixels that moved counted — 530
   (golden, property) pairs in 2.2 minutes, 520 moving pixels, 3 moving
@@ -276,7 +290,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,164 unit · 1,147 module · 38 soak · 618 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,200 unit · 1,147 module · 38 soak · 622 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 51 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 140 of 216 are set by some golden, and the 76 no golden sets are counted and gated; resetting each set property on its scene moves pixels for 131 of them, measured and gated · 10 scripted gesture traces replayed on both WebGPU hosts and on v3, compared as numbers · 54 live v3-vs-v4 pixel-parity scenes, 15 of them close-ups at zoom 2–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 29 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
@@ -500,8 +514,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     exports diff exact-zero on the pinned adapter.  Pass-1 deferrals
     recorded: worker background images, GPU tweens/force across the
     boundary, page @font-face labels — the force layout moved into the
-    worker on 18 Sep, images and fonts on 29 Sep, and tweens stay on
-    the CPU path, which was measured as costing nearly nothing.
+    worker on 18 Sep, images, fonts and position tweens on 29 Sep; paint
+    tweens stay on the CPU path, which was measured as costing nearly
+    nothing.
   - Measured (86.4): under a saturated main loop the worker host painted
     **236 of 240 frames against same-thread's 120** at equal main-thread
     busyness; costs are ~0.7 ms/frame of batch traffic and +0.6 ms pick
@@ -1733,6 +1748,24 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - `mid-*-arrow-width` is accepted and read back and draws nothing, as
     in v3 for a filled head.  Gradients, already shipped as v3's props,
     cost about 1% of GPU frame time across a 25k-node scene.
+- **29 Sep** — animated layouts stay smooth at scale
+  - A layout with `animate: true` is one animation over its nodes, not
+    one per node: one GPU upload per layout.  A one-second grid tween
+    draws 59–62 frames at 2k, 5k, 10k and 20k nodes on both hosts,
+    where the page's own thread drew 29 at 2k and 2 from 5k up; on the
+    465k-edge fixture, 44 frames where it drew 6.
+  - The worker host evaluates position tweens on the worker's GPU: one
+    message per tween where it posted every node's position every frame.
+  - Each node stays addressable mid-tween, v3's answers: `animated()`
+    is true, `position()` reads what is drawn, `stop()`, a new
+    animation, `lock()` and `remove()` act on that node alone, and
+    `layoutstop` fires when the tween ends.  A node mid-tween cannot be
+    dragged (v3 let the drag and the tween fight) — stop it first; one
+    locked mid-tween stays put after `unlock()`.  The eight built-in
+    layouts gained `layout.stop()`.
+  - Fixed: cancelling an animated layout left the GPU holding the node
+    positions for good; a node moved during another layout's tween was
+    drawn where it had been until it moved again.
 - **29 Sep** — what the goldens see, measured
   - Every style property a golden sets was reset to its default on its
     scene and the moved pixels counted: 530 pairs in 2.2 minutes, 520
@@ -1831,7 +1864,11 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   `cancel()`, and a cancelled run rejects with `cytoscape.CancelledError`.
 - **Layouts can be cancelled, not only stopped** (18 Sep):
   `layout.cancel()` restores the pre-run positions and rejects
-  `promise()`; `layout.stop()` is unchanged.
+  `promise()`; `layout.stop()` is unchanged, and since 29 Sep the eight
+  built-ins have it too.
+- **`eles.animate()` is one animation over the elements** — stopping one
+  element stops it all — except an animated layout's tween, whose nodes
+  stop, lock and leave one by one as v3's per-node tweens did.
 - **Eight algorithm families v3 never had**, on the same executor
   contract: `triangleCount`, `neighborhoodSimilarity`, `katzCentrality`,
   `randomWalkWithRestart` (+ its all-pairs proximity form),
@@ -1940,7 +1977,7 @@ width override is ported (29 Sep — read back only: it draws nothing on
 a filled head, in v3 either).  The layout option surface takes the
 bounding box as a hint by default, and goes into one layout round with
 the page sittings and AVSDF; one column animation per animated layout
-is due before alpha; the worker lane for the k-clusterings landed 29 Sep,
+landed 29 Sep; the worker lane for the k-clusterings landed 29 Sep,
 and the sheet diff for `cy.style()` landed the day of the sitting, as
 did the official JSON schemas on the sitting's terms: ajv in the tests
 only and no runtime `validate()`, the `$id` base left to the

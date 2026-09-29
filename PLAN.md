@@ -365,7 +365,17 @@ zoom 3, 7.5% with the style ignored), carried in **item 21**'s width
 half and **closed item 21**, and priced the gradient path (+0.7–3%
 device time at 25k × 50k); it logged **items 86 and 87** — the
 `text-transform` readback, and the label box's remaining v3
-deviations.  What follows is the sweep before it.
+deviations.  Round 144 (landed 2026-09-29 on the sitting's call for
+**item 68**) made an animated layout's tween one column animation — one
+registration and upload per layout, on both hosts (the worker host's
+through a remote tween sink) — taking a 20k-node grid tween from 2
+frames a second to 62 on the same-thread host; it settled the per-node
+contract during the tween (v3's answers but for `unlock()`, which does
+not resume), gave the eight discrete built-ins `layout.stop()`, and
+fixed three lease defects the specs found (a handle stop that leaked the
+batch, a settle that did not release it, a mirror that dropped writes to
+untweened slots of a leased column).  **Item 68 is closed**; it raised
+no new item.  What follows is the sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
@@ -2020,6 +2030,19 @@ directions".*
     **Call taken (2026-09-28, the eleventh sitting): go, before alpha**
     — one column animation per layout; per-node observability during the
     tween is settled with it.
+    **Closed by round 144 (2026-09-29).**  The first measurement found no
+    crossover in range: from 5k nodes the same-thread host drew 2 frames
+    in a one-second grid tween (29 at 2k), the worker host 54–60.  The
+    finisher now builds one column animation (`Animation.column`: one
+    capture, one CPU loop, one GPU registration), and the worker host
+    evaluates position tweens on its own device through a remote sink;
+    after, both hosts draw 59–62 frames at every size to 20k, the worker
+    posting 547 KB where it posted 8.75 MB.  The per-node contract —
+    `animated()`, `position()` (the tween's value, under the lease too),
+    `stop()`, eviction, `lock()`, `remove()` / `patch()`, grab, the
+    lifecycle events, `layout.stop()` (new on the eight built-ins) and
+    `cancel()` — is pinned in `test/layout-tween.mjs` on both executors.
+    Closed.
 69. **The offload lane frees the kernel's share; the builders are
     still in-thread** (logged 2026-09-18, from round 129.4's offload
     rows).  Every offload family builds its snapshot on the calling

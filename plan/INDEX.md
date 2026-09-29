@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–104, 106–124, 126–136, 138–143 |
+| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–104, 106–124, 126–136, 138–144 |
 | planned | 49–51, 71, 77–78, 80–84, 99, 105, 125, 137 |
 
 ## The sections
 
-183 sections.
+184 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -210,3 +210,4 @@ A round can land with an item held open; the round file says which.
 | 181 | 141 | 2026-09-29 | landed | [Ledger item 51: the worker host's images and fonts](rounds/2026-09-29-08-rnd0141-landed-item-51-the-worker-hosts-images-and-fonts.md) |
 | 182 | 142 | 2026-09-29 | landed | [Ledger item 31, the trace tier: the gestures replayed, compared as numbers](rounds/2026-09-29-09-rnd0142-landed-item-31-the-gesture-trace-tier.md) |
 | 183 | 143 | 2026-09-29 | landed | [Ledger item 30, tier 2: the degrade control — what the goldens set and do not see](rounds/2026-09-29-10-rnd0143-landed-item-30-tier-2-the-degrade-control.md) |
+| 184 | 144 | 2026-09-29 | landed | [Ledger item 68: the layout tween is one column animation](rounds/2026-09-29-11-rnd0144-landed-item-68-the-layout-tween-is-one-column-animation.md) |

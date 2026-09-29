@@ -28,7 +28,13 @@ change.  So the round opens once these have landed, and not before:
   rules (see item 8);
 - **item 31's trace tier** (the gesture traces, called "before the WebGL
   implementation") and **item 30's tier 2** (the degrade control), so
-  both renderers are held to the same inventories from the first commit;
+  both renderers are held to the same inventories from the first commit
+  — **landed 2026-09-29** (rounds 142 and 143): the traces run a new
+  backend by one `HOSTS` entry in `playwright-tests/lib/gesture-traces.mjs`
+  (`{ id: 'webgl2', options: { backend: 'webgl2' }, needs: 'webgl2' }`)
+  against the same records; the degrade records say which golden pixels
+  each property moves (131 of 216 properties have one), and tier 1's
+  paintable gaps are now 57;
 - **items 35–36** (device limits and allocation failure), so the
   `cy.add()` throw is designed once for both backends' limits.
 

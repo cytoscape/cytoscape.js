@@ -55,6 +55,11 @@ const hasAdapter = async (page) =>
     return (await navigator.gpu.requestAdapter()) != null;
   });
 
+const hasWebGL2 = async (page) =>
+  await page.evaluate(
+    () => document.createElement('canvas').getContext('webgl2') != null,
+  );
+
 const hasWorkerCanvas = async (page) =>
   await page.evaluate(
     () =>
@@ -127,7 +132,14 @@ for (const host of HOSTS) {
       await page.goto(PARITY_PAGE);
       await page.waitForFunction(() => window.makeV4 != null);
 
-      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+      // each host says what it needs (HOSTS); a WebGPU host needs an
+      // adapter, the worker host OffscreenCanvas workers too, and a
+      // WebGL2 host (round 137) only a WebGL2 context
+      if (host.needs === 'webgl2') {
+        test.skip(!(await hasWebGL2(page)), 'no WebGL2 context');
+      } else {
+        test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+      }
 
       if (host.needs === 'worker-canvas') {
         test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');

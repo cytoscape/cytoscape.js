@@ -5,7 +5,18 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 142, the gesture traces:
+- **Last updated**: 2026-09-29, after round 143, what the goldens
+  actually see: every style property a visual golden sets was reset to
+  its default, one at a time, and the pixels that moved counted — 530
+  (golden, property) pairs in 2.2 minutes, 520 moving pixels, 3 moving
+  none on purpose.  131 of the 216 properties now have a golden pixel
+  riding on them; 140 are set by some golden.  The pass found three
+  bugs a person would have met: a per-element style override over a
+  data-mapped colour never reached the screen once the graph had drawn
+  once (it now does, immediately), a label rotation change on its own
+  was ignored, and a custom polygon reported a nonsense corner radius.
+  It also showed the earlier count had credited five image properties
+  no golden sets.  Earlier the same day round 142, the gesture traces:
   ten scripted gestures — drags, box selection, the wheel in each mode,
   pinches, right clicks, taps with and without modifiers, one-finger
   touch, leaving the canvas — now replay in a real browser on both
@@ -265,9 +276,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,155 unit · 1,124 module · 38 soak · 586 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,164 unit · 1,147 module · 38 soak · 618 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | 51 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 145 of 216 are set by some golden, and the 71 no golden sets are counted and gated · 54 live v3-vs-v4 pixel-parity scenes, 15 of them close-ups at zoom 2–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
+| Visual regression | 51 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 140 of 216 are set by some golden, and the 76 no golden sets are counted and gated; resetting each set property on its scene moves pixels for 131 of them, measured and gated · 10 scripted gesture traces replayed on both WebGPU hosts and on v3, compared as numbers · 54 live v3-vs-v4 pixel-parity scenes, 15 of them close-ups at zoom 2–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 29 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
 | Style parity | v4 accepts 162 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet; round 76 added `text-border-style` and the mid-arrow widths); the rest dropped by decision |
 | Bundle | Three builds as of 29 Sep, minified / gzipped: `cytoscape` 937 / 268 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 549 / 170 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 626 / 189 KiB, against a 600 KB target. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time, and the spelled-once constants are inlined back to literals |
@@ -1722,6 +1733,18 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - `mid-*-arrow-width` is accepted and read back and draws nothing, as
     in v3 for a filled head.  Gradients, already shipped as v3's props,
     cost about 1% of GPU frame time across a 25k-node scene.
+- **29 Sep** — what the goldens see, measured
+  - Every style property a golden sets was reset to its default on its
+    scene and the moved pixels counted: 530 pairs in 2.2 minutes, 520
+    moving pixels.  131 of 216 properties have a golden pixel on them;
+    the three pairs that move none do so by design, and the result is
+    gated, so a golden that sets a property it does not show fails.
+  - Fixed: a per-element override of a data-mapped colour reaches the
+    screen (after the first frame it had drawn the mapped colour
+    forever); a label's rotation can change on its own; a custom
+    polygon's corner radius reads back correctly.
+  - The earlier count had credited five image properties and every
+    labelled scene's label-box colours; it now reads 140 of 216 set.
 - **29 Sep** — the gestures replayed, against v3 too
   - Ten scripted gesture traces replay in a real browser on every v4
     renderer host and on v3, compared as numbers — positions, the
@@ -1906,6 +1929,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 | Label box differences from v3 | v4 draws no label border without a background, keeps its own round-box radius, and does not round a label's measured width up as v3 does; which to match — PLAN.md item 87 |
 | Gesture events against v3 | The traces measured where v4's gesture events differ from v3's: the release order (v3 taps before it frees), v3's any-target double tap, a shift press that grabs in v3, `tapend` at the release point in v3, a drag from a locked node (v4 pans), v3's device-adaptive wheel rate, and the touch fingers a pinch consumes; which to match — PLAN.md item 88 |
 | An edge press's first events | An edge press starts on the core in v4 (`tapstart` there; the edge takes the release and the tap once the GPU pick answers), and a right press never takes an edge; v3 targets the edge from the press.  A synchronous edge hit test for the press, or a deferred `tapstart` — PLAN.md item 89 |
+| Label read-backs | A labelled element's label-box colours read back with their opacity folded in, an unlabelled one's without; an edge with only end labels reads its text style from the sheet, not the element; chart colours and gradient stop positions read the values their neighbours imply.  Declared or resolved values, and a fix for the end labels — PLAN.md item 90 |
 | A core undo stack | Apps can snapshot at `batchstart` and undo with `cy.patch()` (27 ms and 3 MB per transaction at 100k, 18–31 ms to undo); whether core ships a stack — none, an inverse-operation log (µs per change, but every mutation must record its inverse), or snapshots (which core could take faster but not restore faster) — PLAN.md item 84 |
 
 Decided at the eleventh design sitting (28 Sep), which put every open

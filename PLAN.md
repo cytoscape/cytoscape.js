@@ -285,7 +285,13 @@ before the WebGL implementation; neither raised a new item.  Round 142
 v3, compared as numbers against checked-in records, the WebGL2 backend
 one host entry away; it fixed four gesture bugs the traces pinned and
 logged **items 88 and 89** (the event orders and targets v3 differs on,
-and the edge press that starts on the core).
+and the edge press that starts on the core).  Round 143 (landed the same
+day) built tier 2, the degrade control, and **closed item 30**: every
+property a golden sets, reset on the live scene and its moved pixels
+counted (530 pairs, 520 moving; 131 of 216 properties with a golden
+pixel on them); it fixed three library bugs and three capture
+over-counts it exposed (tier 1 now reads 140 of 216 set) and logged
+**item 90** (read-backs that disagree with the screen).
 Round 73 (the WebGL2 fallback, scoped; landed 2026-09-29 on the
 sitting's calls — full parity at alpha, the scoping now, the spikes on
 the benchmark machine) wrote the feasibility record and planned the
@@ -757,8 +763,7 @@ directions".*
     nothing, one property at a time.
     **Call taken (2026-09-28, the eleventh sitting): before the SVG and
     WebGL parity work**, tier 1 first.
-    **Tier 1 landed by round 135 (2026-09-29); the item stays open for
-    tier 2.**  Every golden records the properties its scene sets to a
+    **Tier 1 landed by round 135 (2026-09-29).**  Every golden records the properties its scene sets to a
     non-default value (`playwright-tests/golden-coverage/`, held to the
     scene like the PNG), and `test/modules/golden-coverage.mjs` pins the
     count against the schema's per-group properties that the group
@@ -767,7 +772,29 @@ directions".*
     scripts/golden-coverage.mjs --verbose` prints it), 19 no static
     frame can show — and 67 non-default keywords never shown.  Rounds
     102 and 104 landed with no golden (`dim-opacity`, `label-declutter`,
-    `label-priority`).  Open: the degrade control.
+    `label-priority`).
+    **Closed by round 143 (2026-09-29): tier 2, the degrade control.**
+    `DEGRADE_CONTROL=1` on the golden pass resets each (group, property)
+    pair a golden's record lists to the value a default-sheet element
+    reads — a bypass, or the sheet without it where a bypass is refused
+    — re-exports, counts the raw RGBA pixels that moved, and checks the
+    restore (`playwright-tests/lib/degrade-control.mjs`; records in
+    `playwright-tests/golden-degrade/`, gated current and pinned by
+    `test/modules/golden-coverage.mjs`).  The subset is all of it: the
+    whole pass is 2.2 min at 8 workers.  **530 pairs, 520 move pixels;
+    3 are decoration by design** (the mid-arrow widths, `self-loops`'
+    `curve-style`) **and 7 no reset can move** (the padding sides under
+    the shorthand, the derived gradient stop positions and
+    `chart-colors`); **131 of 216 properties have a golden pixel on
+    them.**  The first passes' zero-pixel pairs were mostly resets that
+    never landed, and three were library bugs, fixed (a bypass over a
+    kernel-mapped colour never reached the screen; a rotation-only label
+    change was dropped; a polygon's `corner-radius` read its record
+    ref) and three capture over-counts, fixed (label-box colours read
+    folded, a parent's auto-sized box, per-image default lists): tier 1
+    now reads **140 of 216 set, 57 paintable gaps**.  The worst scenes
+    were fixed (`label-outline-closeup`'s invisible box, the test page's
+    missing italic face).  Logged: **item 90**.
 31. **Scripted gesture traces — the interactions get parity
     scenes** (raised 2026-08-19).  Goldens cover static frames;
     gestures are verified by Node specs plus a person driving

@@ -176,3 +176,192 @@ loops against a column read, and build only if the gap matters.  84.2's
 query additions (compiled conditions; `degree`/`adjacentTo` terms) are
 decided alongside that measurement.  The naming, event-payload, counter
 and `adjacentTo` questions wait on it.
+
+### The measurement, as carried out (2026-09-29)
+
+The sitting's "measure first", done; nothing public was built, and the
+build call is **PLAN.md item 91**.  One commit, `f6be7a5f`:
+`benchmark/table-view.mjs`, which prices a 100k-row attribute table
+through today's public `ele.data()` loops against a prototype of 84.1's
+column snapshots and 84.2's compiled column filters.  The prototype
+lives only in the bench and reads the store's private columns
+(`cy._store.data`, `dataStore.column()`, `store.adj`).
+
+**Fixture.**  100k nodes (the rows) and 100k edges with a skewed degree
+distribution; per node seven data keys, one of each column kind a grid
+meets — `label` (unique strings), `score` (floats), `rank` (ints),
+`group` (20 strings), `region` (5 strings), `active` (booleans, a mixed
+column), `note` (a string on 10% of rows) — under a sheet that maps
+`score` and `label`, so a write pays its mapped refresh.
+
+**What the rows assert.**  Every snapshot column carries values and
+equals `data( k )` row by row; the three sort spellings agree on the
+sorted values; facet counts agree; every filter spelling returns the
+same count with 0 < count < N; the epoch moves on a write; the coverage
+scan reads the sparse column as 10%.  The cold-pull rows write one value
+between passes, so the round-62.4 memo cannot turn the naive side into a
+cache hit — the control is the warm row beside it (57–62 ms cold against
+4–6 ms warm).
+
+**Machine.**  i9-9900K, 63 GiB, Node 24.18, the built headless bundle
+(`build/cytoscape-headless.esm.mjs`); `node --expose-gc
+benchmark/table-view.mjs`, median of 5 per row, three runs — the ranges
+are across the runs.
+
+#### The numbers
+
+| 1. Grid pull, every row × 8 columns | ms | retained |
+| --- | ---: | ---: |
+| `data()` objects, cold (any write since the last pull) | 56.6–61.5 | 13.2 MB |
+| `data()` objects, warm (the 62.4 memo) | 4.0–5.8 | |
+| `data( k )` per cell into 8 arrays | 28.2–37.7 | 7.6 MB |
+| … plus key discovery (an `Object.keys` union) | +7.6–8.4 | |
+| prototype: 8 column snapshots, ids synthesized | 5.5 | 5.35 MB |
+| prototype: the 7 data columns, no ids | 4.0–4.4 | |
+| prototype: one number column | 1.4–1.5 | (0.8 MB typed) |
+| prototype: keys + kinds | 0.0012 | |
+
+| 2. The visible window, 60 rows × 8 columns | µs |
+| --- | ---: |
+| `data( k )` per visible cell | 39–42 |
+| `data()` per visible row, cold | 28–30 |
+
+| 3. Sort, a row permutation | `eles.sort( cmp )` | extract + index sort | snapshot + index sort |
+| --- | ---: | ---: | ---: |
+| `score` (floats) | 169–176 ms | 37.7–38.6 ms | 27.8–28.3 ms |
+| `label` (100k unique strings) | 258–283 ms | 106–111 ms | 119–128 ms |
+| `group` (20 strings) | 69–75 ms | 33–35 ms | 17.9–18.4 ms |
+
+| 4. Distinct values → counts | `data( k )` into a Map | dict-index histogram |
+| --- | ---: | ---: |
+| `group` (20 values) | 5.6–5.8 ms | 0.52–0.56 ms |
+| `label` (100k values) | 22.6–25.1 ms | 14.8–15.2 ms |
+
+| 5. Filters | ms |
+| --- | ---: |
+| **`group = g3`, whole table** (4,987 of 100k) | |
+| `eles.filter( n => n.data( k ) === v )` | 5.0–5.6 |
+| `cy.nodes( { data: { group: v } } )` (the scan, readers hoisted) | 4.56–4.60 |
+| prototype: dict index, u32 compare → row indices | 0.58–0.63 |
+| prototype: the same → a collection (internal spawn) | 0.95–1.01 |
+| **`group = g3`, a 50k subset** (2,486) | |
+| `sub.filter( n => … )` | 3.2–3.6 |
+| `sub.filter( { data: { group: v } } )` (`store.data.get` per row) | 2.98–3.10 |
+| 84.3's gate: the reader hoisted, string compare → a collection | 0.88–0.91 |
+| prototype: dict index → a collection | 0.43–0.45 |
+| **`0.2 ≤ score < 0.4`, whole table** (19,892) | |
+| `eles.filter( n => … )` | 5.6–6.1 |
+| `cy.nodes( { data: { score: { gte } } } ).filter( { … lt } )` | 17.0–18.3 |
+| prototype: Float64Array + presence → row indices | 1.41–1.52 |
+| **degree ≥ 3, whole table** (30,940) | |
+| `eles.filter( n => n.degree() >= k )` | 4.1–5.2 |
+| prototype: CSR out + in degree per slot → row indices | 1.69–1.72 |
+| row indices → a collection, publicly (a mask read by `filter( ( n, i ) => … )`) | 1.12 |
+
+| 6. Change tracking: a burst of writes to `score` | 1 row | 1,000 rows | 10,000 rows |
+| --- | ---: | ---: | ---: |
+| the burst, no listener | 85–96 µs | 4.2 ms | 29.5–30.4 ms |
+| the burst, a `data` listener collecting the rows | 74–78 µs | 2.8–3.3 ms | 35.7–38.4 ms |
+| re-read the dirty rows with `data()` | 1.3 µs | 0.87–1.11 ms | 9.95–10.4 ms |
+| a "did anything move?" epoch compare | ~1 ns | ~1 ns | ~1 ns |
+
+Against those, what a coarser signal implies whatever the burst: the
+epoch (or a round-106 cursor, whose `dataWritten` is the same one flag)
+re-pulls every column, 5.5 ms; a written-keys payload would re-pull the
+one column, 1.4–1.5 ms; `batchend` with no tracking re-pulls every row
+object cold, 57–62 ms.
+
+| 7. Coverage, on demand (84.1's gate) | µs |
+| --- | ---: |
+| a 200k number column: sum of presence bytes | 250–265 |
+| a 200k string column: nonzero dict indices | 471–513 |
+| all 7 columns here, over the 100k live slots | 4,270–4,350 |
+
+#### What the numbers say
+
+- **Displaying a table needs no column view.**  A virtualized grid
+  (glide-data-grid, the one Cytoscape Web uses) asks for the cells on
+  screen: ~480 of them read through `data( k )` in 40 µs a frame, on the
+  live model, with nothing copied.  The 100k-row pull matters only for
+  whole-table operations — sort, filter, facets, export.
+- **For whole-table reads the column is 5–10× faster, and small in
+  absolute terms.**  A full pull is 28–38 ms through `data( k )` against
+  5.5 ms; a low-cardinality facet 5.7 ms against 0.5 ms; a filter
+  5–6 ms against 0.6–1.5 ms.  Every public spelling of every operation
+  measured is ≤ 62 ms at 100k — one user action, not a frame loop —
+  except the naive comparator sort (170–280 ms), whose fix is app-side
+  and already available (extract the column, sort indices: 38–111 ms).
+- **Sorting is the sort, not the read.**  The snapshot saves 10 ms on
+  floats and 15 ms on a low-cardinality string, and loses 13–17 ms on
+  100k unique strings, where ranking the dictionary is a second sort.
+- **Change tracking already exists, and at a finer grain than the
+  epoch.**  The per-element `data` event names the rows; collecting them
+  is within noise at 1,000 writes and ~0.6 µs a row at 10,000 (a Set add
+  and an event object); re-reading a dirty row is ~1 µs.  So for a burst
+  of up to ~5% of the rows the listener's re-read beats an
+  epoch-triggered re-pull of the columns, and `batchend` (round 139)
+  gives the burst its end.  The epoch — like round 106's cursors, which
+  are internal and carry the same single `dataWritten` flag — is
+  store-grained: any write to any key of either group invalidates every
+  column, so a chatty writer against a per-frame column puller is 5.5 ms
+  a frame at 100k (the plan's copy-storm risk, measured: a third of the
+  frame).  What the events lack is the written keys, and a whole-row
+  re-read at 1 µs makes that gap cosmetic.
+- **The one memo trap is `data()` objects.**  The 62.4 memo is keyed on
+  the one store epoch, so a single write anywhere re-materializes every
+  row's object: a grid that re-pulls whole objects after each write pays
+  57–62 ms instead of 4–6.  `data( k )` per cell, or re-reading only the
+  rows the events named, does not.
+- **84.2's gains are internal and need no API.**  The whole-graph query
+  scan (`cy.nodes( query )`) is 4.6 ms where the dict compare builds the
+  same collection in 1.0 ms (4.6×); the subset `filter( query )` is
+  3.0 ms where hoisting the reader alone gives 0.9 ms (3.4×) and the
+  dict path 0.44 ms.  **84.3's gate reads: the hoist closes 82% of the
+  subset gap**, so by the plan's rule the dict path would land only in
+  the whole-graph scan and the subset takes the hoist.
+- **The query IR's one-op-per-key rule makes a range slower than a
+  predicate.**  `0.2 ≤ score < 0.4` has to chain two queries, 17–18 ms,
+  against 5.6–6.1 ms for the predicate function and ~1.5 ms compiled —
+  the only IR addition the numbers argue for (both bounds on one key).
+  A degree term buys 2.5–3× (4.1–5.2 → 1.7 ms) over `n.degree()`, which
+  is already O(1); `adjacentTo` was not priced (its public spelling,
+  `neighborhood()` plus an intersection, is a different shape of work
+  from a column scan).
+- **Coverage, if `dataKeys` ever ships: on demand.**  The scan is
+  0.25–0.5 ms per 200k column, well under any per-call budget a keys
+  listing has; a counter maintained in `set` / `clearValue` would tax
+  the hottest sidecar path for it.
+
+#### Recommendation
+
+**Do not build 84.1's column view now.**  The ratio is real (5–10× on
+whole-table reads) but the absolute cost at 100k is one-shot
+milliseconds, the per-frame path a grid actually runs is 40 µs through
+`data( k )`, and the change-tracking half is served — row-precisely —
+by the `data` / `add` / `remove` events with `batchend` bounding the
+burst.  A public epoch or `changedSince` would add a coarser signal than
+the one apps already have.  Revisit on a consumer's measured need
+(Cytoscape Web reporting its copy as the cost, or million-row tables,
+where the one-shot figures, linear in the rows, become ~0.3–0.6 s).
+
+**If the maintainer wants it anyway, the minimal shape** is one member,
+`eles.dataColumn( key )`: a snapshot in `exportColumns`' shapes,
+aligned to the collection's order, ids synthesized for `'id'`, stamped
+with the store epoch and (for a string column) the dict epoch together
+(the planning risk about two invalidation keys).  No `dataKeys`
+counter (coverage on demand), no keys payload on the `data` event, no
+public epoch — the prototype's `protoColumn` in the bench is that
+member, minus its guards.
+
+**Build 84.2's internal half** — compiled column conditions in the
+whole-graph scan (dict indices for string `eq` / `in`, the typed array
+for numeric ops, the case-mapper absence rule pinned per kind) and the
+reader hoist in `Collection.filter` — as performance work behind the
+existing query API: 3.4–4.6× on query filters, no surface change.  The
+IR additions (a two-bound condition on one key, `degree` terms,
+`adjacentTo`) are public API and part of the maintainer's call; only
+the range bound has a number behind it.
+
+The plan's open questions — the surface's naming, the event payload,
+the counter, `adjacentTo` nodes-only — wait on item 91; the counter
+question is answered (on demand) whichever way it goes.

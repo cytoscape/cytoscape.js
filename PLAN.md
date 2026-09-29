@@ -375,7 +375,14 @@ not resume), gave the eight discrete built-ins `layout.stop()`, and
 fixed three lease defects the specs found (a handle stop that leaked the
 batch, a settle that did not release it, a mirror that dropped writes to
 untweened slots of a leased column).  **Item 68 is closed**; it raised
-no new item.  What follows is the sweep before it.
+no new item.  Round 84 (attribute tables and filters) ran the sitting's
+"measure first" and built nothing public: `benchmark/table-view.mjs`
+priced a 100k-row table through `data()` loops against a column-view
+prototype — 40 µs a frame for the cells a virtualized grid shows,
+5–10× on whole-table reads but one-shot milliseconds either way, and
+row-grain change tracking already in the `data` events and
+`batchend` — and logged **item 91**, the build call with those numbers;
+the round stays planned.  What follows is the sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
@@ -2417,3 +2424,28 @@ directions".*
     whether readback reports the declared or the resolved value for (a)
     and those two, and a fix for (b) (read the end streams when the
     main one is empty — the channels are shared).
+91. **The attribute table's column view: the build call on round 84's
+    numbers** (logged 2026-09-29 by round 84's measurement, the eleventh
+    sitting's "measure first").  At 100k rows (i9-9900K,
+    `benchmark/table-view.mjs`), a virtualized grid's visible window
+    reads through `data( k )` in **40 µs a frame**; whole-table reads are
+    5–10× faster off a column snapshot but one-shot milliseconds either
+    way — a full pull 28–38 ms against 5.5 ms, a low-cardinality facet
+    5.7 against 0.5 ms, a filter 5–6 against 0.6–1.5 ms; sorting is the
+    sort (38–111 ms extracted, 28–128 ms off the snapshot).  Change
+    tracking already exists at row grain: the `data` event names the
+    rows (~0.6 µs a row to collect at 10k writes), a dirty row re-reads
+    in ~1 µs, and `batchend` ends the burst — finer than a public
+    epoch, which is store-grained (any write re-pulls every column,
+    5.5 ms).  The internal wins need no API: compiled column conditions
+    take `cy.nodes( query )` 4.6 → 1.0 ms and the reader hoist takes a
+    subset `filter( query )` 3.0 → 0.9 ms (82% of the gap to the dict
+    path, so by 84.3's rule the dict path lands in the whole-graph scan
+    only).  The IR's one op per key makes a range slower than a
+    predicate (17–18 against 5.6–6.1 ms).  **The call**: (a) no column
+    view — build 84.2's internal half only (compiled conditions, the
+    hoist), recommended; (b) (a) plus one member, `eles.dataColumn( key
+    )`, a snapshot stamped with both epochs; or (c) the plan's full
+    84.1 surface.  Beside it, whether the IR gains a two-bound condition
+    on one key (the only addition with a number behind it), `degree`
+    terms (2.5–3×) and `adjacentTo`.

@@ -32,6 +32,11 @@ import { renderExport } from './export.mjs';
 import { checkFonts } from './fonts.mjs';
 import { encodeCountCopy, finishCounts, markCounts } from './counts.mjs';
 import {
+  drawEmphasisTier,
+  emphasisActive,
+  prepareEmphasis,
+} from './emphasis.mjs';
+import {
   ensureSceneTarget,
   ensureDepthTarget,
   writeFrameUniform,
@@ -397,10 +402,19 @@ export function frameBody(rd: Renderer): void {
       encodedBatch = rd.forcePresents ? 0 : rd.forceBatch;
     }
 
+    // round 102: with an emphasis set, the scene cull above admits the
+    // dimmed tier only and a second cull the emphasized tier
+    const tier = emphasisActive(rd)
+      ? prepareEmphasis(rd, rd.frameData, 'scene')
+      : null;
     // compact each group's visible slots + indirect args before drawing
-    const countMarks = markCounts(rd);
+    const countMarks = markCounts(rd, tier?.cull ?? null);
 
     encodeCulls(rd, encoder, rd.uniform as GPUBuffer, rd.sceneCull, true, t0);
+
+    if (tier != null) {
+      encodeCulls(rd, encoder, tier.uniform, tier.cull, false);
+    }
 
     // a viewport-count request (75.6) reads this frame's instanceCounts
     const countJob = encodeCountCopy(rd, encoder, countMarks);
@@ -411,6 +425,8 @@ export function frameBody(rd: Renderer): void {
     const view = scaled
       ? (ensureSceneTarget(rd) as GPUTexture).createView()
       : context.getCurrentTexture().createView();
+    const depthView = ensureDepthTarget(rd).createView();
+    const timing = rd.gpuTimer?.timestampWrites() ?? null;
     const pass = encoder.beginRenderPass({
       label: 'cy-gpu:render-pass',
       colorAttachments: [
@@ -422,18 +438,42 @@ export function frameBody(rd: Renderer): void {
         },
       ],
       depthStencilAttachment: {
-        view: ensureDepthTarget(rd).createView(),
+        view: depthView,
         depthClearValue: 1.0,
         depthLoadOp: 'clear',
         depthStoreOp: 'discard', // only consumed within rd pass
       },
-      ...(rd.gpuTimer != null
-        ? { timestampWrites: rd.gpuTimer.timestampWrites() }
+      ...(timing != null
+        ? {
+            // an emphasized frame's scene time ends at its second
+            // tier's pass, so the adaptive scale prices both
+            timestampWrites:
+              tier == null
+                ? timing
+                : { ...timing, endOfPassWriteIndex: undefined },
+          }
         : {}),
     });
 
     drawScene(rd, pass, rd.uniform as GPUBuffer, rd.sceneCull);
-    pass.end();
+
+    if (tier != null) {
+      // ends `pass`: the veil, then the emphasized tier's own pass
+      drawEmphasisTier(
+        rd,
+        encoder,
+        pass,
+        view,
+        depthView,
+        tier,
+        undefined,
+        timing == null
+          ? undefined
+          : { ...timing, beginningOfPassWriteIndex: undefined },
+      );
+    } else {
+      pass.end();
+    }
 
     if (scaled) {
       const upscalePass = encoder.beginRenderPass({

@@ -6,8 +6,8 @@ import { wgsl } from '../../gpu/wgsl.mjs';
  * Layout must match Renderer's frame arrays: viewportPx, panPx, zoomDpr,
  * edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx, labelMinPx,
  * curveSlack, haystackSlack, outlineSlack, arrowScaleMax, imageMinPx,
- * pickMode, arrowWidthMax, pickPadPx — 19 floats; WGSL rounds the
- * struct to 80 bytes (align 8), so the arrays allocate 20.
+ * pickMode, arrowWidthMax, pickPadPx, emphasisPass — 20 floats, 80
+ * bytes, which is what the arrays allocate.
  */
 export const FRAME_STRUCT = wgsl`
 struct Frame {
@@ -28,6 +28,7 @@ struct Frame {
   pickMode: f32,         // 20.2: 1 in the pick pass — events:'no' elements drop from pick culling only
   arrowWidthMax: f32,    // 56: max hollow-arrow stroke, model px (the quad grows by half of it)
   pickPadPx: f32,        // 57.9: edge hit-test halo, device px — v3's edgeThreshold; 0 outside pick frames
+  emphasisPass: f32,     // 102: 0 every element; 1 the dimmed tier (FLAG_EMPHASIZED clear); 2 the emphasized tier
 }
 `;
 
@@ -48,6 +49,20 @@ const FLAG_CURVED_BOX: u32 = 2048u;
 const FLAG_PARENT: u32 = 4096u;
 const FLAG_NO_EVENTS: u32 = 32768u; // 20.2: pointer-transparent (pick-mode culls only)
 const SHOWN: u32 = 262145u; // ALIVE | DRAWN (round 22: the draw tier — visibility folds in)
+const FLAG_EMPHASIZED: u32 = 524288u; // 102: in the current emphasis (view state)
+
+// Round 102's two tiers: while an emphasis is set the scene culls twice —
+// the dimmed tier (every element *without* the bit, then scaled by the
+// veil) and the emphasized tier (only elements with it, drawn above) —
+// and every cull predicate asks this of its owner's flags word.  Pass 0
+// (no emphasis, and every pick and export frame) admits everything.
+// The tier is a parameter, not a read of the frame uniform,
+// because not every shader carrying this prelude binds one.
+fn emphasisKeeps(tier: f32, flags: u32) -> bool {
+  if (tier == 0.0) { return true; }
+
+  return ((flags & FLAG_EMPHASIZED) != 0u) == (tier == 2.0);
+}
 
 // Selection has no shader constant since round 57.1: v4's *default
 // stylesheet* gives it a colour, as a { selected: true } case mapper on

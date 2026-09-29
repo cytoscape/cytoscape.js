@@ -4,7 +4,7 @@
 import { BUFFER_USAGE, MAP_MODE } from '../../gpu/webgpu-constants.mjs';
 import type { CulledGroup } from '../cull.mjs';
 import type { ViewportCounts } from '../../public-types.mjs';
-import type { Renderer } from '../renderer.mjs';
+import type { Renderer, SceneCullGroups } from '../renderer.mjs';
 
 /*
 The scan dispatch writes each culled group's `instanceCount` — the frame's
@@ -12,7 +12,8 @@ visible survivors — into word 1 (byte 4) of its indirect args, on the
 device, where only the indirect draw reads it.  A count is therefore a
 readback, and the API is async because of it: the four element groups'
 words (node + parent, straight + curved edge — disjoint by their cull
-predicates) are copied into one 16-byte staging buffer *after* the cull
+predicates; on an emphasized frame, round 102's two tiers of those four,
+disjoint too) are copied into one 32-byte staging buffer *after* the cull
 pass in the same submission, so the numbers are exactly that frame's,
 then mapped.  Glyph streams are left out: their counts are glyph
 instances, not labels.
@@ -32,7 +33,7 @@ export interface CountJob {
   waiters: ((counts: ViewportCounts | null) => void)[];
 }
 
-/** The four element groups whose `encodes` a frame's copy compares. */
+/** The element groups (four per tier) whose `encodes` a frame's copy compares. */
 export interface CountMarks {
   groups: CulledGroup[];
   before: number[];
@@ -58,14 +59,24 @@ export function viewportCounts(rd: Renderer): Promise<ViewportCounts | null> {
  * Before the scene cull pass: note each element group's dispatch count,
  * when a request is waiting and no readback holds the staging buffer.
  */
-export function markCounts(rd: Renderer): CountMarks | null {
+export function markCounts(
+  rd: Renderer,
+  emphasis: SceneCullGroups | null = null,
+): CountMarks | null {
   const cull = rd.sceneCull;
 
   if (rd.countWaiters.length === 0 || rd.countBusy || cull == null) {
     return null;
   }
 
+  // an emphasized frame (round 102) splits every group across two
+  // disjoint culls — the dimmed and the emphasized tier — so the
+  // second tier's four words ride the same copy and add in
   const groups = [cull.node, cull.parent, cull.edge, cull.curved];
+
+  if (emphasis != null) {
+    groups.push(emphasis.node, emphasis.parent, emphasis.edge, emphasis.curved);
+  }
 
   return { groups, before: groups.map((g) => g.encodes) };
 }
@@ -88,7 +99,7 @@ export function encodeCountCopy(
 
   rd.countStaging ??= device.createBuffer({
     label: 'cy-gpu:viewport-counts',
-    size: 16,
+    size: 32, // two tiers' four words (round 102)
     usage: BUFFER_USAGE.MAP_READ | BUFFER_USAGE.COPY_DST,
   });
 
@@ -142,9 +153,21 @@ export function finishCounts(rd: Renderer, job: CountJob | null): void {
         return;
       }
 
-      const word = (i: number): number => (job.live[i] ? words[i] : 0);
+      // groups 0, 1 are nodes and 2, 3 edges, per tier of four
+      let nodes = 0;
+      let edges = 0;
 
-      settle({ nodes: word(0) + word(1), edges: word(2) + word(3) });
+      for (let i = 0; i < job.live.length; i++) {
+        const n = job.live[i] ? words[i] : 0;
+
+        if (i % 4 < 2) {
+          nodes += n;
+        } else {
+          edges += n;
+        }
+      }
+
+      settle({ nodes, edges });
     },
     () => settle(null), // destroyed or lost under the map
   );

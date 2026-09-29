@@ -2189,6 +2189,100 @@ test.describe('WebGPU visual goldens', () => {
     checkGolden('node-layers', await exportPng(page, { bg: '#fff' }), testInfo);
   });
 
+  test('golden: the emphasis tiers — the rest dimmed, the set raised (round 102)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // Built so the dim is what the pixels measure (round 56's rule): the
+    // dimmed half of the scene is large, saturated and labelled, so a
+    // wrong dim opacity moves most of the frame; the emphasized set's
+    // spoke crosses *under* a dimmed node (drawn over it only because
+    // the set is raised); the set carries a translucent node and a
+    // label, so the tier composites them at full strength; and a
+    // compound parent sits in the dim, so the parent stream is in it.
+    // The controls are in the round-102 record: the golden moves when
+    // the dim opacity changes, and moves again without the second tier.
+    await page.evaluate(async () => {
+      await document.fonts.load(`14px 'Open Sans'`);
+
+      if (!document.fonts.check(`14px 'Open Sans'`)) {
+        throw new Error('Open Sans did not load');
+      }
+    });
+
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'hub', label: 'hub' }, position: { x: -120, y: 0 } },
+        { data: { id: 'n1', label: 'n1' }, position: { x: -120, y: -90 } },
+        {
+          data: { id: 'n2', label: 'n2', see: 'thru' },
+          position: { x: -120, y: 90 },
+        },
+        { data: { id: 'n3', label: 'n3' }, position: { x: 130, y: 0 } },
+        { data: { id: 'block', label: 'block' }, position: { x: 10, y: 0 } },
+        { data: { id: 'p' } },
+        {
+          data: { id: 'x', parent: 'p', label: 'x' },
+          position: { x: 90, y: -90 },
+        },
+        {
+          data: { id: 'y', parent: 'p', label: 'y' },
+          position: { x: 150, y: -90 },
+        },
+        { data: { id: 'z', label: 'z' }, position: { x: 110, y: 95 } },
+        { data: { id: 'h1', source: 'hub', target: 'n1' } },
+        { data: { id: 'h2', source: 'hub', target: 'n2' } },
+        { data: { id: 'h3', source: 'hub', target: 'n3' } },
+        { data: { id: 'xz', source: 'x', target: 'z' } },
+        { data: { id: 'yz', source: 'y', target: 'z' } },
+        { data: { id: 'bz', source: 'block', target: 'z' } },
+      ],
+      style: {
+        nodes: {
+          width: 44,
+          height: 44,
+          shape: 'round-rectangle',
+          'background-color': '#c0392b',
+          'border-width': 3,
+          'border-color': '#2c3e50',
+          opacity: {
+            case: [{ when: { data: 'see', eq: 'thru' }, then: 0.5 }],
+            else: 1,
+          },
+          label: { data: 'label' },
+          'font-size': 14,
+          'font-family': `'Open Sans', sans-serif`,
+          color: '#2d3436',
+          'text-valign': 'center',
+        },
+        parents: { 'background-color': '#2980b9' },
+        edges: {
+          width: 8,
+          'line-color': '#16a085',
+          'target-arrow-shape': 'triangle',
+          'target-arrow-color': '#16a085',
+        },
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+    });
+    await page.evaluate(async () => {
+      const cy = window.cy;
+
+      cy.emphasize(cy.$id('hub').closedNeighborhood());
+      await new Promise((resolve) => cy.one('render', () => resolve()));
+    });
+    await waitFrames(page);
+
+    await expectGraphFits(page, 'emphasis-tiers');
+    checkGolden(
+      'emphasis-tiers',
+      await exportPng(page, { bg: '#fff' }),
+      testInfo,
+    );
+  });
+
   test('golden: edge overlay/underlay strokes (round 13 A2)', async ({
     page,
   }, testInfo) => {

@@ -70,6 +70,8 @@ export interface WireScalars {
   outlineSlack: number;
   arrowScaleMax: number;
   arrowWidthMax: number;
+  /** the emphasis composite (round 102): dim opacity, or -1 for none */
+  emphasisDim: number;
 }
 
 /** The draw-gating counts the frame reads; a zero skips a whole pass. */
@@ -451,6 +453,7 @@ export function buildBatch(
       outlineSlack: store.outlineSlack(),
       arrowScaleMax: store.arrowScaleMax(),
       arrowWidthMax: store.arrowWidthMax(),
+      emphasisDim: store.emphasisDim(),
     },
     counts: {
       nodes: store.count(GROUP_NODES),

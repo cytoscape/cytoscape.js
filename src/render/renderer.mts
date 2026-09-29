@@ -1,5 +1,7 @@
 import { ColumnMirror } from './column-mirror.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
+import type { EmphasisVeil } from './emphasis-veil.mjs';
+import type { EmphasisTier } from './renderer/emphasis.mjs';
 import { NodeLayerPipeline } from './node-layer-pipeline.mjs';
 import { NodePipeline } from './node-pipeline.mjs';
 import { EdgePipeline } from './edge-pipeline.mjs';
@@ -307,6 +309,18 @@ export class Renderer {
   parentOrderRef: Uint32Array | null = null;
   /** @internal */
   parentOrderVersion = 0;
+  /** the on-screen emphasized tier (round 102): its culls and Frame
+   * uniform, built on the first emphasized frame
+   * @internal */
+  emphasisTier: EmphasisTier | null = null;
+  /** an export's emphasized tier, built on the first emphasized export
+   * @internal */
+  exportEmphasisTier: EmphasisTier | null = null;
+  /** scratch for an emphasized tier's Frame data (copied at the write)
+   * @internal */
+  emphasisFrameData: Float32Array = new Float32Array(20);
+  /** @internal */
+  emphasisVeil: EmphasisVeil | null = null;
 
   /**
    * Creates and mounts the canvas, subscribes to store invalidation,
@@ -348,8 +362,8 @@ export class Renderer {
     this.curvedArrowPipeline = null;
     this.arrowPipeline = null;
     this.uniform = null;
-    // 19 Frame fields; WGSL rounds the struct to 80 bytes (align 8), so
-    // the arrays carry 20 floats and the buffers bind the full 80
+    // 20 Frame fields (emphasisPass since round 102): 80 bytes, which
+    // the arrays carry and the buffers bind
     this.frameData = new Float32Array(20);
     this.isReady = false;
     this.frameRequested = false;

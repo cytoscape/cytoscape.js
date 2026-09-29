@@ -100,6 +100,7 @@ export class RemoteModelView implements RenderStoreView {
     outlineSlack: 0,
     arrowScaleMax: 0,
     arrowWidthMax: 0,
+    emphasisDim: -1,
   };
   private counts: StoreBatch['counts'] = {
     nodes: 0,
@@ -415,6 +416,11 @@ export class RemoteModelView implements RenderStoreView {
   /** @returns the widest arrow-bearing edge width in use */
   arrowWidthMax(): number {
     return this.scalars.arrowWidthMax;
+  }
+
+  /** @returns the emphasis composite: the dim opacity while an emphasis is set, -1 otherwise (round 102) */
+  emphasisDim(): number {
+    return this.scalars.emphasisDim;
   }
 
   /** @returns the compound parent count */

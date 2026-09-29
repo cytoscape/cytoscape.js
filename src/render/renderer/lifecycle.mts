@@ -62,6 +62,8 @@ export function destroy(rd: Renderer): void {
     ...Object.values(rd.sceneCull ?? {}),
     ...Object.values(rd.pickCull ?? {}),
     ...Object.values(rd.exportCull ?? {}),
+    ...Object.values(rd.emphasisTier?.cull ?? {}),
+    ...Object.values(rd.exportEmphasisTier?.cull ?? {}),
   ]) {
     group.destroy();
   }
@@ -84,6 +86,9 @@ export function destroy(rd: Renderer): void {
   rd.uniform?.destroy();
   rd.pickUniform?.destroy();
   rd.exportUniform?.destroy();
+  rd.emphasisTier?.uniform.destroy();
+  rd.exportEmphasisTier?.uniform.destroy();
+  rd.emphasisVeil?.destroy();
   rd.exportPacker = null; // its pipeline dies with the device below
   rd.device?.destroy();
 

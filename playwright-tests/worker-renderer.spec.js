@@ -161,6 +161,64 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
     await destroyCy(page);
   });
 
+  test('an emphasis crosses to the worker: the same two tiers, exactly (round 102)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter here');
+    test.skip(!(await hasWorkerCanvas(page)), 'no OffscreenCanvas workers');
+
+    // the emphasis is a flag span plus one store scalar (emphasisDim),
+    // which the worker receives in the batch's scalars — an export from
+    // each host must match exactly, and must differ from the scene
+    // without it (the control: an emphasis that never crossed would
+    // match the plain export instead)
+    const emphasized = async (worker) => {
+      await makeReadyCy(page, {
+        ...SCENE,
+        ...(worker ? { renderer: { worker: true } } : {}),
+      });
+
+      const plain = decodePng(await exportPng(page));
+
+      await page.evaluate(async () => {
+        const cy = window.cy;
+
+        cy.emphasize(cy.$id('a').closedNeighborhood());
+        await new Promise((resolve) => cy.one('render', () => resolve()));
+      });
+
+      const image = decodePng(await exportPng(page));
+
+      await destroyCy(page);
+
+      return { plain, image };
+    };
+
+    const main = await emphasized(false);
+    const worker = await emphasized(true);
+
+    expect(
+      diffPngs(worker.image, worker.plain, { threshold: 0 }).mismatched,
+      'the emphasis changes the worker frame',
+    ).toBeGreaterThan(1000);
+
+    const { mismatched, diff } = diffPngs(worker.image, main.image, {
+      threshold: 0,
+    });
+
+    if (mismatched !== 0) {
+      writeDiffArtifacts(
+        testInfo,
+        'emphasis-worker-vs-main',
+        worker.image,
+        main.image,
+        diff,
+      );
+    }
+
+    expect(mismatched).toBe(0);
+  });
+
   test('mutations and viewport changes reach the worker frame', async ({
     page,
   }, testInfo) => {

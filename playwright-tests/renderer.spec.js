@@ -1270,6 +1270,161 @@ test.describe('WebGPU renderer', () => {
     expect(selected).toEqual([true, false]);
   });
 
+  test('emphasis draws two tiers: the rest dimmed by the veil, the set raised above it (round 102)', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    // two red squares joined by a thick black edge that runs *under* a
+    // blue square between them — nodes draw over edges, so at rest the
+    // blue square hides the edge's middle
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: -150, y: 0 } },
+        { data: { id: 'b' }, position: { x: 150, y: 0 } },
+        { data: { id: 'c' }, position: { x: 0, y: 0 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: {
+          'background-color': {
+            case: [{ when: { data: 'id', eq: 'c' }, then: 'blue' }],
+            else: 'red',
+          },
+          width: 80,
+          height: 80,
+          shape: 'rectangle',
+        },
+        edges: { width: 20, 'line-color': 'black' },
+      },
+      zoom: 1,
+    });
+
+    const center = await centerPan(page);
+
+    await waitFrames(page);
+
+    const blue = (px) => px[2] > 200 && px[0] < 60 && px[1] < 60;
+    const red = (px) => px[0] > 200 && px[1] < 60 && px[2] < 60;
+    const black = (px) => px[0] < 60 && px[1] < 60 && px[2] < 60;
+    // blue at 0.15 over the white page: rgb ≈ (217, 217, 255)
+    const dimBlue = (px) =>
+      px[2] > 240 && px[0] > 200 && px[0] < 235 && Math.abs(px[0] - px[1]) < 4;
+    const read = async () => ({
+      a: await pixelAt(page, center.x - 150, center.y),
+      cEdge: await pixelAt(page, center.x, center.y), // on the edge's path
+      cBody: await pixelAt(page, center.x, center.y + 30), // off it
+    });
+
+    const rest = await read();
+
+    expect(red(rest.a)).toBe(true);
+    expect(blue(rest.cEdge), 'at rest the node covers the edge').toBe(true);
+    expect(blue(rest.cBody)).toBe(true);
+
+    const countsBefore = await page.evaluate(() => window.cy.viewportCounts());
+
+    await page.evaluate(async () => {
+      const cy = window.cy;
+
+      cy.emphasize(cy.$id('a').closedNeighborhood());
+      await new Promise((resolve) => cy.one('render', () => resolve()));
+    });
+    await waitFrames(page);
+
+    const on = await read();
+
+    expect(red(on.a), 'the emphasized node at full strength').toBe(true);
+    expect(
+      black(on.cEdge),
+      'the emphasized edge is raised over the dimmed node',
+    ).toBe(true);
+    expect(dimBlue(on.cBody), `the rest composites at 0.15: ${on.cBody}`).toBe(
+      true,
+    );
+
+    // the partition is exact: two tiers count what one did
+    expect(await page.evaluate(() => window.cy.viewportCounts())).toEqual(
+      countsBefore,
+    );
+
+    // a dimmed node still picks
+    expect(
+      await page.evaluate(async (p) => {
+        const hit = await window.cy.pick(p.x, p.y + 30);
+
+        return hit == null ? null : hit.id();
+      }, center),
+    ).toBe('c');
+
+    // an export draws the tiers too, the rest composited over its bg —
+    // white, so a veil that scaled the bg along with the scene (the
+    // on-screen formula, which assumes a transparent clear) reads
+    // (0, 0, 38) where the right answer is (217, 217, 255)
+    const exported = await page.evaluate(async (p) => {
+      const uri = await window.cy.png({ bg: '#fff' });
+      const img = new Image();
+
+      img.src = uri;
+      await img.decode();
+
+      const canvas = document.createElement('canvas');
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext('2d');
+
+      ctx.drawImage(img, 0, 0);
+
+      const at = (x, y) => Array.from(ctx.getImageData(x, y, 1, 1).data);
+
+      return {
+        body: at(p.x, p.y + 30),
+        edge: at(p.x, p.y),
+        a: at(p.x - 150, p.y),
+      };
+    }, center);
+
+    expect(
+      exported.body[2],
+      `export dims over its bg: ${exported.body}`,
+    ).toBeGreaterThan(28);
+    expect(
+      dimBlue(exported.body),
+      `export dims over its bg: ${exported.body}`,
+    ).toBe(true);
+    expect(black(exported.edge), 'the export raises the set too').toBe(true);
+    expect(red(exported.a)).toBe(true);
+
+    // the sheet's dim-opacity is the veil's
+    await page.evaluate(async () => {
+      const cy = window.cy;
+
+      cy.style({ ...cy._styleEngine.sheet, core: { 'dim-opacity': 0 } });
+      await new Promise((resolve) => cy.one('render', () => resolve()));
+    });
+    await waitFrames(page);
+
+    const white = (px) => px[0] > 240 && px[1] > 240 && px[2] > 240;
+
+    expect(white(await pixelAt(page, center.x, center.y + 30))).toBe(true);
+
+    await page.evaluate(async () => {
+      const cy = window.cy;
+
+      cy.unemphasize();
+      await new Promise((resolve) => cy.one('render', () => resolve()));
+    });
+    await waitFrames(page);
+
+    const off = await read();
+
+    expect(blue(off.cEdge), 'unemphasize restores the draw order').toBe(true);
+    expect(blue(off.cBody)).toBe(true);
+    expect(red(off.a)).toBe(true);
+  });
+
   test('device loss auto-recovers: devicelost, rebuild, devicerestored (round 10)', async ({
     page,
   }) => {

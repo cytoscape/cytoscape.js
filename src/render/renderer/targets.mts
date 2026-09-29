@@ -188,6 +188,9 @@ export function writeFrameUniform(rd: Renderer): void {
   f[14] = rd.store.arrowScaleMax();
   f[17] = rd.store.arrowWidthMax(); // 56: hollow strokes reach outside the head
   f[15] = (opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX) * rd.scaleCtl.scale; // displayed px, like labelMinPx
+  // round 102: with an emphasis set the scene uniform culls the dimmed
+  // tier; the emphasized tier's copy (emphasis.mts) carries 2
+  f[19] = rd.store.emphasisDim() >= 0 ? 1 : 0;
 
   (rd.device as GPUDevice).queue.writeBuffer(
     rd.uniform as GPUBuffer,

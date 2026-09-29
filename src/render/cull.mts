@@ -147,6 +147,7 @@ fn borderOut(slot: u32) -> f32 {
 
 fn isVisible(slot: u32) -> bool {
   if ((nodeFlags[slot] & SHOWN) != SHOWN) { return false; }
+  if (!emphasisKeeps(frame.emphasisPass, nodeFlags[slot])) { return false; }
   // compound parents draw in their own pre-edge stream (round 14.9)
   if ((nodeFlags[slot] & FLAG_PARENT) != 0u) { return false; }
 
@@ -184,6 +185,7 @@ fn isVisible(i: u32) -> bool {
 
   if ((nodeFlags[slot] & SHOWN) != SHOWN) { return false; }
   if ((nodeFlags[slot] & FLAG_PARENT) == 0u) { return false; } // stale permutation guard
+  if (!emphasisKeeps(frame.emphasisPass, nodeFlags[slot])) { return false; }
 
   let bOut = borderWidths[slot] * frame.zoomDpr + frame.outlineSlack * frame.zoomDpr;
   let lod = nodeLod(sizes[slot] * 0.5 * frame.zoomDpr, frame.hidePx);
@@ -249,6 +251,7 @@ fn isVisible(slot: u32) -> bool {
   // 20.2: events:'no' edges are pointer-transparent — dropped from the
   // pick tile only (scene culling ignores the flag; they still draw)
   if (frame.pickMode != 0.0 && (flags & FLAG_NO_EVENTS) != 0u) { return false; }
+  if (!emphasisKeeps(frame.emphasisPass, flags)) { return false; }
 
   let ends = endpoints[slot];
 
@@ -337,6 +340,7 @@ fn isVisible(slot: u32) -> bool {
   if ((flags & FLAG_CURVED) == 0u) { return false; }
   // 20.2: pointer-transparent edges drop from the pick tile only
   if (frame.pickMode != 0.0 && (flags & FLAG_NO_EVENTS) != 0u) { return false; }
+  if (!emphasisKeeps(frame.emphasisPass, flags)) { return false; }
 
   let ends = endpoints[slot];
 
@@ -385,6 +389,7 @@ fn isVisible(slot: u32) -> bool {
 
   if (g.nodeSlot == DEAD_GLYPH) { return false; }
   if ((nodeFlags[g.nodeSlot] & SHOWN) != SHOWN) { return false; }
+  if (!emphasisKeeps(frame.emphasisPass, nodeFlags[g.nodeSlot])) { return false; }
 
   // per-element floor (D2): min-zoomed-font-size baked as a zoomDpr
   // threshold, v3's eleTextBiggerThanMin
@@ -499,6 +504,7 @@ fn isVisible(slot: u32) -> bool {
   let owner = glyphOwner(g.nodeSlot);
 
   if ((edgeFlags[owner] & SHOWN) != SHOWN) { return false; }
+  if (!emphasisKeeps(frame.emphasisPass, edgeFlags[owner])) { return false; }
 
   let ends = endpoints[owner];
 
@@ -589,6 +595,7 @@ ${COMMON}
 
 fn isVisible(slot: u32) -> bool {
   if ((nodeFlags[slot] & SHOWN) != SHOWN) { return false; }
+  if (!emphasisKeeps(frame.emphasisPass, nodeFlags[slot])) { return false; }
 
   let g = ghosts[slot];
 
@@ -626,6 +633,7 @@ ${COMMON}
 
 fn isVisible(slot: u32) -> bool {
   if ((nodeFlags[slot] & SHOWN) != SHOWN) { return false; }
+  if (!emphasisKeeps(frame.emphasisPass, nodeFlags[slot])) { return false; }
 
   // Round 57.1 removed a second admission rule here, which admitted
   // *active* nodes carrying no overlay of their own so the shader could

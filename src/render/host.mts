@@ -70,6 +70,9 @@ export interface RenderStoreView extends ModelView {
   outlineSlack(): number;
   arrowScaleMax(): number;
   arrowWidthMax(): number;
+  /** the emphasis composite (round 102): the dim opacity while an
+   * emphasis is set, -1 while none is */
+  emphasisDim(): number;
 
   // -- draw-gating counts: a zero skips the feature's whole pass --
   parentCount(): number;

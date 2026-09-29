@@ -27,6 +27,11 @@ import type {
   Renderer,
 } from '../renderer.mjs';
 import { drawScene, encodeCulls } from './scene.mjs';
+import {
+  drawEmphasisTier,
+  emphasisActive,
+  prepareEmphasis,
+} from './emphasis.mjs';
 import { promoteVectors } from './force.mjs';
 
 /**
@@ -167,6 +172,7 @@ export function writeExportUniform(rd: Renderer, view: ExportView): void {
   f[14] = rd.store.arrowScaleMax();
   f[17] = rd.store.arrowWidthMax(); // 56: hollow strokes reach outside the head
   f[15] = opts.imageMinPx ?? DEFAULT_IMAGE_MIN_PX; // export scale is the figure's own resolution
+  f[19] = rd.store.emphasisDim() >= 0 ? 1 : 0; // round 102: the figure is the screen's
 
   device.queue.writeBuffer(
     rd.exportUniform,
@@ -247,28 +253,38 @@ export function renderExport(rd: Renderer, job: ExportJob): void {
       false,
     );
 
+    // an emphasis (round 102) draws in the figure as on screen: the
+    // dimmed tier culled above, the emphasized tier here
+    const tier = emphasisActive(rd)
+      ? prepareEmphasis(rd, rd.exportFrameData, 'export')
+      : null;
+
+    if (tier != null) {
+      encodeCulls(rd, encoder, tier.uniform, tier.cull, false);
+    }
+
     // the clear color is premultiplied, like everything the pipelines blend
     const a = bg == null ? 0 : bg[3];
+    const under = [
+      bg == null ? 0 : (bg[0] / 255) * a,
+      bg == null ? 0 : (bg[1] / 255) * a,
+      bg == null ? 0 : (bg[2] / 255) * a,
+      a,
+    ] as const;
+    const view = texture.createView();
+    const depthView = depth.createView();
     const pass = encoder.beginRenderPass({
       label: 'cy-gpu:export-pass',
       colorAttachments: [
         {
-          view: texture.createView(),
-          clearValue:
-            bg == null
-              ? { r: 0, g: 0, b: 0, a: 0 }
-              : {
-                  r: (bg[0] / 255) * a,
-                  g: (bg[1] / 255) * a,
-                  b: (bg[2] / 255) * a,
-                  a,
-                },
+          view,
+          clearValue: { r: under[0], g: under[1], b: under[2], a: under[3] },
           loadOp: 'clear',
           storeOp: 'store',
         },
       ],
       depthStencilAttachment: {
-        view: depth.createView(),
+        view: depthView,
         depthClearValue: 1.0,
         depthLoadOp: 'clear',
         depthStoreOp: 'discard',
@@ -276,7 +292,13 @@ export function renderExport(rd: Renderer, job: ExportJob): void {
     });
 
     drawScene(rd, pass, rd.exportUniform as GPUBuffer, rd.exportCull);
-    pass.end();
+
+    if (tier != null) {
+      // ends `pass`; the veil composites the rest over the export's bg
+      drawEmphasisTier(rd, encoder, pass, view, depthView, tier, under);
+    } else {
+      pass.end();
+    }
 
     // the device converts the premultiplied target into final
     // straight-alpha RGBA bytes (110.4); the readback only maps them

@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72, 74–75, 79, 85–98, 101–104, 106–124, 127–134 |
+| landed | 7–48, 52–70, 72, 74–75, 79, 85–98, 101–104, 106–124, 127–136 |
 | planned | 49–51, 71, 73, 76–78, 80–84, 99–100, 105, 125–126 |
 
 ## The sections
 
-174 sections.
+176 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -201,3 +201,5 @@ A round can land with an item held open; the round file says which.
 | 172 | — | 2026-09-28 | note | [The eleventh design sitting — the open calls, one by one](rounds/2026-09-28-01-rnd0000-note-the-eleventh-design-sitting-the-open-calls-one-by-one.md) |
 | 173 | 133 | 2026-09-28 | landed | [The whole-sheet re-apply becomes a sheet diff](rounds/2026-09-28-02-rnd0133-landed-the-whole-sheet-re-apply-becomes-a-sheet-diff.md) |
 | 174 | 134 | 2026-09-29 | landed | [Ledger item 70: the k-clusterings' offload lane](rounds/2026-09-29-01-rnd0134-landed-item-70-the-k-clusterings-offload-lane.md) |
+| 175 | 135 | 2026-09-29 | landed | [Ledger item 30, tier 1: what no golden sees, enumerated](rounds/2026-09-29-02-rnd0135-landed-item-30-tier-1-the-golden-coverage-enumerator.md) |
+| 176 | 136 | 2026-09-29 | landed | [Ledger item 31, the inventory: every gesture, its events and the specs that hold it](rounds/2026-09-29-03-rnd0136-landed-item-31-the-gesture-inventory.md) |

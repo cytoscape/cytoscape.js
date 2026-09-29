@@ -274,6 +274,12 @@ closed it: the k-clusterings and hierarchical clustering run one
 named-metric kernel shared by the in-thread reference and the offload
 lane's worker, bit-neutral against the pre-round reference, the closure
 path kept for custom metrics; it raised no new item.
+Rounds 135 and 136 (landed 2026-09-29 on the sitting's calls) took the
+first halves of **items 30 and 31**, which stay open for their later
+tiers: 135 counts the style properties no golden sets (75 of 212,
+pinned) ahead of the SVG and WebGL parity work, and 136 inventories the
+gestures (30; 3 with no coverage at either tier) for the trace tier
+before the WebGL implementation; neither raised a new item.
 Items 18 and 63 are carried by rounds 73 and 126.  What follows is the
 sweep before it.
 
@@ -657,6 +663,17 @@ directions".*
     nothing, one property at a time.
     **Call taken (2026-09-28, the eleventh sitting): before the SVG and
     WebGL parity work**, tier 1 first.
+    **Tier 1 landed by round 135 (2026-09-29); the item stays open for
+    tier 2.**  Every golden records the properties its scene sets to a
+    non-default value (`playwright-tests/golden-coverage/`, held to the
+    scene like the PNG), and `test/modules/golden-coverage.mjs` pins the
+    count against the schema's per-group properties that the group
+    reads back: **75 of 212 never set by any golden** — 56 paintable
+    (the list rounds 77 and 73 are held to; `node --import tsx
+    scripts/golden-coverage.mjs --verbose` prints it), 19 no static
+    frame can show — and 67 non-default keywords never shown.  Rounds
+    102 and 104 landed with no golden (`dim-opacity`, `label-declutter`,
+    `label-priority`).  Open: the degrade control.
 31. **Scripted gesture traces — the interactions get parity
     scenes** (raised 2026-08-19).  Goldens cover static frames;
     gestures are verified by Node specs plus a person driving
@@ -675,6 +692,17 @@ directions".*
     synthetic-event coverage.
     **Call taken (2026-09-28, the eleventh sitting): the inventory now,
     the trace tier before the WebGL implementation.**
+    **The inventory landed by round 136 (2026-09-29); the item stays
+    open for the trace tier.**  `playwright-tests/lib/gesture-inventory.mjs`
+    lists 30 gestures with their gating options, events in order, end
+    state and covering specs, held to the tree by
+    `test/modules/gesture-inventory.mjs` (every cited title exists,
+    every event `src/interact/` emits is listed, the tallies pinned):
+    **26 have a browser-level assertion, 1 only headless (one-finger
+    touch), 3 none** (pointer-leave, the additive tap, every gesture on
+    the worker host).  It names the traces the tier replays and their
+    end-state fields; v4 has no grab-and-throw, so that trace pins the
+    absence.  Open: the trace tier.
 32. **The benchmark coverage audit graduates** (raised 2026-08-19).
     `bench-coverage.mjs` stays report-only *deliberately* — it is
     heuristic where the gated three are not — so graduation is not

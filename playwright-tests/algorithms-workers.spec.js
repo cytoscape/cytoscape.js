@@ -75,19 +75,48 @@ const compare = async (page) =>
 
     // a family with neither a pool lane nor an offload lane still
     // rejects an explicit 'workers' (129.1 moved pageRank to the offload
-    // lane, so the k-means clustering is the probe now) — and pageRank
-    // runs its kernel on one Blob worker, answering 'cpu''s bits
+    // lane and round 134 the named-metric k-clusterings, so the one-column
+    // heat diffusion is the probe now) — and pageRank runs its kernel on
+    // one Blob worker, answering 'cpu''s bits
     let noPath = null;
 
     try {
-      await nodes.kMeans({
-        k: 2,
-        attributes: [(node) => node.data('w') ?? 0],
-        executor: 'workers',
-      });
+      await eles.heatDiffusion({ seeds: nodes[0], executor: 'workers' });
     } catch (err) {
       noPath = err.message;
     }
+
+    // round 134: the feature-space clusterers' kernels on a Blob worker,
+    // against the in-thread reference, member for member
+    const attributes = [
+      (node) => (node.id().length * 7 + node.degree()) % 13,
+      (node) => node.degree(),
+    ];
+    const ids = (clusters) =>
+      clusters.map((c) => (c == null ? '_' : c.map((e) => e.id()).join()));
+    const same = (a, b) => JSON.stringify(ids(a)) === JSON.stringify(ids(b));
+    const kmOptions = {
+      k: 3,
+      attributes,
+      testMode: true,
+      testCentroids: [
+        [1, 2],
+        [6, 3],
+        [11, 4],
+      ],
+    };
+    const kmBits = same(
+      await nodes.kMeans({ ...kmOptions, executor: 'workers' }),
+      await nodes.kMeans({ ...kmOptions, executor: 'cpu' }),
+    );
+    const hcaOptions = { attributes, linkage: 'mean', threshold: 2 };
+    const hcaBits = same(
+      await nodes.hierarchicalClustering({
+        ...hcaOptions,
+        executor: 'workers',
+      }),
+      await nodes.hierarchicalClustering({ ...hcaOptions, executor: 'cpu' }),
+    );
 
     const prW = await eles.pageRank({ weight, executor: 'workers' });
     const prC = await eles.pageRank({ weight, executor: 'cpu' });
@@ -111,6 +140,8 @@ const compare = async (page) =>
       ccBits,
       noPath,
       prBits,
+      kmBits,
+      hcaBits,
       offloads,
     };
   });
@@ -129,7 +160,9 @@ test.describe('the workers executor in the browser (round 74)', () => {
     expect(out.prBits, 'the offload kernel answers the reference bits').toBe(
       true,
     );
-    expect(out.offloads).toBeGreaterThan(0);
+    expect(out.kmBits, 'kMeans on a worker: the reference clusters').toBe(true);
+    expect(out.hcaBits, 'hierarchical on a worker: the same').toBe(true);
+    expect(out.offloads).toBeGreaterThan(2);
   });
 
   test('the minified bundle: the stringified body survives the minifier', async ({
@@ -145,9 +178,12 @@ test.describe('the workers executor in the browser (round 74)', () => {
     expect(out.bcErr).toBeLessThan(1e-12);
     expect(out.ccBits).toBe(true);
     expect(out.noPath).toMatch(/no workers path/);
-    // the kernels' source text survives the minifier too (129.1)
+    // the kernels' source text survives the minifier too (129.1; the
+    // clustering kernels since round 134)
     expect(out.prBits).toBe(true);
-    expect(out.offloads).toBeGreaterThan(0);
+    expect(out.kmBits).toBe(true);
+    expect(out.hcaBits).toBe(true);
+    expect(out.offloads).toBeGreaterThan(2);
   });
 });
 

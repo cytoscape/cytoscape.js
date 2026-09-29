@@ -342,17 +342,32 @@ describe('algorithms: the workers executor (round 74)', function () {
     });
 
     it("a family with neither a pool lane nor an offload lane rejects an explicit 'workers'", async function () {
-      // the k-clusterings call their metric per iteration (129's fact
-      // 2), so they have no lane of either kind
+      // the seed forms are one column, with nothing to split and no
+      // kernel of their own (74.3)
       const err = await rejection(
-        cy.nodes().kMeans({
-          k: 2,
-          attributes: [(n) => n.data('x') ?? 0],
+        cy.elements().heatDiffusion({
+          seeds: cy.nodes()[0],
           executor: 'workers',
         }),
       );
 
       expect(err.message).to.match(/no workers path/);
+
+      // the k-clusterings rejected here through round 133; since round
+      // 134 a named metric runs their offload lane, and only a custom
+      // metric — called inside the iteration — rejects, with its reason
+      const custom = await rejection(
+        cy.nodes().kMeans({
+          k: 2,
+          attributes: [(n) => n.data('x') ?? 0],
+          distance: (len, p, q) => Math.abs(p(0) - q(0)),
+          executor: 'workers',
+        }),
+      );
+
+      expect(custom.message).to.match(
+        /custom distance function runs on the calling thread/,
+      );
 
       // pageRank and weighted closeness rejected here through round
       // 128; since 129.1 an explicit 'workers' runs their offload lane

@@ -6944,8 +6944,10 @@ declare class Collection implements Iterable<Collection> {
    * than on graph structure.
    *
    * Async (round 65): returns a promise, and `executor`
-   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path) picks where the iteration
-   * runs; 'cpu' is the reproducible reference.
+   * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker for a named `distance`, round 134) picks where the iteration
+   * runs; 'cpu' is the reproducible reference.  A custom `distance`
+   * function is called inside the iteration, so it runs on the calling
+   * thread under 'cpu' and 'auto', and 'workers' rejects it.
    *
    * @param options — `{ k, attributes, distance, maxIterations,
    *   sensitivityThreshold, executor }`, with `attributes` as plain
@@ -6954,7 +6956,8 @@ declare class Collection implements Iterable<Collection> {
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
-   *   unavailable in this environment
+   *   unavailable in this environment, or `executor: 'workers'` is
+   *   given a custom `distance` function
    */
   kMeans(options?: KClusteringOptions): AlgoRun<Collection[]>;
   /**
@@ -6967,7 +6970,8 @@ declare class Collection implements Iterable<Collection> {
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
-   *   unavailable, or if `k` exceeds the node count
+   *   unavailable, if `executor: 'workers'` is given a custom
+   *   `distance` function, or if `k` exceeds the node count
    */
   kMedoids(options?: KClusteringOptions): AlgoRun<Collection[]>;
   /**
@@ -6980,15 +6984,20 @@ declare class Collection implements Iterable<Collection> {
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
-   *   unavailable in this environment
+   *   unavailable in this environment, or `executor: 'workers'` is
+   *   given a custom `distance` function
    */
   fuzzyCMeans(options?: KClusteringOptions): AlgoRun<FuzzyCMeansResult>;
   fcm: this['fuzzyCMeans'];
   /**
    * Agglomerative hierarchical clustering.  Async (round 65): returns a
-   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' rejects — no workers path)
+   * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 134)
    * picks where the distance matrix is built; the merge chain itself is
-   * sequential and always runs on the CPU.
+   * sequential and runs with the reference — in-thread, or on the pool
+   * worker for a named `distance` and a 'min' / 'max' / 'mean'
+   * `linkage`.  A custom `distance` function or a per-pair linkage
+   * consults the metric inside the run, on the calling thread, and
+   * 'workers' rejects them.
    *
    * @param options — `{ attributes, distance, linkage, mode,
    *   dendrogramDepth, executor }`
@@ -6996,7 +7005,8 @@ declare class Collection implements Iterable<Collection> {
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
    * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
-   *   unavailable in this environment
+   *   unavailable in this environment, or `executor: 'workers'` is
+   *   given a custom `distance` function or a per-pair linkage
    */
   hierarchicalClustering(options?: HierarchicalClusteringOptions): AlgoRun<Collection[]>;
   hca: this['hierarchicalClustering'];

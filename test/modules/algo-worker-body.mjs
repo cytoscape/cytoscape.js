@@ -247,6 +247,86 @@ const exercise = (port) => {
       },
       (out) => expect(out.exemplars.length).to.be.greaterThan(0),
     ],
+    // round 134: the feature-space clusterers' two kernels, each mode
+    [
+      'kClustering',
+      {
+        mode: 0,
+        n: 4,
+        d: 1,
+        k: 2,
+        kc: 2,
+        vecs: Float64Array.from([0, 1, 10, 11]),
+        centroids: Float64Array.from([0, 10]),
+        kind: 2,
+        sensitivityThreshold: 1e-4,
+        maxIterations: 10,
+      },
+      (out) => {
+        expect(Array.from(out.ptr)).to.deep.equal([0, 2, 4]);
+        expect(Array.from(out.idx)).to.deep.equal([0, 1, 2, 3]);
+      },
+    ],
+    [
+      'kClustering',
+      {
+        mode: 1,
+        n: 4,
+        d: 1,
+        k: 2,
+        kc: 2,
+        // the nodes' rows, then the two starting medoids'
+        vecs: Float64Array.from([0, 1, 10, 11, 0, 10]),
+        kind: 2,
+        sensitivityThreshold: 1e-4,
+        maxIterations: 10,
+      },
+      (out) => {
+        expect(Array.from(out.ptr)).to.deep.equal([0, 2, 4]);
+        expect(Array.from(out.idx)).to.deep.equal([0, 1, 2, 3]);
+      },
+    ],
+    [
+      'kClustering',
+      {
+        mode: 2,
+        n: 3,
+        d: 1,
+        k: 2,
+        kc: 2,
+        vecs: Float64Array.from([0, 1, 10]),
+        U: Float64Array.from([0.9, 0.1, 0.8, 0.2, 0.1, 0.9]),
+        m: 2,
+        kind: 2,
+        sensitivityThreshold: 1e-4,
+        maxIterations: 2,
+      },
+      (out) => {
+        expect(out.U[0]).to.be.greaterThan(0.5);
+        expect(out.U[5]).to.be.greaterThan(0.5);
+        expect(out.U[0] + out.U[1]).to.be.closeTo(1, 1e-12);
+      },
+    ],
+    [
+      'hierarchical',
+      {
+        n: 3,
+        d: 1,
+        vecs: Float64Array.from([0, 1, 10]),
+        dist: null,
+        kind: 2,
+        linkage: 0,
+        dendrogram: false,
+        threshold: 5,
+      },
+      // one merge, (0, 1) into tree node 3; 2 stays alone
+      (out) => {
+        expect(out.merges).to.equal(1);
+        expect([out.left[0], out.right[0]]).to.deep.equal([1, 0]);
+        expect(Array.from(out.active)).to.deep.equal([1, 2]);
+        expect(out.treeNode[1]).to.equal(3);
+      },
+    ],
   ];
   let id = 10;
 

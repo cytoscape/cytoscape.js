@@ -229,6 +229,9 @@ export const resolveExecutor = (
  *   the family has none; under `'auto'` it sits last before the
  *   in-thread reference, taken when n clears `minN` and a worker can
  *   be constructed
+ * @param workersNoPathReason — the rejection message for `executor:
+ *   'workers'` when the family has neither lane for these options (a
+ *   feature-space clusterer given a custom metric, round 134)
  * @returns the algorithm result, from whichever executor ran, as a
  *   promise carrying `cancel()` (round 128)
  * @throws if `executor: 'gpu'` is asked of a build with no GPU
@@ -248,6 +251,7 @@ export const runAlgo = <T,>(
   gpuNoPathReason?: string,
   workers: WorkersLane<T> | null = null,
   offload: OffloadLane<T> | null = null,
+  workersNoPathReason?: string,
 ): AlgoRun<T> => {
   const token: CancelToken = { cancelled: false, done: false };
 
@@ -263,6 +267,7 @@ export const runAlgo = <T,>(
       gpuNoPathReason,
       workers,
       offload,
+      workersNoPathReason,
     ),
     'the algorithm run',
   );
@@ -279,6 +284,7 @@ const route = async <T,>(
   gpuNoPathReason: string | undefined,
   workers: WorkersLane<T> | null,
   offload: OffloadLane<T> | null,
+  workersNoPathReason: string | undefined,
 ): Promise<T> => {
   // a lane's value is in hand: a cancel from here on answers false
   const settled = (value: T): T => {
@@ -297,7 +303,8 @@ const route = async <T,>(
   if (executor === 'workers') {
     if (workers == null && offload == null) {
       throw new Error(
-        "this algorithm has no workers path — use executor 'cpu' or 'auto'",
+        workersNoPathReason ??
+          "this algorithm has no workers path — use executor 'cpu' or 'auto'",
       );
     }
 

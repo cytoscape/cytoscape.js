@@ -450,6 +450,20 @@ that compile and then behave differently.
   the worker's kernel (one function, carried as source text), so the
   answer is bit-identical to `'cpu'`.  The pool spawns lazily: one
   worker for offloads, the full size on the first partitioned run.
+- **The k-clusterings and hierarchical clustering join the offload
+  lane** (round 134).  For a named `distance`, `kMeans`, `kMedoids`,
+  `fuzzyCMeans` and `hierarchicalClustering` (with a `'min'` / `'max'`
+  / `'mean'` linkage) run one kernel over the attribute vectors —
+  in-thread under `'cpu'`, on one pool worker under `executor:
+  'workers'` (which rejected on them before) and under `'auto'` from a
+  per-family size — so the calling thread is free for the run.  The
+  in-thread reference runs the same kernel and answers the same
+  clusters and memberships as before, bit for bit, 3–10× faster
+  (k-medoids at 5,120 nodes: 2.98 s → 0.31 s).  A custom `distance`
+  function, or a per-pair linkage, is called inside the loop and keeps
+  running on the calling thread; `'workers'` rejects it with that
+  reason.  `kMeans` no longer writes into the caller's
+  `testCentroids` arrays.
 - **The force layout's CPU simulation runs on a worker** (round
   129.3).  A new `executor` option (`'auto' | 'cpu' | 'gpu' |
   'workers'`, default `'auto'`) names the three executors; under

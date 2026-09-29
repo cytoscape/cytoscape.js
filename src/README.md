@@ -807,7 +807,10 @@ cannot partition on ONE worker** — the *offload lane*: `pageRank`,
 `katzCentrality`, `floydWarshall` and weighted
 `closenessCentralityNormalized`, `triangleCount`,
 `neighborhoodSimilarity`, `motifCensus`, `simRank`,
-`effectiveResistance`, `markovClustering`, `affinityPropagation`.
+`effectiveResistance`, `markovClustering`, `affinityPropagation` —
+and since round 134 `kMeans`, `kMedoids`, `fuzzyCMeans` and
+`hierarchicalClustering` for a *named* metric (and, for hierarchical,
+a 'min' / 'max' / 'mean' linkage).
 Each of those references is one self-contained kernel over a snapshot
 (`src/algorithms/algo-kernels.mts`; the builders evaluate every user
 closure — `weight`, MCL's `attributes`, AP's `attributes` and
@@ -816,9 +819,31 @@ calls the same function, and the pool carries that function's own
 source text, so a worker answers the reference's bits by
 construction.  The value is the calling thread, not speed: a run on
 the lane costs a clone and a wake and frees the UI thread for its
-whole length.  `'workers'` rejects only on the families with no lane
-of either kind (the k-clusterings and hierarchical clustering, whose
-references call the metric per iteration) or where no worker can be
+whole length.  The feature-space clusterers (round 134, ledger item
+70) needed a reshaping first: their references called the metric per
+iteration through per-node caches, and the metric may be a caller's
+function, so the maths was not a loop over a snapshot.  For the named
+metrics the snapshot now carries the attribute vectors (evaluated
+once per node on the calling thread) and the metric as a code, and
+the in-thread reference runs the kernel too
+(`src/algorithms/algo-kernels-cluster.mts`: `kClusteringKernel` for
+the three k-clusterings, `hierarchicalKernel` for the 65.10 merge
+engine, which the GPU executor's merge phase also runs); a custom
+distance function — and a per-pair hierarchical linkage — keeps the
+closure path, on the calling thread, because it is called inside the
+loop.  The reference's own change of path is bit-neutral, recorded
+two ways: every result digest at n = 1024 / 5120, four metrics, is
+identical before and after (the `algorithms-gpu` feature fixture), and
+`test/algorithms-offload-clustering.mjs` asserts the kernel under a
+metric's name `===` the closure path under a function that *is* that
+metric.  It is also faster, because the closure path spawned every
+cluster's collection every iteration and rebuilt each cluster in a
+pass over all nodes: k-medoids at n = 5120 2,980 → 311 ms, fuzzy
+c-means 207 → 60, k-means 45 → 15 (hierarchical was already the flat
+engine, unchanged).  `'workers'` rejects only on the families with no
+lane of either kind (the one-column seed forms `heatDiffusion` and
+`randomWalkWithRestart`), on a clusterer given a custom metric or a
+per-pair linkage (with that reason), or where no worker can be
 constructed; 'auto' takes the GPU above a per-family
 measured crossover, then the pool from the family's stamped crossover
 (74.5: weighted betweenness and RWR proximity 128, unweighted
@@ -830,7 +855,8 @@ lane from the family's `offloadMinN` (129.4, stamped from the
 whose in-thread run reaches a quarter frame: affinity propagation 32,
 MCL 64, Floyd–Warshall / SimRank / effective resistance 128, the
 similarity count 1024, the census 4096, triangles 8192, Katz 16384,
-pageRank 32768 — the lane's clone-and-wake costs 0.2–0.6 ms, and what
+pageRank 32768; round 134 by the same rule: fuzzy c-means and
+hierarchical 512, k-medoids 768, k-means 4096 — the lane's clone-and-wake costs 0.2–0.6 ms, and what
 it frees is the kernel's share of the run: on a sparse graph pageRank's
 and Katz's structure is built in-thread and is most of the call), then
 the CPU —

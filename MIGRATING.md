@@ -530,9 +530,14 @@ on one worker**, and `'auto'` takes that lane wherever neither the GPU
 nor the pool runs, from a per-family size (64–2048 nodes): the calling
 thread stays free for the run's whole length, and the answer is
 bit-identical to `'cpu'` (the same kernel function runs on both
-sides).  `'workers'` rejects only on `kMeans`, `kMedoids`,
-`fuzzyCMeans` and `hierarchicalClustering`, whose references call the
-distance per iteration. The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
+sides).  Since round 134 the same holds for `kMeans`, `kMedoids`,
+`fuzzyCMeans` and `hierarchicalClustering` given a *named* `distance`
+(and, for hierarchical, a `'min'` / `'max'` / `'mean'` linkage);
+`'workers'` rejects a custom `distance` function or a per-pair linkage,
+which is called inside the loop and so runs on the calling thread, and
+the one-column seed forms (`heatDiffusion`, `randomWalkWithRestart`).
+`kMeans` reads its `testCentroids` without writing the updated
+centroids back into the caller's arrays, as v3 did. The traversal tier (`bfs`, `dfs`, `dijkstra`, `aStar`,
 `bellmanFord`, `kruskal`, the components algorithms, degree centrality and
 the single-root `closenessCentrality`) stays synchronous: those run
 per-root in tight loops, and no GPU formulation would beat their

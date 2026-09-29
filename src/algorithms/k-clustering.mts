@@ -3,12 +3,13 @@
 // not adjacency-walks, so handles are the natural representation).
 
 import type { Collection } from '../collection.mjs';
-import { resolveDistance } from './clustering-distances.mjs';
+import { namedMetricKind, resolveDistance } from './clustering-distances.mjs';
 import type { DistanceMetric } from './clustering-distances.mjs';
-import { resolveExecutor, runAlgo } from './executor.mjs';
-import type { AlgoExecutor } from './executor.mjs';
+import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
+import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import { gpuCall } from './gpu-registry.mjs';
+import type { KClusteringKernelInput } from './algo-kernels-cluster.mjs';
 
 /** Why a feature-space run has no GPU path, when it doesn't. */
 const featureGpuReason = (options?: KClusteringOptions): string | null => {
@@ -28,6 +29,40 @@ const featureGpuReason = (options?: KClusteringOptions): string | null => {
 
   return null;
 };
+
+/**
+ * Why an explicit `executor: 'workers'` rejects on a feature-space
+ * clusterer (round 134): a custom metric is called inside the
+ * iteration, on the calling thread, so it has no offload lane — the
+ * named metrics do.
+ */
+export const CUSTOM_METRIC_IN_THREAD =
+  'a custom distance function runs on the calling thread — ' +
+  "use executor 'cpu' or 'auto'";
+
+/**
+ * The node count from which `'auto'` runs a named-metric k-means on one
+ * pool worker rather than in-thread (round 134, ledger item 70).
+ * Stamped 2026-09-29 from the `algorithms-workers` offload rows
+ * (i9-9900K, one worker, the `algorithms-gpu` feature fixture: two
+ * attributes, k = 8, ten iterations) by round 129.4's rule — the
+ * smallest measured size whose in-thread run reaches ~4 ms, a quarter
+ * frame: 0.6 / 1.1 / 1.5 ms at n = 256 / 512 / 1024, 3.1–3.9 ms at
+ * 2048 (the published median and the crossover sweep — just under),
+ * 5.9 at 4096, 11.7 at 8192.  k-means is O(n·k·d) per iteration, the
+ * cheapest of the four.
+ */
+export const K_MEANS_OFFLOAD_MIN_N = 4096;
+
+/** k-medoids' offload crossover (round 134): 2.2 / 3.4 / 5.0 / 8.7 ms
+ * in-thread at n = 512 / 640 / 768 / 1024 on the same fixture (the
+ * swap cost is quadratic in cluster size); see `K_MEANS_OFFLOAD_MIN_N`. */
+export const K_MEDOIDS_OFFLOAD_MIN_N = 768;
+
+/** Fuzzy c-means' offload crossover (round 134): 2.5 / 9.5 ms
+ * in-thread at n = 256 / 512 (O(n·k²·d) per iteration); see
+ * `K_MEANS_OFFLOAD_MIN_N`. */
+export const FUZZY_C_MEANS_OFFLOAD_MIN_N = 512;
 
 /** A node attribute accessor used as a clustering feature. */
 export type KAttributeFn = (node: Collection) => number;
@@ -382,14 +417,217 @@ const findCost = (
 };
 
 /**
+ * Materialize the attribute callbacks into row-major f64 vectors — the
+ * offload lane's one pass over user code (round 134).  `extra` rows
+ * follow the nodes: k-medoids' starting medoids, which a caller's test
+ * centres may place outside the collection.
+ *
+ * @param nodes — the nodes, in row order
+ * @param attributes — the feature accessors
+ * @param extra — further elements whose vectors follow the nodes'
+ * @returns the vectors, (nodes + extra) × attributes
+ */
+export const vectorsOf = (
+  nodes: Collection,
+  attributes: KAttributeFn[],
+  extra: Collection[] = [],
+): Float64Array => {
+  const n = nodes.length;
+  const d = attributes.length;
+  const vecs = new Float64Array((n + extra.length) * d);
+
+  for (let i = 0; i < n + extra.length; i++) {
+    const node = i < n ? nodes[i] : extra[i - n];
+
+    for (let j = 0; j < d; j++) {
+      vecs[i * d + j] = attributes[j](node);
+    }
+  }
+
+  return vecs;
+};
+
+/** The kernel's metric code for a named metric over `d` attributes:
+ * euclidean in fewer than two dimensions is manhattan (the reference's
+ * shortcut skips the square root). */
+export const clusterMetricKind = (
+  distance: DistanceMetric,
+  d: number,
+): number => {
+  const kind = namedMetricKind(distance);
+
+  return kind === 0 && d < 2 ? 2 : kind;
+};
+
+/** The k-clusterings' three modes, as the kernel codes them. */
+const K_MODE = { kMeans: 0, kMedoids: 1, cmeans: 2 } as const;
+
+/** The testCentroids a run seeds from, when `testMode` gives them. */
+const testCentres = (opts: ResolvedKOptions): unknown[] | null =>
+  opts.testMode &&
+  typeof opts.testCentroids === 'object' &&
+  opts.testCentroids != null
+    ? (opts.testCentroids as unknown[])
+    : null;
+
+/**
+ * Spawn k-means' / k-medoids' clusters from the kernel's member lists:
+ * an entry stays `undefined` for a centre that never held a node, as
+ * the reference (and v3) leave it.
+ */
+const clustersFromLists = (
+  coll: Collection,
+  nodes: Collection,
+  k: number,
+  out: Record<string, unknown>,
+): Collection[] => {
+  const ptr = out.ptr as Int32Array;
+  const idx = out.idx as Int32Array;
+  const clusters: Collection[] = new Array(k);
+
+  for (let c = 0; c + 1 < ptr.length; c++) {
+    if (ptr[c + 1] > ptr[c]) {
+      const members: Collection[] = [];
+
+      for (let p = ptr[c]; p < ptr[c + 1]; p++) {
+        members.push(nodes[idx[p]]);
+      }
+
+      clusters[c] = spawnHandles(coll, members);
+    }
+  }
+
+  return clusters;
+};
+
+/**
+ * A k-clustering's offload lane (round 134, ledger item 70): the
+ * snapshot built here — the seeding (`Math.random`, or the test
+ * centres) and every attribute evaluated on this thread — the maths as
+ * `kClusteringKernel` (`algo-kernels-cluster.mts`), run in this thread
+ * under `'cpu'` and on one pool worker under `'auto'` / `'workers'`,
+ * and the public result over whichever answered.  Null for a custom
+ * distance function, which is called inside the iteration and keeps
+ * the closure path on the calling thread.
+ *
+ * @param coll — the calling collection
+ * @param options — the caller's options
+ * @param mode — which of the three
+ * @param minN — the family's `'auto'` crossover
+ * @returns the lane, or null for a custom metric
+ * @throws at the snapshot, when k-medoids' `k` exceeds the node count
+ */
+export const kClusteringLane = <T,>(
+  coll: Collection,
+  options: KClusteringOptions | undefined,
+  mode: KMode,
+  minN: number,
+): OffloadLane<T> | null => {
+  if (typeof options?.distance === 'function') {
+    return null;
+  }
+
+  const opts = resolveKOptions(options);
+  let nodes: Collection = coll;
+
+  return {
+    minN,
+    snapshot: () => {
+      nodes = coll.nodes();
+
+      const n = nodes.length;
+      const d = opts.attributes.length;
+      const input: KClusteringKernelInput = {
+        mode: K_MODE[mode],
+        n,
+        d,
+        k: opts.k,
+        kc: opts.k,
+        vecs: new Float64Array(0),
+        kind: clusterMetricKind(opts.distance, d),
+        sensitivityThreshold: opts.sensitivityThreshold,
+        maxIterations: opts.maxIterations,
+      };
+
+      if (mode === 'kMeans') {
+        const centroids = (testCentres(opts) ??
+          randomCentroids(nodes, opts.k, opts.attributes)) as FeatureCentroid[];
+        const flat = new Float64Array(centroids.length * d);
+
+        for (let c = 0; c < centroids.length; c++) {
+          for (let j = 0; j < d; j++) {
+            flat[c * d + j] = centroids[c][j];
+          }
+        }
+
+        input.kc = centroids.length;
+        input.centroids = flat;
+        input.vecs = vectorsOf(nodes, opts.attributes);
+      } else if (mode === 'kMedoids') {
+        // k distinct medoids are required, so k cannot exceed the node count
+        if (opts.k > n) {
+          throw new Error(
+            `kMedoids: k (${opts.k}) cannot exceed the number of nodes (${n}).`,
+          );
+        }
+
+        const medoids = (testCentres(opts) ??
+          randomMedoids(nodes, opts.k)) as Collection[];
+
+        input.kc = medoids.length;
+        input.vecs = vectorsOf(nodes, opts.attributes, medoids);
+      } else {
+        // memberships seeded as the reference seeds them: uniform, then
+        // normalized per node
+        const U = new Float64Array(n * opts.k);
+
+        for (let i = 0; i < n; i++) {
+          let total = 0;
+
+          for (let j = 0; j < opts.k; j++) {
+            U[i * opts.k + j] = Math.random();
+            total += U[i * opts.k + j];
+          }
+
+          for (let j = 0; j < opts.k; j++) {
+            U[i * opts.k + j] = U[i * opts.k + j] / total;
+          }
+        }
+
+        input.U = U;
+        input.m = opts.m;
+        input.vecs = vectorsOf(nodes, opts.attributes);
+      }
+
+      return { kind: 'kernel', name: 'kClustering', input };
+    },
+    wrap: (out) => {
+      if (mode !== 'cmeans') {
+        return clustersFromLists(coll, nodes, opts.k, out) as T;
+      }
+
+      const flat = out.U as Float64Array;
+      const U: number[][] = new Array(nodes.length);
+
+      for (let i = 0; i < nodes.length; i++) {
+        U[i] = Array.from(flat.subarray(i * opts.k, (i + 1) * opts.k));
+      }
+
+      return fcmResultFrom(coll, nodes, U, opts) as T;
+    },
+  };
+};
+
+/**
  * The async k-means entry point behind `eles.kMeans()`: validates
- * `executor` synchronously, then routes to the CPU reference
- * implementation or the WGSL kernels.
+ * `executor` synchronously, then routes to the reference (in-thread),
+ * the offload lane (one pool worker — named metrics, round 134) or the
+ * WGSL kernels.
  *
  * @param coll — the calling collection
  * @param options — as `kMeans`, plus `executor`
  * @returns a promise of the clusters
- * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ * @throws if `executor` is not 'cpu', 'gpu', 'workers' or 'auto'
  */
 export const kMeansAsync = (
   coll: Collection,
@@ -398,6 +636,12 @@ export const kMeansAsync = (
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
   const reason = featureGpuReason(options);
+  const lane = kClusteringLane<Collection[]>(
+    coll,
+    options,
+    'kMeans',
+    K_MEANS_OFFLOAD_MIN_N,
+  );
 
   // measured crossover (65.8, amd gcn-4): the workgroup centroid
   // update took it to 8x at n=4096; the fixed ~4 ms GPU overhead puts
@@ -406,21 +650,23 @@ export const kMeansAsync = (
     executor,
     n,
     1024,
-    () => kMeans(coll, options),
+    () => (lane == null ? kMeansByClosure(coll, options) : inThread(lane)),
     reason == null ? gpuCall('kMeans', coll, options) : null,
     reason ?? undefined,
+    null,
+    lane,
+    CUSTOM_METRIC_IN_THREAD,
   );
 };
 
 /**
  * The async k-medoids entry point behind `eles.kMedoids()`: validates
- * `executor` synchronously, then routes to the CPU reference
- * implementation or the WGSL kernels.
+ * `executor` synchronously, then routes as `kMeansAsync` does.
  *
  * @param coll — the calling collection
  * @param options — as `kMedoids`, plus `executor`
  * @returns a promise of the clusters
- * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ * @throws if `executor` is not 'cpu', 'gpu', 'workers' or 'auto'
  */
 export const kMedoidsAsync = (
   coll: Collection,
@@ -429,6 +675,12 @@ export const kMedoidsAsync = (
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
   const reason = featureGpuReason(options);
+  const lane = kClusteringLane<Collection[]>(
+    coll,
+    options,
+    'kMedoids',
+    K_MEDOIDS_OFFLOAD_MIN_N,
+  );
 
   // measured crossover (65.8, amd gcn-4): 19x at n=1024 with the
   // workgroup cost/pick kernels (the n^2 cost matrices dominate the
@@ -437,21 +689,24 @@ export const kMedoidsAsync = (
     executor,
     n,
     256,
-    () => kMedoids(coll, options),
+    () => (lane == null ? kMedoidsByClosure(coll, options) : inThread(lane)),
     reason == null ? gpuCall('kMedoids', coll, options) : null,
     reason ?? undefined,
+    null,
+    lane,
+    CUSTOM_METRIC_IN_THREAD,
   );
 };
 
 /**
  * The async fuzzy c-means entry point behind `eles.fuzzyCMeans()`:
- * validates `executor` synchronously, then routes to the CPU reference
- * implementation or the WGSL kernels.
+ * validates `executor` synchronously, then routes as `kMeansAsync`
+ * does.
  *
  * @param coll — the calling collection
  * @param options — as `fuzzyCMeans`, plus `executor`
  * @returns a promise of `{ clusters, degreeOfMembership }`
- * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ * @throws if `executor` is not 'cpu', 'gpu', 'workers' or 'auto'
  */
 export const fuzzyCMeansAsync = (
   coll: Collection,
@@ -460,6 +715,12 @@ export const fuzzyCMeansAsync = (
   const executor = resolveExecutor(options?.executor);
   const n = coll.nodes().length;
   const reason = featureGpuReason(options);
+  const lane = kClusteringLane<FuzzyCMeansResult>(
+    coll,
+    options,
+    'cmeans',
+    FUZZY_C_MEANS_OFFLOAD_MIN_N,
+  );
 
   // measured crossover (65.8, amd gcn-4): 30x at n=4096 with the
   // workgroup centroid update
@@ -467,9 +728,12 @@ export const fuzzyCMeansAsync = (
     executor,
     n,
     512,
-    () => fuzzyCMeans(coll, options),
+    () => (lane == null ? fuzzyCMeansByClosure(coll, options) : inThread(lane)),
     reason == null ? gpuCall('fuzzyCMeans', coll, options) : null,
     reason ?? undefined,
+    null,
+    lane,
+    CUSTOM_METRIC_IN_THREAD,
   );
 };
 
@@ -482,6 +746,10 @@ export const fuzzyCMeansAsync = (
  * the same graph need not agree.  Iterates until every centroid moves less
  * than `sensitivityThreshold` per dimension, or `maxIterations` passes.
  *
+ * A named metric runs `kClusteringKernel` — the function a pool worker
+ * runs under `executor: 'workers'` (round 134) — and a custom distance
+ * function the closure path below.
+ *
  * @param coll — the calling collection; only its nodes are clustered
  * @param options — `k` (default 2), `attributes`, `distance`,
  *   `maxIterations`, `sensitivityThreshold`
@@ -489,6 +757,22 @@ export const fuzzyCMeansAsync = (
  *   that attracted no node, as in v3
  */
 export const kMeans = (
+  coll: Collection,
+  options?: KClusteringOptions,
+): Collection[] => {
+  const lane = kClusteringLane<Collection[]>(
+    coll,
+    options,
+    'kMeans',
+    K_MEANS_OFFLOAD_MIN_N,
+  );
+
+  return lane == null ? kMeansByClosure(coll, options) : inThread(lane);
+};
+
+/** `kMeans` with a custom distance function: the closure path, the
+ * metric called per pair on the calling thread. */
+const kMeansByClosure = (
   coll: Collection,
   options?: KClusteringOptions,
 ): Collection[] => {
@@ -574,12 +858,30 @@ export const kMeans = (
  * Cost is quadratic in cluster size per iteration, so it is markedly more
  * expensive than k-means on large clusters.
  *
+ * A named metric runs `kClusteringKernel` (round 134), as `kMeans`.
+ *
  * @param coll — the calling collection; only its nodes are clustered
  * @param options — as `kMeans`; `testCentroids` here are node handles
  * @returns `k` collections, empty entries left `undefined` as in v3
  * @throws if `k` exceeds the node count — distinct medoids are required
  */
 export const kMedoids = (
+  coll: Collection,
+  options?: KClusteringOptions,
+): Collection[] => {
+  const lane = kClusteringLane<Collection[]>(
+    coll,
+    options,
+    'kMedoids',
+    K_MEDOIDS_OFFLOAD_MIN_N,
+  );
+
+  return lane == null ? kMedoidsByClosure(coll, options) : inThread(lane);
+};
+
+/** `kMedoids` with a custom distance function: the closure path, the
+ * metric called per pair on the calling thread. */
+const kMedoidsByClosure = (
   coll: Collection,
   options?: KClusteringOptions,
 ): Collection[] => {
@@ -762,6 +1064,8 @@ const assign = (
  * everywhere, or `maxIterations` passes.  The returned crisp `clusters`
  * are the arg-max of each node's memberships.
  *
+ * A named metric runs `kClusteringKernel` (round 134), as `kMeans`.
+ *
  * @param coll — the calling collection; only its nodes are clustered
  * @param options — as `kMeans`, plus `m`, the fuzziness exponent
  *   (default 2; must be > 1)
@@ -769,6 +1073,22 @@ const assign = (
  *   N-by-`k` matrix in node order whose rows sum to 1
  */
 export const fuzzyCMeans = (
+  coll: Collection,
+  options?: KClusteringOptions,
+): FuzzyCMeansResult => {
+  const lane = kClusteringLane<FuzzyCMeansResult>(
+    coll,
+    options,
+    'cmeans',
+    FUZZY_C_MEANS_OFFLOAD_MIN_N,
+  );
+
+  return lane == null ? fuzzyCMeansByClosure(coll, options) : inThread(lane);
+};
+
+/** `fuzzyCMeans` with a custom distance function: the closure path, the
+ * metric called per pair on the calling thread. */
+const fuzzyCMeansByClosure = (
   coll: Collection,
   options?: KClusteringOptions,
 ): FuzzyCMeansResult => {

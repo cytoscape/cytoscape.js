@@ -33,7 +33,16 @@ to every closure), which is exactly what makes a family
 snapshot-runnable.  Inputs that the builders hold as arrays of typed
 arrays (neighbor lists) cross as CSR pairs (`listsToCsr`), so a
 snapshot is a handful of buffers rather than thousands of objects.
+
+The feature-space clusterers' two kernels (round 134, ledger item 70)
+live in the sibling `algo-kernels-cluster.mts` under the same rule and
+join the registry below.
 */
+
+import {
+  hierarchicalKernel,
+  kClusteringKernel,
+} from './algo-kernels-cluster.mjs';
 
 /** A kernel's snapshot: typed arrays and scalars, structured-cloneable. */
 export type KernelInput = Record<string, unknown>;
@@ -991,6 +1000,8 @@ export const ALGO_KERNELS = {
   resistance: resistanceKernel,
   markov: markovKernel,
   affinity: affinityKernel,
+  kClustering: kClusteringKernel,
+  hierarchical: hierarchicalKernel,
 } as const;
 
 /** A kernel's name in the registry. */

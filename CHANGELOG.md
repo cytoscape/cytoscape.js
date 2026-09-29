@@ -237,6 +237,14 @@ that compile and then behave differently.
   `cytoscape.serializeElements()` / `deserializeElements()`, both accepted
   directly by `options.elements` and `cy.add()`. Numeric columns deserialize
   as zero-copy views.
+- **Node references in the columnar and wire forms** (round 103): a
+  payload's `refs` names nodes already in the graph, indexed past its own
+  nodes, so a chunk's cut edges travel columnar instead of as definitions
+  (`toColumnarElements( defs, { refs: true } )` builds them; the wire
+  carries them as a new trailing section, flag bit 2048, version still 4
+  under the format's experimental rule).  A reference an edge needs and
+  the graph lacks throws before anything is added; `cy.patch()` refuses
+  them.
 - **`cy.patch( payload, { mode } )`** — an id-keyed reconcile of a fresh
   payload (definition, columnar or wire form) into the live graph: adds,
   removes (`'reconcile'`, the default) or keeps (`'merge'`) what the payload

@@ -5010,6 +5010,27 @@ init 80 ms — down from 662 ms before the bulk path.  The wire form of the
 same graph is 9.2 MB and deserializes in ~5 ms, replacing the JSON path's
 90–113 ms parse + 27–48 ms convert.
 
+**Node references** (round 103) lift the self-contained rule where a
+payload asks: `refs` lists the ids of nodes it indexes but does not carry
+— an edge endpoint or a node parent at `nodes.count + i` names `refs[i]`
+— and the ingest resolves each id once against the live id index (packed
+bytes on the wire, no string decoded), however many edges index it.
+They exist for chunks: 103.1 measured a chunked ndex-x-large load at
+2.5–3.3× the monolithic one, nearly all of it the cut edges — which at
+k ≥ 5 are 87–97% of the edges on that fixture's node order — travelling
+as definitions through the per-element path, since a columnar endpoint
+could only index its own payload.  The rules: an endpoint's reference
+that names no node (or names an edge) throws **before anything is
+added**; a parent's warns and orphans, as the definition path does; the
+factory's `options.elements` starts empty, so a payload with references
+cannot load there; `cy.patch()` refuses them (a patch payload is a whole
+state).  `toColumnarElements( defs, { refs: true } )` builds them from
+definitions, and the wire carries them as a trailing section (u32 count
++ packed ids) under a new flag bit, 2048 — the header is unchanged and
+the version stays 4, by the eleventh sitting's rule for the format
+(public but **experimental until 4.x**: sections are new flag bits, no
+cross-version promise at 4.0).
+
 ## Patch: an id-keyed reconcile of a fresh payload (round 107)
 
 `cy.json( obj )` stays export-only by decided design — restoring a

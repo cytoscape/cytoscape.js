@@ -13,6 +13,8 @@ export type { Collection } from './collection.mjs';
 export type { PatchDiff, PatchMode, PatchOptions } from './core/patch.mjs';
 // round 106: `cy.clone()`'s options, and how a following clone keeps up
 export type { CloneOptions, FollowOptions } from './core/clone.mjs';
+// round 103: the converter's option (node references for chunks)
+export type { ToColumnarOptions } from './columnar.mjs';
 // round 41: v4's own event object, so a handler's parameter has a real type
 // and `event.target` is no longer `unknown`
 export type { Event, EventProps, EventTarget } from './event.mjs';

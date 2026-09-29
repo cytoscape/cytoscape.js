@@ -4,7 +4,7 @@
 
 import { Collection } from '../collection.mjs';
 import { _removeClosure } from '../collection/manipulation.mjs';
-import { isColumnarElements } from '../columnar.mjs';
+import { isColumnarElements, refCount } from '../columnar.mjs';
 import { partitionDefs } from '../element-defs.mjs';
 import { deserializeElements, isSerializedElements } from '../wire.mjs';
 import {
@@ -88,6 +88,17 @@ export function _patchMode(options: PatchOptions | undefined): PatchMode {
 /** Any input form, in the planner's one form. */
 export function _patchPayload(input: ElementsInput): PatchPayload {
   const defs = isSerializedElements(input) ? deserializeElements(input) : input;
+
+  if (isColumnarElements(defs) && refCount(defs) > 0) {
+    // round 103: node references are a chunk's way of naming what an
+    // earlier chunk loaded — a patch payload is a whole state (or, in
+    // merge mode, upserts whose references are definition-form)
+    throw new Error(
+      'cy.patch() does not take a payload with node references (refs) — ' +
+        'they are for cy.add() and cy.load() chunks; patch with the whole ' +
+        "payload, or use the definition form's references in 'merge' mode",
+    );
+  }
 
   return isColumnarElements(defs)
     ? columnarPatchPayload(defs)

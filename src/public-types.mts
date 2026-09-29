@@ -88,13 +88,16 @@ export interface ColumnarNodes {
 /** The columnar/wire parent-column sentinel for orphan nodes. */
 export const NO_PARENT = 0xffffffff;
 
-/** Columnar edge payload; endpoints are indices into the payload's nodes. */
+/** Columnar edge payload; endpoints are indices into the payload's nodes
+ * (and, past them, its {@link ColumnarElements.refs}). */
 export interface ColumnarEdges {
   count: number;
   ids?: (string | undefined)[] | PackedIds;
-  /** source node index per edge (into the payload's nodes), length count */
+  /** source node index per edge (into the payload's nodes, then its
+   * refs), length count */
   sources: Uint32Array;
-  /** target node index per edge (into the payload's nodes), length count */
+  /** target node index per edge (into the payload's nodes, then its
+   * refs), length count */
   targets: Uint32Array;
   selected?: Uint8Array;
   selectable?: Uint8Array;
@@ -105,15 +108,31 @@ export interface ColumnarEdges {
 /**
  * Columnar bulk-load form of `elements`: typed-array columns ingest
  * directly into the store with no per-element objects, and edges resolve
- * endpoints by index with no id lookups.  Payloads are self-contained —
- * every edge endpoint must index a node in the same payload.  Convert
- * definition-form JSON with `cytoscape.toColumnarElements(json)`.
+ * endpoints by index with no id lookups.  A payload is self-contained —
+ * every edge endpoint indexes a node in the same payload — unless it
+ * carries `refs`, the ids of nodes already in the graph that it indexes
+ * past its own (round 103: a chunk of a progressive `cy.load()`).
+ * Convert definition-form JSON with `cytoscape.toColumnarElements(json)`.
  */
 export interface ColumnarElements {
   /** discriminant so the loader can tell the forms apart */
   columnar: true;
   nodes?: ColumnarNodes;
   edges?: ColumnarEdges;
+  /**
+   * **Node references** (round 103, experimental with the wire format
+   * until 4.x): the ids of nodes this payload does not carry but indexes
+   * — an edge endpoint or a node parent `nodes.count + i` names
+   * `refs[i]`.  Each must name a node already in the graph when the
+   * payload loads (an earlier chunk of a `cy.load()`, or anything
+   * `cy.add()` put there); one that does not throws before anything is
+   * added.  Each id resolves once however many edges index it, which is
+   * what makes a chunk's cut edges as cheap as its own.  The factory's
+   * `options.elements` loads into an empty graph, so a payload with refs
+   * cannot load there; `cy.patch()` refuses one.  Build it from
+   * definitions with `toColumnarElements( defs, { refs: true } )`.
+   */
+  refs?: string[] | PackedIds;
   /**
    * Graph-level `data()` (round 39.2) — the whole-graph object, not a
    * per-element column.  `cy.serialize()` writes it and

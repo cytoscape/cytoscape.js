@@ -2,7 +2,12 @@
 // inputs, the flag overrides and the bulk-add events.
 
 import { Collection } from '../collection.mjs';
-import { buildColumnar, isColumnarElements } from '../columnar.mjs';
+import {
+  buildColumnar,
+  isColumnarElements,
+  isPackedIds,
+  refCount,
+} from '../columnar.mjs';
 import type { FlagOverride } from '../columnar.mjs';
 import { deserializeElements, isSerializedElements } from '../wire.mjs';
 import { partitionDefs } from '../element-defs.mjs';
@@ -16,10 +21,12 @@ import {
 } from '../contract.mjs';
 import type { GroupName, Ref } from '../contract.mjs';
 import type {
+  ColumnarEdges,
   ColumnarElements,
   ElementDefinition,
   ElementsDefinition,
   ElementsInput,
+  PackedIds,
 } from '../public-types.mjs';
 import type { Core } from '../core.mjs';
 import { _applyStyle } from './batching.mjs';
@@ -116,7 +123,7 @@ export function _bulkAddInner(core: Core, input: ElementsInput): void {
   }
 
   const part = partitionDefs(defs);
-  const bulk = buildColumnar(part, false);
+  const bulk = buildColumnar(part, 'bulk');
 
   if (bulk != null) {
     const { nodeSlots, edgeSlots } = _addColumnar(
@@ -178,13 +185,30 @@ export function _addColumnar(
   edgeSlots: Uint32Array;
 } {
   const newId = (): string => _newId(core);
+  // round 103: node references resolve before anything is added, so a
+  // chunk naming a node the graph does not hold fails whole
+  const refSlots = _resolveRefs(core, elements);
   const nodeSlots =
     elements.nodes != null && elements.nodes.count > 0
-      ? core._store.addNodesColumnar(elements.nodes, newId)
+      ? core._store.addNodesColumnar(
+          elements.nodes,
+          newId,
+          refSlots ?? undefined,
+        )
       : new Uint32Array(0);
+  let endpointSlots = nodeSlots;
+
+  if (refSlots != null) {
+    // the endpoint table: the payload's own nodes, then its references
+    // (every endpoint ref resolved — `_resolveRefs` checked)
+    endpointSlots = new Uint32Array(nodeSlots.length + refSlots.length);
+    endpointSlots.set(nodeSlots);
+    endpointSlots.set(refSlots, nodeSlots.length);
+  }
+
   const edgeSlots =
     elements.edges != null && elements.edges.count > 0
-      ? core._store.addEdgesColumnar(elements.edges, nodeSlots, newId)
+      ? core._store.addEdgesColumnar(elements.edges, endpointSlots, newId)
       : new Uint32Array(0);
 
   if (nodeFlags != null && nodeFlags.length > 0) {
@@ -199,6 +223,93 @@ export function _addColumnar(
 
   return { nodeSlots, edgeSlots };
 }
+
+/**
+ * Resolve a columnar payload's node references (round 103) to live
+ * slots, one probe per reference however many edges index it.
+ *
+ * An endpoint must resolve — an edge cannot exist without its node — so
+ * a reference an edge indexes that names no node in the graph throws
+ * here, before anything is added.  A reference only parents index
+ * resolves to −1 when it names nothing, and the ingest warns and
+ * orphans, as the definition path does for an unknown parent.
+ *
+ * @param elements — the payload
+ * @returns the live slot per reference (−1 = unresolved parent), or
+ *   null when the payload carries none
+ * @throws if an edge endpoint's reference names no node in the graph,
+ *   or names an edge
+ */
+export function _resolveRefs(
+  core: Core,
+  elements: ColumnarElements,
+): Int32Array | null {
+  const count = refCount(elements);
+
+  if (count === 0) {
+    return null;
+  }
+
+  const refs = elements.refs!;
+  const store = core._store;
+  const slots = new Int32Array(count);
+  const idOf = (i: number): string =>
+    isPackedIds(refs) ? decodeRef(refs, i) : String(refs[i]);
+
+  for (let i = 0; i < count; i++) {
+    const code = isPackedIds(refs)
+      ? store.ids.codeBytes(refs.blob, refs.offsets[i], refs.offsets[i + 1])
+      : store.lookupCode(String(refs[i]));
+
+    if (code >= 0 && (code & 1) === 1) {
+      throw new Error(
+        `The payload's node reference '${idOf(i)}' names an edge, not a node`,
+      );
+    }
+
+    slots[i] = code < 0 ? -1 : code >>> 1;
+  }
+
+  // an endpoint's reference must have resolved
+  const members = elements.nodes?.count ?? 0;
+  const edges = elements.edges;
+
+  if (edges != null) {
+    for (let e = 0; e < edges.count; e++) {
+      for (const at of [edges.sources[e], edges.targets[e]]) {
+        if (at >= members && at - members < count && slots[at - members] < 0) {
+          throw new Error(
+            `Can not create edge ${edgeLabel(edges, e)}: its node reference ` +
+              `'${idOf(at - members)}' is not a node in the graph`,
+          );
+        }
+      }
+    }
+  }
+
+  return slots;
+}
+
+const refDecoder = new TextDecoder();
+
+/** One packed reference's id, decoded — for an error message only. */
+const decodeRef = (refs: PackedIds, i: number): string =>
+  refDecoder.decode(refs.blob.subarray(refs.offsets[i], refs.offsets[i + 1]));
+
+/** An edge's id for a message, or its payload index when it has none. */
+const edgeLabel = (edges: ColumnarEdges, e: number): string => {
+  const ids = edges.ids;
+
+  if (ids == null) {
+    return `#${e}`;
+  }
+
+  const id = isPackedIds(ids)
+    ? refDecoder.decode(ids.blob.subarray(ids.offsets[e], ids.offsets[e + 1]))
+    : ids[e];
+
+  return id != null && id !== '' ? `'${id}'` : `#${e}`;
+};
 
 /** Write the def flags the columnar columns cannot carry. */
 export function _applyFlagOverrides(

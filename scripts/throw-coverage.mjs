@@ -75,7 +75,7 @@ export const BROWSER_ONLY = [
  * site and still carries a reason.
  */
 export const UNREACHABLE = {
-  'src/wire.mts:88':
+  'src/wire.mts:102':
     'big-endian platform guard — every supported platform is little-endian',
   'src/store/graph-store/layers.mts:170':
     'SHAPE_MASK field invariant — fires only if a shape id is added without widening the field',

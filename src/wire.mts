@@ -1,6 +1,7 @@
 import {
   isColumnarElements,
   isPackedIds,
+  refCount,
   toColumnarElements,
 } from './columnar.mjs';
 import { isDictColumn } from './store/data-store.mjs';
@@ -29,9 +30,21 @@ beyond it is ignored).  Sections follow in a fixed order — node
 positions, node parents (v3, round 14.8: u32 payload indices,
 0xffffffff = orphan), edge sources, edge targets, node ids (offsets +
 blob), edge ids, the u8 selection columns, the data() blocks, then the
-graph-level data section (v4, round 39.2) — each multi-byte
-section aligned to its element width (f64 columns to 8).  Absent
-optional columns (see the flag bits) take zero bytes.
+graph-level data section (v4, round 39.2), then the node references
+(round 103) — each multi-byte section aligned to its element width (f64
+columns to 8).  Absent optional columns (see the flag bits) take zero
+bytes.
+
+The node-reference section (round 103, flag 2048) is u32 count, then
+offsets + blob in the id encoding: the ids of nodes the payload indexes
+but does not carry — edge endpoints and node parents at `nodeCount + i`
+name reference `i` — resolved against the graph at ingest.  It is how a
+chunk of a progressive `cy.load()` carries its cut edges without the
+definition form.  Added under the eleventh sitting's rule for item 43:
+the format is public but **experimental until 4.x**, the header (magic,
+version 4, presence flags) stays, and a section is a new flag bit — so
+this buffer's version is still 4, and a reader that predates the bit
+does not know the section is there.
 
 The graph-data section is **one JSON string** (u32 byte length + UTF-8),
 not a column, and deliberately so: everything else here is per element
@@ -73,6 +86,7 @@ const F_NODE_DATA = 128;
 const F_EDGE_DATA = 256;
 const F_NODE_PARENT = 512; // round 14.8 (v3 buffers only)
 const F_GRAPH_DATA = 1024; // round 39.2 (v4 buffers only)
+const F_NODE_REFS = 2048; // round 103 (experimental, item 43's rule)
 
 const KIND_NUMBER = 0;
 const KIND_DICT = 1;
@@ -114,7 +128,10 @@ export const isSerializedElements = (
  * @param elements — the elements to serialize, in either accepted form;
  *   a definition-form payload is converted to columnar first.  A columnar
  *   payload's optional graph-level `data` rides along (round 39.2); the
- *   definition form has nowhere to put it, so it carries none
+ *   definition form has nowhere to put it, so it carries none.  Its node
+ *   references (`refs`, round 103) ride too — convert definitions with
+ *   `toColumnarElements( defs, { refs: true } )` first to carry cut
+ *   edges
  * @returns one little-endian ArrayBuffer holding the whole payload —
  *   fixed header, columns, and ids as a UTF-8 blob with prefix offsets.
  *   Every section starts at an offset aligned to its element width
@@ -234,6 +251,17 @@ export const serializeElements = (
     const json = new TextEncoder().encode(JSON.stringify(graphData));
 
     push(F_GRAPH_DATA, new Uint32Array([json.length]), json);
+  }
+
+  // node references (round 103): written last, after everything a
+  // reader that predates them expects
+  const refs = isColumnarElements(elements) ? elements.refs : undefined;
+  const count = refs == null ? 0 : refCount(elements as ColumnarElements);
+
+  if (count > 0) {
+    const packed = encodeIds(refs, count)!;
+
+    push(F_NODE_REFS, Uint32Array.of(count), packed.offsets, packed.blob);
   }
 
   let size = HEADER_BYTES;
@@ -505,6 +533,13 @@ export const deserializeElements = (
     out.data = JSON.parse(
       new TextDecoder().decode(readU8(readScalar())),
     ) as Record<string, unknown>;
+  }
+
+  // node references (round 103): packed, as the id sections are — the
+  // ingest resolves the bytes against the id index, decoding nothing
+  if (flags & F_NODE_REFS) {
+    // a reference costs at least its u32 offset
+    out.refs = readPacked(bounded(readScalar(), 4, 'node references'));
   }
 
   if (edgeCount > 0) {

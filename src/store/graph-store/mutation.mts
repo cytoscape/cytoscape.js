@@ -161,6 +161,7 @@ export function addNodesColumnar(
   gs: GraphStore,
   cols: ColumnarNodes,
   newId: () => string,
+  refSlots?: Int32Array,
 ): Uint32Array {
   const count = cols.count;
   const { slots, resized, contiguousFrom } = gs.nodes.allocBulk(count);
@@ -215,10 +216,30 @@ export function addNodesColumnar(
       }
 
       if (at >= count) {
-        throw new Error(
-          `Columnar node ${i} references parent index ${at} but the payload has ${count} nodes ` +
-            `(columnar payloads are self-contained; use the definition form for cross-references)`,
-        );
+        // round 103: past the payload's nodes, a node reference — the
+        // caller resolved it (−1 = not in the graph: the def-ingest
+        // rule, warn and orphan)
+        const ref = refSlots != null ? refSlots[at - count] : undefined;
+
+        if (ref == null) {
+          throw new Error(
+            `Columnar node ${i} references parent index ${at} but the payload has ${count} nodes ` +
+              `and ${refSlots?.length ?? 0} refs (columnar payloads are self-contained unless ` +
+              `they carry refs)`,
+          );
+        }
+
+        if (ref < 0) {
+          console.warn(
+            `Node '${gs.idAt(GROUP_NODES, slots[i])}' has nonexistant parent; added as an orphan`,
+          );
+
+          continue;
+        }
+
+        gs.setParent(slots[i], ref);
+
+        continue;
       }
 
       gs.setParent(slots[i], slots[at]); // cycle-guarded (warn + drop)
@@ -237,7 +258,8 @@ export function addNodesColumnar(
 
 /**
  * Columnar bulk edge add: endpoints are indices into `nodeSlots` (the
- * same payload's nodes) — no id lookups per edge.
+ * same payload's nodes, then the slots its node references resolved to,
+ * round 103) — no id lookups per edge.
  */
 export function addEdgesColumnar(
   gs: GraphStore,
@@ -264,7 +286,7 @@ export function addEdgesColumnar(
       throw new Error(
         `Columnar edge ${i} references node index ` +
           `${Math.max(cols.sources[i], cols.targets[i])} but the payload has ${nodeSlots.length} nodes ` +
-          `(columnar payloads are self-contained; use the definition form for cross-references)`,
+          `and refs (columnar payloads are self-contained unless they carry refs)`,
       );
     }
   }

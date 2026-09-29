@@ -80,6 +80,7 @@ const EXPECTED_EXPORTS = new Set([
   'PatchOptions', // round 107
   'CloneOptions', // round 106: cy.clone()'s options
   'FollowOptions', // round 106: how a following clone keeps up
+  'ToColumnarOptions', // round 103: the converter's { refs } option
   'PresetLayoutOptions',
   'RadialLayoutOptions', // round 85.1
   'RandomLayoutOptions',

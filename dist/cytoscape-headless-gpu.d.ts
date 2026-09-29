@@ -796,13 +796,16 @@ interface ColumnarNodes {
 }
 /** The columnar/wire parent-column sentinel for orphan nodes. */
 declare const NO_PARENT = 4294967295;
-/** Columnar edge payload; endpoints are indices into the payload's nodes. */
+/** Columnar edge payload; endpoints are indices into the payload's nodes
+ * (and, past them, its {@link ColumnarElements.refs}). */
 interface ColumnarEdges {
   count: number;
   ids?: (string | undefined)[] | PackedIds;
-  /** source node index per edge (into the payload's nodes), length count */
+  /** source node index per edge (into the payload's nodes, then its
+   * refs), length count */
   sources: Uint32Array;
-  /** target node index per edge (into the payload's nodes), length count */
+  /** target node index per edge (into the payload's nodes, then its
+   * refs), length count */
   targets: Uint32Array;
   selected?: Uint8Array;
   selectable?: Uint8Array;
@@ -812,15 +815,31 @@ interface ColumnarEdges {
 /**
  * Columnar bulk-load form of `elements`: typed-array columns ingest
  * directly into the store with no per-element objects, and edges resolve
- * endpoints by index with no id lookups.  Payloads are self-contained —
- * every edge endpoint must index a node in the same payload.  Convert
- * definition-form JSON with `cytoscape.toColumnarElements(json)`.
+ * endpoints by index with no id lookups.  A payload is self-contained —
+ * every edge endpoint indexes a node in the same payload — unless it
+ * carries `refs`, the ids of nodes already in the graph that it indexes
+ * past its own (round 103: a chunk of a progressive `cy.load()`).
+ * Convert definition-form JSON with `cytoscape.toColumnarElements(json)`.
  */
 interface ColumnarElements {
   /** discriminant so the loader can tell the forms apart */
   columnar: true;
   nodes?: ColumnarNodes;
   edges?: ColumnarEdges;
+  /**
+   * **Node references** (round 103, experimental with the wire format
+   * until 4.x): the ids of nodes this payload does not carry but indexes
+   * — an edge endpoint or a node parent `nodes.count + i` names
+   * `refs[i]`.  Each must name a node already in the graph when the
+   * payload loads (an earlier chunk of a `cy.load()`, or anything
+   * `cy.add()` put there); one that does not throws before anything is
+   * added.  Each id resolves once however many edges index it, which is
+   * what makes a chunk's cut edges as cheap as its own.  The factory's
+   * `options.elements` loads into an empty graph, so a payload with refs
+   * cannot load there; `cy.patch()` refuses one.  Build it from
+   * definitions with `toColumnarElements( defs, { refs: true } )`.
+   */
+  refs?: string[] | PackedIds;
   /**
    * Graph-level `data()` (round 39.2) — the whole-graph object, not a
    * per-element column.  `cy.serialize()` writes it and
@@ -3110,12 +3129,16 @@ declare class GraphStore implements ModelView {
    * store (one memcpy for the contiguous fresh run), with no per-element
    * def objects.  Returns the allocated slots, index-aligned with the
    * payload arrays.  On error the graph may be partially mutated (as with
-   * a mid-list throw in the def path).
+   * a mid-list throw in the def path).  A parent index past the payload's
+   * nodes is a node reference (round 103), read from `refSlots` — the
+   * live slot each ref resolved to, −1 where the graph holds no such
+   * node (warned and orphaned, as the def path does).
    */
-  addNodesColumnar(cols: ColumnarNodes, newId: () => string): Uint32Array;
+  addNodesColumnar(cols: ColumnarNodes, newId: () => string, refSlots?: Int32Array): Uint32Array;
   /**
    * Columnar bulk edge add: endpoints are indices into `nodeSlots` (the
-   * same payload's nodes) — no id lookups per edge.
+   * same payload's nodes, then — round 103 — the slots its node
+   * references resolved to) — no id lookups per edge.
    */
   addEdgesColumnar(cols: ColumnarEdges, nodeSlots: Uint32Array, newId: () => string): Uint32Array;
   /**
@@ -4473,6 +4496,19 @@ interface DirectedDegreeCentralityNormalized {
 type DegreeCentralityNormalizedResult = UndirectedDegreeCentralityNormalized | DirectedDegreeCentralityNormalized;
 //#endregion
 //#region src/columnar.d.mts
+/** Options for {@link toColumnarElements}. */
+interface ToColumnarOptions {
+  /**
+   * Carry what the payload names but does not hold as **node references**
+   * (round 103) instead of throwing: an edge endpoint or a node parent
+   * that is not a node in the payload goes into the result's `refs`,
+   * indexed past its own nodes, to be resolved against the graph the
+   * payload loads into.  This is how a chunk of a progressive
+   * `cy.load()` carries its cut edges in the columnar and wire forms.
+   * Default false: the payload must be self-contained.
+   */
+  refs?: boolean;
+}
 /**
  * Convert classic v3-style elements JSON into the columnar bulk-load
  * form: typed-array columns with edge endpoints as node *indices*.
@@ -4490,11 +4526,16 @@ type DegreeCentralityNormalizedResult = UndirectedDegreeCentralityNormalized | D
  * reports the deviations so it can write them after the ingest.
  *
  * @param defs — one element, an array, or `{ nodes, edges }`
- * @returns the equivalent self-contained columnar payload
- * @throws if an edge names a source or target that is not a node in the
- *   same payload — columnar payloads must be self-contained
+ * @param options — `{ refs }`: carry endpoints and parents the payload
+ *   does not hold as node references rather than throwing (round 103)
+ * @returns the equivalent columnar payload — self-contained, or with
+ *   `refs` when that option is on and something was referenced
+ * @throws if an edge lacks a source or target; without `refs`, also if
+ *   an edge names a source or target that is not a node in the same
+ *   payload — columnar payloads are self-contained unless they carry
+ *   references; and on an unknown option
  */
-declare const toColumnarElements: (defs: ElementsDefinition | ElementDefinition) => ColumnarElements;
+declare const toColumnarElements: (defs: ElementsDefinition | ElementDefinition, options?: ToColumnarOptions) => ColumnarElements;
 //#endregion
 //#region src/store/patch.d.mts
 /**
@@ -9172,7 +9213,10 @@ declare class Core {
  * @param elements — the elements to serialize, in either accepted form;
  *   a definition-form payload is converted to columnar first.  A columnar
  *   payload's optional graph-level `data` rides along (round 39.2); the
- *   definition form has nowhere to put it, so it carries none
+ *   definition form has nowhere to put it, so it carries none.  Its node
+ *   references (`refs`, round 103) ride too — convert definitions with
+ *   `toColumnarElements( defs, { refs: true } )` first to carry cut
+ *   edges
  * @returns one little-endian ArrayBuffer holding the whole payload —
  *   fixed header, columns, and ids as a UTF-8 blob with prefix offsets.
  *   Every section starts at an offset aligned to its element width
@@ -9227,4 +9271,4 @@ declare namespace cytoscape {
   export { CancelledError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DictColumn, type ElementData, type ElementDefinition, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, cytoscape as default };

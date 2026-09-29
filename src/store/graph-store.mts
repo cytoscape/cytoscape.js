@@ -925,15 +925,23 @@ export class GraphStore implements ModelView {
    * store (one memcpy for the contiguous fresh run), with no per-element
    * def objects.  Returns the allocated slots, index-aligned with the
    * payload arrays.  On error the graph may be partially mutated (as with
-   * a mid-list throw in the def path).
+   * a mid-list throw in the def path).  A parent index past the payload's
+   * nodes is a node reference (round 103), read from `refSlots` — the
+   * live slot each ref resolved to, −1 where the graph holds no such
+   * node (warned and orphaned, as the def path does).
    */
-  addNodesColumnar(cols: ColumnarNodes, newId: () => string): Uint32Array {
-    return mutationImpl.addNodesColumnar(this, cols, newId);
+  addNodesColumnar(
+    cols: ColumnarNodes,
+    newId: () => string,
+    refSlots?: Int32Array,
+  ): Uint32Array {
+    return mutationImpl.addNodesColumnar(this, cols, newId, refSlots);
   }
 
   /**
    * Columnar bulk edge add: endpoints are indices into `nodeSlots` (the
-   * same payload's nodes) — no id lookups per edge.
+   * same payload's nodes, then — round 103 — the slots its node
+   * references resolved to) — no id lookups per edge.
    */
   addEdgesColumnar(
     cols: ColumnarEdges,

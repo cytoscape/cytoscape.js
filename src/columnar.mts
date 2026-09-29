@@ -16,8 +16,10 @@ import type { EndKey } from './contract.mjs';
 Definition-form (v3-style JSON) → columnar bulk-load form.  The columnar
 form is what the loader ingests fastest — typed-array columns, edge
 endpoints as node indices — and this converter is the compat path for
-callers holding classic elements JSON.  Payloads are self-contained:
-every edge endpoint must name a node in the same payload.
+callers holding classic elements JSON.  Payloads are self-contained —
+every edge endpoint must name a node in the same payload — unless they
+carry node references (round 103): the ids of nodes already in the graph,
+indexed past the payload's own nodes.
 */
 
 /**
@@ -69,6 +71,20 @@ export interface ColumnarBulk {
   edgeFlags: FlagOverride[];
 }
 
+/** Options for {@link toColumnarElements}. */
+export interface ToColumnarOptions {
+  /**
+   * Carry what the payload names but does not hold as **node references**
+   * (round 103) instead of throwing: an edge endpoint or a node parent
+   * that is not a node in the payload goes into the result's `refs`,
+   * indexed past its own nodes, to be resolved against the graph the
+   * payload loads into.  This is how a chunk of a progressive
+   * `cy.load()` carries its cut edges in the columnar and wire forms.
+   * Default false: the payload must be self-contained.
+   */
+  refs?: boolean;
+}
+
 /**
  * Convert classic v3-style elements JSON into the columnar bulk-load
  * form: typed-array columns with edge endpoints as node *indices*.
@@ -86,41 +102,70 @@ export interface ColumnarBulk {
  * reports the deviations so it can write them after the ingest.
  *
  * @param defs — one element, an array, or `{ nodes, edges }`
- * @returns the equivalent self-contained columnar payload
- * @throws if an edge names a source or target that is not a node in the
- *   same payload — columnar payloads must be self-contained
+ * @param options — `{ refs }`: carry endpoints and parents the payload
+ *   does not hold as node references rather than throwing (round 103)
+ * @returns the equivalent columnar payload — self-contained, or with
+ *   `refs` when that option is on and something was referenced
+ * @throws if an edge lacks a source or target; without `refs`, also if
+ *   an edge names a source or target that is not a node in the same
+ *   payload — columnar payloads are self-contained unless they carry
+ *   references; and on an unknown option
  */
 export const toColumnarElements = (
   defs: ElementsDefinition | ElementDefinition,
+  options: ToColumnarOptions = {},
 ): ColumnarElements => {
-  return buildColumnar(partitionDefs(defs), true)!.elements;
+  for (const key of Object.keys(options)) {
+    if (key !== 'refs') {
+      throw new Error(
+        `Unknown toColumnarElements() option '${key}' (the one option is 'refs')`,
+      );
+    }
+  }
+
+  return buildColumnar(
+    partitionDefs(defs),
+    options.refs === true ? 'refs' : 'strict',
+  )!.elements;
 };
+
+/**
+ * How {@link buildColumnar} treats a name the payload does not hold:
+ * `'strict'` throws (the public converter's default), `'bulk'` answers
+ * null so the caller falls back to the definition path (the factory's
+ * load), `'refs'` carries it as a node reference (round 103).
+ */
+export type ColumnarMode = 'strict' | 'bulk' | 'refs';
 
 /**
  * The conversion itself, over defs already partitioned by group.
  *
- * Two callers with two different needs, hence the mode.  The public
- * converter above is `strict` and throws on an endpoint it cannot
- * resolve; the core's bulk load path is not, because an unresolvable
+ * Three callers with three different needs, hence the mode.  The public
+ * converter is `'strict'` and throws on an endpoint it cannot resolve;
+ * the core's bulk load path is `'bulk'`, because an unresolvable
  * endpoint there simply means the payload is not a candidate for this
- * route (it may reference nodes already in the graph, or be malformed) —
- * it answers `null` and the caller falls back to the definition path,
- * which is then the one that raises the error, with its own message.
+ * route (it may be malformed) — it answers `null` and the caller falls
+ * back to the definition path, which is then the one that raises the
+ * error, with its own message.  `cy.load()`'s chunks and the public
+ * converter's `refs` option are `'refs'` (round 103): an endpoint or a
+ * parent outside the payload becomes an entry of `refs`, indexed past
+ * the payload's nodes, for the ingest to resolve against the graph.
  *
  * @param part — defs already split into nodes and edges
- * @param strict — throw on an unresolvable endpoint rather than
- *   answering null
+ * @param mode — what an unresolvable name does (see {@link ColumnarMode})
  * @returns the payload and its flag deviations, or null when an edge
- *   endpoint does not name a node in the same payload (non-strict only)
- * @throws in strict mode, if an edge names a source or target that is
- *   not a node in the same payload
+ *   endpoint does not name a node in the same payload (`'bulk'` only)
+ * @throws in `'strict'` mode, if an edge names a source or target that
+ *   is not a node in the same payload; in `'strict'` and `'refs'`
+ *   modes, if an edge lacks a source or target
  */
 export const buildColumnar = (
   part: PartitionedDefs,
-  strict: boolean,
+  mode: ColumnarMode,
 ): ColumnarBulk | null => {
   const { nodes, edges } = part;
   const index = new Map<string, number>();
+  const strict = mode === 'strict';
 
   const nodeIds = new Array<string | undefined>(nodes.length);
   const nodesOut: ColumnarNodes = {
@@ -161,9 +206,27 @@ export const buildColumnar = (
 
   const nodeFlags = applySelectionColumns(nodesOut, nodes, false);
 
+  // round 103: the names the payload does not hold, in first-seen order,
+  // indexed past its own nodes ('refs' mode only)
+  const refs: string[] = [];
+  const refIndex = new Map<string, number>();
+  const refAt = (id: string): number => {
+    let at = refIndex.get(id);
+
+    if (at == null) {
+      at = nodes.length + refs.length;
+      refs.push(id);
+      refIndex.set(id, at);
+    }
+
+    return at;
+  };
+
   // def parents lift into the parent column (round 14.8): payload
   // indices, sentinel = orphan; an unknown in-payload parent warns and
-  // orphans (the def-ingest rule — payloads are self-contained)
+  // orphans (the def-ingest rule — payloads are self-contained), or —
+  // 'refs' mode — becomes a reference the ingest resolves, and warns
+  // and orphans there if the graph does not hold it either
   let parents: Uint32Array | undefined;
 
   for (let i = 0; i < nodes.length; i++) {
@@ -173,7 +236,11 @@ export const buildColumnar = (
       continue;
     }
 
-    const at = index.get(String(rawParent));
+    let at = index.get(String(rawParent));
+
+    if (at == null && mode === 'refs') {
+      at = refAt(String(rawParent));
+    }
 
     if (at == null) {
       console.warn(
@@ -212,7 +279,7 @@ export const buildColumnar = (
     raw: unknown,
   ): number => {
     if (raw == null) {
-      if (!strict) {
+      if (mode === 'bulk') {
         return -1;
       }
 
@@ -224,13 +291,17 @@ export const buildColumnar = (
     const at = index.get(String(raw));
 
     if (at == null) {
+      if (mode === 'refs') {
+        return refAt(String(raw));
+      }
+
       if (!strict) {
         return -1;
       }
 
       throw new Error(
         `The ${which} '${String(raw)}' of edge '${edgeId ?? '?'}' is not a node in this payload ` +
-          `(columnar payloads are self-contained; use the definition form for cross-references)`,
+          `(columnar payloads are self-contained; convert with { refs: true } to reference nodes already in the graph)`,
       );
     }
 
@@ -245,8 +316,8 @@ export const buildColumnar = (
     const target = endpoint(id, DATA_TARGET, data.target);
 
     if (source < 0 || target < 0) {
-      // non-strict only: not a self-contained payload, so not this
-      // route's to load — the caller's fallback reports why
+      // 'bulk' only: not a self-contained payload, so not this route's
+      // to load — the caller's fallback reports why
       return null;
     }
 
@@ -263,11 +334,33 @@ export const buildColumnar = (
     edgesOut.data = edgeData;
   }
 
-  return {
-    elements: { columnar: true, nodes: nodesOut, edges: edgesOut },
-    nodeFlags,
-    edgeFlags,
+  const elements: ColumnarElements = {
+    columnar: true,
+    nodes: nodesOut,
+    edges: edgesOut,
   };
+
+  if (refs.length > 0) {
+    elements.refs = refs;
+  }
+
+  return { elements, nodeFlags, edgeFlags };
+};
+
+/**
+ * How many node references a columnar payload carries (round 103).
+ *
+ * @param elements — a columnar payload
+ * @returns the length of its `refs`, in either id form; 0 when absent
+ */
+export const refCount = (elements: ColumnarElements): number => {
+  const refs = elements.refs;
+
+  if (refs == null) {
+    return 0;
+  }
+
+  return isPackedIds(refs) ? Math.max(0, refs.offsets.length - 1) : refs.length;
 };
 
 /**

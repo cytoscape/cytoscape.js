@@ -5,7 +5,22 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 100 wrote the
+- **Last updated**: 2026-09-29, after round 138 took v4 to the GPU's
+  own limits and made running past them loud but survivable: every
+  device now asks for what its adapter offers, so on the benchmark
+  machine's RX 580 a graph renders to 16,776,960 nodes or edges per
+  group — four times the old ceiling, where every frame had silently
+  blanked — and `cy.add()` of one more throws `GpuUnfitError` with the
+  graph unchanged.  A buffer the device refuses, or one past its
+  limits, now fires a `gpuerror` event and costs a feature rather than
+  the picture: labels go first (2 million labelled nodes still draw
+  them), then charts and images, then gradients, whose storage is now
+  allocated only when a gradient is used — up to 18% less GPU memory
+  for every other scene.  `cy.stats().gpu` reports the renderer's own
+  allocations, and a browser soak over them ran 10,000 add/remove/
+  restyle/zoom cycles flat, after finding and fixing a label cache that
+  grew without end under label churn.  Earlier the same day round 100
+  wrote the
   supported-environment matrix: per environment, what runs (the
   headless core, workers, GPU compute, rendering), how that is known
   and what is not promised.  Node, Bun, Deno, Cloudflare's runtime and
@@ -143,11 +158,12 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   2,048 nodes warm), and the copy census (round 110 — v4 at the
   zero-copy floor everywhere but the export readback, now a compute
   pass).  Three ledger items were measured and left as
-  recommendations: the scale ceiling is exactly 4,194,304 edges, set
-  by a device limit the renderer never asks to raise; an allocation
-  failure today is silent validation errors and a blank frame; and
-  the worker host's deferrals are priced — the force one closed by
-  round 129 the same evening, images and fonts still open.  The day
+  recommendations: the scale ceiling was exactly 4,194,304 edges, set
+  by a device limit the renderer never asked to raise, and an
+  allocation failure was silent validation errors and a blank frame —
+  both built on 29 Sep; and the worker host's deferrals are priced —
+  the force one closed by round 129 the same evening, images and
+  fonts still open.  The day
   before,
   round 127 gave every string vocabulary one declaration, and the
   layout quality audit was carried out, one sub-round per layout,
@@ -190,7 +206,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 | | |
 |---|---|
-| Automated tests | 3,117 unit · 1,085 module · 38 soak · 550 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,139 unit · 1,096 module · 38 soak · 574 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
 | Documented API | 346 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 50 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 137 of 212 are set by some golden, and the 75 no golden sets are counted and gated · 53 live v3-vs-v4 pixel-parity scenes, 14 of them close-ups at zoom 3–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 28 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
@@ -1250,18 +1266,18 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     generated edge ids is a third of a bulk load (item 66), and a
     whole-sheet restyle re-derives every column (item 67, made a diff
     on 28 Sep).
-- **18 Sep** — three ledger items measured, none built
-  - The scale ceiling has a number: 4,194,304 edges render and
-    4,194,305 are blank, on any card — the edge gradient column at
-    the next power-of-two capacity crosses the device's *default*
-    storage-binding limit, which the renderer never asks to raise
-    although the adapter offers thirty-two times more.  Labels cap
-    two million glyphs the same way.  Nothing else fails first at
-    5M edges: ingest, style, the curve blob, cull and pick all hold.
-  - An allocation failure today is silent: a bad buffer on a mirror
-    growth yields twenty-six validation errors in thirty frames and
+- **18 Sep** — three ledger items measured (two built on 29 Sep)
+  - The scale ceiling had a number: 4,194,304 edges rendered and
+    4,194,305 were blank, on any card — the edge gradient column at
+    the next power-of-two capacity crossed the device's *default*
+    storage-binding limit, which the renderer never asked to raise
+    although the adapter offers thirty-two times more.  Labels capped
+    two million glyphs the same way.  Nothing else failed first at
+    5M edges: ingest, style, the curve blob, cull and pick all held.
+  - An allocation failure was silent: a bad buffer on a mirror
+    growth yielded twenty-six validation errors in thirty frames and
     a blank picture — no device loss, no exception, no event, and
-    `png()` returns an empty image.  The VRAM price is 196 B per node,
+    `png()` returned an empty image.  The VRAM price is 196 B per node,
     164 per edge, 68 per glyph (a labelled node ~544 B), exact across
     three sizes; real exhaustion could not be provoked on this driver,
     which spills to system RAM.  Recommended: one round for both —
@@ -1565,6 +1581,25 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
     10 ms fits ingest, metrics and export of a few hundred nodes but
     not a force layout.
   - Buys a link, not a shrug, for "does it run on X".
+- **29 Sep** — big graphs reach the GPU's limits, and fail gracefully past them
+  - Every GPU device asks for its adapter's own limits: on an RX 580 a
+    graph renders to 16,776,960 nodes or edges per group (4× the old
+    ceiling, where every frame went blank without a word), 2 million
+    labelled nodes with their labels (8×).
+  - Past the limits, `cy.add()`, `cy.load()` and `cy.patch()` throw
+    `GpuUnfitError` before anything is added; mounting a graph that is
+    already too big rejects `cy.ready` with the same error.
+  - A buffer the device refuses, or one that would not fit, fires a
+    `gpuerror` event and costs a feature, not the picture — labels
+    first, then charts and images, then gradients; gradient storage is
+    now allocated only when a gradient is used, up to 18% less GPU
+    memory for every other scene.
+  - `cy.stats().gpu` is the renderer's own count of what it allocated;
+    a browser soak over it (CI-gated, its first test a deliberate leak
+    that must show) ran 10,000 churn cycles flat on the RX 580, and
+    found a label cache that grew without end — now bounded.
+  - Buys a large-graph app a known ceiling, an error it can catch, and
+    a picture that degrades instead of vanishing.
 - **21 Sep** — the Features page says what its numbers mean (round 132)
   - The status site's counter read `929 of 929 features` — done, or
     total?  It reads `Showing all 929 rows` now, or `Showing 303 of 929
@@ -1731,7 +1766,7 @@ only and no runtime `validate()`, the `$id` base left to the
 documentation site, the columnar form's schema held until 4.x and
 SchemaStore after 4.0.
 From the logged ideas, also before alpha: the device-limits round (where `cy.add()` throws past the GPU's limits)
-with a renderer soak, typed element data, batch events for undo plus a
+with a renderer soak — landed 29 Sep — typed element data, batch events for undo plus a
 snapshot measurement, the worker host's images and fonts, and the CJK
 label design.  During alpha: the extension ports, a devtools panel and
 a workloads benchmark profile.  After alpha: lasso and spatial queries,

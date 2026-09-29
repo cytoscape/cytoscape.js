@@ -6661,7 +6661,7 @@ instrument to the tenth of a megabyte on every row):
 | 2.5M × 10M | 10.5 s | 2.31 s | 2,926 MB | 5.46 GB | 61.4 ms | rendered |
 | 4,194,240 × 16,776,960 | 17.9 s | 2.12 s | 2,926 MB | 6.02 GB | 106.2 ms | rendered |
 | 4,194,240 × 16,776,961 | 17.9 s | — | — | 6.02 GB | — | `cy.ready` rejects: GpuUnfitError |
-| 1M × 3M, labelled | 4.4 s | 0.57 s | 1,306 MB | 1.81 GB | 33.0 ms | rendered (blank before) |
+| 1M × 3M, labelled | 4.4 s | 0.57 s | 1,306 MB | 1.81 GB | 32.8 ms | rendered (blank before) |
 | 2M × 2M, labelled | 6.3 s | 0.48 s | 1,776 MB | 1.97 GB | 41.8 ms | rendered |
 | 2.5M × 2.5M, labelled | 8.3 s | 0.99 s | 1,247 MB | 2.94 GB | 30.2 ms | rendered, labels degraded |
 

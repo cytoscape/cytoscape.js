@@ -299,7 +299,19 @@ edge's CPU budget on real fixtures (a force layout does not fit the
 free plan's 10 ms), and found React Native's Hermes, QuickJS-ng and
 GraalJS each one `TextDecoder` short of the headless core; it logged
 **items 82 and 83** — the worker pool refusing a page-less host, and
-Firefox's missing CI project.  Item 63 is carried by round 126.  What follows is the sweep before it.
+Firefox's missing CI project.  Round 138 (landed 2026-09-29 on the
+sitting's calls — before alpha, `cy.add()` throws `GpuUnfitError`, the
+adapter's limits requested, allocation failures an instance event, the
+degradation order item 36 recommended, the soak on the same ledger)
+took **items 34, 35 and 36** together and **closed all three**: the
+element ceiling moved from 4,194,304 to 16,776,960 per group on the RX
+580 (the dispatch's reach, now the limiter), the renderer counts its own
+allocations and fires `gpuerror`, degrades labels, then charts and
+images, then gradients (lazy now), and a browser soak over its ledger
+ran 10,000 cycles flat and found the label shaping memo unbounded; it
+raised no new item, logging the two-dimensional dispatch and a catch
+around the frame loop as follow-ups in its record.  Item 63 is carried
+by round 126.  What follows is the sweep before it.
 
 **Swept before that** (2026-09-17, round 127.6), the genuinely open questions
 are still **items 18, 23 and 27** — the three the ninth design sitting
@@ -847,6 +859,15 @@ directions".*
     add/remove/restyle cycles at fixed graph size — flat or not.
     **Call taken (2026-09-28, the eleventh sitting): built with items
     35–36**, on the same allocation ledger.
+    **Closed by round 138 (2026-09-29)**: `cy.stats().gpu` is the
+    renderer's own ledger and `playwright-tests/soak.spec.js` churns it,
+    its first spec a leaked buffer that must show to the byte, with five
+    device-loss recoveries each rebuilding the same ledger.  **First
+    measurement: flat** — 10,000 cycles at 400 / 800 on the RX 580, the
+    ledger unchanged from cycle 500 to 10,000; the heap was not, and the
+    soak found the label shaping memo unbounded (fixed, two
+    generations).  The record:
+    `plan/rounds/2026-09-29-05-rnd0138-landed-items-34-36-device-limits-the-degradation-order-and-the-renderer-soak.md`.
 35. **The scale ceiling** (raised 2026-08-19).  The largest thing
     v4 has ever rendered is the 465k-edge `ndex-x-large`.  Nothing
     records where it actually breaks — 1M? 5M? — or *which*
@@ -916,6 +937,15 @@ directions".*
     defaults to is the one this round measures.
     **Call taken (2026-09-28, the eleventh sitting): before alpha, not
     next, with item 36.**
+    **Closed by round 138 (2026-09-29)**: every device requests its
+    adapter's limits, and `cy.add()` / `cy.load()` / `cy.patch()` throw
+    `GpuUnfitError` before the store changes when a table would outgrow
+    them.  Re-run: **16,776,960 elements per group render and one more
+    is refused** — 4× the old ceiling, bisected to the element — and the
+    limiter is now one dispatch's reach (65,535 × 256), not a buffer;
+    ~2M labelled nodes (16,776,960 glyphs a stream), past which labels
+    degrade.  The heap was not the next ceiling (6.02 GB at 21M
+    elements).  The 110.3 note's `maxSlots` default is this number.
 36. **The VRAM budget, and failing gracefully** (raised
     2026-08-19).  Device *loss* is tested; allocation *failure* is
     not — nothing defines what a `createBuffer` failure mid-session
@@ -989,6 +1019,16 @@ directions".*
     **Call taken (2026-09-28, the eleventh sitting): before alpha;
     growth past the device's limits makes `cy.add()` throw**, the store
     unchanged; detection, then the degradation order.
+    **Closed by round 138 (2026-09-29)**: an allocation ledger with an
+    out-of-memory and a validation scope around every allocation and an
+    `uncapturederror` listener, surfacing as the core's `gpuerror`
+    event; the pre-flight above; and the order — labels, then charts and
+    images (and the curve routes), then the gradient columns, now lazy:
+    **node 164 bytes a slot (from 196), edge 132 (from 164)**.  An
+    injected refusal is one event and a few rejected frames, then none;
+    a refused core column holds the last frame.  Real exhaustion is
+    still unprovokable on this box (radv spills), so the
+    `GPUOutOfMemoryError` path is exercised by injection only.
 37. **Accessibility** (raised 2026-08-19).  A canvas renderer is
     invisible to assistive tech, and no scheduled round touches it.
     Scope, in priority order: keyboard navigation (a focus model —

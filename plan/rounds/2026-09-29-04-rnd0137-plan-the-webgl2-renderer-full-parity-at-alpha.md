@@ -187,6 +187,21 @@ into a PBO, the Y flip, tiling past the renderbuffer limit); the
 worker host on `OffscreenCanvas.getContext('webgl2')`; items 35–36's
 limits read from the WebGL2 context.
 
+**What round 138 left this renderer to honour** (items 34–36 landed
+2026-09-29; `src/README.md`, "Device limits, the degradation order and
+the renderer soak"): report a `DeviceFit` through
+`RenderHost.reportDeviceFit` from the WebGL2 context's limits — the
+texture and buffer limits its data-texture emulation of the columns
+binds, and its per-draw reach, in place of the storage binding and the
+dispatch — so `cy.add()` throws the same `GpuUnfitError` at this
+backend's ceiling; emit `gpuerror` through `RenderHost.emitGpuError`
+from its own allocation checks (`gl.getError()` after a large
+`bufferData` / `texImage` is its error scope, `webglcontextlost` its
+loss); keep an allocation ledger under the same labels, so
+`cy.stats().gpu` reads the same and `playwright-tests/soak.spec.js` runs
+unchanged against it; and degrade in the same order with the same
+`degraded` names — labels, charts, images, curves, gradients, frames.
+
 ### 137.10 — the price, the docs and the close
 
 `benchmark:renderer --backend webgl2` on the published scenes, beside

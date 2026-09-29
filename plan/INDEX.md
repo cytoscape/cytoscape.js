@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–75, 79, 85–98, 100–104, 106–124, 127–136 |
+| landed | 7–48, 52–70, 72–75, 79, 85–98, 100–104, 106–124, 127–136, 138 |
 | planned | 49–51, 71, 76–78, 80–84, 99, 105, 125–126, 137 |
 
 ## The sections
 
-177 sections.
+178 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -204,3 +204,4 @@ A round can land with an item held open; the round file says which.
 | 175 | 135 | 2026-09-29 | landed | [Ledger item 30, tier 1: what no golden sees, enumerated](rounds/2026-09-29-02-rnd0135-landed-item-30-tier-1-the-golden-coverage-enumerator.md) |
 | 176 | 136 | 2026-09-29 | landed | [Ledger item 31, the inventory: every gesture, its events and the specs that hold it](rounds/2026-09-29-03-rnd0136-landed-item-31-the-gesture-inventory.md) |
 | 177 | 137 | 2026-09-29 | plan | [The WebGL2 renderer, full parity at alpha](rounds/2026-09-29-04-rnd0137-plan-the-webgl2-renderer-full-parity-at-alpha.md) |
+| 178 | 138 | 2026-09-29 | landed | [Ledger items 34–36: device limits, the degradation order and the renderer soak](rounds/2026-09-29-05-rnd0138-landed-items-34-36-device-limits-the-degradation-order-and-the-renderer-soak.md) |

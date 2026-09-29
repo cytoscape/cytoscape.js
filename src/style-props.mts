@@ -77,6 +77,8 @@ export const PROP = {
 
   CURVE_STYLE: 'curve-style',
 
+  DIM_OPACITY: 'dim-opacity',
+
   EDGE_DISTANCES: 'edge-distances',
 
   EVENTS: 'events',

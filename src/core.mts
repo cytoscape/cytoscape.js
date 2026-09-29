@@ -64,6 +64,7 @@ import type { PatchDiff, PatchOptions } from './core/patch.mjs';
 import * as cloneImpl from './core/clone.mjs';
 import type { CloneOptions } from './core/clone.mjs';
 import * as loadImpl from './core/load.mjs';
+import * as emphasisImpl from './core/emphasis.mjs';
 import type { LoadOptions, LoadRun, LoadState } from './core/load.mjs';
 import type { CoreCaps } from './factory.mjs';
 
@@ -265,6 +266,10 @@ export class Core {
   _follows: Set<{ stop(): void }>;
   /** the open layout run per layout object (round 128), for `cancel()` */
   _layoutRuns: Map<object, LayoutRun>;
+  /** the emphasized set's refs while an emphasis is set, null while none
+   * is (round 102) — what `unemphasize()` clears, O(set)
+   * @internal */
+  _emphasis: Ref[] | null;
 
   /**
    * Build a core over a fresh columnar store.  Prefer the `cytoscape(
@@ -385,6 +390,7 @@ export class Core {
     this._inflight = new Set();
     this._follows = new Set();
     this._layoutRuns = new Map();
+    this._emphasis = null;
     this._batchPending = null;
 
     if (options.boxSelectionMode != null) {
@@ -1089,6 +1095,64 @@ export class Core {
     y2: number,
   ): Collection {
     return queryImpl._elementsInGestureBox(this, x1, y1, x2, y2);
+  }
+
+  // -- emphasis (round 102) --
+
+  /**
+   * Emphasize exactly `eles` and dim everything else — the hover
+   * highlight every graph app implements, as view state rather than a
+   * restyle.  The call replaces the previous emphasis (only elements
+   * entering or leaving the set are written), so a hover handler is
+   * one line: `cy.emphasize( node.closedNeighborhood() )` on
+   * `mouseover`, `cy.unemphasize()` on `mouseout`.
+   *
+   * What it looks like is split by cost.  The emphasized elements carry
+   * a state the sheet can style — `{ when: { emphasized: true } }`, and
+   * the query key `{ emphasized: true }` — restyled in O(set) like any
+   * state flip.  Everything else is **dimmed by the renderer**: the
+   * scene draws in two tiers, the rest composited at the core
+   * `dim-opacity` (default 0.15), then the emphasized elements above it
+   * at full strength — so an emphasized edge is never hidden under a
+   * dimmed node.  The dim is a composite, not a style: `style()` reads
+   * a dimmed element's own values, and there is no `dimmed` state to
+   * condition on (a per-element dim rewrites every element whenever an
+   * emphasis turns on or off — measured at 1.1 s per hover change on a
+   * 484k-element graph, against O(set) here).
+   *
+   * An empty collection is a valid emphasis: everything dims.  The
+   * emphasis stays set until `unemphasize()`, through removals and
+   * adds (a new element is not emphasized).  It is per instance and
+   * never serialized: a `clone()` does not share it and a `patch()`
+   * keeps it on surviving elements.  `png()`/`jpg()` draw it as the
+   * screen does, the rest composited over the export's `bg`.  Picking
+   * ignores it: a dimmed node still answers `pick()` and hover, and
+   * where an emphasized edge is raised over a dimmed node the node wins
+   * the pick, by the structural order `pick()` documents.
+   * v4's own — v3 has no equivalent (apps spelled it with classes and
+   * an opacity rule over the whole graph).
+   *
+   * @param eles — the elements to emphasize, from this instance
+   * @returns this core, for chaining
+   * @throws when `eles` is not a collection, or is one from another
+   *   instance
+   */
+  emphasize(eles: Collection): this {
+    emphasisImpl.emphasize(this, eles);
+
+    return this;
+  }
+
+  /**
+   * End the emphasis: clear the emphasized set and stop dimming.  A
+   * no-op when no emphasis is set.
+   *
+   * @returns this core, for chaining
+   */
+  unemphasize(): this {
+    emphasisImpl.unemphasize(this);
+
+    return this;
   }
 
   // -- events --

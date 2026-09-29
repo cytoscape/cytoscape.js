@@ -16,6 +16,7 @@ import {
   COL,
   columnSpec,
   columnSpecsForGroup,
+  DIM_OPACITY_DEFAULT,
   FLAG_VISIBLE,
 } from '../contract.mjs';
 import type {
@@ -263,6 +264,10 @@ export class GraphStore implements ModelView {
   mapperSpans: Map<string, MapperSpan>;
   /** the dirty-stream consumers beyond the renderer (round 106) @internal */
   consumers: StoreConsumer[] = [];
+  /** whether an emphasis is set (round 102; see emphasisDim) @internal */
+  emphasisOn = false;
+  /** the sheet's core `dim-opacity` (round 102) @internal */
+  dimOpacityV: number = DIM_OPACITY_DEFAULT;
   /** the primary consumer's folded blob ranges and mapper spans — what
    * another consumer drained on the renderer's behalf (round 106)
    * @internal */
@@ -1534,6 +1539,49 @@ export class GraphStore implements ModelView {
    */
   arrowWidthMax(): number {
     return this.arrowWidthMaxV;
+  }
+
+  /**
+   * The emphasis composite (round 102): the core `dim-opacity` while an
+   * emphasis is set, -1 while none is.  The frame uniform reads it — a
+   * value ≥ 0 draws the scene in two tiers (the rest composited at this
+   * opacity, then the `FLAG_EMPHASIZED` elements above it) — so it is
+   * one of the scalars a worker renderer receives with every batch.
+   */
+  emphasisDim(): number {
+    return this.emphasisOn ? this.dimOpacityV : -1;
+  }
+
+  /**
+   * Turn the emphasis composite on or off (the core's `emphasize()` /
+   * `unemphasize()`; the bits themselves are ordinary flag writes).
+   * A change schedules a frame, since it may mark no column.
+   *
+   * @param on — whether an emphasis is set
+   * @internal
+   */
+  setEmphasisOn(on: boolean): void {
+    if (on !== this.emphasisOn) {
+      this.emphasisOn = on;
+      this.dirty.touch();
+    }
+  }
+
+  /**
+   * The sheet's `dim-opacity` (written by the StyleEngine on every sheet
+   * install).  Schedules a frame only when an emphasis is showing.
+   *
+   * @param opacity — the resolved core prop, in [0, 1]
+   * @internal
+   */
+  setDimOpacity(opacity: number): void {
+    if (opacity !== this.dimOpacityV) {
+      this.dimOpacityV = opacity;
+
+      if (this.emphasisOn) {
+        this.dirty.touch();
+      }
+    }
   }
 
   /** Raise the monotone hollow-stroke maximum (the style layer's

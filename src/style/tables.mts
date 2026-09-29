@@ -38,6 +38,7 @@ import {
   SHAPE_TAG,
   SHAPE_TRIANGLE,
   SHAPE_VEE,
+  DIM_OPACITY_DEFAULT,
 } from '../contract.mjs';
 import { resolveScheme, hexToRgb } from '../style-schemes.mjs';
 import { isMapperSpec } from '../style-scales.mjs';
@@ -429,6 +430,9 @@ export interface CoreStyle {
   activeBgColor: RGBA;
   activeBgOpacity: number;
   activeBgSize: number;
+  /** round 102: the opacity the rest of the graph composites at while
+   * an emphasis is set (`cy.emphasize()`) */
+  dimOpacity: number;
 }
 
 export const CORE_DEFAULTS: CoreStyle = {
@@ -439,6 +443,7 @@ export const CORE_DEFAULTS: CoreStyle = {
   activeBgColor: [0, 0, 0, 255], // black
   activeBgOpacity: 0.15,
   activeBgSize: 30,
+  dimOpacity: DIM_OPACITY_DEFAULT,
 };
 
 /** The `core` block of a sheet resolved over `CORE_DEFAULTS`; throws on an unknown key or an unparsable colour. */
@@ -480,6 +485,9 @@ export const resolveCoreProps = (props: StyleProps | undefined): CoreStyle => {
         break;
       case PROP.ACTIVE_BG_SIZE:
         out.activeBgSize = parseNonNegative(prop, value);
+        break;
+      case PROP.DIM_OPACITY:
+        out.dimOpacity = parseZeroOne(prop, value);
         break;
       default:
         throw new Error(

@@ -185,6 +185,7 @@ export const STATE_CONDITIONS = {
   grabbable: { key: '::grabbable', negate: false, nodesOnly: false },
   active: { key: '::active', negate: false, nodesOnly: false },
   hovered: { key: '::hovered', negate: false, nodesOnly: false },
+  emphasized: { key: '::emphasized', negate: false, nodesOnly: false },
 } as const satisfies Record<
   string,
   { key: string; negate: boolean; nodesOnly: boolean }

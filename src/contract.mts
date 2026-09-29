@@ -135,6 +135,25 @@ export const FLAG_SELF_INVISIBLE = 131072;
  * subtree walk.
  */
 export const FLAG_DRAWN = 262144;
+/**
+ * Transient emphasis (round 102): set on exactly the elements the last
+ * `cy.emphasize( eles )` named, cleared by `cy.unemphasize()`.  View
+ * state, like hover and press — never serialized, never copied by a
+ * clone, never read from a payload.  A styleable state
+ * (`{ when: { emphasized: true } }`), and read by every cull kernel:
+ * while an emphasis is set (the store's `emphasisDim()` ≥ 0) the scene
+ * draws in two tiers — everything without the bit, composited at the
+ * sheet's `dim-opacity`, then everything with it at full strength above.
+ * "Dimmed" is that reading (emphasis set, bit clear) and is derived,
+ * never stored: a per-element dim bit rewrites every element's record
+ * whenever the emphasis turns on or off, which round 102 measured at
+ * 1.1 s per hover change on ndex-x-large.
+ */
+export const FLAG_EMPHASIZED = 524288;
+
+/** The core `dim-opacity` default (round 102): what the rest of the
+ * graph composites at while an emphasis is set. */
+export const DIM_OPACITY_DEFAULT = 0.15;
 
 /**
  * The styleable states: the reserved case-condition key each flag
@@ -159,6 +178,7 @@ export const CONDITION_FLAGS: Readonly<Record<string, number>> = {
   '::grabbable': FLAG_GRABBABLE,
   '::active': FLAG_ACTIVE,
   '::hovered': FLAG_HOVERED,
+  '::emphasized': FLAG_EMPHASIZED,
 };
 
 /** The same binding, bit → key, for the flag-write side. */

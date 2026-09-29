@@ -141,6 +141,30 @@ void cy.viewportCounts().then((counts: ViewportCounts | null) => {
   void visible;
 });
 
+// -- round 102: transient emphasis --
+
+const emphasizedCore: typeof cy = cy.emphasize(
+  cy.nodes()[0].closedNeighborhood(),
+);
+const isEmphasized: boolean = cy.nodes().emphasized();
+const emphasizedSet: Collection = cy.elements({ emphasized: true });
+
+void emphasizedCore;
+void isEmphasized;
+void emphasizedSet;
+cy.unemphasize();
+cytoscape({
+  style: {
+    core: { 'dim-opacity': 0.2 },
+    nodes: {
+      'border-width': {
+        case: [{ when: { emphasized: true }, then: 2 }],
+        else: 0,
+      },
+    },
+  },
+});
+
 // -- iteration (round 75.3): collections are iterable; add takes iterables --
 
 for (const ele of cy.nodes()) {

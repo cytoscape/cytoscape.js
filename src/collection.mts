@@ -6,6 +6,7 @@ import {
   DATA_PARENT,
   DATA_ID,
   FLAG_ACTIVE,
+  FLAG_EMPHASIZED,
   FLAG_GRABBABLE,
   FLAG_GRABBED,
   FLAG_LOCKED,
@@ -2330,6 +2331,20 @@ export class Collection implements Iterable<Collection> {
   /** @internal */
   _hasBit(bit: number): boolean {
     return stateImpl._hasBit(this, bit);
+  }
+
+  // -- emphasis (round 102) --
+
+  /**
+   * Whether the first element is in the current emphasis — the set the
+   * last `cy.emphasize( eles )` named.
+   *
+   * @returns the element's emphasized flag; false for a removed element
+   *   and while no emphasis is set.  An element outside a set emphasis
+   *   is the one the renderer dims — derived, so there is no `dimmed()`
+   */
+  emphasized(): boolean {
+    return this._hasBit(FLAG_EMPHASIZED);
   }
 
   // -- graph manipulation --

@@ -263,6 +263,12 @@ export interface Condition {
   /** state (round 57.1): the pointer is over the element.  v4's own,
    * with no v3 spelling — v3 styles hover not at all. */
   hovered?: boolean;
+  /** state (round 102): the element is in the current emphasis — the
+   * set the last `cy.emphasize( eles )` named.  v4's own.  The rest of
+   * the graph is *dimmed* by the renderer (the core `dim-opacity`), not
+   * by a state: there is no `dimmed` key, so styling the emphasized set
+   * costs O(set) per change and the dim costs nothing per element. */
+  emphasized?: boolean;
 }
 
 /** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */

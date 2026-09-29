@@ -63,6 +63,9 @@ export interface Query {
   active?: boolean;
   /** whether the pointer is over the element */
   hovered?: boolean;
+  /** whether the element is in the current emphasis (round 102,
+   * `cy.emphasize()`) */
+  emphasized?: boolean;
   /** structural (round 14.7, nodes only): has at least one child */
   parent?: boolean;
   /** structural (nodes only): has no children — v3's `:childless`, and

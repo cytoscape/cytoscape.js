@@ -953,6 +953,12 @@ interface Condition {
   /** state (round 57.1): the pointer is over the element.  v4's own,
    * with no v3 spelling — v3 styles hover not at all. */
   hovered?: boolean;
+  /** state (round 102): the element is in the current emphasis — the
+   * set the last `cy.emphasize( eles )` named.  v4's own.  The rest of
+   * the graph is *dimmed* by the renderer (the core `dim-opacity`), not
+   * by a state: there is no `dimmed` key, so styling the emphasized set
+   * costs O(set) per change and the dim costs nothing per element. */
+  emphasized?: boolean;
 }
 /** One case clause: `when` (a condition, or an array AND-ed together) → `then`. */
 interface CaseClause {
@@ -3472,6 +3478,14 @@ declare class GraphStore implements ModelView {
    * `arrowScaleMax`.  Monotone, and it only costs quad area.
    */
   arrowWidthMax(): number;
+  /**
+   * The emphasis composite (round 102): the core `dim-opacity` while an
+   * emphasis is set, -1 while none is.  The frame uniform reads it — a
+   * value ≥ 0 draws the scene in two tiers (the rest composited at this
+   * opacity, then the `FLAG_EMPHASIZED` elements above it) — so it is
+   * one of the scalars a worker renderer receives with every batch.
+   */
+  emphasisDim(): number;
   /** Raise the monotone hollow-stroke maximum (the style layer's
    * report, after 'match-line' and percent forms are resolved). */
   noteArrowWidth(width: number): void;
@@ -4911,6 +4925,9 @@ interface Query {
   active?: boolean;
   /** whether the pointer is over the element */
   hovered?: boolean;
+  /** whether the element is in the current emphasis (round 102,
+   * `cy.emphasize()`) */
+  emphasized?: boolean;
   /** structural (round 14.7, nodes only): has at least one child */
   parent?: boolean;
   /** structural (nodes only): has no children — v3's `:childless`, and
@@ -6179,6 +6196,15 @@ declare class Collection implements Iterable<Collection> {
    * @returns this collection, for chaining
    */
   unpanify(): this;
+  /**
+   * Whether the first element is in the current emphasis — the set the
+   * last `cy.emphasize( eles )` named.
+   *
+   * @returns the element's emphasized flag; false for a removed element
+   *   and while no emphasis is set.  An element outside a set emphasis
+   *   is the one the renderer dims — derived, so there is no `dimmed()`
+   */
+  emphasized(): boolean;
   /**
    * Remove these elements from the graph; incident edges of removed nodes
    * cascade.  Already-removed elements are skipped (no second `remove`
@@ -8616,6 +8642,52 @@ declare class Core {
    * come through here so they cannot drift apart.
    */
   _elementsInGestureBox(x1: number, y1: number, x2: number, y2: number): Collection;
+  /**
+   * Emphasize exactly `eles` and dim everything else — the hover
+   * highlight every graph app implements, as view state rather than a
+   * restyle.  The call replaces the previous emphasis (only elements
+   * entering or leaving the set are written), so a hover handler is
+   * one line: `cy.emphasize( node.closedNeighborhood() )` on
+   * `mouseover`, `cy.unemphasize()` on `mouseout`.
+   *
+   * What it looks like is split by cost.  The emphasized elements carry
+   * a state the sheet can style — `{ when: { emphasized: true } }`, and
+   * the query key `{ emphasized: true }` — restyled in O(set) like any
+   * state flip.  Everything else is **dimmed by the renderer**: the
+   * scene draws in two tiers, the rest composited at the core
+   * `dim-opacity` (default 0.15), then the emphasized elements above it
+   * at full strength — so an emphasized edge is never hidden under a
+   * dimmed node.  The dim is a composite, not a style: `style()` reads
+   * a dimmed element's own values, and there is no `dimmed` state to
+   * condition on (a per-element dim rewrites every element whenever an
+   * emphasis turns on or off — measured at 1.1 s per hover change on a
+   * 484k-element graph, against O(set) here).
+   *
+   * An empty collection is a valid emphasis: everything dims.  The
+   * emphasis stays set until `unemphasize()`, through removals and
+   * adds (a new element is not emphasized).  It is per instance and
+   * never serialized: a `clone()` does not share it and a `patch()`
+   * keeps it on surviving elements.  `png()`/`jpg()` draw it as the
+   * screen does, the rest composited over the export's `bg`.  Picking
+   * ignores it: a dimmed node still answers `pick()` and hover, and
+   * where an emphasized edge is raised over a dimmed node the node wins
+   * the pick, by the structural order `pick()` documents.
+   * v4's own — v3 has no equivalent (apps spelled it with classes and
+   * an opacity rule over the whole graph).
+   *
+   * @param eles — the elements to emphasize, from this instance
+   * @returns this core, for chaining
+   * @throws when `eles` is not a collection, or is one from another
+   *   instance
+   */
+  emphasize(eles: Collection): this;
+  /**
+   * End the emphasis: clear the emphasized set and stop dimming.  A
+   * no-op when no emphasis is set.
+   *
+   * @returns this core, for chaining
+   */
+  unemphasize(): this;
   /**
    * Listen for events on the core.
    *

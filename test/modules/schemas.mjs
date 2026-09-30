@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript-compiler-api';
@@ -244,6 +244,21 @@ describe('schemas: elements (79.1)', () => {
   });
 
   describe('accepts every debug network, as the page builds it', () => {
+    // round 105: a fetched fixture is absent from a fresh checkout and from
+    // CI by design, so it is validated exactly where one has been fetched —
+    // reading it unconditionally turned every status-site spec red in CI
+    it('covers every network, a fetched one exactly when its file exists', () => {
+      const networks = loadDebugGlobal('networks');
+      const DEBUG = resolve(ROOT, 'debug');
+      const expected = Object.entries(networks)
+        .filter(
+          ([, def]) => def.fetch == null || existsSync(resolve(DEBUG, def.url)),
+        )
+        .map(([id]) => id);
+
+      expect(NETWORKS.map((n) => n.id)).to.deep.equal(expected);
+    });
+
     for (const { id, elements } of NETWORKS) {
       it(id, () => {
         expect(elements.nodes.length, `${id}: no nodes`).to.be.at.least(1);

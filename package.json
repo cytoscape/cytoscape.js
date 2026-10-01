@@ -131,7 +131,7 @@
     "highlight.js": "^10.0.0",
     "http-server": "^14.1.1",
     "jsonlint": "^1.6.2",
-    "livereload": "^0.9.1",
+    "livereload": "^0.10.3",
     "lodash": "^4.17.21",
     "marked": "^4.0.10",
     "mocha": "^11.1.0",

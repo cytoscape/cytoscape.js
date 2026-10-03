@@ -19,11 +19,11 @@ A round can land with an item held open; the round file says which.
 | State | Rounds |
 | --- | --- |
 | landed | 7–48, 52–70, 72–76, 79, 85–98, 100–124, 126–136, 138–145 |
-| planned | 49–51, 71, 77–78, 80–84, 99, 125, 137 |
+| planned | 49–51, 71, 77–78, 80–84, 99, 125, 137, 146–148 |
 
 ## The sections
 
-186 sections.
+190 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -138,9 +138,9 @@ A round can land with an item held open; the round file says which.
 | 109 | 77 | 2026-08-14 | plan | [SVG vector export](rounds/2026-08-14-08-rnd0077-plan-svg-vector-export.md) |
 | 110 | 78 | 2026-08-14 | plan | [Headless Node image generation](rounds/2026-08-14-09-rnd0078-plan-headless-node-image-generation.md) |
 | 111 | 79 | 2026-08-14 | landed | [Official JSON schemas](rounds/2026-08-14-10-rnd0079-landed-official-json-schemas.md) |
-| 112 | 80 | 2026-08-14 | plan | [Node charts: heat, bars, and the slice ceiling](rounds/2026-08-14-11-rnd0080-plan-node-charts-heat-bars-and-the-slice-ceiling.md) |
+| 112 | 80 | 2026-08-14 | plan | [Node charts: explicit scales, heat, bars and 255 values](rounds/2026-08-14-11-rnd0080-plan-node-charts-heat-bars-and-the-slice-ceiling.md) |
 | 113 | 81 | 2026-08-14 | plan | [The annotations layer](rounds/2026-08-14-12-rnd0081-plan-the-annotations-layer.md) |
-| 114 | 82 | 2026-08-14 | plan | [Cluster hulls and collapse/aggregation proxies](rounds/2026-08-14-13-rnd0082-plan-cluster-hulls-and-collapse-aggregation-proxies.md) |
+| 114 | 82 | 2026-08-14 | plan | [Compound hull shapes: convex first, then concave](rounds/2026-08-14-13-rnd0082-plan-cluster-hulls-and-collapse-aggregation-proxies.md) |
 | 115 | 83 | 2026-08-14 | plan | [GPU edge bundling](rounds/2026-08-14-14-rnd0083-plan-gpu-edge-bundling.md) |
 | 116 | 84 | 2026-08-14 | plan | [Attribute-table and filter affordances](rounds/2026-08-14-15-rnd0084-plan-attribute-table-and-filter-affordances.md) |
 | 117 | 85 | 2026-08-14 | landed | [The layouts round: radial, force constraints, edge length, per-side padding](rounds/2026-08-14-16-rnd0085-landed-the-layouts-round-radial-force-constraints-edge-length.md) |
@@ -213,3 +213,7 @@ A round can land with an item held open; the round file says which.
 | 184 | 144 | 2026-09-29 | landed | [Ledger item 68: the layout tween is one column animation](rounds/2026-09-29-11-rnd0144-landed-item-68-the-layout-tween-is-one-column-animation.md) |
 | 185 | — | 2026-09-29 | note | [Items 72 and 73 prepared — the head gallery and the chart capacity measurement](rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md) |
 | 186 | 145 | 2026-09-29 | landed | [The record ref overflow guard: charts and images past 2^24 floats](rounds/2026-09-29-13-rnd0145-landed-the-record-ref-overflow-guard-charts-and-images-past-2-24-floats.md) |
+| 187 | — | 2026-10-03 | note | [Alpha design interview: charts, hulls and miniature compounds](rounds/2026-10-03-01-rnd0000-note-alpha-design-interview.md) |
+| 188 | 146 | 2026-10-03 | plan | [Arrow vocabulary and hollow compound heads](rounds/2026-10-03-02-rnd0146-plan-arrow-vocabulary-and-hollow-compounds.md) |
+| 189 | 147 | 2026-10-03 | plan | [Partial scale domains and legend JSON](rounds/2026-10-03-03-rnd0147-plan-partial-scale-domains-and-legend-json.md) |
+| 190 | 148 | 2026-10-03 | plan | [Miniature compounds: actual positions, reversible size scaling](rounds/2026-10-03-04-rnd0148-plan-miniature-compounds.md) |

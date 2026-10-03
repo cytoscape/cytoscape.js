@@ -9,6 +9,16 @@ rendering without WebGPU.  Every design call below was taken in round 73
 on measurement or on the source; this file sequences them and says how
 each sub-round is verified.
 
+### Alpha interview integration (2026-10-03)
+
+The revised prerequisites include arrows (146), shared scale/legend contracts
+(147), charts (80), **both convex and concave** hull subtasks (82), and
+miniature compounds (148). Collapse keeps original children and edges; no
+aggregate-edge port is required. The old round-82 proxy design is superseded.
+SVG 77 must consume the same effective geometry. Chart blobs now require
+integer textures to preserve packed colour bits; the R32F statement below
+continues to describe other float-only blobs, not the new chart records.
+
 ### When it starts
 
 The maintainer's sequencing note on round 73 stands: a fallback written

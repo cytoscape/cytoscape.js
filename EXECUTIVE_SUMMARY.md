@@ -5,7 +5,10 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-09-29, after round 145, a correctness fix
+- **Last updated**: 2026-10-03 for the alpha design interview; no new
+  implementation round landed in this update. Next: arrows, shared scales
+  and legend JSON, charts, convex then concave hulls, and miniature compounds.
+  The last implementation remains round 145 (29 September), a correctness fix
   item 73's chart measurement found: past about 305,000 nodes with
   16-slice pie charts (or 350,000 with four background images each),
   a chart's or image's stored reference silently overflowed, so the
@@ -14,8 +17,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   renderer stops drawing charts (or images) and says so with one
   `gpuerror` event, the same way it treats a chart store too large for
   the GPU, rather than drawing the wrong thing.  How the reference is
-  laid out, which decides how far that point moves, is still the
-  chart sitting's call.  Custom-polygon node shapes have the same
+  laid out is now decided for charts: address-only references and 8-byte
+  values, planned in round 80; the existing guard remains until that lands.
+  Custom-polygon node shapes have the same
   limit at about a million nodes; it is logged, not yet fixed.
   Earlier the same day round 105, parallel edges at
   GeneMANIA's width: the two GeneMANIA queries the design sitting chose
@@ -1999,10 +2003,17 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 ## Open decisions
 
+- Settled on 3 October, awaiting implementation: arrow vocabulary and hollow
+  compounds; 255-value charts with compact records; explicit/partial chart
+  scales; legend JSON/events; convex then concave parent shapes; miniature
+  collapse with live styled scale, optional animation and best-effort locks.
+- The miniature model keeps original children and edges. Aggregate edges are
+  separately deferred, with persistence (leaning toward regeneration) and
+  developer-specified direction still open. Automatic viewport snapping,
+  hull obstacle avoidance and a concavity control are future considerations.
+
 | | |
 |---|---|
-| Arrow-shape review | Whether v3's twelve arrowheads consolidate (near-duplicate compound heads merged, `tee` sized to the edge width) before SVG export and the WebGL path each implement them |
-| Chart kinds and data capacity | Every chart kind shares a 255-value record limit; which kinds v4 will ever draw (a scatter plot may carry far more than 64 points) and the cap each gets is a design sitting before round 80 picks the pie cap |
 | Gradient stops from data | Whether gradient stop lists take per-element `{ data }` — left for further consideration |
 | Built-in editing affordances | Handles on annotations, nodes and edges, and in-place label editing: designed before alpha, built after |
 | Layouts as a capability | Every build carries every layout (~118 KB minified); whether a headless build registers only the layouts it names, as it does the GPU executors |
@@ -2039,9 +2050,10 @@ compound drag-and-drop, viewport constraints and framework bindings;
 RTL text after 4.0.  Declined: a v3→v4 codemod, library-level
 accessibility (an app responsibility) and a core PDF export (an SVG→PDF recipe instead).  The wire format stays
 public but experimental until 4.x.
-Cluster hulls become a compound shape style, so a hull is a parent
-node (collapse, labels, picking and drag-and-drop come with it), and
-the WebGL fallback is full parity at alpha — scoped on 29 Sep, where
+Cluster hulls are compound shape styles, with convex then concave geometry
+in the revised plan. Miniature collapse replaces hidden-child proxies;
+labels, picking and dragging remain ordinary element operations. The
+WebGL fallback is full parity at alpha — scoped on 29 Sep, where
 the tween pipelines were also decided not to be warmed at start-up (no
 user is served a software WebGPU adapter; one would get WebGL2).
 
@@ -2067,7 +2079,7 @@ round, and is regenerated rather than maintained:
 | Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`; edge isolates (`cytoscape/headless` on `workerd`) and Deno's native WebGPU driving the GPU executors (`cytoscape/headless-gpu`) landed 28 Sep.  The scoping pass over every other environment landed 29 Sep as the support matrix.  Still planned: the native Bun/Deno test runners measured and the install/publish story |
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement).  The official JSON schemas landed 28 Sep; their `$id` base waits on the documentation site |
-| Visual features | Per-node charts (radial heat and bars); an annotations layer; cluster hulls and collapse/aggregation proxies; GPU edge bundling |
+| Visual features | Explicitly scaled heat/bar charts and application legend metadata; annotations; convex then concave compound shapes; miniature collapse with animation; GPU edge bundling. Aggregate display edges remain separately deferred. |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case).  The DX polish bundle landed 28 Sep, the small style-wins bundle (`text-border-style`, the gradient price) 29 Sep |
 | WebGL2 renderer | Full parity with the WebGPU renderer, for browsers without WebGPU; scoped 29 Sep (backend, capability selection, the measured substitutes, the reach table), built after the drawn-feature rounds and held to a live WebGL-vs-WebGPU parity suite |
 

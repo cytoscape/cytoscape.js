@@ -36,6 +36,30 @@ the scope it names.  None of them is a statement about the distance to
 4.0, and "Follow-up hooks" at the end is the closest thing here to an
 honest inventory — an inventory, not an estimate.
 
+## Alpha decisions awaiting implementation (3 October)
+
+The alpha interview in the plan record scopes the next batch;
+none of the following changes is shipped by this planning update:
+
+- 146: triangle-tee replaces triangle-cross without an alias; width-aware
+  tee bars and hollow compound end heads.
+- 147 and 80: partial automatic scale endpoints, cy.legend() JSON and
+  legendchange, then 255-value charts, explicit heat scales, signed bars,
+  compact records and shared domains. Per-node autoscaling and chart labels
+  are excluded; applications own normalization, labels, axes and legends.
+- 82: convex then organic/concave compound shapes over actual child outlines,
+  and implementation of the existing compound-sizing-wrt-labels: include.
+- 148: manual miniature compounds, actual positions plus effective-size
+  multipliers, optional animation and collapse state synchronized by follow.
+  Children/edges remain real and visible; locked positions stay put while
+  sizes shrink. Style readback remains unscaled and geometry readback scaled.
+
+The earlier proxy/aggregate collapse proposal is superseded. Aggregate edges
+are deferred display objects with their own open persistence/direction calls.
+Automatic viewport snapping, obstacle-avoiding hulls and a public concavity
+control remain future maintainer decisions. Existing implementation sections
+below still describe the current code, not these planned capabilities.
+
 ## What landed, round by round
 
 Round 13 (2026-07-31) swept

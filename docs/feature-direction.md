@@ -66,12 +66,15 @@ plan. A proposed desktop/web style subset should specify supported semantics and
 report losses explicitly. CX2 translation remains outside core under the
 recorded decision; adapter fixtures can test portability without reversing it.
 
-Round 82's planned convex cluster hulls address part of EnrichmentMap's emulated
-regions. Organic blobs are a separate unresolved GPU geometry direction, and
-overlapping membership is a further proposal. Neither should be advertised as
-delivered bubble-set parity. Collapse proxies also have distinct membership,
-aggregation and session-persistence limits. GeneMANIA's many parallel evidence
-edges need their own scale fixtures, not just a check that parallel edges draw.
+Round 82 now plans compound hull shapes in two geometry subtasks: convex
+first, then automatic organic/concave contours around direct child outlines.
+Label inclusion completes the existing compound-sizing property. Nonmember
+obstacle avoidance and a public tightness control remain future maintainer
+calls; overlapping membership stays outside 4.0. Round 148 miniaturizes
+compounds by scaling actual child positions and effective sizes, keeping the
+original nodes and edges. Aggregate edges are a separate deferred design,
+not an alpha collapse dependency. GeneMANIA's parallel evidence edges retain
+their own scale fixtures and measured curve-style costs.
 
 Prefer shared rendering, layout, selection and aggregation primitives in core;
 use examples and adapters for domain formats and application UI. Promote more
@@ -85,20 +88,18 @@ animation API.
 
 ## Semantic zoom
 
-Proposed semantic zoom changes the information shown as the viewer zooms:
-summaries at overview scale, individual nodes and edges at intermediate scales,
-and labels, charts and evidence details up close. Declarative detail thresholds
-should reduce application-owned zoom handlers while keeping transition cost and
-interaction latency within measured budgets.
+General declarative detail rules remain a proposed direction. The 3 October
+alpha interview chose a narrower compound foundation: manual miniaturization
+(round 148), with original children and edges still present. Zooming reveals
+that detail naturally, without automatically expanding or rearranging the
+compound. Explicit collapse/expand can animate; no zoom threshold controller
+is required for alpha. Viewport snapping to a compound for a full-screen view
+is a possible future feature, not current scope. Screen-space sizing is not
+implicitly included by this decision.
 
-Compound semantic zoom is an explicit sub-feature: zoom in to reveal children,
-progressively through nested compounds, and zoom out to return to parent
-summaries. Coordinate it with the planned collapse proxies, specifying edge
-aggregation and selection preservation. Use stable reveal/hide thresholds to
-avoid flicker near a boundary, and preserve positions so exploring a hierarchy
-does not unexpectedly rearrange it. Existing compound support and minimum label
-size do not establish this capability; both rows remain Proposed pending scope
-and implementation design.
+The public scale/state/geometry contract is designed now so later navigation
+and detail rules can build on it. Aggregate-edge presentation remains deferred,
+with persistence and developer-specified direction explicitly unresolved.
 
 ## Unmet features for alpha
 
@@ -139,16 +140,16 @@ requirement to finish every feature in the inventory.
   contract, chart data and colour-scale model, signed bars and heat-chart
   semantics, and slice/storage limits. Validate representative charts and
   unsupported-style diagnostics before fixing the public style schema.
-- **Cluster regions and compound collapse:** define membership, convex versus
-  organic-region scope, compound proxies, aggregate-edge identity and data,
-  selection, events and persistence. Decide overlapping-membership scope and
-  prove the chosen geometry/data model at useful scale; avoid committing an
-  API that requires a new graph model to support the intended app workflows.
-- **Semantic zoom, including compounds:** decide the core detail-rule contract
-  and how zoom reveals nested children or returns to parent summaries. Specify
-  its relationship to explicit collapse, edge aggregation, picking, selection,
-  layout and export, with stable thresholds and preserved positions. Resolve
-  the architecture before treating it as later visual polish.
+- **Cluster regions and compound collapse:** implement the scoped compound
+  hulls and miniature model with explicit geometry, label sizing, interaction,
+  layout scope, animation, persistence and clone-follow contracts. Convex and
+  concave shapes share CPU-derivable contours with export. No hidden-child or
+  aggregate-proxy requirement: aggregate display objects are deferred, with
+  their independent persistence/direction calls left open.
+- **Semantic zoom, including compounds:** validate miniatures across zoom,
+  picking, selection, layout and export. Automatic expansion and viewport
+  snapping are future work; the applied-scale state is their extension point.
+  General detail rules remain proposed rather than silently counted as built.
 - **Layout quality audit and iteration:** complete enough representative app
   review to settle layout choice, constraints, options, defaults, packing and
   lifecycle contracts. Exercise quality and runtime together; correct findings
@@ -186,6 +187,11 @@ is absent. The inventory retains its current Implemented, Partial, Planned,
 Proposed and Undecided distinctions. Visual polish, further optimization,
 codemods, additional examples and tooling can continue during alpha when they
 do not conceal a foreseeable API or architectural change.
+
+The next scoped batch is 146 (arrows), 147 (shared scale domains and legend
+JSON), 80 (charts), 82 (convex then concave hulls), and 148 (miniatures).
+The alpha interview in the plan record records the decisions and deferrals;
+this sequence does not replace the remaining alpha gates above.
 
 ## Maintaining the review
 

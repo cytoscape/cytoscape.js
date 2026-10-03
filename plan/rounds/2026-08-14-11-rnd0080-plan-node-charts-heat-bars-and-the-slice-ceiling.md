@@ -1,183 +1,132 @@
-## Node charts: heat, bars, and the slice ceiling
+## Node charts: explicit scales, heat, bars and 255 values
 
-Round 23's third-sitting call — "definitely yes, and consider
-other charts in future" — comes due.  The consumers are named:
-EnrichmentMap's core visuals are per-node charts (its default
-multi-dataset chart is a *radial heat map* — equal sectors
-colored by NES through a diverging scale — plus linear heat
-strips and data-set pies; `debug/styles.js:76` already notes RdBu
-as its regulation palette); Cytoscape Web caps pies at 16 slices
-and misrenders desktop's 26-slice pies (their issue #589);
-desktop's enhancedGraphics draws pie/ring/bar/heat-strip/line.
-What the code does today, verified:
+Revised by the 3 October alpha interview. This replaces the old cap-64,
+implicit heat-scale and packed-count proposals. Depends on round 147's
+partial domains and legend contract. The shipped charts still have their
+old capabilities until this round lands.
 
-1. The chart family is 8 props (`src/style.mts:797-804`), with
-   `chart-values` taking the `{ data }` per-element passthrough
-   and `chart-colors` constants-only (list or named scheme).
-   Readback decodes the **record**, not the computed
-   (`style.mts:5227-5252` read through `chartAt`), which
-   constrains the design below.
-2. **The slice ceiling is policy, not packing.**
-   `CHART_MAX_SLICES = 16` (`src/contract.mts:277`) is enforced
-   in exactly one truncation loop (`style.mts:9365`); the packed
-   ref is `offset | n << 24` (`graph-store.mts:853`) — 24-bit
-   offset, 8-bit count, so the packing carries **255** slices and
-   16-slice v3 parity was the only reason for 16.  The FS walks
-   the stops O(n) per fragment (`shaders.mts:4900`).  Raising the
-   cap is a constant plus specs, not a contract change.
-3. **Donuts already exist** — `chart: pie` + `chart-hole`
-   (round 23 call 1).  "Ring/donut" is not a new kind.
-4. The value loop is pie/stripes-shaped: negatives skip as
-   sidecar junk and the running total clamps at 1
-   (`style.mts:9360-9382`).  NES values are signed — heat and bar
-   kinds cannot reuse it unchanged.
-5. Colors resolve at style-write (round 23 call 2), and the
-   mapper DSL already compiles diverging scales and named schemes
-   (`src/style-scales.mts:214,444-455`) — the value→color half of
-   a heat chart exists, uncabled.
-6. The chart pass binds one uniform + 8 storage buffers, seven
-   FS-visible (`chart-pipeline.mts:70-88`); new kinds need **no
-   new bindings** — everything rides the record blob.
-7. Bench: `benchmark/store.mjs:249` prices chart record writes;
-   no renderer scene draws a chart.
+### Settled public surface
 
-Kinds decided at planning, each with its named consumer:
-**heat-strip** (EnrichmentMap's linear heat strip;
-enhancedGraphics heatstripchart), **radial-heat** (EnrichmentMap's
-default chart), **bar** (enhancedGraphics barchart; an up/down NES
-strip is a signed bar chart).  **Declined:** ring/donut (exists —
-recorded), line charts (no consumer among the named apps'
-shipped defaults — logged, not foreclosed).  The design's spine:
-**heat kinds are record-build variants, not shader work** — the
-record keeps the author's values (readback stays exact through
-`chartAt`) with colors resolved per value through a new
-`chart-scale` at style-write; the FS treats the new kind ids as
-aliases of the pie/stripes geometry, indexing region
-`floor(t·n)` directly — O(1) per fragment, cheaper than the pie
-walk.  Only bar adds a real FS branch.
+Keep pie, stripes and donut (pie plus `chart-hole`). Add `heat-strip`,
+`radial-heat` and signed `bar`. Line and scatter are deferred beyond 4.0;
+the storage must accommodate future point-series passes without redesign.
 
-### 80.1 — `chart-scale` + the heat kinds
+All included kinds accept at most **255 values**. Warn once and truncate
+beyond the limit, preserving the first 255 slots and their corresponding
+colours. Missing slots count toward the limit; dropping them must not shift
+dataset identities. Existing pie/stripe fraction semantics stay unchanged;
+this round is not an implicit normalization of arbitrary pie weights.
 
-`chart` grows `heat-strip | radial-heat` (kind ids
-`CHART_HEAT_STRIP`/`CHART_RADIAL_HEAT` in `contract.mts`, stored
-in the record so readback answers the author's kind).
-`chart-scale` — a constants-only serializable object
-`{ scale, domain, range }` compiled by the mapper DSL's scale
-compiler (diverging keeps its explicit `[min, mid, max]` throw) —
-maps each chart value to a color at style-write; heat kinds
-**throw when it is absent** (fail-loudly; a heat chart without a
-scale has no meaning) and `chart-direction` applies to
-heat-strip.  `writeChart` branches by kind: the heat path takes
-signed values verbatim (no fraction clamp, no negative skip) and
-writes scale-resolved colors; `chart-colors` on a heat kind is a
-sheet error.  The FS adds two alias compares
-(heat-strip → the stripes branch with equal bands, radial-heat →
-the pie branch with equal sectors, both indexing by region rather
-than walking stops).  Tests-first Node specs in `test/charts.mjs`:
-parse/throws/readback, signed values, scale resolution, refresh
-on data writes of the values key — and the round-23.2 trap
-re-checked: the new scalar props join the mapper-capable set, and
-the chart-refresh fast path still re-routes through the full
-mapped write when defs carry mappers.
+`chart-scale` is one serializable object using the existing scale compiler.
+For heat kinds it is required, with an explicit `domain` and `range` (colour
+stops or named scheme). Linear remains the default scale type. Outer stops
+may explicitly be `auto`; interior anchors remain numeric. No per-node
+automatic domain, no inference of biological meaning or symmetric colour
+intensity. Missing scale configuration fails stylesheet validation.
+`chart-colors` with a heat kind is an error; colour comes from its scale.
 
-### 80.2 — the bar kind
+Heat bands/sectors have equal size; signed values affect colour, not region
+width. `chart-direction` applies to linear heat. Keep the original values
+available for readback; colours are resolved at style-write time. Node
+bypasses can supply explicit alternative scales without excluding the
+node's base data from the shared population.
 
-`CHART_BAR`: n equal columns across the `chart-size`d sub-box
-(vertical bars default; `chart-direction: horizontal` flips the
-axis), heights normalized by **`chart-domain`** (`[min, max]`
-pair, constants-only, default `[0, 1]`; a signed domain places
-the baseline at 0's position).  The header grows
-`CHART_HEADER` 7 → 9 (`domainMin`, `domainMax` — a blob-record
-format change, invisible to the mirror, which copies the blob
-wholesale; the contract comment is updated first, per the
-contract-first rule).  Colors: `chart-scale` when set, else the
-palette cycle (v3-free design, recorded).  FS branch: column
-index, coverage against the signed height with px-space AA at
-column boundaries and the bar top — every derivative hoisted
-above the branch (the uniformity rule this shader already
-follows).  Golden: signed bars about a mid baseline on a bordered
-ellipse (the clip path is what the scene must expose).
+Bar geometry uses required `chart-domain: [min, max]`, allowing either
+endpoint to be `auto` through the shared resolver. Vertical is default;
+`chart-direction: horizontal` flips the axis. The baseline is zero clamped
+to the domain, so a wholly positive/negative domain uses its near boundary.
+Heights are clipped to the geometry domain. Colour is independent:
+`chart-colors` or the existing categorical default, alternatively an
+explicit `chart-scale`. Supplying both colour mechanisms is an error;
+the default palette does not count as an explicitly supplied declaration.
+A bar's geometry domain need not equal its colour domain.
 
-### 80.3 — the slice ceiling, measured then raised
+For heat and bars, null/missing array entries and non-finite numbers retain
+slots, are excluded from auto extents, and are not zero. Heat uses
+`chart-missing-color` (transparent by default); bars leave gaps. Zero is a
+real observation. An entirely unresolved colour scale uses the specified
+fallback/missing appearance and the round-147 warning contract. An
+unresolved bar geometry domain draws no bars until valid bounds arrive.
+Do not fabricate heights from an invented range. Invalid non-numeric
+configuration is still validated rather than string-coerced into numbers.
 
-**Measure-first gate:** the FS stop walk is O(n) per fragment —
-before choosing the cap, price it with a render-bench pair scene
-(25k charted nodes, 16 vs 64 slices; the only difference is the
-loop count, so the pair discriminates by construction; batched
-with 76.1's scene edit).  Then raise `CHART_MAX_SLICES`
-(proposal: **64** — covers desktop's 26-slice pies with headroom;
-255 is the packing bound) and decide the overflow policy: today
-longer lists truncate silently (the recorded cap), and Web's #589
-is precisely a silent-misrender complaint — proposal: warn-once
-+ truncate (a throw on a 65-entry *data-driven* array would take
-down a frame on one element's sidecar).  Golden
-`charts-many-slices`: a 26-slice pie (the #589 case) beside a
-cap-bound case; control: the cap dropped back to 16 must fail it.
-`benchmark/store.mjs`'s chart sweep gains rows per kind × slice
-count, each asserting the kind and n it claims to price (the
-row-asserts-its-property rule).
+Chart labels, per-node axes and legends are **application-owned**, with no
+commitment to add them inside charts later. `cy.legend()` provides the
+resolved mapping and missing-value information. No SVG legend renderer in
+this round; application decorations are not silently included in export.
 
-### 80.4 — verification + close
+### 80.1 — records and addressing
 
-Goldens per kind with feature-off controls, plus one *magnified*
-chart golden (slice-boundary AA is a boundary effect — the
-close-up lesson applies to goldens too).  Parity: the existing
-pie/stripes scenes re-run untouched; the new kinds have **no v3
-counterpart** (v3's numbered props stop at pie/stripes-16), so
-goldens + the magnified scene stand in — the record says so
-explicitly.  `debug/styles.js` gains an EnrichmentMap radial-heat
-+ NES-bar sheet on the em-web fixture and the page gets opened
-(something has to).  Standing close: JSDoc/`@throws`/`@param`
-gates at 100%, `test:throws` at zero (the new heat/domain
-throws each get their deterministic spec), d.ts regenerated,
-`src/README.md` chart section rewritten, MIGRATING/CHANGELOG
-rows, `EXECUTIVE_SUMMARY.md` rewritten from this file.
+Use an address-only u32 reference (`offset + 1`, zero meaning absent); read
+the count from the header. The public cap is policy, not a count-field
+limit. Use **8 bytes per value**: one f32 value and one bit-preserved rgba8
+word, instead of the old three-float encoding. Write colour through a u32
+view; never allow JS float NaN canonicalization to corrupt colour bits.
+Document the header and offsets in the shared contract before writers and
+readers change. Store bar-domain metadata and missing-slot validity without
+silently converting a missing value into a zero observation.
 
-### Risks named at planning
+Pie/stripes store cumulative stops and binary-search them instead of a
+linear per-fragment walk. Preserve fraction clamping and existing readback
+precision; retain a reference implementation and compare both pixels and
+readbacks. Heat/bar index directly into equal regions. Keep deterministic
+boundary ownership and antialiasing at stops.
 
-- WGSL uniformity in the bar branch — derivatives before
-  non-uniform flow; the device-error guard catches it, but catch
-  it in review first.
-- The `writeChart` kind branch sits beside round 23.2's
-  chart-refresh trap; its two shipped fixes are the regression
-  surface — spec both paths per new kind.
-- Goldens are exact: the cap raise must not move
-  `charts-pie-stripes` (nothing in it exceeds 16 slices — assert
-  by re-running, not by assumption).
-- A 64-slice record is 9 + 192 floats; blob compaction pressure
-  is priced by the store sweep, not guessed.
-- The stranded-doc-block hazard (seventeen instances by round 36)
-  — run the JSDoc gate per commit; `contract.mts` comment edits
-  are its favorite terrain.
+Round 145's allocation/overflow protection remains: removing the 24-bit
+packing ceiling does not remove device limits. Derive a checked record
+reach from actual buffer/texture limits. For WebGL2, specify an integer
+blob texture and bit-cast float values on read; do not forward 137's old
+R32F assumption for these mixed records. Changing image references or the
+custom-polygon guard is separate work unless required by a shared helper.
 
-**Open:** the cap value (64 proposed; 32 if the pair scene says
-the walk costs; 255 is the bound); overflow warn-once vs throw;
-the `chart-scale` shape (one object vs three flat props); whether
-heat kinds throwing on a missing scale is right, or a default
-scheme + domain-from-extent is wanted (the fail-loudly reading
-says throw); and the declined line kind staying declined.
+### 80.2 — compiler, data writes and legend integration
 
-**Decided at the eleventh design sitting (2026-09-28):** `chart-scale`
-is **one object**; a heat kind with no `chart-scale` takes a **default
-scale** (a default scheme, the domain from the values' extent) rather
-than throwing; a list over the cap **warns once and truncates**; the cap
-itself is **not chosen here** — the maintainer widened the question to
-the general data limit of charts (a scatter plot may carry far more than
-64 points), which a design sitting on chart kinds and capacity settles
-first (PLAN.md item 73); point-series kinds (line, scatter) are
-**logged, not declined**, and the capacity design must not foreclose
-them.
+Touch `src/style/parse.mts`, `defaults.mts`, `engine-write.mts`, readers,
+refresh dependencies, `src/contract.mts`, store chart records and
+`src/render/shaders/chart.mts`/`chart-pipeline.mts`. Re-check paths after
+refactors; old August source line numbers are not authority.
 
-**Carried in from round 73 (2026-09-29), the WebGL2 constraints.**  The
-WebGL2 renderer (round 137) is full parity at alpha and is built after
-this round, so what this round draws must port without a redesign: (1)
-nothing drawn depends on a compute pass without a CPU path — what the
-renderer reads is CPU-canonical or CPU-derivable; (2) a new pipeline's
-cull predicate is a pure function of the pulled columns and the frame
-uniform, so it can move into the vertex stage, and no draw count exists
-only on the GPU; (3) no storage writes from a draw, no atomics in the
-draw path, no dual-source blending, subgroups or f16 in a drawn shader;
-(4) per-instance data stays within 16 vertex-stage bindings; (5) the
-feature lands with a golden that sets its properties, or the parity
-project cannot see it.  The reasons and the measurements are in round
-73's record.
+Use round 147's definition-owned extent resolver for chart lists; changed
+values that do not move the extent update only the changed records. Changed
+bounds rebuild the participating colour/geometry records once per batch.
+Selection, viewport, miniaturization and explicit hiding do not rescale the
+chart domain. Keep group provenance through parent overrides and bypasses.
+Integrate chart entries into `cy.legend()` and `legendchange`, including
+separate bar geometry and colour domains and exception counts.
+
+### 80.3 — pixels, storage and application fixtures
+
+- Desktop-sized 26-slice pie, 255-value pie, 256-value warning/truncation,
+  donut and stripes; keep existing <=16-value scenes unchanged.
+- Heat and signed bars with aligned dataset slots, holes, all-missing,
+  zero, negative-only and mixed-sign values. Explicit [-1, 0, 2] colour
+  anchors; partial domains and recovery from an invalid automatic interval.
+- Border/shape clipping, both directions, palette cycle, transparency and
+  magnified boundaries. Re-style and mutate chart data through both normal
+  and mapped-refresh paths; readbacks remain the authored values.
+- An EnrichmentMap fixture showing consistent colours across nodes, an
+  explicit node override, a live extreme change and an application legend.
+  Demonstrate no per-node labels are required.
+- Controls: restore cap 16, restore the linear walk for timing comparisons,
+  drop missing slots, use per-node bounds, shift binary-search boundaries,
+  and round-trip colour through a NaN float. Relevant tests must fail.
+
+Benchmark 25k charted nodes at 16/64/255 values, the 1k close-up case, record
+writes/compaction, first frame, changed-extreme updates and memory. Count
+actual records/values/drawn regions in each row. Compare against the same
+machine's pre-round build; the 29 September prototype is evidence, not a
+current performance guarantee. Include the zero-chart control.
+
+### 80.4 — portable contract and close
+
+Write a desktop/web chart-subset table: supported kinds, ordered dataset
+slots, signed values, explicit/partial scales and bounds, cap/truncation,
+missing values, palettes, geometry domains, and omitted chart labels/axes.
+Adapters own CX2/desktop translation and must report unsupported semantics
+rather than imply complete desktop fidelity. Do not add an import adapter
+to core. Feed shared CPU records/geometry into round 77's SVG work and
+round 137's port; neither gets its own independent colour-domain inference.
+
+Open the debug fixture. Run verify, Node, types, throws, soak, schema/module
+and Playwright gates with the controls. Update JSDoc, schemas, migration,
+feature inventory, scope doc, item 73 and the executive summary at landing.

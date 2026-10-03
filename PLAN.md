@@ -81,6 +81,12 @@ paragraph is here so the sum of them is not mistaken for a claim.
 `src/README.md` is the maintained scope / deviations doc; the files in
 `plan/rounds/` record each round's plan and outcome.
 
+**Current alpha planning decisions (2026-10-03):** the
+[alpha interview](PLAN.md) supersedes the older open proposals
+for chart capacity/scales, hull membership/geometry and proxy-based collapse.
+It routes the next batch to 146, 147, 80, 82 and 148. Implemented status is
+unchanged; deferred aggregate persistence/direction remain maintainer calls.
+
 ## Process (applies to all work under this plan)
 
 - **Isolated commits as you go.**  Every item lands as its own
@@ -2144,7 +2150,12 @@ directions".*
     **Call taken (2026-09-28, the eleventh sitting): leave them as they
     are.**  Closed.
 
-72. **The arrow-shape review** (raised by the maintainer 2026-09-28,
+72. **Decision settled 2026-10-03; implementation planned in round 146.**
+    Keep triangle-tee, remove triangle-cross without an alias; both tee bars
+    use max(0.1 × arrow size, edge width); hollow compound end heads are
+    supported; retain the other shapes and arrow alias. See the alpha
+    interview and round 146. The earlier preparation below is historical.
+    **The arrow-shape review** (raised by the maintainer 2026-09-28,
     the eleventh sitting, beside item 23's call).  v4 carries v3's
     twelve heads (`none`, `triangle` with its `arrow` alias, `vee`,
     `chevron`, `circle`, `square`, `diamond`, `tee`, and the compound
@@ -2167,7 +2178,12 @@ directions".*
     numbered questions with recommendations in
     `plan/rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md`.
 
-73. **Chart kinds and their data capacity** (raised by the maintainer
+73. **Decision settled 2026-10-03; implementation remains round 80.**
+    Cap all included kinds at 255; cumulative-stop binary search, address-only
+    references and 8-byte records. Line/scatter deferred beyond 4.0. Explicit
+    chart domains support auto endpoints through round 147; chart labels and
+    axes are app-owned. The earlier alternatives below are historical.
+    **Chart kinds and their data capacity** (raised by the maintainer
     2026-09-28, the eleventh sitting, at round 80's slice cap).  The
     cap is one case of a general limit: the chart record packs
     `offset | count << 24`, so every kind carries at most 255 values,

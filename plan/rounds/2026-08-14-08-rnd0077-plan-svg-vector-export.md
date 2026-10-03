@@ -1,5 +1,13 @@
 ## SVG vector export
 
+**Alpha interview update (2026-10-03):** consume round 146's canonical tee
+geometry and hollow compounds; round 80's new charts and resolved scales;
+round 82's shared convex/concave parent contours and label-sizing policy;
+and round 148's actual positions/effective sizes. Export miniatures as drawn,
+without applying their position transform again. Chart labels/axes/legends
+remain application-owned; no SVG legend API is committed here. The body
+below's pie/stripe-only and old arrow vocabulary must not bound acceptance.
+
 Issue #639 (2014) is the most-demanded export feature ever filed
 against this library, and both flagship consumers — Cytoscape Web
 and EnrichmentMap web — bolt on third-party `cytoscape-svg` +

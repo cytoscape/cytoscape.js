@@ -1,5 +1,11 @@
 ## Items 72 and 73 prepared — the head gallery and the chart capacity measurement
 
+**Decisions taken 2026-10-03:** the alpha interview and plans 146/80
+supersede the alternatives and recommendations below. This file remains the
+measurement record, not an unresolved sitting agenda. Triangle-cross is
+removed without an alias; charts use a 255-value cap, address-only references
+and 8-byte records. Nothing in this note establishes implementation.
+
 The eleventh sitting scheduled two short sittings: the arrow-shape review
 (item 72) before round 77's SVG export, and chart kinds and their data
 capacity (item 73) before round 80's charts.  Each was to be held "on a head

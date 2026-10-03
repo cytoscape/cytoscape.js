@@ -154,17 +154,6 @@ export const PLANNED_PATHS = {
   'src/render/annotation-pipeline.mts':
     'planned by round 81 (the annotations layer)',
   'src/annotation-cx.mts': 'planned by round 81 (the annotations layer)',
-  // round 82 — cluster hulls + collapse/aggregation proxies
-  'src/store/hull-index.mts':
-    'planned by round 82 (cluster hulls + collapse proxies)',
-  'src/render/hull-pipeline.mts':
-    'planned by round 82 (cluster hulls + collapse proxies)',
-  'src/store/collapse-index.mts':
-    'planned by round 82 (cluster hulls + collapse proxies)',
-  'benchmark/hulls.mjs':
-    'planned by round 82 (cluster hulls + collapse proxies)',
-  'benchmark/collapse.mjs':
-    'planned by round 82 (cluster hulls + collapse proxies)',
   // round 83 — GPU edge bundling
   'src/algorithms/edge-bundling.mts': 'planned by round 83 (GPU edge bundling)',
   'src/algorithms/algo-gpu-bundling.mts':

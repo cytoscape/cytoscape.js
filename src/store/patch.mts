@@ -32,9 +32,10 @@ The semantics, fixed at planning (see the round file):
 - in `'reconcile'` mode every live element the payload does not name is
   removed; in `'merge'` mode it is kept, and a definition-form payload
   may reference kept nodes as endpoints and parents;
-- session state — selection, the `selectable`/`locked`/`grabbable`/
-  `pannable` flags — is never read from the payload for a survivor, only
-  for an added element, which loads exactly as `cy.add()` would load it.
+- session flags — selection, the `selectable`/`locked`/`grabbable`/
+  `pannable` flags — are not read from the payload for a survivor;
+  miniature state is, because it describes the current geometry that
+  travels with the supplied positions.
 */
 
 import {
@@ -90,6 +91,9 @@ export interface PatchPayload {
    * apply to added elements only */
   nodeFlags: FlagOverride[];
   edgeFlags: FlagOverride[];
+  /** sparse state mask for definition-form patches; absent means every
+   * member represented by miniature columns is explicit */
+  miniatureSpecified?: Uint8Array;
 }
 
 /** One group's survivor writes as parallel arrays; a value of undefined
@@ -135,6 +139,14 @@ export interface PatchPlan {
   writes: Record<GroupName, DataWrites>;
   /** survivor position writes: slots and interleaved x, y */
   moves: { slots: number[]; xy: number[] };
+  /** explicit miniature-state adoption, in payload order */
+  miniatures: {
+    at: number;
+    slot: number;
+    collapsed: boolean;
+    appliedScale: number;
+    wasCollapsed: boolean;
+  }[];
 }
 
 const NO_ID = -2;
@@ -183,11 +195,21 @@ export const columnarPatchPayload = (
  */
 export const toPatchPayload = (part: PartitionedDefs): PatchPayload => {
   const { nodes, edges } = part;
+
+  if (
+    edges.some(
+      (def) => def.collapsed != null || def.appliedCollapseScale != null,
+    )
+  ) {
+    throw new Error('Miniature state is supported on nodes only');
+  }
+
   const members = nodes.length;
   const ids: (string | undefined)[] = new Array(members);
   const index = new Map<string, number>();
   let positions: Float32Array | undefined;
   let positioned: Uint8Array | null = null;
+  let miniatureSpecified: Uint8Array | undefined;
 
   for (let i = 0; i < members; i++) {
     const def = nodes[i];
@@ -282,6 +304,59 @@ export const toPatchPayload = (part: PartitionedDefs): PatchPayload => {
 
   const edgeFlags = applySelectionColumns(edgesOut, edges, true);
 
+  const hasMiniatureState = nodes.some(
+    (def) => def.collapsed != null || def.appliedCollapseScale != null,
+  );
+
+  if (hasMiniatureState) {
+    const collapsed = new Uint8Array(ids.length);
+    const appliedCollapseScale = new Float64Array(ids.length).fill(1);
+    miniatureSpecified = new Uint8Array(ids.length);
+
+    for (let i = 0; i < members; i++) {
+      const def = nodes[i];
+      const hasState =
+        def.collapsed != null || def.appliedCollapseScale != null;
+
+      if (!hasState) {
+        continue;
+      }
+
+      const on = def.collapsed ?? false;
+      const scale = def.appliedCollapseScale;
+
+      if (typeof on !== 'boolean') {
+        throw new Error(`Node ${i} collapsed state must be a boolean`);
+      }
+      if (scale != null && !on && scale !== 1) {
+        throw new Error(
+          `Node ${i} has an applied collapse scale but is not collapsed`,
+        );
+      }
+      if (
+        on &&
+        scale != null &&
+        (!Number.isFinite(scale) ||
+          scale <= 0 ||
+          scale > 1 ||
+          Math.fround(scale) === 0)
+      ) {
+        throw new Error(
+          `Invalid applied collapse scale '${String(scale)}' (expected a representable value with 0 < scale <= 1)`,
+        );
+      }
+
+      miniatureSpecified[i] = 1;
+      if (on) {
+        collapsed[i] = 1;
+        appliedCollapseScale[i] = scale == null ? 0 : scale;
+      }
+    }
+
+    nodesOut.collapsed = collapsed;
+    nodesOut.appliedCollapseScale = appliedCollapseScale;
+  }
+
   // the references ride past the members: the node count covers them,
   // every per-member column stops at `members`
   nodesOut.count = ids.length;
@@ -292,6 +367,7 @@ export const toPatchPayload = (part: PartitionedDefs): PatchPayload => {
     positioned,
     nodeFlags,
     edgeFlags,
+    miniatureSpecified,
   };
 };
 
@@ -581,6 +657,25 @@ export const planPatch = (
       `Columnar node parent column must hold ${members} entries; got ${nodesIn.parent.length}`,
     );
   }
+  if (nodesIn.collapsed != null && nodesIn.collapsed.length < members) {
+    throw new Error(
+      `Columnar node collapsed column must hold ${members} entries; got ${nodesIn.collapsed.length}`,
+    );
+  }
+  if (
+    nodesIn.appliedCollapseScale != null &&
+    nodesIn.appliedCollapseScale.length < members
+  ) {
+    throw new Error(
+      `Columnar node applied collapse scale column must hold ${members} entries; got ${nodesIn.appliedCollapseScale.length}`,
+    );
+  }
+  if (
+    payload.miniatureSpecified != null &&
+    payload.miniatureSpecified.length < members
+  ) {
+    throw new Error(`Patch miniature state mask must hold ${members} entries`);
+  }
 
   const nodeIds = idColumn(store, nodesIn.ids, nodeCount, 'node');
   const edgeIds = idColumn(store, edgesIn.ids, edgeCount, 'edge');
@@ -617,6 +712,7 @@ export const planPatch = (
       edges: { slots: [], keys: [], values: [] },
     },
     moves: { slots: [], xy: [] },
+    miniatures: [],
   };
 
   // 1. edge ids naming live nodes: those nodes are replaced, which the
@@ -814,7 +910,124 @@ export const planPatch = (
     }
   }
 
-  // 7. positions: present in the payload → written, absent → kept
+  // 7. explicit miniature state: patch adopts current positions and factors
+  // together; it never calls the public operation that rescales positions.
+  if (nodesIn.collapsed != null || nodesIn.appliedCollapseScale != null) {
+    const collapsed = nodesIn.collapsed;
+    const scales = nodesIn.appliedCollapseScale;
+
+    for (let i = 0; i < members; i++) {
+      if (payload.miniatureSpecified?.[i] === 0) {
+        continue;
+      }
+
+      const on = collapsed?.[i] ?? 0;
+      const scale = scales?.[i] ?? (on === 1 ? 0 : 1);
+
+      if (on !== 0 && on !== 1) {
+        throw new Error(`Columnar node collapsed value at ${i} must be 0 or 1`);
+      }
+      if (on === 1) {
+        if (
+          !Number.isFinite(scale) ||
+          scale < 0 ||
+          scale > 1 ||
+          (scale > 0 && Math.fround(scale) === 0)
+        ) {
+          throw new Error(
+            `Invalid applied collapse scale at node ${i} (expected 0 for configured scale, or 0 < scale <= 1)`,
+          );
+        }
+      } else if (scale !== 1) {
+        throw new Error(
+          `Expanded node ${i} must have applied collapse scale 1`,
+        );
+      }
+
+      const slot = plan.nodeSlots[i];
+      const appliedScale =
+        on === 0
+          ? 1
+          : scale === 0 && slot >= 0
+            ? store.collapseScaleOf(slot)
+            : scale;
+      const wasCollapsed = slot >= 0 && store.isCollapsed(slot);
+
+      if (
+        (slot < 0 && on === 1) ||
+        (slot >= 0 &&
+          (wasCollapsed !== (on === 1) ||
+            (on === 1 && store.appliedCollapseScaleOf(slot) !== appliedScale)))
+      ) {
+        plan.miniatures.push({
+          at: i,
+          slot,
+          collapsed: on === 1,
+          appliedScale,
+          wasCollapsed,
+        });
+      }
+    }
+
+    const collapsedChanges = plan.miniatures.filter((state) => state.collapsed);
+
+    if (collapsedChanges.length > 0) {
+      const removed = new Set(plan.removeNodes);
+      const parentChanges = new Map<number, number>();
+      const childrenBySlot = new Set<number>();
+      const childrenByAt = new Set<number>();
+
+      for (const change of plan.parents) {
+        const slot = plan.nodeSlots[change.at];
+        const parent = change.parent < 0 ? -1 : plan.nodeSlots[change.parent];
+
+        if (slot >= 0) {
+          parentChanges.set(slot, parent);
+        }
+      }
+
+      store.forEachAlive(GROUP_NODES, (child) => {
+        if (removed.has(child)) {
+          return;
+        }
+
+        const parent = parentChanges.has(child)
+          ? parentChanges.get(child)!
+          : store.parentOf(child);
+
+        if (parent >= 0) {
+          childrenBySlot.add(parent);
+        }
+      });
+
+      for (const change of plan.parents) {
+        if (plan.nodeSlots[change.at] < 0 && change.parent >= 0) {
+          const parent = plan.nodeSlots[change.parent];
+
+          if (parent >= 0) {
+            childrenBySlot.add(parent);
+          } else {
+            childrenByAt.add(change.parent);
+          }
+        }
+      }
+
+      for (const state of collapsedChanges) {
+        const hasChild =
+          state.slot >= 0
+            ? childrenBySlot.has(state.slot)
+            : childrenByAt.has(state.at);
+
+        if (!hasChild) {
+          throw new Error(
+            `Node '${nodeIds.id(state.at) ?? '?'}' can only be collapsed when it is a compound parent`,
+          );
+        }
+      }
+    }
+  }
+
+  // 8. positions: present in the payload → written, absent → kept
   const positions = nodesIn.positions;
 
   if (positions != null) {
@@ -839,7 +1052,7 @@ export const planPatch = (
     }
   }
 
-  // 8. data: replace the record, compared column against store
+  // 9. data: replace the record, compared column against store
   diffData(
     store,
     GROUP_NODES,
@@ -873,6 +1086,8 @@ export const takeEntries = (
 ): {
   ids?: (string | undefined)[] | PackedIds;
   positions?: Float32Array;
+  collapsed?: Uint8Array;
+  appliedCollapseScale?: Float64Array;
   selected?: Uint8Array;
   selectable?: Uint8Array;
   data?: Record<string, DataColumn>;
@@ -921,6 +1136,18 @@ export const takeEntries = (
     }
 
     out.positions = xy;
+  }
+
+  const nodes = group as ColumnarNodes;
+
+  if (nodes.collapsed != null) {
+    out.collapsed = Uint8Array.from(indices, (i) => nodes.collapsed![i]);
+  }
+  if (nodes.appliedCollapseScale != null) {
+    out.appliedCollapseScale = Float64Array.from(
+      indices,
+      (i) => nodes.appliedCollapseScale![i],
+    );
   }
 
   if (group.selected != null) {

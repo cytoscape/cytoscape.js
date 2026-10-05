@@ -31,8 +31,8 @@ positions, node parents (v3, round 14.8: u32 payload indices,
 0xffffffff = orphan), edge sources, edge targets, node ids (offsets +
 blob), edge ids, the u8 selection columns, the data() blocks, then the
 graph-level data section (v4, round 39.2), then the node references
-(round 103) — each multi-byte section aligned to its element width (f64
-columns to 8).  Absent optional columns (see the flag bits) take zero
+(round 103), then the miniature state columns (round 148, experimental) — each
+multi-byte section aligned to its element width (f64 columns to 8).  Absent optional columns (see the flag bits) take zero
 bytes.
 
 The node-reference section (round 103, flag 2048) is u32 count, then
@@ -87,6 +87,7 @@ const F_EDGE_DATA = 256;
 const F_NODE_PARENT = 512; // round 14.8 (v3 buffers only)
 const F_GRAPH_DATA = 1024; // round 39.2 (v4 buffers only)
 const F_NODE_REFS = 2048; // round 103 (experimental, item 43's rule)
+const F_NODE_MINIATURE = 4096; // round 148 (experimental)
 
 const KIND_NUMBER = 0;
 const KIND_DICT = 1;
@@ -253,8 +254,8 @@ export const serializeElements = (
     push(F_GRAPH_DATA, new Uint32Array([json.length]), json);
   }
 
-  // node references (round 103): written last, after everything a
-  // reader that predates them expects
+  // node references (round 103): written before the latest optional section
+  // so readers that predate either section can ignore trailing bytes
   const refs = isColumnarElements(elements) ? elements.refs : undefined;
   const count = refs == null ? 0 : refCount(elements as ColumnarElements);
 
@@ -262,6 +263,51 @@ export const serializeElements = (
     const packed = encodeIds(refs, count)!;
 
     push(F_NODE_REFS, Uint32Array.of(count), packed.offsets, packed.blob);
+  }
+
+  if (
+    nodeCount > 0 &&
+    (nodes?.collapsed != null || nodes?.appliedCollapseScale != null)
+  ) {
+    const collapsed = nodes.collapsed;
+    const applied = nodes.appliedCollapseScale;
+
+    if (collapsed != null && collapsed.length < nodeCount) {
+      throw new Error(
+        `Columnar node collapsed column must hold ${nodeCount} entries`,
+      );
+    }
+    if (applied != null && applied.length < nodeCount) {
+      throw new Error(
+        `Columnar node applied collapse scale column must hold ${nodeCount} entries`,
+      );
+    }
+
+    const flags = new Uint8Array(nodeCount);
+    const scales = new Float64Array(nodeCount).fill(1);
+
+    for (let i = 0; i < nodeCount; i++) {
+      const on = collapsed?.[i] ?? 0;
+      const scale = applied?.[i] ?? (on ? 0 : 1);
+
+      if (on !== 0 && on !== 1) {
+        throw new Error(`Columnar node collapsed value at ${i} must be 0 or 1`);
+      }
+      if (
+        on === 1
+          ? !Number.isFinite(scale) || scale < 0 || scale > 1
+          : scale !== 1
+      ) {
+        throw new Error(
+          `Invalid applied collapse scale at node ${i} (expected 0 for configured scale, or 0 < scale <= 1 when collapsed; expanded nodes use 1)`,
+        );
+      }
+
+      flags[i] = on;
+      scales[i] = scale;
+    }
+
+    push(F_NODE_MINIATURE, flags, scales);
   }
 
   let size = HEADER_BYTES;
@@ -540,6 +586,28 @@ export const deserializeElements = (
   if (flags & F_NODE_REFS) {
     // a reference costs at least its u32 offset
     out.refs = readPacked(bounded(readScalar(), 4, 'node references'));
+  }
+
+  if (flags & F_NODE_MINIATURE) {
+    const collapsed = readU8(nodeCount);
+    const appliedCollapseScale = read4(Float64Array, nodeCount);
+
+    for (let i = 0; i < nodeCount; i++) {
+      const on = collapsed[i];
+      const scale = appliedCollapseScale[i];
+
+      if (
+        on > 1 ||
+        (on === 1
+          ? !Number.isFinite(scale) || scale < 0 || scale > 1
+          : scale !== 1)
+      ) {
+        throw new Error(`Serialized node miniature state at ${i} is corrupt`);
+      }
+    }
+
+    nodes.collapsed = collapsed;
+    nodes.appliedCollapseScale = appliedCollapseScale;
   }
 
   if (edgeCount > 0) {

@@ -15,6 +15,16 @@
       "description": "Nodes only: the model position. A compound parent's position derives from its children.",
       "$ref": "#/$defs/position"
     },
+    "collapsed": {
+      "description": "Nodes only: whether this compound parent is a miniature. Exported state includes the current applied factor.",
+      "type": "boolean"
+    },
+    "appliedCollapseScale": {
+      "description": "Nodes only: the current applied miniature factor, preserved on export; when omitted for a collapsed definition, the configured collapse-scale is used.",
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
     "selected": { "type": "boolean" },
     "selectable": { "type": "boolean" },
     "grabbable": { "type": "boolean" },

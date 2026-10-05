@@ -740,7 +740,8 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    * (typed-array columns with edge endpoints as node *indices*), and the
    * binary wire buffer produced by `serializeElements`/`cy.serialize()`.
    * Nodes are added before edges, so an edge may reference a node added in
-   * the same call.
+   * the same call. Wire and columnar inputs may carry miniature state with
+   * current positions; adding them does not rescale those coordinates.
    *
    * Fires `add` per element.  Inside a batch the first style application
    * of the new elements defers to the outermost `endBatch()`, so
@@ -816,9 +817,10 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    * the payload is the next state of the *same* graph — the next query
    * result, a server's refresh — and the patch computes what to add,
    * remove and update, applies it as one batch, and returns what it did.
-   * Everything attached to a surviving element survives: selection,
-   * position (unless the payload moves it), bypasses, running
-   * animations, listeners, scratch.  The sheet, the viewport and
+   * A surviving element keeps selection, bypasses, running animations,
+   * listeners and scratch. Position follows the payload when carried;
+   * miniature state and its applied factor are adopted together with
+   * those current positions. The sheet, viewport and
    * graph-level `data()` are never touched — elements only.
    *
    * `json( obj )` restores a *serialized session* and is not in v4
@@ -835,9 +837,11 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    *   the payload carries one and kept when it does not — except that a
    *   locked node (or every node, under `autolock`) holds its position
    *   and a compound parent's derives from its children, as at load.
-   *   Its parent follows the payload (none means an orphan).  Its
-   *   selection and its `selectable`/`locked`/`grabbable`/`pannable`
-   *   flags are session state and are never read from the payload.
+   *   Its parent follows the payload (none means an orphan). Its
+   *   miniature state follows when carried; the payload's applied factor
+   *   is installed without rescaling its already-current positions. Its
+   *   selection and `selectable`/`locked`/`grabbable`/`pannable` flags are
+   *   session state and are never read from the payload.
    * - **Added** when the id is new, and when the payload element has no
    *   id — exactly as `cy.add()` would add it, flags included.
    * - **Removed and re-added** when an edge's source or target changed
@@ -848,7 +852,8 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    *   parents.  Removal cascades as `remove()` does.
    *
    * Events: `remove`, `add`, `moveout` + `move` (a reparented survivor),
-   * `data` and `position` fire once per element, inside the batch and
+   * `data`, `position`, and committed `collapse`/`expand` state changes
+   * fire once per element, inside the batch and
    * after every mutation has landed; then one core-level **`patch`**
    * event carries the diff as `event.diff` — for an app that only wants
    * the summary.  A patch whose payload equals the state fires no

@@ -204,6 +204,58 @@ export const buildColumnar = (
     delete nodesOut.positions;
   }
 
+  const hasMiniatureState = nodes.some(
+    (def) => def.collapsed != null || def.appliedCollapseScale != null,
+  );
+
+  for (const def of edges) {
+    if (def.collapsed != null || def.appliedCollapseScale != null) {
+      throw new Error('Miniature state is supported on nodes only');
+    }
+  }
+
+  if (hasMiniatureState) {
+    const collapsed = new Uint8Array(nodes.length);
+    const appliedCollapseScale = new Float64Array(nodes.length).fill(1);
+
+    for (let i = 0; i < nodes.length; i++) {
+      const def = nodes[i];
+      const on = def.collapsed ?? false;
+      const scale = def.appliedCollapseScale;
+
+      if (typeof on !== 'boolean') {
+        throw new Error(`Node ${i} collapsed state must be a boolean`);
+      }
+      if (scale != null && !on && scale !== 1) {
+        throw new Error(
+          `Node ${i} has an applied collapse scale but is not collapsed`,
+        );
+      }
+      if (
+        on &&
+        scale != null &&
+        (!Number.isFinite(scale) ||
+          scale <= 0 ||
+          scale > 1 ||
+          Math.fround(scale) === 0)
+      ) {
+        throw new Error(
+          `Invalid applied collapse scale '${String(scale)}' (expected a representable value with 0 < scale <= 1)`,
+        );
+      }
+
+      if (on) {
+        collapsed[i] = 1;
+        // 0 is the wire/columnar sentinel: use this node's configured
+        // collapse-scale when the definition does not persist an applied value.
+        appliedCollapseScale[i] = scale == null ? 0 : scale;
+      }
+    }
+
+    nodesOut.collapsed = collapsed;
+    nodesOut.appliedCollapseScale = appliedCollapseScale;
+  }
+
   const nodeFlags = applySelectionColumns(nodesOut, nodes, false);
 
   // round 103: the names the payload does not hold, in first-seen order,

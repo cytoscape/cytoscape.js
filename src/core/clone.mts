@@ -276,6 +276,7 @@ function follow_(source: Core, follower: Core, throttle: number): void {
   let structure = store.structureEpoch;
   let hierarchy = store.hierarchyEpoch;
   let moves = store.positionEpoch;
+  let miniatures = store.miniatureEpoch;
 
   // the clone was built from this very state: drop the full sync
   consumer.take();
@@ -323,6 +324,7 @@ function follow_(source: Core, follower: Core, throttle: number): void {
       store.structureEpoch !== structure ||
       store.hierarchyEpoch !== hierarchy ||
       store.positionEpoch !== moves ||
+      store.miniatureEpoch !== miniatures ||
       delta.spans.some((s) => s.column === COL.EDGE_ENDPOINTS);
 
     if (!relevant) {
@@ -332,6 +334,7 @@ function follow_(source: Core, follower: Core, throttle: number): void {
     structure = store.structureEpoch;
     hierarchy = store.hierarchyEpoch;
     moves = store.positionEpoch;
+    miniatures = store.miniatureEpoch;
 
     const t0 = now();
 

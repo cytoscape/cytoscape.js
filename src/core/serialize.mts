@@ -15,9 +15,10 @@ import type { Core } from '../core.mjs';
 /**
  * Export the live graph as the binary wire format (the buffer
  * `options.elements`/`add()` accept directly): the columnar counterpart
- * of `json()`.  Carries ids, positions, selection state, the data()
- * sidecar and — since round 39.2 — graph-level `data()`; style,
- * viewport and scratch are not part of the wire.
+ * of `json()`. Carries ids, current positions, selection, the data()
+ * sidecar, graph-level `data()` and (round 148) each node's collapsed
+ * state and applied factor. Style, viewport and scratch are not part of
+ * the wire.
  *
  * Note the asymmetry in *loading* that graph data back: `options.
  * elements` applies it, `cy.add( buffer )` ignores it.  Adding elements
@@ -45,6 +46,8 @@ export function serialize(core: Core): ArrayBuffer {
   const positions = new Float32Array(nodeSlots.length * 2);
   const nodeSelected = new Uint8Array(nodeSlots.length);
   const nodeSelectable = new Uint8Array(nodeSlots.length);
+  const nodeCollapsed = new Uint8Array(nodeSlots.length);
+  const nodeAppliedCollapseScale = new Float64Array(nodeSlots.length);
   const indexOfSlot = new Map<number, number>();
 
   for (let i = 0; i < nodeSlots.length; i++) {
@@ -56,6 +59,8 @@ export function serialize(core: Core): ArrayBuffer {
     positions[i * 2 + 1] = pos[slot * 2 + 1];
     nodeSelected[i] = (nodeFlags[slot] & FLAG_SELECTED) !== 0 ? 1 : 0;
     nodeSelectable[i] = (nodeFlags[slot] & FLAG_SELECTABLE) !== 0 ? 1 : 0;
+    nodeCollapsed[i] = store.isCollapsed(slot) ? 1 : 0;
+    nodeAppliedCollapseScale[i] = store.appliedCollapseScaleOf(slot);
   }
 
   // hierarchy (round 14.8): parent slots -> payload indices (a second
@@ -98,6 +103,8 @@ export function serialize(core: Core): ArrayBuffer {
       positions,
       selected: nodeSelected,
       selectable: nodeSelectable,
+      collapsed: nodeCollapsed,
+      appliedCollapseScale: nodeAppliedCollapseScale,
       ...(nodeParents != null ? { parent: nodeParents } : {}),
       data: store.data.exportColumns(GROUP_NODES, nodeSlots),
     },
@@ -121,8 +128,9 @@ export function serialize(core: Core): ArrayBuffer {
 }
 
 /**
- * Export the graph as a plain object — elements, stylesheet, viewport,
- * gating flags and graph-level data.
+ * Export the graph as a plain object — elements (including current
+ * miniature state and applied factors), stylesheet, viewport, gating
+ * flags and graph-level data.
  *
  * Export-only: the v3 import/restore form (`json( obj )`) is not
  * supported, because rebuilding from a snapshot needs the stored

@@ -2,6 +2,7 @@
 // inputs, the flag overrides and the bulk-add events.
 
 import { Collection } from '../collection.mjs';
+import { refreshCollapsedGeometry } from '../collection/hierarchy.mjs';
 import {
   buildColumnar,
   isColumnarElements,
@@ -226,6 +227,8 @@ export function _addColumnar(
   nodeSlots: Uint32Array;
   edgeSlots: Uint32Array;
 } {
+  _validateMiniatureColumns(elements.nodes);
+
   // round 138: refuse growth the mounted device cannot hold, before
   // anything is added
   _assertGpuFit(
@@ -269,10 +272,102 @@ export function _addColumnar(
     _applyFlagOverrides(core, GROUP_EDGES, edgeSlots, edgeFlags, true);
   }
 
+  const nodes = elements.nodes;
+  const unresolvedScaleSlots: number[] = [];
+
+  if (nodes?.collapsed != null) {
+    for (let i = 0; i < nodes.count; i++) {
+      if (nodes.collapsed[i] !== 1) {
+        continue;
+      }
+
+      const scale = nodes.appliedCollapseScale?.[i] ?? 0;
+      const slot = nodeSlots[i];
+
+      if (scale === 0) {
+        unresolvedScaleSlots.push(slot);
+      } else {
+        core._store.setCollapsed(slot, true, scale);
+      }
+    }
+  }
+
   _applyStyle(core, GROUP_NODES, nodeSlots);
   _applyStyle(core, GROUP_EDGES, edgeSlots);
 
+  if (unresolvedScaleSlots.length > 0) {
+    // Resolve a definition-form `collapsed: true` against the imported
+    // stylesheet's configured target, then refresh geometry without
+    // treating already-current positions as expanded coordinates.
+    for (const slot of unresolvedScaleSlots) {
+      core._store.setCollapsed(slot, true);
+    }
+
+    refreshCollapsedGeometry(core.nodes(), unresolvedScaleSlots);
+  }
+
   return { nodeSlots, edgeSlots };
+}
+
+function _validateMiniatureColumns(nodes: ColumnarElements['nodes']): void {
+  if (
+    nodes == null ||
+    (nodes.collapsed == null && nodes.appliedCollapseScale == null)
+  ) {
+    return;
+  }
+
+  const { count, collapsed, appliedCollapseScale, parent } = nodes;
+
+  if (collapsed != null && collapsed.length < count) {
+    throw new Error(
+      `Columnar node collapsed column must hold ${count} entries`,
+    );
+  }
+  if (appliedCollapseScale != null && appliedCollapseScale.length < count) {
+    throw new Error(
+      `Columnar node applied collapse scale column must hold ${count} entries`,
+    );
+  }
+
+  const hasChild = new Uint8Array(count);
+
+  if (parent != null) {
+    for (let child = 0; child < count; child++) {
+      if (parent[child] < count && parent[child] !== child) {
+        hasChild[parent[child]] = 1;
+      }
+    }
+  }
+
+  for (let i = 0; i < count; i++) {
+    const on = collapsed?.[i] ?? 0;
+    const scale = appliedCollapseScale?.[i] ?? (on === 1 ? 0 : 1);
+
+    if (on !== 0 && on !== 1) {
+      throw new Error(`Columnar node collapsed value at ${i} must be 0 or 1`);
+    }
+    if (on === 1) {
+      if (
+        !Number.isFinite(scale) ||
+        scale < 0 ||
+        scale > 1 ||
+        (scale > 0 && Math.fround(scale) === 0)
+      ) {
+        throw new Error(
+          `Invalid applied collapse scale at node ${i} (expected 0 for configured scale, or 0 < scale <= 1)`,
+        );
+      }
+
+      if (hasChild[i] === 0) {
+        throw new Error(
+          `Serialized collapsed node ${i} is not a compound parent`,
+        );
+      }
+    } else if (scale !== 1) {
+      throw new Error(`Expanded node ${i} must have applied collapse scale 1`);
+    }
+  }
 }
 
 /**

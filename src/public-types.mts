@@ -60,6 +60,10 @@ export interface ElementDefinition<Data = Untyped> {
   data?: DefinitionData<Data>;
   /** nodes only */
   position?: Position;
+  /** nodes only: persisted miniature-compound state */
+  collapsed?: boolean;
+  /** nodes only: current applied factor when collapsed; omitted uses the configured collapse-scale */
+  appliedCollapseScale?: number;
   selected?: boolean;
   selectable?: boolean;
   grabbable?: boolean;
@@ -118,6 +122,16 @@ export interface ColumnarNodes {
   ids?: (string | undefined)[] | PackedIds;
   /** interleaved x,y pairs, length 2 × count; omitted = all (0, 0) */
   positions?: Float32Array;
+  /**
+   * 1 = collapsed parent; omitted = no explicit state. Loads and patches
+   * adopt this alongside `positions`, without rescaling those coordinates.
+   */
+  collapsed?: Uint8Array;
+  /**
+   * Current applied factor per node. Expanded rows use 1; 0 means resolve
+   * the configured `collapse-scale` for a definition-form state.
+   */
+  appliedCollapseScale?: Float64Array;
   /** 1 = selected; omitted = all unselected */
   selected?: Uint8Array;
   /** 0 = unselectable; omitted = all selectable */
@@ -153,7 +167,9 @@ export interface ColumnarEdges {
 /**
  * Columnar bulk-load form of `elements`: typed-array columns ingest
  * directly into the store with no per-element objects, and edges resolve
- * endpoints by index with no id lookups.  A payload is self-contained —
+ * endpoints by index with no id lookups. Optional miniature-state columns
+ * preserve a node's collapsed flag and applied factor with its current
+ * positions; ingest does not rescale those coordinates. A payload is self-contained —
  * every edge endpoint indexes a node in the same payload — unless it
  * carries `refs`, the ids of nodes already in the graph that it indexes
  * past its own (round 103: a chunk of a progressive `cy.load()`).

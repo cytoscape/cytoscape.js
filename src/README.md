@@ -52,9 +52,12 @@ scale endpoints, and application-owned legend JSON. Round 80 has completed
   child outlines, plus label-inclusive sizing, are implemented; final
   measurement and closeout remain.
 - 148: manual miniature compounds, actual positions plus effective-size
-  multipliers, optional animation and collapse state synchronized by follow.
-  Children/edges remain real and visible; locked positions stay put while
-  sizes shrink. Style readback remains unscaled and geometry readback scaled.
+  multipliers, and collapse state synchronized by follow. JSON and the
+  experimental wire snapshot carry current positions plus each parent's
+  collapsed state and applied factor; load, patch and clone adopt them
+  without rescaling. Children/edges remain real and visible; locked positions
+  stay put while sizes shrink. Style readback stays authored; geometry reads
+  use effective sizes. Scoped layouts and animation remain in progress.
 
 The earlier proxy/aggregate collapse proposal is superseded. Aggregate edges
 are deferred display objects with their own open persistence/direction calls.
@@ -4249,8 +4252,12 @@ crossing-edge widths remain at their authored scale. In a scoped layout, a
 collapsed parent with no scoped descendants moves as one translated unit;
 when descendants are in scope, the usual leaf layout rule applies. Edges
 outside the chosen scope do not connect these units or create aggregate
-connections. Animation and persistence consumers remain in progress for
-round 148.
+connections. JSON and the
+experimental wire format carry current positions plus each parent's
+collapsed state and applied factor. Loads, patches, initial clones and
+follow syncs adopt those together without moving already-rescaled positions;
+a follower keeps its own stylesheet and view state. Animation remains in
+progress for round 148.
 
 Round 82 adds `convex-hull`, `round-convex-hull` and `concave-hull` as
 parent `shape` values. Each contour follows direct children’s actual outer

@@ -114,6 +114,8 @@ export function json(self: Collection): Record<string, unknown> | undefined {
       x: 0,
       y: 0,
     };
+    json.collapsed = self._store.isCollapsed(ref.slot);
+    json.appliedCollapseScale = self._store.appliedCollapseScaleOf(ref.slot);
   }
 
   return json;

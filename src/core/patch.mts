@@ -3,6 +3,7 @@
 // events, once each, and one summary `patch` event carrying the diff.
 
 import { Collection } from '../collection.mjs';
+import { refreshCollapsedGeometry } from '../collection/hierarchy.mjs';
 import { _removeClosure } from '../collection/manipulation.mjs';
 import { isColumnarElements, refCount } from '../columnar.mjs';
 import { partitionDefs } from '../element-defs.mjs';
@@ -60,8 +61,8 @@ export interface PatchDiff<
    * descendants of a removed node); removed elements keep their `id()`
    * and `group()` */
   removed: Collection<NodeData, EdgeData>;
-  /** the surviving elements it changed — data, position or parent —
-   * nodes before edges, in payload order */
+  /** the surviving elements it changed — data, position, parent or
+   * miniature state — nodes before edges, in payload order */
   updated: Collection<NodeData, EdgeData>;
 }
 
@@ -353,14 +354,59 @@ export function patch(
       );
     }
 
+    const addedMiniatureScalesPending: number[] = [];
+
+    for (const state of plan.miniatures) {
+      if (state.slot >= 0 || !state.collapsed) {
+        continue;
+      }
+
+      const slot = plan.nodeSlots[state.at];
+
+      if (state.appliedScale > 0) {
+        store.setCollapsed(slot, true, state.appliedScale);
+      } else {
+        addedMiniatureScalesPending.push(slot);
+      }
+    }
+
     _applyStyle(core, GROUP_NODES, added.nodeSlots);
     _applyStyle(core, GROUP_EDGES, added.edgeSlots);
+
+    for (const slot of addedMiniatureScalesPending) {
+      store.setCollapsed(slot, true);
+    }
 
     // 4. survivor writes
     const dataNodes = writeData(core, GROUP_NODES, plan);
     const dataEdges = writeData(core, GROUP_EDGES, plan);
     const moved = writePositions(core, plan, follow);
     const reparented = survivorParents.map((p) => plan.nodeSlots[p.at]);
+    const miniatureNodes: number[] = [];
+    const miniatureEvents: { slot: number; collapsed: boolean }[] = [];
+    const refreshParents = [...addedMiniatureScalesPending];
+
+    for (const state of plan.miniatures) {
+      if (state.slot < 0) {
+        continue;
+      }
+
+      store.setCollapsed(
+        state.slot,
+        state.collapsed,
+        state.collapsed ? state.appliedScale : undefined,
+      );
+      miniatureNodes.push(state.slot);
+      refreshParents.push(state.slot);
+
+      if (state.wasCollapsed !== state.collapsed) {
+        miniatureEvents.push({ slot: state.slot, collapsed: state.collapsed });
+      }
+    }
+
+    if (refreshParents.length > 0) {
+      refreshCollapsedGeometry(core.nodes(), refreshParents);
+    }
 
     // the diff's collections are built while the slots are still the
     // plan's: the outermost endBatch() may compact, and a collection
@@ -376,7 +422,7 @@ export function patch(
       updated: _updatedCollection(
         core,
         plan,
-        [dataNodes, moved, reparented],
+        [dataNodes, moved, reparented, miniatureNodes],
         dataEdges,
       ),
     };
@@ -417,6 +463,13 @@ export function patch(
       for (const slot of moved) {
         core._emitOnEle('position', core._ele(GROUP_NODES, slot));
       }
+    }
+
+    for (const state of miniatureEvents) {
+      core._emitOnEle(
+        state.collapsed ? 'collapse' : 'expand',
+        core._ele(GROUP_NODES, state.slot),
+      );
     }
 
     done = true;

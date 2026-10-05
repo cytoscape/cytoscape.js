@@ -313,6 +313,10 @@ export class GraphStore implements ModelView {
    * it.  Treat as read-only outside the store.
    */
   hierarchyEpoch = 0;
+  /** Advances for collapsed-state and applied-factor changes; selection and
+   * other node-flag writes do not move it. Follow uses this to sync a
+   * scale-one collapse without treating view-state changes as graph edits. */
+  miniatureEpoch = 0;
   /**
    * Monotonic counter of position writes (round 106): bumped by every
    * explicit write to the position column — `setPosition(s)` and the
@@ -1246,7 +1250,23 @@ export class GraphStore implements ModelView {
 
   /** Set the parent's collapsed state and its applied scale. */
   setCollapsed(slot: number, collapsed: boolean, scale?: number): void {
+    const wasCollapsed = this.hierarchy.isCollapsed(slot);
+    const wasScale = this.hierarchy.appliedCollapseScaleOf(slot);
+
     this.hierarchy.setCollapsed(slot, collapsed, scale);
+
+    if (
+      wasCollapsed !== this.hierarchy.isCollapsed(slot) ||
+      wasScale !== this.hierarchy.appliedCollapseScaleOf(slot)
+    ) {
+      this.miniatureEpoch++;
+
+      if (wasCollapsed === collapsed) {
+        // A same-state factor retarget does not toggle NODE_FLAGS. Mark its
+        // span so dirty-stream followers still receive the epoch change.
+        this.dirty.mark(COL.NODE_FLAGS, slot);
+      }
+    }
   }
 
   /**

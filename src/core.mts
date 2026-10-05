@@ -1,6 +1,7 @@
 import { GraphStore } from './store/graph-store.mjs';
 import type { DefaultEdgeData, Untyped } from './data-typing.mjs';
 import { Collection } from './collection.mjs';
+import { refreshReparentedGeometry } from './collection/hierarchy.mjs';
 import { hasListeners, makeCoreEmitter } from './events.mjs';
 import type { ElePredicate, Qualifier } from './events.mjs';
 import { Event } from './event.mjs';
@@ -329,19 +330,15 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
       }
     };
 
-    // a reparented node's structural case conditions ({ child: ... } /
-    // { parent: ... }) re-evaluate via the pseudo-key refresh (14.7),
-    // and any live GPU tween leaves the device first — the moved slots
-    // now sit under CPU-side derivations (auto-bounds, folds; 14.11).
+    // a reparented subtree re-evaluates inherited size factors and
+    // structural cases, including its incident edges (14.7); any live GPU
+    // tween leaves the device first because these slots now sit under
+    // CPU-side derivations (auto-bounds, folds; 14.11).
     // Round 144: demoted, not settled, so a layout tween runs on to its
     // targets on the CPU rather than stopping where the reparent found it
     this._store.onReparented = (slot) => {
       this._animations.demoteGpuAll();
-      this._styleEngine.refreshMapped(
-        GROUP_NODES,
-        [slot],
-        ['::parent', '::child'],
-      );
+      refreshReparentedGeometry(this.collection(), [slot]);
     };
     // A styled state bit flipped (round 57.1): re-evaluate the mappers
     // that read it, on the slots that changed.  The store notifies only

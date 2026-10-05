@@ -394,7 +394,30 @@ export function refreshCollapsedGeometry(
     }
   }
 
-  const nodeSlots = [...descendants];
+  refreshGeometryForNodes(self, [...descendants]);
+}
+
+/** Re-apply inherited geometry after a subtree changes compound parents. */
+export function refreshReparentedGeometry(
+  self: Collection,
+  rootSlots: readonly number[],
+): void {
+  const store = self._store;
+  const nodes = new Set<number>();
+
+  for (const root of rootSlots) {
+    nodes.add(root);
+
+    for (const child of descendantSlots(store, root)) {
+      nodes.add(child);
+    }
+  }
+
+  refreshGeometryForNodes(self, [...nodes]);
+}
+
+function refreshGeometryForNodes(self: Collection, nodeSlots: number[]): void {
+  const store = self._store;
 
   if (nodeSlots.length > 0) {
     self._cy._styleEngine.applyBulk(GROUP_NODES, nodeSlots);
@@ -402,8 +425,8 @@ export function refreshCollapsedGeometry(
 
   const edgeSlots = new Set<number>();
 
-  for (const child of nodeSlots) {
-    for (const edge of store.adj.connectedEdges(child)) {
+  for (const slot of nodeSlots) {
+    for (const edge of store.adj.connectedEdges(slot)) {
       edgeSlots.add(edge);
     }
   }

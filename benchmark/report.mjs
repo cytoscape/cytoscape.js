@@ -94,6 +94,7 @@ const QUICK_JOBS = [
   { file: 'algorithms.mjs', n: 500 }, // adds the superlinear ops the 2k run gates off
   { file: 'mappers.mjs', n: 2000 },
   { file: 'scale-domains.mjs', n: 2000 },
+  { file: 'miniature-compounds.mjs', n: 2000 },
 ];
 
 // Full extras: the 20k/200k matrix.  At 200k, mutators/scenarios must run

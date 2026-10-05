@@ -125,6 +125,7 @@ export function scanSuiteFiles(dir = DIR) {
     'labels.mjs',
     'transitions.mjs',
     'geometry-tween.mjs',
+    'miniature-compounds.mjs',
   ];
 
   for (const file of files) {

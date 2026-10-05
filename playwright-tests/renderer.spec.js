@@ -675,4 +675,159 @@ test.describe('Renderer', () => {
 
   }); // with layout
 
+  test.describe('spatial queries', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.elements().remove();
+
+        cy.style().fromJson([
+          {
+            selector: 'node',
+            style: { 'width': 50, 'height': 50 }
+          }
+        ]).update();
+
+        cy.add([
+          { data: { id: 'a' }, position: { x: 100, y: 100 } },
+          { data: { id: 'b' }, position: { x: 300, y: 100 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } }
+        ]);
+      });
+    });
+
+    test('hit() finds a rotated label shifted by text-margin, not the unmargined position', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.elements().remove();
+
+        cy.style().fromJson([
+          {
+            selector: 'node',
+            style: {
+              'width': 10,
+              'height': 10,
+              'label': 'data(id)',
+              'text-halign': 'center',
+              'text-valign': 'center',
+              'text-margin-x': 30,
+              'text-rotation': '180deg',
+              'text-events': 'yes'
+            }
+          }
+        ]).update();
+
+        cy.add({ data: { id: 'e' }, position: { x: 100, y: 100 } });
+
+        // the label sits 30px right of the node at 0deg; at 180deg the
+        // margin shift stays flat (not rotated), so it should still be
+        // found 30px to the right of the node, not back at the node's
+        // own (unmargined) position
+        return {
+          atMargin: cy.$('#e').hit({ x: 130, y: 100 }, { includeBody: false }).map(ele => ele.id()),
+          atUnmarginedPivot: cy.$('#e').hit({ x: 100, y: 100 }, { includeBody: false }).map(ele => ele.id())
+        };
+      });
+
+      expect(result.atMargin).toEqual(['e']);
+      expect(result.atUnmarginedPivot).toEqual([]);
+    }); // hit() finds a rotated label shifted by text-margin, not the unmargined position
+
+    test('hit() finds the node under a point and misses a point outside it', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const cy = window.cy;
+
+        return {
+          onNode: cy.$('#a').hit({ x: 100, y: 100 }).map(ele => ele.id()),
+          offNode: cy.$('#a').hit({ x: 1000, y: 1000 }).map(ele => ele.id())
+        };
+      });
+
+      expect(result.onNode).toEqual(['a']);
+      expect(result.offNode).toEqual([]);
+    }); // hit() finds the node under a point and misses a point outside it
+
+    test('withinBox() returns nodes overlapping the box and excludes ones outside it', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const cy = window.cy;
+
+        return {
+          overlapping: cy.nodes().withinBox({ x1: 50, y1: 50, x2: 150, y2: 150 }).map(ele => ele.id()),
+          empty: cy.nodes().withinBox({ x1: 1000, y1: 1000, x2: 1100, y2: 1100 }).map(ele => ele.id())
+        };
+      });
+
+      expect(result.overlapping).toEqual(['a']);
+      expect(result.empty).toEqual([]);
+    }); // withinBox() returns nodes overlapping the box and excludes ones outside it
+
+    test('withinBox() normalizes a reverse-dragged box', async ({ page }) => {
+      const ids = await page.evaluate(() => {
+        const cy = window.cy;
+
+        // corners given bottom-right to top-left, as a reverse drag would produce
+        return cy.nodes().withinBox({ x1: 150, y1: 150, x2: 50, y2: 50 }).map(ele => ele.id());
+      });
+
+      expect(ids).toEqual(['a']);
+    }); // withinBox() normalizes a reverse-dragged box
+
+    test('polygonIntersection() matches a node whose body intersects the polygon', async ({ page }) => {
+      const result = await page.evaluate(() => {
+        const cy = window.cy;
+        const nearPolygon = [
+          { x: 50, y: 50 },
+          { x: 150, y: 50 },
+          { x: 150, y: 150 },
+          { x: 50, y: 150 }
+        ];
+        const farPolygon = [
+          { x: 1000, y: 1000 },
+          { x: 1100, y: 1000 },
+          { x: 1100, y: 1100 },
+          { x: 1000, y: 1100 }
+        ];
+
+        return {
+          overlapping: cy.nodes().polygonIntersection(nearPolygon).map(ele => ele.id()),
+          empty: cy.nodes().polygonIntersection(farPolygon).map(ele => ele.id())
+        };
+      });
+
+      expect(result.overlapping).toEqual(['a']);
+      expect(result.empty).toEqual([]);
+    }); // polygonIntersection() matches a node whose body intersects the polygon
+
+    test('polygonIntersection() matches a diagonal edge\'s empty bounding-box corner', async ({ page }) => {
+      const ids = await page.evaluate(() => {
+        const cy = window.cy;
+
+        cy.elements().remove();
+
+        cy.add([
+          { data: { id: 'c' }, position: { x: 100, y: 100 } },
+          { data: { id: 'd' }, position: { x: 300, y: 300 } },
+          { data: { id: 'cd', source: 'c', target: 'd' } }
+        ]);
+
+        // near the top-right corner of the edge's axis-aligned bounding box,
+        // far from the diagonal line itself
+        const cornerPolygon = [
+          { x: 260, y: 120 },
+          { x: 300, y: 120 },
+          { x: 300, y: 160 },
+          { x: 260, y: 160 }
+        ];
+
+        return cy.edges().polygonIntersection(cornerPolygon).map(ele => ele.id());
+      });
+
+      // documented limitation: the body test uses the axis-aligned bounding
+      // box, so a polygon in its empty corner still counts as a match
+      expect(ids).toEqual(['cd']);
+    }); // polygonIntersection() matches a diagonal edge's empty bounding-box corner
+  }); // spatial queries
+
 }); // renderer

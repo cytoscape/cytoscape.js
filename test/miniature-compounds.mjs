@@ -762,6 +762,40 @@ describe('gpu/compounds: miniature compounds (round 148)', function () {
     expect(b.position().x).to.be.closeTo(20, 1e-5);
   });
 
+  it('rejects collapsed targets on viewport animations', function () {
+    const cy = makeTween();
+
+    expect(() => cy.animate({ collapsed: true })).to.throw(
+      /available on element animations only/,
+    );
+  });
+
+  it('rejects a collapsed tween whose stored starting factor overflows its ratio', async function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+    const slot = parent._refs[0].slot;
+
+    // Simulate an invalid persisted factor that the public collapse path
+    // rejects before it can be committed. The expansion tween still has to
+    // fail safely if handed that internal state.
+    cy._store.setCollapsed(slot, true, Number.MIN_VALUE);
+
+    const animation = parent.animation({
+      collapsed: false,
+      duration: 100,
+      easing: 'linear',
+    });
+    const done = animation.play();
+
+    cy._animations.tick(0);
+    expect(() => cy._animations.tick(100)).to.throw(
+      /collapse scale change is not representable/,
+    );
+
+    animation.stop();
+    await done;
+  });
+
   it('keeps disjoint tweens running and lets an overlapping target take over', async function () {
     const cy = cytoscape({
       elements: {

@@ -77,6 +77,8 @@ export const BROWSER_ONLY = [
 export const UNREACHABLE = {
   'src/wire.mts:103':
     'big-endian platform guard — every supported platform is little-endian',
+  'src/store/patch.mts:677':
+    'PatchPayload.miniatureSpecified is created only by toPatchPayload from the payload ids, with length at least memberNodes; columnar and wire converters omit it, so public patch input cannot make this internal mask shorter than the node-member count',
   'src/store/graph-store/layers.mts:219':
     'SHAPE_MASK field invariant — fires only if a shape id is added without widening the field',
 

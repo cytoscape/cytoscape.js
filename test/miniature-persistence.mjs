@@ -188,6 +188,71 @@ describe('gpu/compounds: miniature persistence (round 148)', function () {
     follower.destroy();
   });
 
+  it('asserts public columnar-load miniature validation messages', function () {
+    const cy = cytoscape();
+    const emptyEdges = {
+      count: 0,
+      ids: [],
+      sources: new Uint32Array(0),
+      targets: new Uint32Array(0),
+    };
+    const load = (nodes) =>
+      cy.add({
+        columnar: true,
+        nodes: { count: 1, ids: ['n'], ...nodes },
+        edges: emptyEdges,
+      });
+
+    expect(() => load({ collapsed: new Uint8Array(0) })).to.throw(
+      /Columnar node collapsed column must hold 1 entries/,
+    );
+    expect(() => load({ appliedCollapseScale: new Float64Array(0) })).to.throw(
+      /Columnar node applied collapse scale column must hold 1 entries/,
+    );
+    expect(() => load({ collapsed: new Uint8Array([2]) })).to.throw(
+      /Columnar node collapsed value at 0 must be 0 or 1/,
+    );
+    expect(() =>
+      load({
+        collapsed: new Uint8Array([1]),
+        appliedCollapseScale: new Float64Array([2]),
+      }),
+    ).to.throw(/Invalid applied collapse scale at node 0/);
+    expect(() =>
+      load({
+        collapsed: new Uint8Array([0]),
+        appliedCollapseScale: new Float64Array([0.5]),
+      }),
+    ).to.throw(/Expanded node 0 must have applied collapse scale 1/);
+
+    cy.destroy();
+  });
+
+  it('asserts public patch miniature column length messages', function () {
+    const cy = cytoscape();
+    const emptyEdges = {
+      count: 0,
+      ids: [],
+      sources: new Uint32Array(0),
+      targets: new Uint32Array(0),
+    };
+    const patch = (nodes) =>
+      cy.patch({
+        columnar: true,
+        nodes: { count: 1, ids: ['n'], ...nodes },
+        edges: emptyEdges,
+      });
+
+    expect(() => patch({ collapsed: new Uint8Array(0) })).to.throw(
+      /Columnar node collapsed column must hold 1 entries; got 0/,
+    );
+    expect(() => patch({ appliedCollapseScale: new Float64Array(0) })).to.throw(
+      /Columnar node applied collapse scale column must hold 1 entries; got 0/,
+    );
+
+    cy.destroy();
+  });
+
   it('rejects miniature state on edge definitions', function () {
     const cy = cytoscape({ elements: graph(), style: sheet() });
 

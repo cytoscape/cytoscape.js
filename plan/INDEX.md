@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–76, 79–80, 85–98, 100–124, 126–136, 138–147 |
-| planned | 49–51, 71, 77–78, 81–84, 99, 125, 137, 148 |
+| landed | 7–48, 52–70, 72–76, 79–80, 82, 85–98, 100–124, 126–136, 138–147 |
+| planned | 49–51, 71, 77–78, 81, 83–84, 99, 125, 137, 148 |
 
 ## The sections
 
@@ -140,7 +140,7 @@ A round can land with an item held open; the round file says which.
 | 111 | 79 | 2026-08-14 | landed | [Official JSON schemas](rounds/2026-08-14-10-rnd0079-landed-official-json-schemas.md) |
 | 112 | 80 | 2026-08-14 | landed | [Node charts: explicit scales, heat, bars and 255 values](rounds/2026-08-14-11-rnd0080-landed-node-charts-heat-bars-and-the-255-slot-ceiling.md) |
 | 113 | 81 | 2026-08-14 | plan | [The annotations layer](rounds/2026-08-14-12-rnd0081-plan-the-annotations-layer.md) |
-| 114 | 82 | 2026-08-14 | plan | [Compound hull shapes: convex first, then concave](rounds/2026-08-14-13-rnd0082-plan-cluster-hulls-and-collapse-aggregation-proxies.md) |
+| 114 | 82 | 2026-08-14 | landed | [Compound hull shapes: convex first, then concave](rounds/2026-08-14-13-rnd0082-landed-compound-hull-shapes.md) |
 | 115 | 83 | 2026-08-14 | plan | [GPU edge bundling](rounds/2026-08-14-14-rnd0083-plan-gpu-edge-bundling.md) |
 | 116 | 84 | 2026-08-14 | plan | [Attribute-table and filter affordances](rounds/2026-08-14-15-rnd0084-plan-attribute-table-and-filter-affordances.md) |
 | 117 | 85 | 2026-08-14 | landed | [The layouts round: radial, force constraints, edge length, per-side padding](rounds/2026-08-14-16-rnd0085-landed-the-layouts-round-radial-force-constraints-edge-length.md) |

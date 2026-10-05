@@ -5,9 +5,13 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-10-05 after rounds 80, 146 and 147 landed.
-  Round 82 hull geometry is implemented and awaiting measured closeout;
-  miniature compounds (148) remain in progress.
+- **Last updated**: 2026-10-05 after rounds 80, 82, 146 and 147 landed.
+  Miniature compounds (148) remain in progress.
+
+Round 82 adds convex, rounded-convex and connected concave parent shapes
+with shared CPU contours for drawing, picking, endpoints and bounds. Measured
+drag cost is 8.5 ms median on 41 EnrichmentMap clusters and 44.5 ms on 500
+sparse clusters.
 
 Round 80 raises pie, donut and stripe charts to 255 ordered slots and adds
 heat strips, radial heat and signed bars. Heat colour scales and bar geometry
@@ -344,10 +348,10 @@ Earlier, round 145 (29 September) was a correctness fix:
 
 | | |
 |---|---|
-| Automated tests | 3,220 JavaScript tests across 544 suites; the Node handoff gate (typecheck, modules, soak, throws and lint) passes. The two round 146 browser regressions pass on the final source; the full fixed-port Playwright suite remains unverified while external port 3333 is occupied. |
+| Automated tests | The complete Node unit/module/soak/throw gate passed for rounds 82 and 146; the current combined gate awaits new chart throw-guard specs. Targeted Chromium regressions for charts, arrows, hulls and miniatures pass on isolated ports; the full fixed-port Playwright suite remains unverified while external port 3333 is occupied. |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 52 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 140 of 216 are set by some golden, and the 76 no golden sets are counted and gated; resetting each set property on its scene moves pixels for 131 of them, measured and gated · 10 scripted gesture traces replayed on both WebGPU hosts and on v3, compared as numbers · 56 live v3-vs-v4 pixel-parity scenes, 16 of them close-ups at zoom 2–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
-| Benchmarks | 30 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
+| Benchmarks | 31 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points · round 82's 41-cluster EM / 500 sparse / 500 degenerate drag p50 for convex controls was 6.967 / 34.558 / 32.088 ms and for concave was 8.462 / 44.534 / 43.144 ms (Node 24.18.0, i9-9900K) |
 | Style parity | v4 accepts 162 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet; round 76 added `text-border-style` and the mid-arrow widths); the rest dropped by decision |
 | Bundle | Three builds as of 29 Sep, minified / gzipped: `cytoscape` 937 / 268 KiB (v3: 410 / 126 KiB); `cytoscape/headless` 549 / 170 KiB — no renderer and no WebGPU code, gated under a 1,000,000-byte edge budget and a per-build ratchet; `cytoscape/headless-gpu` 626 / 189 KiB, against a 600 KB target. Each carries exactly its tier, walked by a spec. The WGSL shaders, which v3 has no equivalent of, are minified at build time, and the spelled-once constants are inlined back to literals |
 | Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run all three builds headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS of each, and CI. Edge isolates run `cytoscape/headless` (a WinterTC-shaped isolate every run, Cloudflare's `workerd` in CI); Deno's native WebGPU runs `cytoscape/headless-gpu`'s kernels and force integrator (green locally on an RX 580; a best-effort CI step). Every other environment has a row in `src/README.md`'s support matrix — CI-gated, re-checked at release, or unsupported with the failing assertion named |
@@ -1702,6 +1706,15 @@ Earlier, round 145 (29 September) was a correctness fix:
     465k-edge fixture's labels at fit, 99.4% overlapping, become 1,545
     that do not, for 1.6–2.0 ms a frame.  Edge labels are not
     decluttered yet.
+- **5 Oct** — cluster parents gain convex and organic outlines
+  - Applications can style compound parents as convex, rounded-convex or
+    connected concave hulls around actual child bodies, and include labels
+    when they want names inside the cluster region.
+  - The same contour drives ordinary parent drawing, picking and edge
+    attachment; empty and degenerate groups retain usable geometry.
+  - Buys EnrichmentMap-style cluster regions without a separate overlay or
+    membership model. The sparse 500-cluster drag control is 44.5 ms median,
+    so concavity has a measured cost as well as a tighter outline.
 - **29 Sep** — GeneMANIA-width bundles, measured and fixed
   - The two GeneMANIA queries the design sitting chose are fetched from
     genemania.org by `node debug/genemania.mjs` and drawn in the debug
@@ -2034,14 +2047,15 @@ Earlier, round 145 (29 September) was a correctness fix:
 
 ## Open decisions
 
-- Settled on 3 October: round 80's 255-value charts, shared scales and legend
-  metadata landed on 5 October. Remaining from that sitting: arrow vocabulary
-  and hollow compounds; convex then concave parent shapes; miniature collapse
-  with live styled scale, optional animation and best-effort locks.
+- Settled on 3 October: arrow vocabulary, 255-value charts, shared scales,
+  legend metadata and convex/concave hulls landed on 5 October. Miniature
+  collapse with live styled scale, optional animation and best-effort locks
+  remains in progress.
 - The miniature model keeps original children and edges. Aggregate edges are
   separately deferred, with persistence (leaning toward regeneration) and
   developer-specified direction still open. Automatic viewport snapping,
-  hull obstacle avoidance and a concavity control are future considerations.
+  hull obstacle avoidance and a public concavity control remain future
+  considerations.
 
 | | |
 |---|---|
@@ -2081,9 +2095,13 @@ compound drag-and-drop, viewport constraints and framework bindings;
 RTL text after 4.0.  Declined: a v3→v4 codemod, library-level
 accessibility (an app responsibility) and a core PDF export (an SVG→PDF recipe instead).  The wire format stays
 public but experimental until 4.x.
-Cluster hulls are compound shape styles, with convex then concave geometry
-in the revised plan. Miniature collapse replaces hidden-child proxies;
-labels, picking and dragging remain ordinary element operations. The
+Cluster hulls landed in round 82 as compound shape styles. The shared CPU
+polygon record drives the nonconvex SDF, synchronous picking and edge endpoint
+queries; it remains available for a future SVG exporter. The 500-cluster
+sparse fixture costs 44.5 ms median per moved-child flush and uses 140,264 B
+of live polygon-pool data at 262,144 B capacity for concave contours.
+Miniature collapse remains a separate planned round; labels, picking and
+dragging remain ordinary element operations. The
 WebGL fallback is full parity at alpha — scoped on 29 Sep, where
 the tween pipelines were also decided not to be warmed at start-up (no
 user is served a software WebGPU adapter; one would get WebGL2).
@@ -2110,7 +2128,7 @@ round, and is regenerated rather than maintained:
 | Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`; edge isolates (`cytoscape/headless` on `workerd`) and Deno's native WebGPU driving the GPU executors (`cytoscape/headless-gpu`) landed 28 Sep.  The scoping pass over every other environment landed 29 Sep as the support matrix.  Still planned: the native Bun/Deno test runners measured and the install/publish story |
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement).  The official JSON schemas landed 28 Sep; their `$id` base waits on the documentation site |
-| Visual features | Annotations; convex then concave compound shapes; miniature collapse with animation; GPU edge bundling. Aggregate display edges remain separately deferred. |
+| Visual features | Annotations; miniature collapse with animation; GPU edge bundling. Charts and compound hulls landed in rounds 80 and 82; aggregate display edges remain separately deferred. |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case).  The DX polish bundle landed 28 Sep, the small style-wins bundle (`text-border-style`, the gradient price) 29 Sep |
 | WebGL2 renderer | Full parity with the WebGPU renderer, for browsers without WebGPU; scoped 29 Sep (backend, capability selection, the measured substitutes, the reach table), built after the drawn-feature rounds and held to a live WebGL-vs-WebGPU parity suite |
 

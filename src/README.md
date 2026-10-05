@@ -4264,6 +4264,19 @@ parent padding is applied. The shared CPU contour drives drawing, borders,
 edge endpoints, picking, bounds and layout dimensions, so zoom does not alter
 its topology. There is no public tightness control or obstacle avoidance.
 
+The hull contour is stored in the existing polygon blob (`polyPool`) during
+the hierarchy's lazy flush; the pending ancestor set is its invalidation
+path. A clean flush reuses it. GPU fill and border use the shared polygon
+signed-distance function, which handles a simple nonconvex contour directly,
+so there is no triangulation cache. CPU picking, edge boundary queries and
+future SVG export all have the same CPU point record through
+`polygonPointsAt()`; SVG export itself remains future work. Non-polygon outlines use 48 directions and a conservative radial allowance
+of `max(halfWidth, halfHeight) × (1 − cos(π/48))`; custom polygons retain
+exact vertices. The 120-vertex cap and two-dent search bound per-contour work. On the measured i9-9900K / Node
+24.18.0 fixtures, concavity cost 8.5 ms median per 41-cluster drag and 44.5 ms
+per 500-cluster sparse drag; see round 82's closeout for the controls and
+actual polygon-pool bytes.
+
 Readback answers from the per-parent record
 (`style('padding')` returns the declared px number or the percent
 string; leaves read 0, as v3 leaves do).  v3's `:parent:selected`
@@ -7671,7 +7684,12 @@ fragment premium is **unmeasurable at scene level** on real hardware
   adds direct-child label bounds before parent padding. Concave hulls remain
   a single connected region and may cover nonmember nodes; holes, disconnected
   regions, obstacle avoidance and a public concavity control are out of scope.
-  Empty hulls fall back to the parent’s styled rectangle or rounded rectangle.
+  The contour uses the existing polygon pool and shared nonconvex polygon SDF,
+  with CPU points available for picking, edge boundaries and future SVG
+  export; no triangulation cache or SVG exporter is present. Empty hulls fall
+  back to the parent’s styled rectangle or rounded rectangle. The 120-vertex
+  48-direction samples, the 120-vertex cap and two-dent search measured
+  8.5 ms median per 41-cluster drag and 44.5 ms for 500 sparse clusters on an i9-9900K / Node 24.18.0.
 - **No z-index**: compound parent bodies draw first (round 14.9, in
   depth-asc/slot-asc order), then edges, then leaf nodes, then labels;
   within a stream draw order is slot order (≈ insertion order, but a

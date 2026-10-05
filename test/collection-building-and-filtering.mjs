@@ -110,14 +110,6 @@ describe('Collection building and filtering', function(){
     expect( min.ele.same(n1) ).to.be.true;
   });
 
-  it('eles.actualLabelBoundingBox() on an empty collection returns null', function(){
-    expect( cy.collection().actualLabelBoundingBox() ).to.be.null;
-  });
-
-  it('eles.actualLabelBoundingBox() returns null when style is disabled', function(){
-    expect( n1.actualLabelBoundingBox() ).to.be.null;
-  });
-
   it('eles.polygonIntersection() returns an empty collection for an empty polygon test', function(){
     expect( cy.collection().polygonIntersection([ { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 } ]).empty() ).to.be.true;
   });

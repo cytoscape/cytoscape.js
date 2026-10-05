@@ -1,6 +1,7 @@
 import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
 import { satPolygonIntersection, makeBoundingBox } from '../math.mjs';
+import { getLabelPolygon } from './dimensions/bounds.mjs';
 
 let elesfn = ({
   nodes: function( selector ){
@@ -432,7 +433,7 @@ let elesfn = ({
         }
       }
 
-      const labelPoly = ele.actualLabelBoundingBox();
+      const labelPoly = getLabelPolygon(ele, 'main');
       if (labelPoly && labelPoly.length && satPolygonIntersection(labelPoly, polygon)) {
         matches.push(ele);
       }

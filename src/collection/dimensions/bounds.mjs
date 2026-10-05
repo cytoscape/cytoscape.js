@@ -28,12 +28,9 @@ elesfn.renderedBoundingBox = function( options ){
   };
 };
 
-elesfn.actualLabelBoundingBox = function( options ) {
-  let ele = this[0];
-
+export const getLabelPolygon = function( ele, label = 'main' ){
   if( !ele || !ele.cy().styleEnabled() ){ return null; }
 
-  let label = (options && options.label) || 'main';
   let prefix = label === 'main' ? undefined : label; // 'source' | 'target' | undefined
 
   let _p = ele._private;
@@ -45,9 +42,7 @@ elesfn.actualLabelBoundingBox = function( options ) {
     return cache[label];
   }
 
-  if( ele.cy().styleEnabled() ){
-    ele.recalculateRenderedStyle();
-  }
+  ele.recalculateRenderedStyle();
 
   posKey = getLabelPolygonPosKey(ele);
 
@@ -1123,6 +1118,5 @@ elesfn.boundingBoxAt = function( fn ){
 
 fn.boundingbox = fn.bb = fn.boundingBox;
 fn.renderedBoundingbox = fn.renderedBoundingBox;
-fn.actualLabelBoundingbox = fn.actualLabelBoundingBox;
 
 export default elesfn;

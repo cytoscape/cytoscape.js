@@ -1738,28 +1738,6 @@
             },
 
             {
-              "name": "eles.actualLabelBoundingBox",
-              "pureAliases": [ "eles.actualLabelBoundingbox" ],
-              "descr": "Get the bounding polygon of a label in [model co-ordinates](#notation/position).  Unlike [`eles.boundingBox()`](#eles.boundingBox), this returns the actual (possibly rotated) polygon of the label rather than an axis-aligned box, so it correctly represents a rotated edge label.",
-              "formats": [
-                {
-                  "name": "eles.actualLabelBoundingBox",
-                  "descr": "Get the bounding polygon of the first element's label in model co-ordinates.",
-                  "args": [
-                    {
-                      "name": "options",
-                      "descr": "An object containing options for the function.",
-                      "fields": [
-                        { "name": "label", "descr": "Which label to use: `'main'`, `'source'`, or `'target'` (default `'main'`).  Use `'source'` or `'target'` to get an edge's source or target label instead of its main label." }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "md": "collection/actualLabelBoundingBox"
-            },
-
-            {
               "name": "node.grabbed",
               "descr": "Get whether a node is currently grabbed, meaning the user has hold of the node."
             },

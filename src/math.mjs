@@ -1470,16 +1470,16 @@ export const getRotatedLabelBox = (bb, lx, ly, theta, ox, oy, th) => {
     let rotate = (x, y) => {
       x = x - lx;
       y = y - ly;
-      return { x: x * cos - y * sin + lx, y: x * sin + y * cos + ly };
+      return { x: x * cos - y * sin + lx + ox, y: x * sin + y * cos + ly + oy };
     };
 
     return [rotate(lx1, ly1), rotate(lx2, ly1), rotate(lx2, ly2), rotate(lx1, ly2)];
   } else {
     return [
-      { x: lx1, y: ly1 },
-      { x: lx2, y: ly1 },
-      { x: lx2, y: ly2 },
-      { x: lx1, y: ly2 },
+      { x: lx1 + ox, y: ly1 + oy },
+      { x: lx2 + ox, y: ly1 + oy },
+      { x: lx2 + ox, y: ly2 + oy },
+      { x: lx1 + ox, y: ly2 + oy },
     ];
   }
 };

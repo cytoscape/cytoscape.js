@@ -37,6 +37,14 @@ export function setScalar(
     return;
   }
 
+  if (id === COL.NODE_BORDER_WIDTH) {
+    gs.baseBorderWidth.set(slot, value);
+    value *= gs.sizeFactorOf(slot);
+  } else if (id === COL.EDGE_WIDTH) {
+    gs.baseEdgeWidth.set(slot, value);
+    value *= gs.edgeSizeFactorOf(slot);
+  }
+
   const spec = columnSpec(id);
   const arr = gs.table(spec.group).column(id) as Float32Array | Uint32Array;
   // a scalar channel on a multi-component column addresses lane 0 and
@@ -94,6 +102,17 @@ export function setPair(
 ): void {
   const spec = columnSpec(id);
   const arr = gs.table(spec.group).column(id) as Float32Array | Uint32Array;
+
+  if (id === COL.EDGE_ARROW_WIDTHS) {
+    gs.baseArrowWidths.set(slot, [a, b]);
+    const factor = gs.edgeSizeFactorOf(slot);
+    a *= factor;
+    b *= factor;
+  } else if (id === COL.EDGE_DASH_META) {
+    a *= gs.edgeSizeFactorOf(slot);
+  } else if (id === COL.NODE_BORDER_DASH_META) {
+    a *= gs.sizeFactorOf(slot);
+  }
 
   if (id === COL.NODE_SIZE) {
     const baseA = a;
@@ -165,6 +184,25 @@ export function setLane(
 
     gs.setPair(
       COL.NODE_SIZE,
+      slot,
+      lane === 0 ? value : baseWidth,
+      lane === 1 ? value : baseHeight,
+    );
+
+    return;
+  }
+
+  if (id === COL.EDGE_WIDTH && lane === 0) {
+    gs.setScalar(COL.EDGE_WIDTH, slot, value);
+
+    return;
+  }
+
+  if (id === COL.EDGE_ARROW_WIDTHS) {
+    const [baseWidth, baseHeight] = gs.baseArrowWidthsOf(slot);
+
+    gs.setPair(
+      COL.EDGE_ARROW_WIDTHS,
       slot,
       lane === 0 ? value : baseWidth,
       lane === 1 ? value : baseHeight,

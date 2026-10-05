@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
 import { COL } from '../src/contract.mjs';
+import { refreshCollapsedGeometry } from '../src/collection/hierarchy.mjs';
 
 const make = (style) =>
   cytoscape({
@@ -132,6 +133,211 @@ describe('gpu/compounds: miniature compounds (round 148)', function () {
     expect(child.style('height')).to.equal(28);
     expect(child.width()).to.equal(8);
     expect(child.height()).to.equal(7);
+  });
+
+  it('scales descendant decoration and only the shared geometry of internal edges', function () {
+    const cy = cytoscape({
+      elements: {
+        nodes: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: -30, y: 0 } },
+          { data: { id: 'b', parent: 'p' }, position: { x: 30, y: 0 } },
+          { data: { id: 'q' }, position: { x: 100, y: 0 } },
+        ],
+        edges: [
+          { data: { id: 'ab', source: 'a', target: 'b' } },
+          { data: { id: 'aq', source: 'a', target: 'q' } },
+        ],
+      },
+      style: {
+        nodes: {
+          width: 40,
+          height: 20,
+          label: 'node',
+          'font-size': 20,
+          'text-outline-width': 2,
+          'text-margin-x': 6,
+          'border-width': 4,
+          'border-style': 'dashed',
+          'border-dash-pattern': '4 2',
+          'border-dash-offset': 3,
+          'corner-radius': 8,
+          'outline-width': 2,
+          'outline-offset': 3,
+          'outline-color': '#000000',
+          ghost: 'yes',
+          'ghost-offset-x': 6,
+          'ghost-offset-y': 2,
+          'overlay-color': '#ff0000',
+          'overlay-padding': 4,
+          'overlay-shape': 'round-rectangle',
+          'overlay-corner-radius': 8,
+          'background-image': 'i.png',
+          'background-width': 10,
+          'background-height': 8,
+        },
+        parents: {
+          padding: 10,
+          'collapse-scale': 0.25,
+        },
+        edges: {
+          width: 8,
+          label: 'edge',
+          'font-size': 20,
+          'text-outline-width': 2,
+          'text-margin-y': 6,
+          'line-style': 'dashed',
+          'line-dash-pattern': '6 2',
+          'line-dash-offset': 4,
+          'line-outline-width': 2,
+          'line-outline-color': '#000000',
+          'source-arrow-shape': 'triangle',
+          'source-arrow-width': 12,
+          'target-arrow-shape': 'triangle',
+          'target-arrow-width': 16,
+          'overlay-color': '#ff0000',
+          'overlay-padding': 4,
+        },
+      },
+    });
+    const parent = cy.$id('p');
+    const child = cy.$id('a');
+    const internal = cy.$id('ab');
+    const crossing = cy.$id('aq');
+    const store = cy._store;
+    const childSlot = child._refs[0].slot;
+    const internalSlot = internal._refs[0].slot;
+    const crossingSlot = crossing._refs[0].slot;
+
+    parent.collapse();
+
+    const borderWidth = store.column(COL.NODE_BORDER_WIDTH);
+    const borderGeom = store.column(COL.NODE_BORDER_GEOM);
+    const nodeDash = store.column(COL.NODE_BORDER_DASH);
+    const nodeDashMeta = store.column(COL.NODE_BORDER_DASH_META);
+    const ghost = store.column(COL.NODE_GHOST);
+    const nodeOverlay = store.column(COL.NODE_OVERLAY);
+    const edgeWidth = store.column(COL.EDGE_WIDTH);
+    const arrowWidths = store.column(COL.EDGE_ARROW_WIDTHS);
+    const edgeDash = store.column(COL.EDGE_DASH_PATTERN);
+    const edgeDashMeta = store.column(COL.EDGE_DASH_META);
+    const edgeCasing = store.column(COL.EDGE_CASING);
+    const edgeOverlay = store.column(COL.EDGE_OVERLAY);
+    const imagePool = store.imagePool.data();
+    const imageOffset = store.imagePool.offsetOf(childSlot);
+    const nodeLabel = store.labelAt(childSlot, 'nodes');
+    const internalLabel = store.labelAt(internalSlot, 'edges');
+    const crossingLabel = store.labelAt(crossingSlot, 'edges');
+
+    expect(child.style('width')).to.equal(40);
+    expect(child.width()).to.equal(10);
+    expect(child.style('border-width')).to.equal(4);
+    expect(child.outerWidth()).to.equal(11);
+    expect(borderWidth[childSlot]).to.equal(1);
+    expect(borderGeom[childSlot * 4]).to.equal(8 * 0.25 * 256);
+    expect((borderGeom[childSlot * 4 + 3] & 0xffff) / 256).to.equal(0.5);
+    expect((borderGeom[childSlot * 4 + 3] >>> 16) / 256).to.equal(0.75);
+    expect(child.style('corner-radius')).to.equal(8);
+    expect(child.style('outline-width')).to.equal(2);
+    expect(child.style('outline-offset')).to.equal(3);
+    expect(child.style('border-dash-pattern')).to.equal('4 2');
+    expect(child.style('border-dash-offset')).to.equal(3);
+    expect(nodeDash[childSlot * 4]).to.equal(1);
+    expect(nodeDash[childSlot * 4 + 1]).to.equal(0.5);
+    expect(nodeDashMeta[childSlot * 2]).to.equal(0.75);
+    expect(child.style('ghost-offset-x')).to.equal(6);
+    expect(child.style('ghost-offset-y')).to.equal(2);
+    expect(ghost[childSlot * 4]).to.equal(1.5);
+    expect(ghost[childSlot * 4 + 1]).to.equal(0.5);
+    expect(child.style('overlay-padding')).to.equal(4);
+    expect(child.style('overlay-corner-radius')).to.equal(8);
+    expect(nodeOverlay[childSlot * 4 + 1]).to.equal(4 * 0.25 * 256);
+    expect(nodeOverlay[childSlot * 4 + 3]).to.equal(8 * 0.25 * 256);
+    expect(child.style('background-image')).to.equal('i.png');
+    expect(child.style('background-width')).to.equal(10);
+    expect(imagePool[imageOffset + 12]).to.equal(0.25);
+
+    expect(internal.style('width')).to.equal(8);
+    expect(internal.width()).to.equal(2);
+    expect(crossing.style('width')).to.equal(8);
+    expect(crossing.width()).to.equal(8);
+    expect(edgeWidth[internalSlot * 2]).to.equal(2);
+    expect(edgeWidth[crossingSlot * 2]).to.equal(8);
+    expect(arrowWidths[internalSlot * 2]).to.equal(3);
+    expect(arrowWidths[internalSlot * 2 + 1]).to.equal(4);
+    expect(arrowWidths[crossingSlot * 2]).to.equal(12);
+    expect(arrowWidths[crossingSlot * 2 + 1]).to.equal(16);
+    expect(internal.style('source-arrow-width')).to.equal(12);
+    expect(internal.style('target-arrow-width')).to.equal(16);
+    expect(internal.style('line-outline-width')).to.equal(2);
+    expect(edgeCasing[internalSlot * 4 + 1] / 256).to.equal(2.5);
+    expect(edgeCasing[crossingSlot * 4 + 1] / 256).to.equal(10);
+    expect(internal.style('line-dash-pattern')).to.equal('6 2');
+    expect(internal.style('line-dash-offset')).to.equal(4);
+    expect(edgeDash[internalSlot * 4]).to.equal(1.5);
+    expect(edgeDash[internalSlot * 4 + 1]).to.equal(0.5);
+    expect(edgeDashMeta[internalSlot * 2]).to.equal(1);
+    expect(internal.style('overlay-padding')).to.equal(4);
+    expect(edgeOverlay[internalSlot * 4 + 1] / 256).to.equal(4);
+
+    expect(nodeLabel.fontSize).to.equal(5);
+    expect(child.style('font-size')).to.equal(20);
+    expect(child.style('text-outline-width')).to.equal(2);
+    expect(child.style('text-margin-x')).to.equal(6);
+    expect(internalLabel.fontSize).to.equal(5);
+    expect(crossingLabel.fontSize).to.equal(20);
+    expect(internal.style('font-size')).to.equal(20);
+    expect(internal.style('text-outline-width')).to.equal(2);
+    expect(internal.style('text-margin-y')).to.equal(6);
+    expect(parent.paddedWidth()).to.equal(46);
+
+    child.style('width', 60);
+    child.style('border-width', 8);
+    internal.style('width', 12);
+
+    expect(child.style('width')).to.equal(60);
+    expect(child.width()).to.equal(15);
+    expect(child.style('border-width')).to.equal(8);
+    expect(child.outerWidth()).to.equal(17);
+    expect(internal.style('width')).to.equal(12);
+    expect(internal.width()).to.equal(3);
+
+    child.removeStyle('width');
+    child.removeStyle('border-width');
+    internal.removeStyle('width');
+
+    expect(child.style('width')).to.equal(40);
+    expect(child.width()).to.equal(10);
+    expect(child.style('border-width')).to.equal(4);
+    expect(child.outerWidth()).to.equal(11);
+    expect(internal.style('width')).to.equal(8);
+    expect(internal.width()).to.equal(2);
+  });
+
+  it('refreshes adopted factors without moving positions', function () {
+    const cy = make({
+      nodes: { width: 40, height: 20 },
+      parents: { 'collapse-scale': 0.25 },
+      edges: { width: 8 },
+    });
+    const parent = cy.$id('p');
+    const child = cy.$id('a');
+    const internal = cy.$id('ab');
+    const crossing = cy.add({
+      group: 'edges',
+      data: { id: 'aq', source: 'a', target: 'q' },
+    });
+    const parentSlot = parent._refs[0].slot;
+    const before = child.position();
+
+    cy._store.setCollapsed(parentSlot, true, 0.25);
+    refreshCollapsedGeometry(cy.collection(), [parentSlot]);
+
+    expect(parent.collapsed()).to.equal(true);
+    expect(child.position()).to.deep.equal(before);
+    expect(child.width()).to.equal(10);
+    expect(internal.width()).to.equal(2);
+    expect(crossing.width()).to.equal(8);
   });
 
   it('collapses descendants around the live parent centre and expands in place', function () {

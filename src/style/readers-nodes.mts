@@ -34,7 +34,7 @@ defineReader([PROP.BORDER_COLOR], (store, slot) =>
 );
 
 defineReader([PROP.BORDER_WIDTH], (store, slot) =>
-  readScalar(store, slot, COL.NODE_BORDER_WIDTH),
+  store.baseBorderWidthOf(slot),
 );
 
 defineReader([PROP.CORNER_RADIUS], (store, slot, ref, engine) => {
@@ -51,7 +51,7 @@ defineReader([PROP.CORNER_RADIUS], (store, slot, ref, engine) => {
 
   const r = (store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4];
 
-  return r === 0xffffffff ? 'auto' : r / 256;
+  return r === 0xffffffff ? 'auto' : r / 256 / store.sizeFactorOf(slot);
 });
 
 defineReader([PROP.BORDER_POSITION], (store, slot) => {
@@ -89,15 +89,20 @@ defineReader([PROP.BORDER_DASH_PATTERN], (store, slot) => {
   );
 
   // collapse the normalized two-pair form back to one pair when repeated
-  return arr[0] === arr[2] && arr[1] === arr[3]
-    ? `${arr[0]} ${arr[1]}`
-    : `${arr[0]} ${arr[1]} ${arr[2]} ${arr[3]}`;
+  const factor = store.sizeFactorOf(slot);
+  const a = arr[0] / factor;
+  const b = arr[1] / factor;
+  const c = arr[2] / factor;
+  const d = arr[3] / factor;
+
+  return a === c && b === d ? `${a} ${b}` : `${a} ${b} ${c} ${d}`;
 });
 
 defineReader(
   [PROP.BORDER_DASH_OFFSET],
   (store, slot) =>
-    (store.column(COL.NODE_BORDER_DASH_META) as Float32Array)[slot * 2],
+    (store.column(COL.NODE_BORDER_DASH_META) as Float32Array)[slot * 2] /
+    store.sizeFactorOf(slot),
 );
 
 defineReader(
@@ -199,14 +204,16 @@ defineReader(
   (store, slot) =>
     ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 3] &
       0xffff) /
-    256,
+    256 /
+    store.sizeFactorOf(slot),
 );
 
 defineReader(
   [PROP.OUTLINE_OFFSET],
   (store, slot) =>
     ((store.column(COL.NODE_BORDER_GEOM) as Uint32Array)[slot * 4 + 3] >>> 16) /
-    256,
+    256 /
+    store.sizeFactorOf(slot),
 );
 
 // the B1 channel opacities read back *folded* (stored alpha /
@@ -354,12 +361,16 @@ defineReader([PROP.GHOST], (store, slot) =>
 
 defineReader(
   [PROP.GHOST_OFFSET_X],
-  (store, slot) => (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4],
+  (store, slot) =>
+    (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4] /
+    store.sizeFactorOf(slot),
 );
 
 defineReader(
   [PROP.GHOST_OFFSET_Y],
-  (store, slot) => (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4 + 1],
+  (store, slot) =>
+    (store.column(COL.NODE_GHOST) as Float32Array)[slot * 4 + 1] /
+    store.sizeFactorOf(slot),
 );
 
 defineReader(
@@ -412,7 +423,11 @@ defineReader(
       // the stroke is stored rounded to 1/256 px, so subtract the width
       // on the same grid: a width off it (a mapped 1.85) otherwise reads
       // back a padding of 10.00039 for a 10 (round 105's golden found it)
-      return Math.max(0, erec[1] - Math.round(width * 256)) / 512;
+      return (
+        Math.max(0, erec[1] - Math.round(width * 256)) /
+        512 /
+        store.edgeSizeFactorOf(slot)
+      );
     }
 
     const id = prop.startsWith('overlay')
@@ -440,11 +455,13 @@ defineReader(
       case 'opacity':
         return (rec[0] >>> 24) / 255;
       case 'padding':
-        return rec[1] / 256;
+        return rec[1] / 256 / store.sizeFactorOf(slot);
       case 'shape':
         return rec[2] === 1 ? 'ellipse' : 'round-rectangle';
       default:
-        return rec[3] === 0xffffffff ? 'auto' : rec[3] / 256;
+        return rec[3] === 0xffffffff
+          ? 'auto'
+          : rec[3] / 256 / store.sizeFactorOf(slot);
     }
   },
 );

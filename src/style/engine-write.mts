@@ -928,23 +928,25 @@ export function writeLabel(
   // resolves against the laid dimensions.  Edges center on the
   // midpoint the shader computes (halign/valign are node-only).
   const nc = computed as NodeComputed;
+  const factor = engine.store.labelFactorOf(slot, group);
   let anchorX = 0,
     halignShift = 0,
     valignShift = 0;
-  let anchorY = -computed.fontSize / 2 + computed.textMarginY;
+  let anchorY = (-computed.fontSize / 2 + computed.textMarginY) * factor;
 
   if (group === GROUP_NODES) {
-    const halfW = nc.width / 2,
-      halfH = nc.height / 2;
+    const halfW = (nc.width * factor) / 2,
+      halfH = (nc.height * factor) / 2;
 
     anchorX = (nc.textHalign - 1) * halfW;
     halignShift = (nc.textHalign - 1) * 0.5;
     anchorY =
       (nc.textValign === 0
-        ? -halfH - LABEL_MARGIN
+        ? -halfH - LABEL_MARGIN * factor
         : nc.textValign === 2
-          ? halfH + LABEL_MARGIN
-          : 0) + computed.textMarginY;
+          ? halfH + LABEL_MARGIN * factor
+          : 0) +
+      computed.textMarginY * factor;
     valignShift = (nc.textValign - 2) * 0.5;
   }
 
@@ -965,20 +967,20 @@ export function writeLabel(
   // the shared text channels (font, color, box, opacity — v3 reads
   // these unprefixed for all three edge labels)
   const shared = {
-    fontSize: computed.fontSize,
+    fontSize: computed.fontSize * factor,
     color: fold(computed.textColor, 1),
-    minZoomedFontSize: computed.minZoomedFontSize,
-    outlineWidth: computed.textOutlineWidth,
+    minZoomedFontSize: computed.minZoomedFontSize * factor,
+    outlineWidth: computed.textOutlineWidth * factor,
     outlineColor: fold(computed.textOutlineColor, computed.textOutlineOpacity),
     bgColor: fold(computed.textBgColor, computed.textBgOpacity),
-    bgPadding: computed.textBgPadding,
+    bgPadding: computed.textBgPadding * factor,
     bgShape: computed.textBgShape,
     bgBorderColor: fold(computed.textBorderColor, computed.textBorderOpacity),
-    bgBorderWidth: computed.textBorderWidth,
+    bgBorderWidth: computed.textBorderWidth * factor,
     bgBorderStyle: computed.textBorderStyle,
     // the wrap family (16.2)
     wrap: computed.textWrap,
-    maxWidth: computed.textMaxWidth,
+    maxWidth: computed.textMaxWidth * factor,
     lineHeight: computed.lineHeight,
     overflowWrap: computed.textOverflowWrap,
     justification,
@@ -995,8 +997,8 @@ export function writeLabel(
           halignShift,
           valignShift,
           anchorY,
-          marginX: computed.textMarginX,
-          marginY: computed.textMarginY,
+          marginX: computed.textMarginX * factor,
+          marginY: computed.textMarginY * factor,
           endOffset: 0,
           priority: group === GROUP_NODES ? nc.labelPriority : 0,
           rotate:
@@ -1018,7 +1020,11 @@ export function writeLabel(
     for (const end of [DATA_SOURCE, DATA_TARGET] as const) {
       const src = end === DATA_SOURCE;
       const endText = endTexts[src ? 0 : 1];
-      const marginY = src ? ec.sourceTextMarginY : ec.targetTextMarginY;
+      const marginY =
+        (src ? ec.sourceTextMarginY : ec.targetTextMarginY) * factor;
+      const marginX =
+        (src ? ec.sourceTextMarginX : ec.targetTextMarginX) * factor;
+      const offset = (src ? ec.sourceTextOffset : ec.targetTextOffset) * factor;
 
       store.setLabel(
         slot,
@@ -1030,10 +1036,10 @@ export function writeLabel(
               anchorX: 0,
               halignShift: 0,
               valignShift: 0,
-              anchorY: -computed.fontSize / 2 + marginY,
-              marginX: src ? ec.sourceTextMarginX : ec.targetTextMarginX,
+              anchorY: (-computed.fontSize * factor) / 2 + marginY,
+              marginX,
               marginY,
-              endOffset: src ? ec.sourceTextOffset : ec.targetTextOffset,
+              endOffset: offset,
               priority: 0,
               rotate: Number.isNaN(
                 src ? ec.sourceTextRotation : ec.targetTextRotation,

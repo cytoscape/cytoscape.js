@@ -22,12 +22,13 @@ import {
 // label visual props (constants; sidecar when labelled, else the sheet
 // constants — opacities read back folded into the stored alpha, like
 // arrow colors)
-defineReader(
-  [PROP.TEXT_OUTLINE_WIDTH],
-  (store, slot, ref, engine) =>
-    store.labelAt(slot, ref.group)?.outlineWidth ??
-    engine.defFor(ref).computed.textOutlineWidth,
-);
+defineReader([PROP.TEXT_OUTLINE_WIDTH], (store, slot, ref, engine) => {
+  const entry = store.labelAt(slot, ref.group);
+
+  return entry == null
+    ? engine.defFor(ref).computed.textOutlineWidth
+    : entry.outlineWidth / store.labelFactorOf(slot, ref.group);
+});
 
 defineReader([PROP.TEXT_OUTLINE_COLOR], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
@@ -57,7 +58,7 @@ defineReader([PROP.TEXT_MAX_WIDTH], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
-    ? entry.maxWidth
+    ? entry.maxWidth / store.labelFactorOf(slot, ref.group)
     : engine.defFor(ref).computed.textMaxWidth;
 });
 
@@ -103,7 +104,7 @@ defineReader([PROP.TEXT_BORDER_WIDTH], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
-    ? entry.bgBorderWidth
+    ? entry.bgBorderWidth / store.labelFactorOf(slot, ref.group)
     : engine.defFor(ref).computed.textBorderWidth;
 });
 
@@ -125,7 +126,7 @@ defineReader([PROP.MIN_ZOOMED_FONT_SIZE], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
 
   return entry != null
-    ? entry.minZoomedFontSize
+    ? entry.minZoomedFontSize / store.labelFactorOf(slot, ref.group)
     : engine.defFor(ref).computed.minZoomedFontSize;
 });
 
@@ -207,26 +208,29 @@ defineReader([PROP.TEXT_BACKGROUND_OPACITY], (store, slot, ref, engine) => {
     : engine.defFor(ref).computed.textBgOpacity;
 });
 
-defineReader(
-  [PROP.TEXT_BACKGROUND_PADDING],
-  (store, slot, ref, engine) =>
-    store.labelAt(slot, ref.group)?.bgPadding ??
-    engine.defFor(ref).computed.textBgPadding,
-);
+defineReader([PROP.TEXT_BACKGROUND_PADDING], (store, slot, ref, engine) => {
+  const entry = store.labelAt(slot, ref.group);
 
-defineReader(
-  [PROP.TEXT_MARGIN_X],
-  (store, slot, ref, engine) =>
-    store.labelAt(slot, ref.group)?.marginX ??
-    engine.defFor(ref).computed.textMarginX,
-);
+  return entry == null
+    ? engine.defFor(ref).computed.textBgPadding
+    : entry.bgPadding / store.labelFactorOf(slot, ref.group);
+});
 
-defineReader(
-  [PROP.TEXT_MARGIN_Y],
-  (store, slot, ref, engine) =>
-    store.labelAt(slot, ref.group)?.marginY ??
-    engine.defFor(ref).computed.textMarginY,
-);
+defineReader([PROP.TEXT_MARGIN_X], (store, slot, ref, engine) => {
+  const entry = store.labelAt(slot, ref.group);
+
+  return entry == null
+    ? engine.defFor(ref).computed.textMarginX
+    : entry.marginX / store.labelFactorOf(slot, ref.group);
+});
+
+defineReader([PROP.TEXT_MARGIN_Y], (store, slot, ref, engine) => {
+  const entry = store.labelAt(slot, ref.group);
+
+  return entry == null
+    ? engine.defFor(ref).computed.textMarginY
+    : entry.marginY / store.labelFactorOf(slot, ref.group);
+});
 
 defineReader([PROP.TEXT_ROTATION], (store, slot, ref, engine) => {
   const entry = store.labelAt(slot, ref.group);
@@ -264,7 +268,8 @@ defineReader(
 
     if (prop.endsWith('-offset')) {
       return entry != null
-        ? entry.endOffset
+        ? entry.endOffset /
+            store.labelFactorOf(slot, src ? 'edgeSource' : 'edgeTarget')
         : src
           ? d.sourceTextOffset
           : d.targetTextOffset;
@@ -272,7 +277,8 @@ defineReader(
 
     if (prop.endsWith('-margin-x')) {
       return entry != null
-        ? entry.marginX
+        ? entry.marginX /
+            store.labelFactorOf(slot, src ? 'edgeSource' : 'edgeTarget')
         : src
           ? d.sourceTextMarginX
           : d.targetTextMarginX;
@@ -280,7 +286,8 @@ defineReader(
 
     if (prop.endsWith('-margin-y')) {
       return entry != null
-        ? entry.marginY
+        ? entry.marginY /
+            store.labelFactorOf(slot, src ? 'edgeSource' : 'edgeTarget')
         : src
           ? d.sourceTextMarginY
           : d.targetTextMarginY;

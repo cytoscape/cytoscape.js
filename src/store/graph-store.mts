@@ -50,7 +50,7 @@ import * as positionsImpl from './graph-store/positions.mjs';
 import * as flagsImpl from './graph-store/flags.mjs';
 import * as consumersImpl from './graph-store/consumers.mjs';
 import type { StoreConsumer, StoreFold } from './graph-store/consumers.mjs';
-export const IMG_STRIDE = 12;
+export const IMG_STRIDE = 13;
 
 export interface BgLen {
   v: number;
@@ -160,6 +160,12 @@ export class GraphStore implements ModelView {
   parentFallback = new Map<number, [number, number]>();
   /** Authored/resolved node dimensions, before inherited miniature scaling. */
   baseSize = new Map<number, [number, number]>();
+  /** Authored node border widths before inherited miniature scaling. @internal */
+  baseBorderWidth = new Map<number, number>();
+  /** Authored edge widths before shared-ancestor miniature scaling. @internal */
+  baseEdgeWidth = new Map<number, number>();
+  /** Authored arrow widths; their stored columns follow internal edges. */
+  baseArrowWidths = new Map<number, [number, number]>();
   /** fires on the compounds 0 <-> >0 transitions (the core re-configures
    * paint eval: the opacity fold demotes the GPU mapper, round 14.4) */
   onCompoundsToggled: (() => void) | null = null;
@@ -735,7 +741,9 @@ export class GraphStore implements ModelView {
    * modeFlags (fit | repeat<<2 | clip<<4 | containment<<5 |
    * smoothing<<6 | sdf<<7), opacity, posX, posY, offX, offY, w, h,
    * unitFlags (posXPct | posYPct<<1 | offXPct<<2 | offYPct<<3 |
-   * wMode<<4 | hMode<<6), tintRG (r + g×256), tintBA (b + a×256)].
+   * wMode<<4 | hMode<<6), tintRG (r + g×256), tintBA (b + a×256),
+   * inherited size factor (round 148; preserves base image units while
+   * the drawn rectangle follows the miniature node size)].
    * Draw-only paint: no geoEpoch bump, no bb/pick involvement.
    *
    * @param slot — the node slot
@@ -1158,6 +1166,52 @@ export class GraphStore implements ModelView {
   /** Product of collapsed ancestors' applied scales. */
   sizeFactorOf(slot: number): number {
     return this.hierarchy.sizeFactorOf(slot);
+  }
+
+  /** Product of collapsed ancestors shared by both endpoints of an edge. */
+  edgeSizeFactorOf(edgeSlot: number): number {
+    const endpoints = this.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+
+    return this.hierarchy.edgeSizeFactorOf(
+      endpoints[edgeSlot * 2],
+      endpoints[edgeSlot * 2 + 1],
+    );
+  }
+
+  /** Size factor used by a node or edge label stream. */
+  labelFactorOf(slot: number, group: LabelStream): number {
+    return group === GROUP_NODES
+      ? this.sizeFactorOf(slot)
+      : this.edgeSizeFactorOf(slot);
+  }
+
+  /** Authored node border width before inherited miniature scaling. */
+  baseBorderWidthOf(slot: number): number {
+    return (
+      this.baseBorderWidth.get(slot) ??
+      (this.nodes.column(COL.NODE_BORDER_WIDTH) as Float32Array)[slot]
+    );
+  }
+
+  /** Authored edge width before shared-ancestor scaling. */
+  baseEdgeWidthOf(slot: number): number {
+    return (
+      this.baseEdgeWidth.get(slot) ??
+      (this.edges.column(COL.EDGE_WIDTH) as Float32Array)[slot * 2]
+    );
+  }
+
+  /** Authored arrow stroke widths before shared-ancestor scaling. */
+  baseArrowWidthsOf(slot: number): [number, number] {
+    const cached = this.baseArrowWidths.get(slot);
+
+    if (cached != null) {
+      return cached;
+    }
+
+    const widths = this.edges.column(COL.EDGE_ARROW_WIDTHS) as Float32Array;
+
+    return [widths[slot * 2], widths[slot * 2 + 1]];
   }
 
   /** Current applied scale for a collapsed parent, else one. */

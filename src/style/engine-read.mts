@@ -327,7 +327,8 @@ export function labelChannels(
     const packed = unfoldLabelAlpha(engine.store, ref.slot, ref, entry.color);
 
     return {
-      fontSize: entry.fontSize,
+      fontSize:
+        entry.fontSize / engine.store.labelFactorOf(ref.slot, ref.group),
       color: formatRgba(
         packed & 0xff,
         (packed >>> 8) & 0xff,

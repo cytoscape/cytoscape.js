@@ -34,12 +34,14 @@ export function setNodeLayer(
 ): void {
   const arr = gs.nodes.column(id) as Uint32Array;
   const at = slot * 4;
-  const pad = Math.max(0, Math.round(padding * 256));
-  const rad = radius < 0 ? 0xffffffff : Math.max(0, Math.round(radius * 256));
+  const factor = gs.sizeFactorOf(slot);
+  const rad =
+    radius < 0 ? 0xffffffff : Math.max(0, Math.round(radius * factor * 256));
+  const effectivePad = Math.max(0, Math.round(padding * factor * 256));
 
   if (
     arr[at] === rgba &&
-    arr[at + 1] === pad &&
+    arr[at + 1] === effectivePad &&
     arr[at + 2] === shape &&
     arr[at + 3] === rad
   ) {
@@ -60,7 +62,7 @@ export function setNodeLayer(
   }
 
   arr[at] = rgba;
-  arr[at + 1] = pad;
+  arr[at + 1] = effectivePad;
   arr[at + 2] = shape;
   arr[at + 3] = rad;
   gs.geoEpoch++;
@@ -89,7 +91,10 @@ export function setEdgeLayer(
   const endpoints = gs.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
   const source = endpoints[slot * 2];
   const target = endpoints[slot * 2 + 1];
-  const sw = Math.max(0, Math.round(strokeWidth * 256));
+  const sw = Math.max(
+    0,
+    Math.round(strokeWidth * gs.edgeSizeFactorOf(slot) * 256),
+  );
 
   if (
     arr[at] === rgba &&
@@ -196,6 +201,7 @@ export function setBorderGeom(
   gs.hierarchy.setHullRadius(slot, cornerRadius);
   const arr = gs.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
   const at = slot * 4;
+  const factor = gs.sizeFactorOf(slot);
   // C3: custom polygons carry their point-record ref (from
   // setPolygonPoints) in the radius word — the corner radius is
   // meaningless for polygons
@@ -207,7 +213,7 @@ export function setBorderGeom(
       ? polyRef >>> 0
       : cornerRadius < 0
         ? 0xffffffff
-        : Math.max(0, Math.round(cornerRadius * 256));
+        : Math.max(0, Math.round(cornerRadius * factor * 256));
 
   if (shapeId > SHAPE_MASK) {
     throw new Error(
@@ -244,11 +250,12 @@ export function setBorderGeom(
 
   borderPos = posShape;
   const packedWO =
-    (Math.min(0xffff, Math.max(0, Math.round(outlineOffset * 256))) << 16) |
-    Math.min(0xffff, Math.max(0, Math.round(outlineWidth * 256)));
+    (Math.min(0xffff, Math.max(0, Math.round(outlineOffset * factor * 256))) <<
+      16) |
+    Math.min(0xffff, Math.max(0, Math.round(outlineWidth * factor * 256)));
 
   if (outlineRgba >>> 24 !== 0) {
-    const slack = outlineOffset / 2 + outlineWidth;
+    const slack = (outlineOffset / 2 + outlineWidth) * factor;
 
     if (slack > gs.outlineSlackMax) {
       gs.outlineSlackMax = slack;
@@ -345,6 +352,14 @@ export function setVec4(
 ): void {
   const arr = gs.table(columnSpec(id).group).column(id) as Float32Array;
   const at = slot * 4;
+  const factor =
+    id === COL.NODE_BORDER_DASH
+      ? gs.sizeFactorOf(slot)
+      : gs.edgeSizeFactorOf(slot);
+  a *= factor;
+  b *= factor;
+  c *= factor;
+  d *= factor;
 
   if (
     arr[at] === a &&
@@ -413,6 +428,8 @@ export function setGhost(
 ): void {
   const arr = gs.nodes.column(COL.NODE_GHOST) as Float32Array;
   const at = slot * 4;
+  offX *= gs.sizeFactorOf(slot);
+  offY *= gs.sizeFactorOf(slot);
   const en = enabled ? 1 : 0;
 
   if (

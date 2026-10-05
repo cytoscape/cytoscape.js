@@ -4243,7 +4243,9 @@ constants or mappers in `(0, 1]`; it can also be pinned by a bypass.
 keep the authored size, and geometry reads use the inherited effective size.
 `collapse()` and `expand()` now rescale descendants around the parent's
 current centre, preserve the original graph and hidden state, and keep locked
-subtrees still while their bodies shrink. The full decoration, edge, layout,
+subtrees still while their bodies shrink. Node decoration, images, charts,
+labels, compound hulls and shared internal-edge geometry follow that factor;
+crossing-edge widths remain at their authored scale. Scoped layouts,
 animation and persistence consumers remain in progress for round 148.
 
 Round 82 adds `convex-hull`, `round-convex-hull` and `concave-hull` as

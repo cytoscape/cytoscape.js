@@ -43,7 +43,7 @@ ${SDF}
 @group(2) @binding(3) var imageSamp: sampler;
 @group(2) @binding(4) var icons: texture_2d_array<f32>;
 
-const IMG_STRIDE: u32 = 12u;
+const IMG_STRIDE: u32 = 13u;
 
 struct ImgRec {
   entry: u32,
@@ -59,6 +59,7 @@ struct ImgRec {
   pos: vec4f,
   size: vec2f,
   units: u32,
+  factor: f32,
 }
 
 fn readRec(off: u32, i: u32) -> ImgRec {
@@ -77,6 +78,7 @@ fn readRec(off: u32, i: u32) -> ImgRec {
   rec.pos = vec4f(imageBlob[base + 3u], imageBlob[base + 4u], imageBlob[base + 5u], imageBlob[base + 6u]);
   rec.size = vec2f(imageBlob[base + 7u], imageBlob[base + 8u]);
   rec.units = u32(imageBlob[base + 9u]);
+  rec.factor = imageBlob[base + 12u];
 
   // the sdf tint rides two bytes per float (r + g*256, b + a*256)
   let rg = imageBlob[base + 10u];
@@ -92,7 +94,9 @@ fn readRec(off: u32, i: u32) -> ImgRec {
 // resolve the image's draw rect in node-local model px:
 // (origin.xy, size.zw), origin at the rect's top-left, node center at 0
 fn imageRect(rec: ImgRec, half: vec2f, nat: vec2f) -> vec4f {
-  let box = half * 2.0;
+  let factor = max(rec.factor, 1e-8);
+  let baseHalf = half / factor;
+  let box = baseHalf * 2.0;
   var s: vec2f;
 
   if (rec.fit == 1u) { // contain
@@ -109,7 +113,7 @@ fn imageRect(rec: ImgRec, half: vec2f, nat: vec2f) -> vec4f {
     s.y = select(select(rec.size.y, rec.size.y / 100.0 * box.y, hMode == 2u), nat.y, hMode == 0u);
   }
 
-  var o = -half;
+  var o = -baseHalf;
 
   // v3 position semantics: percent aligns within the free space
   // (box - image), px offsets from the node's top-left
@@ -119,7 +123,7 @@ fn imageRect(rec: ImgRec, half: vec2f, nat: vec2f) -> vec4f {
   o.x += select(rec.pos.z, box.x * rec.pos.z / 100.0, ((rec.units >> 2u) & 1u) == 1u);
   o.y += select(rec.pos.w, box.y * rec.pos.w / 100.0, ((rec.units >> 3u) & 1u) == 1u);
 
-  return vec4f(o, s);
+  return vec4f(o * factor, s * factor);
 }
 
 fn tierSizeOf(tier: u32) -> f32 {

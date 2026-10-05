@@ -706,7 +706,9 @@ export const COL = {
    * images; count ≤ 4 — the recorded multi-image cap).  Records are
    * IMG_STRIDE floats per image (see store/graph-store.mts
    * setNodeImages): registry entry id, packed mode flags, opacity,
-   * position/offset/size values with unit bits, and the sdf tint.
+   * position/offset/size values with unit bits, sdf tint and inherited
+   * size factor (round 148; shader resolves base units then scales the
+   * rectangle with its node).
    * Draw-only paint: nothing in bb, cull-extent or CPU-pick reads it.
    * An offset past `REF_OFFSET_FLOATS` saturates (round 145).
    */

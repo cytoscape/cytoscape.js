@@ -268,6 +268,11 @@ export class HierarchyIndex {
     return false;
   }
 
+  /** Whether `ancestor` is `slot` or one of its strict ancestors. */
+  isAncestorOrSelf(ancestor: number, slot: number): boolean {
+    return ancestor === slot || this.isAncestorOf(ancestor, slot);
+  }
+
   /** Whether a strict ancestor of this node is currently collapsed. */
   insideCollapsed(slot: number): boolean {
     for (let p = this.parentOf(slot); p >= 0; p = this.parentOf(p)) {
@@ -302,6 +307,19 @@ export class HierarchyIndex {
 
     for (let p = this.parentOf(slot); p >= 0; p = this.parentOf(p)) {
       if (this.isCollapsed(p)) {
+        factor *= this.appliedCollapseScaleOf(p);
+      }
+    }
+
+    return factor;
+  }
+
+  /** Product of collapsed scopes containing both edge endpoints. */
+  edgeSizeFactorOf(source: number, target: number): number {
+    let factor = 1;
+
+    for (let p = source; p >= 0; p = this.parentOf(p)) {
+      if (this.isCollapsed(p) && this.isAncestorOrSelf(p, target)) {
         factor *= this.appliedCollapseScaleOf(p);
       }
     }
@@ -569,12 +587,15 @@ export class HierarchyIndex {
 
       let bbW = x2 - x1;
       let bbH = y2 - y1;
+      const factor = this.sizeFactorOf(slot);
       let cx: number;
       let cy: number;
 
       if (!(bbW > 0) || !(bbH > 0)) {
         // no shown children / zero area
-        const [fw, fh] = this.host.readSize(slot);
+        const [baseW, baseH] = this.host.readSize(slot);
+        const fw = baseW * factor;
+        const fh = baseH * factor;
 
         bbW = fw;
         bbH = fh;
@@ -585,9 +606,9 @@ export class HierarchyIndex {
         cy = (y1 + y2) / 2;
       }
 
-      const pad = resolvePadding(style, bbW, bbH);
-      const coreW = Math.max(bbW, style.minWidth);
-      const coreH = Math.max(bbH, style.minHeight);
+      const pad = resolvePadding(style, bbW / factor, bbH / factor) * factor;
+      const coreW = Math.max(bbW, style.minWidth * factor);
+      const coreH = Math.max(bbH, style.minHeight * factor);
 
       this.resolvedPad.set(slot, pad);
 
@@ -604,28 +625,38 @@ export class HierarchyIndex {
         this.resolvedSides.delete(slot);
         this.host.materialize(slot, cx, cy, coreW + 2 * pad, coreH + 2 * pad);
       } else {
-        const padL = resolveSidePadding(
-          style.paddingLeft,
-          style,
-          bbW,
-          bbH,
-          pad,
-        );
-        const padR = resolveSidePadding(
-          style.paddingRight,
-          style,
-          bbW,
-          bbH,
-          pad,
-        );
-        const padT = resolveSidePadding(style.paddingTop, style, bbW, bbH, pad);
-        const padB = resolveSidePadding(
-          style.paddingBottom,
-          style,
-          bbW,
-          bbH,
-          pad,
-        );
+        const padL =
+          resolveSidePadding(
+            style.paddingLeft,
+            style,
+            bbW / factor,
+            bbH / factor,
+            pad / factor,
+          ) * factor;
+        const padR =
+          resolveSidePadding(
+            style.paddingRight,
+            style,
+            bbW / factor,
+            bbH / factor,
+            pad / factor,
+          ) * factor;
+        const padT =
+          resolveSidePadding(
+            style.paddingTop,
+            style,
+            bbW / factor,
+            bbH / factor,
+            pad / factor,
+          ) * factor;
+        const padB =
+          resolveSidePadding(
+            style.paddingBottom,
+            style,
+            bbW / factor,
+            bbH / factor,
+            pad / factor,
+          ) * factor;
 
         this.resolvedSides.set(slot, [padL, padR, padT, padB]);
         this.host.materialize(
@@ -676,13 +707,16 @@ export class HierarchyIndex {
     }
 
     const fallback = points.length === 0;
+    const factor = this.sizeFactorOf(slot);
     let bbW: number;
     let bbH: number;
     let cx: number;
     let cy: number;
 
     if (points.length === 0) {
-      const [w, h] = this.host.readSize(slot);
+      const [baseW, baseH] = this.host.readSize(slot);
+      const w = baseW * factor;
+      const h = baseH * factor;
 
       bbW = w;
       bbH = h;
@@ -713,9 +747,9 @@ export class HierarchyIndex {
       cy = (y1 + y2) / 2;
     }
 
-    const pad = resolvePadding(style, bbW, bbH);
-    const coreW = Math.max(bbW, style.minWidth);
-    const coreH = Math.max(bbH, style.minHeight);
+    const pad = resolvePadding(style, bbW / factor, bbH / factor) * factor;
+    const coreW = Math.max(bbW, style.minWidth * factor);
+    const coreH = Math.max(bbH, style.minHeight * factor);
     let padL = pad;
     let padR = pad;
     let padT = pad;
@@ -727,10 +761,38 @@ export class HierarchyIndex {
       style.paddingTop != null ||
       style.paddingBottom != null
     ) {
-      padL = resolveSidePadding(style.paddingLeft, style, bbW, bbH, pad);
-      padR = resolveSidePadding(style.paddingRight, style, bbW, bbH, pad);
-      padT = resolveSidePadding(style.paddingTop, style, bbW, bbH, pad);
-      padB = resolveSidePadding(style.paddingBottom, style, bbW, bbH, pad);
+      padL =
+        resolveSidePadding(
+          style.paddingLeft,
+          style,
+          bbW / factor,
+          bbH / factor,
+          pad / factor,
+        ) * factor;
+      padR =
+        resolveSidePadding(
+          style.paddingRight,
+          style,
+          bbW / factor,
+          bbH / factor,
+          pad / factor,
+        ) * factor;
+      padT =
+        resolveSidePadding(
+          style.paddingTop,
+          style,
+          bbW / factor,
+          bbH / factor,
+          pad / factor,
+        ) * factor;
+      padB =
+        resolveSidePadding(
+          style.paddingBottom,
+          style,
+          bbW / factor,
+          bbH / factor,
+          pad / factor,
+        ) * factor;
       this.resolvedSides.set(slot, [padL, padR, padT, padB]);
     } else {
       this.resolvedSides.delete(slot);
@@ -756,7 +818,7 @@ export class HierarchyIndex {
       }
     }
 
-    const radius = this.hullRadius.get(slot) ?? 8;
+    const radius = (this.hullRadius.get(slot) ?? 8) * factor;
     const world =
       fallback && shape !== SHAPE_CONVEX_HULL
         ? roundedRectangleContour(nextX, nextY, width, height, radius)

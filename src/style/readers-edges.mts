@@ -32,7 +32,7 @@ import { readScalar, readColor, readAlpha, defineReader } from './readers.mjs';
 defineReader([PROP.WIDTH], (store, slot, ref) =>
   ref.group === GROUP_NODES
     ? store.baseSizeOf(slot)[0]
-    : readScalar(store, slot, COL.EDGE_WIDTH),
+    : store.baseEdgeWidthOf(slot),
 );
 
 defineReader([PROP.OPACITY], (store, slot, ref, engine) => {
@@ -157,7 +157,11 @@ defineReader([PROP.LINE_OUTLINE_WIDTH], (store, slot) => {
 
   // on the stroke's 1/256 px grid (round 105): a width off the grid
   // otherwise read back an outline of 0.00078 for none
-  return rec === 0 ? 0 : Math.max(0, rec - Math.round(width * 256)) / 256;
+  return rec === 0
+    ? 0
+    : Math.max(0, rec - Math.round(width * 256)) /
+        256 /
+        store.edgeSizeFactorOf(slot);
 });
 
 defineReader([PROP.LINE_OUTLINE_COLOR], (store, slot) => {
@@ -173,7 +177,9 @@ defineReader([PROP.LINE_OUTLINE_COLOR], (store, slot) => {
 
 defineReader(
   [PROP.LINE_DASH_OFFSET],
-  (store, slot) => (store.column(COL.EDGE_DASH_META) as Float32Array)[slot * 2],
+  (store, slot) =>
+    (store.column(COL.EDGE_DASH_META) as Float32Array)[slot * 2] /
+    store.edgeSizeFactorOf(slot),
 );
 
 defineReader([PROP.LINE_DASH_PATTERN], (store, slot) => {
@@ -183,9 +189,13 @@ defineReader([PROP.LINE_DASH_PATTERN], (store, slot) => {
   );
 
   // collapse the normalized two-pair form back to one pair when repeated
-  return arr[0] === arr[2] && arr[1] === arr[3]
-    ? `${arr[0]} ${arr[1]}`
-    : `${arr[0]} ${arr[1]} ${arr[2]} ${arr[3]}`;
+  const factor = store.edgeSizeFactorOf(slot);
+  const a = arr[0] / factor;
+  const b = arr[1] / factor;
+  const c = arr[2] / factor;
+  const d = arr[3] / factor;
+
+  return a === c && b === d ? `${a} ${b}` : `${a} ${b} ${c} ${d}`;
 });
 
 defineReader([PROP.ARROW_SCALE], (store, slot) => {
@@ -211,14 +221,12 @@ defineReader(
 
 defineReader(
   [PROP.SOURCE_ARROW_WIDTH],
-  (store, slot) =>
-    (store.column(COL.EDGE_ARROW_WIDTHS) as Float32Array)[slot * 2],
+  (store, slot) => store.baseArrowWidthsOf(slot)[0],
 );
 
 defineReader(
   [PROP.TARGET_ARROW_WIDTH],
-  (store, slot) =>
-    (store.column(COL.EDGE_ARROW_WIDTHS) as Float32Array)[slot * 2 + 1],
+  (store, slot) => store.baseArrowWidthsOf(slot)[1],
 );
 
 // round 76: the mid widths have no column — mid heads are always
@@ -245,7 +253,7 @@ defineReader(
       }
     }
 
-    return resolveArrowWidth(aw, readScalar(store, slot, COL.EDGE_WIDTH));
+    return resolveArrowWidth(aw, store.baseEdgeWidthOf(slot));
   },
 );
 

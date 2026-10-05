@@ -62,7 +62,9 @@ export function packChartRef(offset: number): number {
  * modeFlags (fit | repeat<<2 | clip<<4 | containment<<5 |
  * smoothing<<6 | sdf<<7), opacity, posX, posY, offX, offY, w, h,
  * unitFlags (posXPct | posYPct<<1 | offXPct<<2 | offYPct<<3 |
- * wMode<<4 | hMode<<6), tintRG (r + g×256), tintBA (b + a×256)].
+ * wMode<<4 | hMode<<6), tintRG (r + g×256), tintBA (b + a×256),
+ * inherited size factor (round 148; image units are resolved against
+ * authored node dimensions before scaling the drawn rectangle)].
  * Draw-only paint: no geoEpoch bump, no bb/pick involvement.
  *
  * @param slot — the node slot
@@ -140,6 +142,7 @@ export function setNodeImages(
         (s.h.mode << 6);
       values[base + 10] = s.tint[0] + s.tint[1] * 256;
       values[base + 11] = s.tint[2] + s.tint[3] * 256;
+      values[base + 12] = gs.sizeFactorOf(slot);
     }
 
     const offset = gs.imagePool.write(slot, values);

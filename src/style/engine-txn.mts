@@ -121,6 +121,10 @@ export function readTxnValue(
   slot: number,
 ): number | RGBA {
   if (ch.kind === 'scalar') {
+    if (ch.column === COL.EDGE_WIDTH) {
+      return engine.store.baseEdgeWidthOf(slot);
+    }
+
     return (engine.store.column(ch.column as ColumnId) as Float32Array)[slot];
   }
 
@@ -130,7 +134,11 @@ export function readTxnValue(
     const stream =
       ch.column === TWEEN_COL.NODE_FONT_SIZE ? GROUP_NODES : GROUP_EDGES;
 
-    return engine.store.labelAt(slot, stream)?.fontSize ?? -1;
+    const fontSize = engine.store.labelAt(slot, stream)?.fontSize ?? -1;
+
+    return fontSize < 0
+      ? fontSize
+      : fontSize / engine.store.labelFactorOf(slot, stream);
   }
 
   if (ch.kind === 'lane') {
@@ -148,6 +156,14 @@ export function readTxnValue(
 
     if (ch.column === COL.NODE_SIZE) {
       return engine.store.baseSizeOf(slot)[ch.lane as number];
+    }
+
+    if (ch.column === COL.EDGE_WIDTH && ch.lane === 0) {
+      return engine.store.baseEdgeWidthOf(slot);
+    }
+
+    if (ch.column === COL.EDGE_ARROW_WIDTHS) {
+      return engine.store.baseArrowWidthsOf(slot)[ch.lane as number];
     }
 
     const arr = engine.store.column(ch.column as ColumnId) as Float32Array;

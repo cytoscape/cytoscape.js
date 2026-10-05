@@ -74,6 +74,8 @@ export function compact(gs: GraphStore): {
     remapLabelStream(gs, GROUP_EDGES, edgesRes.remap);
     remapLabelStream(gs, 'edgeSource', edgesRes.remap);
     remapLabelStream(gs, 'edgeTarget', edgesRes.remap);
+    gs.baseEdgeWidth = rekeyMap(gs.baseEdgeWidth, edgesRes.remap);
+    gs.baseArrowWidths = rekeyMap(gs.baseArrowWidths, edgesRes.remap);
   }
 
   if (nodesRes != null) {
@@ -86,6 +88,7 @@ export function compact(gs: GraphStore): {
     gs.opacityBase = rekeyMap(gs.opacityBase, nodesRes.remap);
     gs.parentFallback = rekeyMap(gs.parentFallback, nodesRes.remap);
     gs.baseSize = rekeyMap(gs.baseSize, nodesRes.remap);
+    gs.baseBorderWidth = rekeyMap(gs.baseBorderWidth, nodesRes.remap);
   }
 
   if (nodesRes != null || edgesRes != null) {

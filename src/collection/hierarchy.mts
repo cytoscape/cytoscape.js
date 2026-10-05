@@ -328,8 +328,6 @@ export function setCollapsed(self: Collection, collapsed: boolean): Collection {
       throw new Error('collapse scale change is not representable');
     }
 
-    const descendants = descendantSlots(store, slot);
-
     const moved = store.rescaleDescendants(
       slot,
       ratio,
@@ -338,19 +336,7 @@ export function setCollapsed(self: Collection, collapsed: boolean): Collection {
     store.setCollapsed(slot, collapsed, nextScale);
 
     if (ratio !== 1) {
-      self._cy._styleEngine.applyBulk(GROUP_NODES, descendants);
-
-      const edgeSlots = new Set<number>();
-
-      for (const child of descendants) {
-        for (const edge of store.adj.connectedEdges(child)) {
-          edgeSlots.add(edge);
-        }
-      }
-
-      if (edgeSlots.size > 0) {
-        self._cy._styleEngine.applyBulk(GROUP_EDGES, [...edgeSlots]);
-      }
+      refreshCollapsedGeometry(self, [slot]);
     }
 
     store.flushDerived();
@@ -385,6 +371,48 @@ function descendantSlots(store: Collection['_store'], slot: number): number[] {
   }
 
   return descendants;
+}
+
+/**
+ * Re-apply geometry after collapse state has been adopted without moving
+ * descendant positions. Multiple parent slots may be supplied so snapshot
+ * and follow adoption can install all factors before refreshing once.
+ *
+ * @param self — a collection from the core whose store carries the adopted state
+ * @param parentSlots — adopted parent slots whose descendant geometry is stale
+ */
+export function refreshCollapsedGeometry(
+  self: Collection,
+  parentSlots: readonly number[],
+): void {
+  const store = self._store;
+  const descendants = new Set<number>();
+
+  for (const parent of parentSlots) {
+    for (const child of descendantSlots(store, parent)) {
+      descendants.add(child);
+    }
+  }
+
+  const nodeSlots = [...descendants];
+
+  if (nodeSlots.length > 0) {
+    self._cy._styleEngine.applyBulk(GROUP_NODES, nodeSlots);
+  }
+
+  const edgeSlots = new Set<number>();
+
+  for (const child of nodeSlots) {
+    for (const edge of store.adj.connectedEdges(child)) {
+      edgeSlots.add(edge);
+    }
+  }
+
+  if (edgeSlots.size > 0) {
+    self._cy._styleEngine.applyBulk(GROUP_EDGES, [...edgeSlots]);
+  }
+
+  store.flushDerived();
 }
 
 /** The first ref when it is a live node, else null — the raw-ref fast read the compound predicates share (the 62.6 shape). */

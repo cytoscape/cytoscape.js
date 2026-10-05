@@ -143,7 +143,7 @@ describe('store: the image record ref past 2^24 floats (round 145)', function ()
     });
   });
 
-  it('the 349,527th four-image node reads back its own images', function () {
+  it('the first four-image node beyond the ref limit reads back its images', function () {
     const n = Math.floor(REF_OFFSET_FLOATS / (4 * IMG_STRIDE)) + 2;
     const els = [];
 
@@ -162,7 +162,8 @@ describe('store: the image record ref past 2^24 floats (round 145)', function ()
     });
     const last = cy.$id('n' + (n - 1));
 
-    expect(n).to.equal(349527);
+    expect((n - 2) * 4 * IMG_STRIDE).to.be.below(REF_OFFSET_FLOATS);
+    expect((n - 1) * 4 * IMG_STRIDE).to.be.at.least(REF_OFFSET_FLOATS);
     expect(
       cy._store.imagePool.offsetOf(cy._store.lookup(last.id()).slot),
     ).to.be.at.least(REF_OFFSET_FLOATS);

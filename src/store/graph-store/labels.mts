@@ -198,6 +198,8 @@ export function setLabelFontSize(
   group: GroupName,
   fontSize: number,
 ): void {
+  const factor = gs.labelFactorOf(slot, group);
+  fontSize *= factor;
   const streams: LabelStream[] =
     group === GROUP_NODES
       ? [GROUP_NODES]

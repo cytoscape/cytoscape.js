@@ -588,7 +588,11 @@ export function freeSlot(gs: GraphStore, group: GroupName, slot: number): void {
     // recycled slots must not inherit compound state
     gs.parentFallback.delete(slot);
     gs.baseSize.delete(slot);
+    gs.baseBorderWidth.delete(slot);
     gs.opacityBase.delete(slot);
+  } else {
+    gs.baseEdgeWidth.delete(slot);
+    gs.baseArrowWidths.delete(slot);
   }
 
   gs.data.clearSlot(group, slot);

@@ -3,6 +3,7 @@ import { layoutRunOf, openLayoutRun } from './run-state.mjs';
 import { nodeDimsOf } from './dims.mjs';
 import { ringRadius, type Ring } from './separation.mjs';
 import { layoutPerComponent, validatePackOptions } from './per-component.mjs';
+import { layoutUnitNodes } from './scope.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { RadialLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -131,7 +132,7 @@ export class RadialLayout {
     const cy = this.cy;
     const options = this.options;
     const eles = (options.eles as Collection | undefined) ?? cy.elements();
-    const nodes = eles.nodes().filter((n: Collection) => !n.isParent());
+    const nodes = layoutUnitNodes(eles);
 
     const bb = math.makeBoundingBox(
       options.boundingBox ?? {

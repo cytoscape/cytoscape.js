@@ -576,4 +576,140 @@ describe('gpu/compounds: miniature compounds (round 148)', function () {
     expect(child.width()).to.equal(15);
     expect(child.height()).to.equal(7);
   });
+
+  it('lays out a parent-only collapsed scope as one translated unit', async function () {
+    const cy = cytoscape({
+      elements: {
+        nodes: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: -20, y: 0 } },
+          { data: { id: 'b', parent: 'p' }, position: { x: 20, y: 0 } },
+          { data: { id: 'q' }, position: { x: 100, y: 0 } },
+        ],
+        edges: [
+          { data: { id: 'ab', source: 'a', target: 'b' } },
+          { data: { id: 'aq', source: 'a', target: 'q' } },
+        ],
+      },
+      style: { parents: { 'collapse-scale': 0.25 } },
+    });
+    const parent = cy.$id('p');
+    const a = cy.$id('a');
+    const b = cy.$id('b');
+    const q = cy.$id('q');
+
+    parent.collapse();
+
+    const beforeParent = parent.position();
+    const beforeA = a.position();
+    const beforeB = b.position();
+    let slots;
+    let edges;
+
+    const layout = parent.layout({
+      impl: {
+        run(ctx) {
+          slots = [...ctx.nodeSlots()];
+          edges = [...ctx.edgeSlots()];
+          ctx.setPositions(slots, [120, 60]);
+        },
+      },
+      fit: false,
+    });
+
+    layout.run();
+    await layout.promise();
+
+    const dx = 120 - beforeParent.x;
+    const dy = 60 - beforeParent.y;
+
+    expect(slots).to.deep.equal([parent._refs[0].slot]);
+    expect(edges).to.deep.equal([]);
+    expect(parent.position()).to.deep.equal({ x: 120, y: 60 });
+    expect(a.position()).to.deep.equal({
+      x: beforeA.x + dx,
+      y: beforeA.y + dy,
+    });
+    expect(b.position()).to.deep.equal({
+      x: beforeB.x + dx,
+      y: beforeB.y + dy,
+    });
+    expect(q.position()).to.deep.equal({ x: 100, y: 0 });
+    expect(ids(cy.edges())).to.deep.equal(['ab', 'aq']);
+    expect(cy.$id('aq').data('source')).to.equal('a');
+    expect(cy.$id('aq').data('target')).to.equal('q');
+  });
+
+  it('uses descendant nodes instead of placing their collapsed parent too', async function () {
+    const cy = cytoscape({
+      elements: {
+        nodes: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: -20, y: 0 } },
+          { data: { id: 'b', parent: 'p' }, position: { x: 20, y: 0 } },
+        ],
+      },
+      style: { parents: { 'collapse-scale': 0.25 } },
+    });
+    const parent = cy.$id('p');
+    const a = cy.$id('a');
+    const b = cy.$id('b');
+
+    parent.collapse();
+
+    const beforeB = b.position();
+    let slots;
+    const layout = parent.union(a).layout({
+      impl: {
+        run(ctx) {
+          slots = [...ctx.nodeSlots()];
+          ctx.setPositions(slots, [80, 40]);
+        },
+      },
+      fit: false,
+    });
+
+    layout.run();
+    await layout.promise();
+
+    expect(slots).to.deep.equal([a._refs[0].slot]);
+    expect(a.position()).to.deep.equal({ x: 80, y: 40 });
+    expect(b.position()).to.deep.equal(beforeB);
+  });
+
+  it('keeps parent-only built-in and preset layouts on the unit path', function () {
+    const cy = make({ parents: { 'collapse-scale': 0.25 } });
+    const parent = cy.$id('p');
+    const a = cy.$id('a');
+
+    parent.collapse();
+    const beforeParent = parent.position();
+    const beforeA = a.position();
+    parent
+      .layout({
+        name: 'grid',
+        fit: false,
+        boundingBox: { x1: 120, y1: 80, w: 200, h: 120 },
+      })
+      .run();
+
+    const afterParent = parent.position();
+    const afterA = a.position();
+
+    expect(afterParent.x).to.be.greaterThan(100);
+    expect(afterA.x - afterParent.x).to.be.closeTo(
+      beforeA.x - beforeParent.x,
+      1e-4,
+    );
+
+    parent
+      .layout({
+        name: 'preset',
+        fit: false,
+        positions: { p: { x: 310, y: 170 } },
+      })
+      .run();
+
+    expect(parent.position()).to.deep.equal({ x: 310, y: 170 });
+  });
 });

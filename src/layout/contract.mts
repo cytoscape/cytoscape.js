@@ -39,6 +39,7 @@ import { computeComponents, packComponentBodies } from './pack.mjs';
 import type { Components } from './pack.mjs';
 import { nodeDims } from './dims.mjs';
 import type { DimsOptions, LayoutNodeDims } from './dims.mjs';
+import { layoutUnitRefs } from './scope.mjs';
 import type { Core } from '../core.mjs';
 import { layoutCancelled, layoutRunOf, openLayoutRun } from './run-state.mjs';
 import type { Collection } from '../collection.mjs';
@@ -146,9 +147,10 @@ export class LayoutContext {
   // -- columnar reads --
 
   /**
-   * The slots to lay out: the scope's nodes, pre-filtered to unlocked
-   * leaves (locked nodes hold their place; parents derive from their
-   * placed children — round 14.11).  Scope order.
+   * The slots to lay out: the scope's unlocked leaves, plus a collapsed
+   * parent when no scoped node lies below it. Locked nodes hold their
+   * place; parents with scoped descendants derive from those descendants.
+   * Scope order.
    *
    * @returns the slots to place, in exactly `cy.nodes()` order — which is
    *   load-bearing rather than incidental, since grid and circle assign
@@ -189,15 +191,8 @@ export class LayoutContext {
     } else {
       // Subset scope: the caller already holds the collection, so its
       // refs are the cheap path — still no handles.
-      for (const ref of scope._liveRefs()) {
-        if (ref.group !== GROUP_NODES) {
-          continue;
-        }
-
-        if (
-          store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT) ||
-          store.hasFlag(GROUP_NODES, ref.slot, FLAG_LOCKED)
-        ) {
+      for (const ref of layoutUnitRefs(store, scope._liveRefs())) {
+        if (store.hasFlag(GROUP_NODES, ref.slot, FLAG_LOCKED)) {
           continue;
         }
 

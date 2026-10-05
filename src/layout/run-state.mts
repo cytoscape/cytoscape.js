@@ -24,6 +24,7 @@ import type { Core } from '../core.mjs';
 import type { Collection } from '../collection.mjs';
 import type { AnimationHandle } from '../animation.mjs';
 import { CancelledError } from '../algorithms/cancel.mjs';
+import { layoutUnitRefs } from './scope.mjs';
 
 /** One layout run, from `run()` to its `layoutstop`. */
 export class LayoutRun {
@@ -82,12 +83,37 @@ export class LayoutRun {
         FLAG_ALIVE,
       );
     } else {
-      for (const ref of eles._liveRefs()) {
-        if (
-          ref.group === GROUP_NODES &&
-          !store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT)
-        ) {
-          slots.push(ref.slot);
+      const refs = eles._liveRefs();
+      const seen = new Set<number>();
+
+      const add = (slot: number): void => {
+        if (!seen.has(slot)) {
+          seen.add(slot);
+          slots.push(slot);
+        }
+      };
+
+      for (const ref of layoutUnitRefs(store, refs)) {
+        if (!store.hasFlag(GROUP_NODES, ref.slot, FLAG_PARENT)) {
+          add(ref.slot);
+          continue;
+        }
+
+        // Moving a parent-only unit translates its full subtree. Snapshot
+        // the subtree's leaves too, so cancelling the run restores the
+        // actual positions even though those descendants were outside the
+        // selected collection.
+        const stack = [...store.childrenOf(ref.slot)];
+
+        while (stack.length > 0) {
+          const slot = stack.pop() as number;
+          const children = store.childrenOf(slot);
+
+          if (children.length === 0) {
+            add(slot);
+          } else {
+            stack.push(...children);
+          }
         }
       }
     }

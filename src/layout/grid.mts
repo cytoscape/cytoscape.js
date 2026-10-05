@@ -10,6 +10,7 @@ import { hasListeners } from '../events.mjs';
 import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import { nodeDims, nodeDimsOf } from './dims.mjs';
 import { layoutPerComponent, validatePackOptions } from './per-component.mjs';
+import { layoutUnitNodes } from './scope.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { GridLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -246,9 +247,9 @@ export class GridLayout {
     const eles = (options.eles as Collection | undefined) ?? cy.elements();
 
     // parents derive; locked nodes hold their place and take no cell
-    let nodes = eles
-      .nodes()
-      .filter((node: Collection) => !node.isParent() && !node.locked());
+    let nodes = layoutUnitNodes(eles).filter(
+      (node: Collection) => !node.locked(),
+    );
 
     if (options.sort != null) {
       // the { data, order? } sort mapping is the serializable spelling

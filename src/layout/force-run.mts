@@ -3,7 +3,7 @@
 // the GPU, worker, live or synchronous executor.  See `ForceLayoutImpl`
 // in ./force.mts.
 
-import { GROUP_EDGES, COL, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
+import { GROUP_EDGES, COL, FLAG_LOCKED } from '../contract.mjs';
 import type { Ref } from '../contract.mjs';
 import { ForceSim, defaultForceParams } from './force-sim.mjs';
 import {
@@ -42,6 +42,7 @@ import type { ForceRunOptions } from './force-options.mjs';
 import { separateBodies } from './force-separate.mjs';
 import type { ForceLayoutImpl } from './force.mjs';
 import { runLive, runRemote, runGpu } from './force-executors.mjs';
+import { layoutUnitNodes } from './scope.mjs';
 
 /**
  * Run the simulation.  Two executors, one spec: the CPU reference is
@@ -125,20 +126,19 @@ export function runOnce(
     );
   }
 
-  // the sim set: every leaf in scope — unlocked ones move, locked
-  // ones pin in place as obstacles
+  // The sim set follows the scope's movable-unit classification. Leaves
+  // move normally; a collapsed parent is included only when no scoped
+  // descendant participates. Locked units remain pinned obstacles.
   const flags = store.column(COL.NODE_FLAGS) as Uint32Array;
+  const scopedUnits = layoutUnitNodes(ctx.eles);
   const simSlots: number[] = [];
   const simRefs: Ref[] = [];
   const simIndex = new Map<number, number>();
 
-  for (let i = 0; i < ctx.nodes.length; i++) {
-    const ref = ctx.nodes[i]._eventRef();
+  for (let i = 0; i < scopedUnits.length; i++) {
+    const ref = scopedUnits[i]._eventRef();
 
-    if (ref == null || !ctx.nodes[i].inside()) {
-      continue;
-    }
-    if ((flags[ref.slot] & FLAG_PARENT) !== 0) {
+    if (ref == null || !scopedUnits[i].inside()) {
       continue;
     }
 

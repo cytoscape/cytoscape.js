@@ -6,6 +6,7 @@ import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import { nodeDimsOf } from './dims.mjs';
 import { halfExtentAlong, ringTangentialRadius } from './separation.mjs';
 import { layoutPerComponent, validatePackOptions } from './per-component.mjs';
+import { layoutUnitNodes } from './scope.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { BreadthFirstLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -141,7 +142,7 @@ export class BreadthFirstLayout {
     const cy = this.cy;
     const options = this.options;
     const eles = (options.eles as Collection | undefined) ?? cy.elements();
-    const nodes = eles.nodes().filter((n: Collection) => !n.isParent());
+    const nodes = layoutUnitNodes(eles);
     const directed = options.directed === true;
 
     if (rotateDegrees[options.direction as string] === undefined) {

@@ -4,6 +4,7 @@ import { isSortMapping, sortComparator } from './layout-mapping.mjs';
 import { nodeDimsOf } from './dims.mjs';
 import { ringTangentialRadius } from './separation.mjs';
 import { layoutPerComponent, validatePackOptions } from './per-component.mjs';
+import { layoutUnitNodes } from './scope.mjs';
 import type { BoundingBox, Position } from '../types.mjs';
 import type { CircleLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -110,9 +111,7 @@ export class CircleLayout {
 
     // parents derive; a locked node holds its place and takes no slot on
     // the ring (114.3 — circle places by index)
-    let nodes = eles
-      .nodes()
-      .filter((n: Collection) => !n.isParent() && !n.locked());
+    let nodes = layoutUnitNodes(eles).filter((n: Collection) => !n.locked());
 
     if (options.sort != null) {
       // the { data, order? } sort mapping is the serializable spelling

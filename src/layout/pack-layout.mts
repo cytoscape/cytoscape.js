@@ -11,6 +11,7 @@ import {
   validatePackOptions,
   type LayoutComponent,
 } from './per-component.mjs';
+import { layoutUnitNodes } from './scope.mjs';
 import type { Position } from '../types.mjs';
 import type { PackLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -104,9 +105,9 @@ export class PackLayout {
 
     validatePackOptions(options, 'pack');
 
-    const nodes = eles
-      .nodes()
-      .filter((n: Collection) => !n.isParent() && !n.locked()) as Collection;
+    const nodes = layoutUnitNodes(eles).filter(
+      (n: Collection) => !n.locked(),
+    ) as Collection;
     const n = nodes.length;
     const spacing = options.componentSpacing ?? 40;
     const split = splitByComponent(eles, nodes);

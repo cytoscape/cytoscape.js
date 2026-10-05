@@ -1,5 +1,6 @@
 import * as math from '../math.mjs';
 import { layoutRunOf, openLayoutRun } from './run-state.mjs';
+import { layoutUnitNodes } from './scope.mjs';
 import type { BoundingBox } from '../types.mjs';
 import type { RandomLayoutOptions } from '../public-types.mjs';
 import type { Collection } from '../collection.mjs';
@@ -120,7 +121,7 @@ export class RandomLayout {
       y: bb.y1 + Math.round(rand() * bb.h),
     });
 
-    eles.nodes().layoutPositions(this, { ...options, eles }, getPos);
+    layoutUnitNodes(eles).layoutPositions(this, { ...options, eles }, getPos);
 
     return this;
   }

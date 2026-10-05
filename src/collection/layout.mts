@@ -9,6 +9,7 @@ import type { Position } from '../types.mjs';
 import type { LayoutBaseOptions } from '../public-types.mjs';
 import { layoutRunOf } from '../layout/run-state.mjs';
 import { nodeDims } from '../layout/dims.mjs';
+import { layoutUnitNodes } from '../layout/scope.mjs';
 import type { Collection } from '../collection.mjs';
 
 /**
@@ -73,13 +74,10 @@ export function layoutPositions(
     return self;
   }
 
-  // v3: parents are excluded from layout positioning (auto-bounds
-  // derive them from their placed leaves, round 14.11), and so are
-  // locked nodes (114.3) — they hold their place; the layout that
-  // computed positions for them still counted them in its structure
-  const nodes = self
-    .nodes()
-    .filter((n: Collection) => !n.isParent() && !n.locked());
+  // Parents with scoped descendants derive from their placed leaves
+  // (14.11). A collapsed parent with no scoped descendants is a movable
+  // unit; locked units hold their place (114.3).
+  const nodes = layoutUnitNodes(self).filter((n: Collection) => !n.locked());
   const eles = (options.eles as Collection | undefined) ?? self;
 
   // the extension wrapper emits its own layoutstart before run()

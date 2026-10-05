@@ -4245,8 +4245,12 @@ keep the authored size, and geometry reads use the inherited effective size.
 current centre, preserve the original graph and hidden state, and keep locked
 subtrees still while their bodies shrink. Node decoration, images, charts,
 labels, compound hulls and shared internal-edge geometry follow that factor;
-crossing-edge widths remain at their authored scale. Scoped layouts,
-animation and persistence consumers remain in progress for round 148.
+crossing-edge widths remain at their authored scale. In a scoped layout, a
+collapsed parent with no scoped descendants moves as one translated unit;
+when descendants are in scope, the usual leaf layout rule applies. Edges
+outside the chosen scope do not connect these units or create aggregate
+connections. Animation and persistence consumers remain in progress for
+round 148.
 
 Round 82 adds `convex-hull`, `round-convex-hull` and `concave-hull` as
 parent `shape` values. Each contour follows direct children’s actual outer

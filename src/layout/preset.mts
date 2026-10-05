@@ -1,5 +1,6 @@
 import { GROUP_NODES, FLAG_LOCKED, FLAG_PARENT } from '../contract.mjs';
 import { layoutRunOf, openLayoutRun } from './run-state.mjs';
+import { layoutUnitNodes } from './scope.mjs';
 import { hasListeners } from '../events.mjs';
 import type { Position } from '../types.mjs';
 import type { PresetLayoutOptions } from '../public-types.mjs';
@@ -121,14 +122,11 @@ export class PresetLayout {
     cy.emit({ type: 'layoutstart', layout: this });
 
     const scope = (options.eles as Collection | undefined) ?? cy;
+    const scopedNodes = layoutUnitNodes(scope.nodes());
 
     if (typeof positions === 'function') {
       // function form takes handles by contract
-      scope.nodes().positions((ele: Collection) => {
-        if (ele.isParent()) {
-          return false;
-        } // parents derive (14.11)
-
+      scopedNodes.positions((ele: Collection) => {
         const pos = (
           positions as (node: Collection) => Position | null | undefined
         )(ele);
@@ -146,6 +144,11 @@ export class PresetLayout {
       const store = cy._store;
       const slots: number[] = [];
       const xy: number[] = [];
+      const unitParents = new Set(
+        scopedNodes
+          .filter((ele: Collection) => ele.isParent())
+          .map((ele: Collection) => ele._refs[0].slot),
+      );
 
       for (const id of Object.keys(positions)) {
         const entry = store.lookup(id);
@@ -156,9 +159,12 @@ export class PresetLayout {
         }
 
         checkPosition(pos, id);
-        if (store.hasFlag(GROUP_NODES, entry.slot, FLAG_PARENT)) {
+        if (
+          store.hasFlag(GROUP_NODES, entry.slot, FLAG_PARENT) &&
+          !unitParents.has(entry.slot)
+        ) {
           continue;
-        } // parents derive (14.11)
+        } // other parents derive from scoped descendants (14.11)
         if (store.hasFlag(GROUP_NODES, entry.slot, FLAG_LOCKED)) {
           continue;
         } // locked nodes hold their place (114.3)
@@ -238,7 +244,7 @@ export class PresetLayout {
     const options = this.options;
     const positions = options.positions;
     const eles = (options.eles as Collection | undefined) ?? cy.elements();
-    const nodes = eles.nodes();
+    const nodes = layoutUnitNodes(eles);
 
     const getPos = (node: Collection): Position => {
       let pos: Position | null | undefined;

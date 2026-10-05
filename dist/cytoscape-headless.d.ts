@@ -326,12 +326,11 @@ declare const COL: {
    */
   readonly NODE_IMAGE_REF: 'node.imageRef';
   /**
-   * Uint32Array(cap) — chart record ref (round 23): offset into the
-   * chart blob | slice count << 24 (0 = no chart).  The record is
-   * CHART_HEADER floats (kind, size, hole, startAngle, direction,
-   * n) then n × (value, packed-rgba-as-float-bits).  Draw-only
-   * paint, like images: nothing in bb, cull-extent or CPU-pick.  An
-   * offset past `REF_OFFSET_FLOATS` saturates (round 145).
+   * Uint32Array(cap) — chart blob word offset + 1 (zero = no chart).
+   * The count lives in the record header, so addressing is independent
+   * of the value count. Draw-only paint, like images: nothing in bb,
+   * cull-extent or CPU-pick. The pool is bounded by the device's
+   * bindable buffer size and the u32 word-address range (round 80.1).
    */
   readonly NODE_CHART_REF: 'node.chartRef';
   readonly EDGE_ENDPOINTS: 'edge.endpoints';
@@ -510,7 +509,7 @@ interface StoreDelta {
     start: number;
     end: number;
   };
-  /** chart blob dirt (round 23): float range [start, end) or a realloc */
+  /** Chart blob dirt (round 80.1): u32-word range [start, end) or a realloc. */
   chartBlob?: {
     resized: boolean;
     start: number;
@@ -679,7 +678,7 @@ interface ModelView {
   /** The 15.2 background-image record blob (refs ride node.imageRef). */
   imageBlob(): Float32Array;
   imageBlobLength(): number;
-  /** The round-23 chart record blob (refs ride node.chartRef). */
+  /** The mixed-word chart record blob (refs ride node.chartRef). */
   chartBlob(): Float32Array;
   chartBlobLength(): number;
   /** The unique-image pool (round 15.1) — the renderer uploads ready
@@ -1240,10 +1239,10 @@ interface Stylesheet<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    * (rectangle, #eee fill, 1px #ccc border, padding 10) — constants or
    * mappers — plus the compound props `padding`, `padding-relative-to`,
    * `min-width`, `min-height` and `compound-sizing-wrt-labels`
-   * (constants only; `'exclude'` is the only accepted sizing value —
-   * compound auto-sizing reads the children's body extents, not
-   * their labels — public bb/fit include labels since round 16.4,
-   * the auto-bounds derivation deliberately does not).
+   * (constants only; sizing is `'exclude'` by default, or `'include'`
+   * to add visible direct-child label bounds in model space before
+   * padding. A parent's own label never sizes itself, and zoom LOD does
+   * not affect the geometry).
    */
   parents?: StyleProps<NodeData>;
   /**
@@ -1941,8 +1940,8 @@ interface GpuErrorInfo {
    * `'out-of-memory'` / `'validation'` / `'internal'` — the device's
    * own error class; `'unfit'` — a buffer the renderer declined to
    * allocate because it would exceed the device's limits, or (round
-   * 145) a chart or image record pool past the 2^24 floats a node's
-   * record ref can address
+   * 145) an image pool past its 2^24-float ref reach, or (round 80.1)
+   * a chart pool past its u32 word-address reach
    */
   kind: 'out-of-memory' | 'validation' | 'internal' | 'unfit';
   /** the device's message, or the renderer's for `'unfit'` */
@@ -2992,6 +2991,7 @@ interface CompoundStyle {
   relativeTo: 'width' | 'height' | 'average' | 'min' | 'max';
   minWidth: number;
   minHeight: number;
+  sizingWrtLabels: 'include' | 'exclude';
   paddingLeft?: SidePadding;
   paddingRight?: SidePadding;
   paddingTop?: SidePadding;
@@ -3370,12 +3370,10 @@ declare class GraphStore implements ModelView {
    */
   setNodeImages(slot: number, specs: NodeImageSpec[] | null): void;
   /**
-   * Write (or clear) a node's chart record (round 23).  The blob layout
-   * is CHART_HEADER floats — kind, size, hole, startAngle, direction,
-   * n — then n × (value, r+g·256, b+a·256): colors split across two
-   * small-integer floats (the image-record trick — packed u32 color
-   * bits would risk NaN canonicalization through the f32 pool).
-   * Colors arrive alpha-folded (chart-opacity, the B1 pattern).
+   * Write (or clear) a node's chart record (round 80.1). The mixed
+   * u32/f32 word layout is defined in contract.mts. Colors are passed
+   * alpha-folded (chart-opacity, the B1 pattern); pie and stripe values
+   * are stored as cumulative stops for the shader's binary search.
    */
   setChart(slot: number, rec: {
     kind: number;
@@ -3384,10 +3382,11 @@ declare class GraphStore implements ModelView {
     startAngle: number;
     direction: number;
     opacity: number;
-    values: number[];
+    values: (number | null)[];
     colors: [number, number, number, number][];
+    barDomain?: [number, number] | null;
   } | null): void;
-  /** A node's decoded chart record, or null when chartless (round 23). */
+  /** A node's decoded chart record, or null when chartless (round 80.1). */
   chartAt(slot: number): {
     kind: number;
     size: number;
@@ -3395,8 +3394,9 @@ declare class GraphStore implements ModelView {
     startAngle: number;
     direction: number;
     opacity: number;
-    values: number[];
+    values: (number | null)[];
     colors: [number, number, number, number][];
+    barDomain: [number, number] | null;
   } | null;
   /** A node's decoded background-image records, or null when imageless. */
   nodeImagesAt(slot: number): NodeImageRecord[] | null;

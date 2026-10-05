@@ -578,19 +578,18 @@ test.describe('the worker host reports its device too (round 138)', () => {
 });
 
 /*
-Round 145: the record ref's reach.  `node.chartRef`/`node.imageRef`
-pack `offset | count << 24`; a pool past 2^24 floats cannot be
-referenced, so the feature degrades like a declined allocation (round
-138's order).  The real boundary, no instrument: records of 254 values
-(769 floats) put the 21,818th charted node past it, 254 images (3,048
-floats) the 5,506th imaged node.  The records are written through the
-store's own writers (the style layer caps at 16 slices and 4 images,
-which would take 305k nodes); everything but two nodes sits off-screen.
+Record address limits (round 145 and 80.1): image refs still pack
+`offset | count << 24`, while chart refs now store offset+1 in a u32 word
+and read their count from the header. The image record still degrades at
+2^24 floats. The chart control here crosses the former 2^24-word chart
+reach and proves the new address and shader continue to draw it. Records
+use 254 values; all but the first and last sit off-screen.
 */
 
-const REF_FLOATS = 2 ** 24;
-const CHART_FLOATS = 7 + 254 * 3;
 const IMAGE_FLOATS = 254 * 12;
+const OLD_CHART_REF_WORDS = 2 ** 24;
+const CHART_WORDS = 9 + 254 * 2 + Math.ceil(254 / 32);
+const CHART_TEST_BUFFER_BYTES = 2 ** 27;
 
 /** Nodes `from`..`to` - 1 off-screen, with a 254-value red pie each. */
 const addCharts = (page, from, to) =>
@@ -640,7 +639,7 @@ const redPixels = async (page) => {
 for (const worker of [false, true]) {
   const host = worker ? 'the worker host' : 'the main-thread host';
 
-  test.describe(`the record ref's reach, ${host} (round 145)`, () => {
+  test.describe(`record addresses, ${host} (round 80.1 / 145)`, () => {
     test.beforeEach(async ({ page }) => {
       await page.goto(PAGE);
       test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
@@ -656,15 +655,29 @@ for (const worker of [false, true]) {
       }
     });
 
-    test('a chart pool past 2^24 floats degrades charts: reported once, no chart drawn', async ({
+    test('charts beyond the former 24-bit reach still draw through offset+1', async ({
       page,
     }) => {
       test.setTimeout(120_000);
 
-      // the last node inside the reach and the first past it
-      const inside = Math.floor(REF_FLOATS / CHART_FLOATS);
+      const deviceFit = await page.evaluate(async () => {
+        const adapter = await navigator.gpu.requestAdapter();
 
-      expect(inside * CHART_FLOATS).toBeLessThanOrEqual(REF_FLOATS);
+        return Math.min(
+          adapter.limits.maxBufferSize,
+          adapter.limits.maxStorageBufferBindingSize,
+        );
+      });
+
+      test.skip(
+        deviceFit < CHART_TEST_BUFFER_BYTES,
+        'chart blob needs a 128 MiB bindable buffer to cross the former reach',
+      );
+
+      const past = Math.floor(OLD_CHART_REF_WORDS / CHART_WORDS) + 1;
+      const nodes = past + 1;
+
+      expect(past * CHART_WORDS).toBeGreaterThan(OLD_CHART_REF_WORDS);
 
       await page.evaluate(async (worker) => {
         window.__gpuerrors = [];
@@ -681,43 +694,32 @@ for (const worker of [false, true]) {
         cy.pan({ x: 100, y: 100 });
       }, worker);
 
-      await addCharts(page, 0, inside);
-      // two on screen: the first record, and the last inside the reach
+      await addCharts(page, 0, nodes);
       await page.evaluate((last) => {
         window.cy.$id('n0').position({ x: 0, y: 0 });
         window.cy.$id('n' + last).position({ x: 60, y: 0 });
-      }, inside - 1);
-      await drawFrames(page, 5);
-
-      const before = await redPixels(page);
-      const quiet = await page.evaluate(() => window.__gpuerrors);
-
-      // the control inside the spec: at the reach, both pies draw
-      expect(quiet).toEqual([]);
-      expect(before).toBeGreaterThan(1000);
-
-      // one record more, and the next is past the reach
-      await addCharts(page, inside, inside + 2);
-      await page.evaluate((n) => {
-        window.cy.$id('n' + n).position({ x: 120, y: 0 });
-      }, inside + 1);
+      }, past);
       await drawFrames(page, 10);
 
-      const after = await redPixels(page);
+      const address = await page.evaluate((last) => {
+        const slot = window.cy._store.lookup('n' + last).slot;
+        const offset = window.cy._store.chartPool.offsetOf(slot);
+        const ref = window.cy._store.column('node.chartRef')[slot];
+        const record = window.cy._store.chartAt(slot);
+
+        return { offset, ref, chartValues: record.values.length };
+      }, past);
+      const red = await redPixels(page);
       const errors = await page.evaluate(() => window.__gpuerrors);
 
-      expect(errors.map((e) => [e.kind, e.label, e.degraded])).toEqual([
-        ['unfit', 'cy-gpu:chart-blob', 'charts'],
-      ]);
-      expect(errors[0].message).toMatch(/past the 16777216 floats .* 24-bit/);
-      // nothing draws a ref the field could not hold
-      expect(after).toBe(0);
+      expect(address.offset).toBeGreaterThan(OLD_CHART_REF_WORDS);
+      expect(address.ref).toBe(address.offset + 1);
+      expect(address.chartValues).toBe(254);
+      expect(errors).toEqual([]);
+      expect(red).toBeGreaterThan(1000);
 
       if (!worker) {
-        const s = await stats(page);
-
-        expect(s.degraded).toEqual(['charts']);
-        expect(s.errors).toBe(0);
+        expect((await stats(page)).degraded).toEqual([]);
       }
     });
 
@@ -726,7 +728,7 @@ for (const worker of [false, true]) {
     }) => {
       test.setTimeout(120_000);
 
-      const n = Math.floor(REF_FLOATS / IMAGE_FLOATS) + 2;
+      const n = Math.floor(2 ** 24 / IMAGE_FLOATS) + 2;
 
       await page.evaluate(
         async ({ worker, n }) => {

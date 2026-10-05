@@ -74,9 +74,18 @@ export class CurveBlob {
     return this.pool;
   }
 
-  /** floats in use (the renderer mirrors [0, length())) */
+  /** floats/words in use (the renderer mirrors [0, length())) */
   length(): number {
     return this.used;
+  }
+
+  /** The same pool as u32 words, for mixed chart records. */
+  wordData(): Uint32Array {
+    return new Uint32Array(
+      this.pool.buffer,
+      this.pool.byteOffset,
+      this.pool.length,
+    );
   }
 
   /** the record offset for a slot, or -1 */
@@ -125,6 +134,25 @@ export class CurveBlob {
     this.maybeCompact();
 
     return this.offsets[slot];
+  }
+
+  /**
+   * Write a mixed record from u32 words. Float fields may be prepared
+   * through a Float32Array view of the same buffer; integer fields are
+   * copied as raw bits, so a color word that resembles a float NaN is
+   * never canonicalised by a numeric conversion.
+   */
+  writeWords(slot: number, values: Uint32Array): number {
+    const floats = new Float32Array(
+      values.buffer,
+      values.byteOffset,
+      values.length,
+    );
+    const off = this.write(slot, floats);
+
+    this.wordData().set(values, off);
+
+    return off;
   }
 
   /** Slot compaction (19.2): permute the slot-indexed offset/length
@@ -247,8 +275,9 @@ export class CurveBlob {
     }
 
     const pool = new Float32Array(cap);
+    const words = new Uint32Array(pool.buffer);
 
-    pool.set(this.pool);
+    words.set(this.wordData());
     this.pool = pool;
     this.resized = true;
   }
@@ -267,6 +296,8 @@ export class CurveBlob {
     }
 
     const pool = new Float32Array(cap);
+    const words = new Uint32Array(pool.buffer);
+    const sourceWords = this.wordData();
     let cursor = 0;
 
     for (let slot = 0; slot < this.offsets.length; slot++) {
@@ -278,7 +309,7 @@ export class CurveBlob {
 
       const len = this.lengths[slot];
 
-      pool.set(this.pool.subarray(off, off + len), cursor);
+      words.set(sourceWords.subarray(off, off + len), cursor);
 
       if (cursor !== off) {
         this.offsets[slot] = cursor;

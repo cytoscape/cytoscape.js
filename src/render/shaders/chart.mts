@@ -1,5 +1,11 @@
 import { wgsl } from '../../gpu/wgsl.mjs';
-import { SHAPE_MASK, SHAPE_SHIFT } from '../../contract.mjs';
+import {
+  CHART_COUNT_WORD,
+  CHART_HEADER,
+  CHART_VALUE_WORDS,
+  SHAPE_MASK,
+  SHAPE_SHIFT,
+} from '../../contract.mjs';
 import { COMMON } from './common.mjs';
 import { SDF } from './sdf.mjs';
 
@@ -11,7 +17,7 @@ charts over background images), chartless instances collapsing in the
 VS.  The FS clips to the node shape at the border's inner edge (the
 image pass's rule), resolves the fraction coordinate — the clockwise
 angle from 12 o'clock for pies, the advancing axis for stripes — and
-walks the record's cumulative stops with px-space AA across slice
+bisects the record's cumulative stops with px-space AA across slice
 boundaries.  The remainder past the values' total stays unpainted
 (v3's percent semantics).
 */
@@ -26,11 +32,13 @@ ${SDF}
 @group(0) @binding(4) var<storage, read> borderGeom: array<vec4u>;
 @group(0) @binding(5) var<storage, read> borderWidths: array<f32>;
 @group(0) @binding(6) var<storage, read> chartRefs: array<u32>;
-@group(0) @binding(7) var<storage, read> chartBlob: array<f32>;
+@group(0) @binding(7) var<storage, read> chartBlob: array<u32>;
 @group(0) @binding(8) var<storage, read> polyBlob: array<f32>;
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
-const CHART_HEADER: u32 = 7u;
+const CHART_HEADER_WORDS: u32 = ${CHART_HEADER}u;
+const CHART_VALUE_WORDS: u32 = ${CHART_VALUE_WORDS}u;
+const CHART_COUNT_INDEX: u32 = ${CHART_COUNT_WORD}u;
 const TAU: f32 = 6.28318530718;
 
 struct ChartVSOut {
@@ -71,14 +79,23 @@ fn vsChart(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 fn chartColor(off: u32, n: u32, i: u32) -> vec4f {
   if (i >= n) { return vec4f(0.0); }
 
-  let base = off + CHART_HEADER + i * 3u;
-  let rg = chartBlob[base + 1u];
-  let ba = chartBlob[base + 2u];
-  let g = floor(rg / 256.0);
-  let a = floor(ba / 256.0);
-  let c = vec4f(rg - g * 256.0, g, ba - a * 256.0, a) / 255.0;
+  let base = off + CHART_HEADER_WORDS + i * CHART_VALUE_WORDS;
+  let rgba = chartBlob[base + 1u];
+  let c = vec4f(
+    f32(rgba & 0xffu),
+    f32((rgba >> 8u) & 0xffu),
+    f32((rgba >> 16u) & 0xffu),
+    f32(rgba >> 24u)
+  ) / 255.0;
 
   return vec4f(c.rgb * c.a, c.a);
+}
+
+/** A pie/stripe stop stored as the value word in each two-word record. */
+fn chartStop(off: u32, i: u32) -> f32 {
+  let word = off + CHART_HEADER_WORDS + i * CHART_VALUE_WORDS;
+
+  return bitcast<f32>(chartBlob[word]);
 }
 
 @fragment
@@ -88,15 +105,15 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
 
   if (cref == 0u) { discard; }
 
-  let n = cref >> 24u;
-  let off = cref & 0xffffffu;
+  let off = cref - 1u;
+  let n = chartBlob[off + CHART_COUNT_INDEX];
   let half = sizes[slot] * 0.5;
   let p = in.local;
-  let kind = u32(chartBlob[off]);
-  let size = chartBlob[off + 1u];
-  let hole = chartBlob[off + 2u];
-  let start = chartBlob[off + 3u];
-  let dirH = u32(chartBlob[off + 4u]);
+  let kind = chartBlob[off];
+  let size = bitcast<f32>(chartBlob[off + 1u]);
+  let hole = bitcast<f32>(chartBlob[off + 2u]);
+  let start = bitcast<f32>(chartBlob[off + 3u]);
+  let dirH = chartBlob[off + 4u];
 
   // clip to the node shape at the border's inner edge (the image rule:
   // the border stays visible over the chart)
@@ -158,26 +175,35 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
     scalePx = select(ext.y, ext.x, dirH == 1u) * 2.0 * frame.zoomDpr;
   }
 
-  // find the region at t: slices 0..n-1, then the transparent remainder
-  var acc = 0.0;
-  var k = n; // remainder by default
-  var lower = 0.0;
-  var upper = 1.0;
+  // Lower-bound search over cumulative stops: first stop strictly
+  // greater than t owns the boundary, matching the previous walk.
+  var lo = 0u;
+  var hi = n;
 
-  for (var i = 0u; i < n; i = i + 1u) {
-    let v = chartBlob[off + CHART_HEADER + i * 3u];
-    let next = acc + v;
+  loop {
+    if (lo >= hi) { break; }
 
-    if (t < next && k == n) {
-      k = i;
-      lower = acc;
-      upper = next;
+    let mid = lo + (hi - lo) / 2u;
+
+    if (t < chartStop(off, mid)) {
+      hi = mid;
+    } else {
+      lo = mid + 1u;
     }
-
-    acc = next;
   }
 
-  if (k == n) { lower = acc; } // the remainder runs [total, 1)
+  let k = lo;
+  var lower = 0.0;
+  var upper = 1.0;
+  var total = 0.0;
+
+  if (n > 0u) {
+    total = chartStop(off, n - 1u);
+  }
+
+  if (k > 0u) { lower = chartStop(off, k - 1u); }
+  if (k < n) { upper = chartStop(off, k); }
+  if (k == n) { lower = total; } // remainder runs [total, 1)
 
   var color = chartColor(off, n, k);
 
@@ -190,7 +216,7 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
     var prev = n; // below region 0: the wrap neighbor (pie) or nothing
 
     if (k > 0u) { prev = k - 1u; }
-    else if (wraps && acc < 0.999) { prev = n; }    // remainder wraps in
+    else if (wraps && total < 0.999) { prev = n; }  // remainder wraps in
     else if (wraps && n > 0u) { prev = n - 1u; }    // full pie: the last slice
 
     color = mix(chartColor(off, n, prev), color, clamp(0.5 + dLower, 0.0, 1.0));

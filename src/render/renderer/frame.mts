@@ -116,7 +116,7 @@ export async function init(rd: Renderer): Promise<void> {
   rd.mirror = new ColumnMirror(device, rd.store, {
     maxBytes: bindableBytes(fit.limits),
     onUnfit: (unfit) =>
-      onMirrorUnfit(rd, unfit.label, unfit.bytes, unfit.floats),
+      onMirrorUnfit(rd, unfit.label, unfit.bytes, unfit.floats, unfit.words),
   });
   rd.store.takeDelta();
   // the model's add paths refuse growth past this from here on

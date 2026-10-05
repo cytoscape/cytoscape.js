@@ -8,6 +8,7 @@ import {
   GROUP_EDGES,
   GROUP_NODES,
   REF_OFFSET_FLOATS,
+  CHART_REF_MAX_WORDS,
 } from '../../contract.mjs';
 import type { GroupName } from '../../contract.mjs';
 import {
@@ -184,19 +185,22 @@ export function onGpuError(rd: Renderer, info: GpuErrorInfo): void {
 
 /**
  * The mirror declined a blob or a gradient column as larger than the
- * device can bind — or, round 145, a chart or image pool as past what a
- * node's 24-bit record ref can address: degrade its feature.
+ * device can bind — or a record pool as past its address field: degrade
+ * its feature. Images retain round 145's 24-bit offset; charts use an
+ * offset+1 u32 word address (round 80.1).
  *
  * @param rd — the renderer
  * @param label — the declined buffer's label
  * @param bytes — what it would have needed
- * @param floats — set for the ref's reach: the pool's used floats
+ * @param floats — set when an image pool passes its 24-bit float reach
+ * @param words — set when a chart pool passes its u32 word reach
  */
 export function onMirrorUnfit(
   rd: Renderer,
   label: string,
   bytes: number,
   floats?: number,
+  words?: number,
 ): void {
   const limit = rd.device == null ? 0 : bindableBytes(readLimits(rd.device));
 
@@ -205,12 +209,15 @@ export function onMirrorUnfit(
     label,
     bytes,
     message:
-      floats != null
-        ? `${label}: a ${floats}-float record pool is past the ` +
-          `${REF_OFFSET_FLOATS} floats a node's 24-bit record ref can ` +
-          `address`
-        : `${label}: a ${bytes}-byte buffer would exceed this device's ` +
-          `${limit}-byte binding limit`,
+      words != null
+        ? `${label}: a ${words}-word chart pool is past the ` +
+          `${CHART_REF_MAX_WORDS}-word offset+1 u32 ref reach`
+        : floats != null
+          ? `${label}: a ${floats}-float image pool is past the ` +
+            `${REF_OFFSET_FLOATS} floats a node's 24-bit record ref can ` +
+            `address`
+          : `${label}: a ${bytes}-byte buffer would exceed this device's ` +
+            `${limit}-byte binding limit`,
   });
 }
 

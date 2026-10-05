@@ -71,7 +71,9 @@
           var pos = new Float32Array( nodes * 2 ), size = new Float32Array( nodes * 2 );
           var op = new Float32Array( nodes ), geom = new Uint32Array( nodes * 4 ), bw = new Float32Array( nodes );
           var refs = new Uint32Array( nodes ), vis = new Uint32Array( nodes );
-          var rec = hdr + 3 * n;
+          var valueWords = a.valueWords;
+          var validityWords = Math.ceil( n / a.validityBits );
+          var rec = hdr + valueWords * n + validityWords;
           var blobF = new Float32Array( nodes * rec );
           var blobU = new Uint32Array( blobF.buffer );
 
@@ -85,32 +87,27 @@
 
             var off = i * rec;
 
-            refs[ i ] = a.packed ? ( ( off | ( n << 24 ) ) >>> 0 ) : off + 1;
-            blobF[ off ] = a.kind;
+            refs[ i ] = off + 1;
+            blobU[ off ] = a.kind;
             blobF[ off + 1 ] = 1;        // size
             blobF[ off + 2 ] = 0;        // hole
             blobF[ off + 3 ] = 0;        // start angle
-            blobF[ off + 4 ] = a.horizontal ? 1 : 0;
+            blobU[ off + 4 ] = 0;        // direction
             blobF[ off + 5 ] = 1;        // opacity
-            blobF[ off + 6 ] = n;
+            blobU[ off + a.countWord ] = n;
+            blobF[ off + 7 ] = NaN;      // no bar-domain metadata
+            blobF[ off + 8 ] = NaN;
 
             for( var k = 0; k < n; k++ ){
-              var b = off + hdr + 3 * k;
+              var b = off + hdr + valueWords * k;
               var r = Math.floor( rnd() * 255 ), g = Math.floor( rnd() * 255 ), bl = Math.floor( rnd() * 255 );
 
-              if( a.points ){
-                // (x, y, rgba8 as u32 bits): written through the u32 view,
-                // so no float canonicalisation touches the colour
-                blobF[ b ] = k / Math.max( 1, n - 1 );
-                blobF[ b + 1 ] = 0.5 + 0.4 * Math.sin( k * 0.37 ) * rnd();
-                blobU[ b + 2 ] = ( r | g << 8 | bl << 16 | 255 << 24 ) >>> 0;
-              } else {
-                // a full chart: equal fractions (every fragment walks all n),
-                // colours as the shipped record packs them
-                blobF[ b ] = a.kind === 2 && a.horizontal ? 0.2 + 0.8 * rnd() : a.cumulative ? ( k + 1 ) / n : 1 / n;
-                blobF[ b + 1 ] = r + g * 256;
-                blobF[ b + 2 ] = bl + 255 * 256;
-              }
+              // Both variants read cumulative pie stops. Keep the record's
+              // dataset colors raw in u32, including NaN-patterned words.
+              stop = ( k + 1 ) / n;
+              blobF[ b ] = stop;
+              blobU[ b + 1 ] = ( r | g << 8 | bl << 16 | 255 << 24 ) >>> 0;
+              blobU[ off + hdr + valueWords * n + Math.floor( k / a.validityBits ) ] |= 1 << ( k % a.validityBits );
             }
           }
 
@@ -228,6 +225,10 @@
           samples.sort(function( x, y ){ return x - y; });
 
           var blobBytes = blobF.byteLength;
+
+          if( a.expectedBlobBytes != null && a.expectedBlobBytes !== blobBytes ){
+            throw new Error( 'record-size mismatch: expected ' + a.expectedBlobBytes + ', got ' + blobBytes );
+          }
 
           [ uniform, index, rb ].concat( Object.values( bufs ) ).forEach(function( b ){ b.destroy(); });
           target.destroy();

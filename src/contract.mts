@@ -320,19 +320,31 @@ export const STROKE_DOUBLE = 3;
 export const CHART_NONE = 0;
 export const CHART_PIE = 1;
 export const CHART_STRIPES = 2;
-/** floats before the (value, color) triples: kind, size, hole,
- * startAngle, direction, opacity, n.  (Opacity is folded into the
- * slice alphas for the FS; the header copy keeps readback exact.) */
-export const CHART_HEADER = 7;
-/** slice cap (v3's numbered-prop N; longer value lists truncate) */
+/**
+ * Words before the chart values: kind (u32), size (f32), hole (f32),
+ * startAngle (f32), direction (u32), opacity (f32), value count (u32),
+ * and the resolved bar-domain minimum and maximum (f32). Record refs
+ * address u32 words, and zero means no record. See the chart-record
+ * contract in src/README.md.
+ */
+export const CHART_HEADER = 9;
+/** Words per value: one f32 value/stop and one rgba8 word. */
+export const CHART_VALUE_WORDS = 2;
+/** Header word containing the value count. */
+export const CHART_COUNT_WORD = 6;
+/** Header words containing a bar's resolved geometry domain. */
+export const CHART_BAR_DOMAIN_MIN_WORD = 7;
+export const CHART_BAR_DOMAIN_MAX_WORD = 8;
+/** One validity bit per value, stored after the value and colour pairs. */
+export const CHART_VALIDITY_BITS_PER_WORD = 32;
+/** Highest used-word count an offset+1 u32 reference can describe. */
+export const CHART_REF_MAX_WORDS = 0xffffffff;
+/** Current public cap; round 80 raises this to 255. */
 export const CHART_MAX_SLICES = 16;
 /**
- * Floats a record ref's 24-bit offset field can address (round 145):
- * `node.chartRef` and `node.imageRef` pack `offset | count << 24`, so a
- * record at or past this offset cannot be referenced.  The store never
- * lets such an offset reach the count field, and the renderer degrades
- * the feature (charts, images) while its pool is past this — round
- * 138's order.  The packing itself is PLAN.md item 73's call.
+ * Floats an image record ref's 24-bit offset field can address (round
+ * 145). `node.imageRef` packs `offset | count << 24`; `node.chartRef`
+ * now uses an offset+1 u32 word address (round 80.1).
  */
 export const REF_OFFSET_FLOATS = 0x1000000;
 /** The largest offset the field holds (the saturated value a ref past
@@ -671,12 +683,11 @@ export const COL = {
    */
   NODE_IMAGE_REF: 'node.imageRef',
   /**
-   * Uint32Array(cap) — chart record ref (round 23): offset into the
-   * chart blob | slice count << 24 (0 = no chart).  The record is
-   * CHART_HEADER floats (kind, size, hole, startAngle, direction,
-   * n) then n × (value, packed-rgba-as-float-bits).  Draw-only
-   * paint, like images: nothing in bb, cull-extent or CPU-pick.  An
-   * offset past `REF_OFFSET_FLOATS` saturates (round 145).
+   * Uint32Array(cap) — chart blob word offset + 1 (zero = no chart).
+   * The count lives in the record header, so addressing is independent
+   * of the value count. Draw-only paint, like images: nothing in bb,
+   * cull-extent or CPU-pick. The pool is bounded by the device's
+   * bindable buffer size and the u32 word-address range (round 80.1).
    */
   NODE_CHART_REF: 'node.chartRef',
   EDGE_ENDPOINTS: 'edge.endpoints', // Uint32Array(2·cap), source,target node *slots*
@@ -973,7 +984,7 @@ export interface StoreDelta {
   polyBlob?: { resized: boolean; start: number; end: number };
   /** Node image-record blob dirt (round 15.2) — same rules. */
   imageBlob?: { resized: boolean; start: number; end: number };
-  /** chart blob dirt (round 23): float range [start, end) or a realloc */
+  /** Chart blob dirt (round 80.1): u32-word range [start, end) or a realloc. */
   chartBlob?: { resized: boolean; start: number; end: number };
   /**
    * Set only on a registered consumer's delta (round 106): an element
@@ -1147,7 +1158,7 @@ export interface ModelView {
   /** The 15.2 background-image record blob (refs ride node.imageRef). */
   imageBlob(): Float32Array;
   imageBlobLength(): number;
-  /** The round-23 chart record blob (refs ride node.chartRef). */
+  /** The mixed-word chart record blob (refs ride node.chartRef). */
   chartBlob(): Float32Array;
   chartBlobLength(): number;
   /** The unique-image pool (round 15.1) — the renderer uploads ready

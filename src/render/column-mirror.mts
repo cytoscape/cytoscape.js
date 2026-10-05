@@ -4,6 +4,7 @@ import {
   COL,
   COLUMN_SPECS,
   REF_OFFSET_FLOATS,
+  CHART_REF_MAX_WORDS,
   columnSpec,
 } from '../contract.mjs';
 import type {
@@ -47,16 +48,14 @@ Round 138 (PLAN.md item 36, the degradation order's third step):
   145 corrected an older note here that said per distinct polygon.)
   The group columns proper never reach this: the model refuses the add
   first (`core/gpu-fit.mts`).
-- **A chart or image pool past the record ref's reach is declined the
-  same way** (round 145).  `node.chartRef` and `node.imageRef` pack
-  `offset | count << 24`, so a record past 2^24 floats
-  (`REF_OFFSET_FLOATS`) cannot be referenced: the store saturates its
-  offset field, and the mirror, once the pool's used length passes the
-  reach, stands the placeholder in and reports it with `floats` — the
-  feature degrades rather than drawing a record from the wrong place.
-  Conservative by at most one record (the one straddling the boundary is
-  still addressable).  The check runs wherever the length can move —
-  a resize and a span.
+- **Referenced pools are checked against their address and buffer limits.**
+  Images retain round 145's `offset | count << 24` layout and 2^24-float
+  reach. Charts use round 80.1's `offset + 1` u32 word address, with the
+  count in the record header; their reach is the smaller of that field
+  and the device's bindable storage-buffer size. The mirror stands in a
+  placeholder and reports an unaddressable pool instead of drawing a
+  wrapped record. The check runs wherever the length can move — a resize
+  and a span.
 */
 
 /** The subset of GPUDevice the mirror needs (kept narrow for mock-based unit tests). */
@@ -87,9 +86,10 @@ export interface MirrorUnfit {
   label: string;
   /** the bytes it would have needed */
   bytes: number;
-  /** set when the pool is past the record ref's 24-bit reach rather
-   * than the binding (round 145): its used length, in floats */
+  /** set when an image pool passes its 24-bit float reach (round 145) */
   floats?: number;
+  /** set when a chart pool passes its u32 word-address reach (round 80.1) */
+  words?: number;
 }
 
 /** Limits and callbacks the renderer hands the mirror (round 138). */
@@ -128,9 +128,6 @@ const anyGradient = (
 };
 
 const BLOB_KINDS: readonly BlobKind[] = ['curve', 'poly', 'image', 'chart'];
-
-/** The blobs whose records a node ref addresses in 24 bits (round 145). */
-const REF_KINDS: ReadonlySet<BlobKind> = new Set(['image', 'chart']);
 
 export class ColumnMirror {
   /** bumps whenever buffers are reallocated ⇒ bind groups must be rebuilt */
@@ -557,7 +554,7 @@ export class ColumnMirror {
           : this.view.chartBlob();
   }
 
-  /** A blob's used length in floats. */
+  /** A blob's used length in 32-bit words. */
   private blobLength(kind: BlobKind): number {
     return kind === 'curve'
       ? this.view.curveBlobLength()
@@ -569,9 +566,10 @@ export class ColumnMirror {
   }
 
   /**
-   * Round 145: a chart or image pool whose used length is past what the
-   * ref's 24-bit offset addresses is declined — a placeholder stands in
-   * and the renderer degrades the feature, once.
+   * Decline a referenced blob whose used length exceeds its address
+   * field. Images retain their 24-bit offset/count packing; charts use
+   * offset + 1 in one u32 word, bounded by that field and the device's
+   * bindable storage-buffer size.
    *
    * @returns true when the blob is (now) declined
    */
@@ -582,9 +580,15 @@ export class ColumnMirror {
       return true;
     }
 
-    const floats = this.blobLength(kind);
+    const words = this.blobLength(kind);
+    const chartLimit = Math.min(
+      CHART_REF_MAX_WORDS,
+      Math.floor(this.maxBytes / 4),
+    );
+    const chartPastReach = kind === 'chart' && words > chartLimit;
+    const imagePastReach = kind === 'image' && words > REF_OFFSET_FLOATS;
 
-    if (!REF_KINDS.has(kind) || floats <= REF_OFFSET_FLOATS) {
+    if (!chartPastReach && !imagePastReach) {
       return false;
     }
 
@@ -594,7 +598,7 @@ export class ColumnMirror {
     this.onUnfit?.({
       label,
       bytes: this.blobData(kind).byteLength,
-      floats,
+      ...(kind === 'chart' ? { words } : { floats: words }),
     });
 
     return true;

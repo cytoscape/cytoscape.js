@@ -3,7 +3,15 @@
 
 import {
   COL,
+  CHART_BAR_DOMAIN_MAX_WORD,
+  CHART_BAR_DOMAIN_MIN_WORD,
+  CHART_COUNT_WORD,
   CHART_HEADER,
+  CHART_PIE,
+  CHART_REF_MAX_WORDS,
+  CHART_STRIPES,
+  CHART_VALIDITY_BITS_PER_WORD,
+  CHART_VALUE_WORDS,
   REF_OFFSET_FLOATS,
   REF_OFFSET_MASK,
 } from '../../contract.mjs';
@@ -19,7 +27,7 @@ import type {
 } from '../graph-store.mjs';
 
 /**
- * Pack a chart or image record ref, `offset | count << 24` (round 145).
+ * Pack an image record ref, `offset | count << 24` (round 145).
  * An offset past the field's reach (`REF_OFFSET_FLOATS`) saturates at
  * `REF_OFFSET_MASK` rather than spilling into the count — before, it
  * ORed its high bits into the count, so readback and the draw read a
@@ -38,6 +46,11 @@ export function packRecordRef(offset: number, count: number): number {
   const field = offset < REF_OFFSET_FLOATS ? offset : REF_OFFSET_MASK;
 
   return (field | (count << 24)) >>> 0;
+}
+
+/** Pack a chart record's word offset as offset + 1 (zero means absent). */
+export function packChartRef(offset: number): number {
+  return Math.min(offset + 1, CHART_REF_MAX_WORDS) >>> 0;
 }
 
 /**
@@ -145,12 +158,11 @@ export function setNodeImages(
 }
 
 /**
- * Write (or clear) a node's chart record (round 23).  The blob layout
- * is CHART_HEADER floats — kind, size, hole, startAngle, direction,
- * n — then n × (value, r+g·256, b+a·256): colors split across two
- * small-integer floats (the image-record trick — packed u32 color
- * bits would risk NaN canonicalization through the f32 pool).
- * Colors arrive alpha-folded (chart-opacity, the B1 pattern).
+ * Write (or clear) a node's chart record. The nine-word header and the
+ * value/color pairs are defined in contract.mts. Colors and validity
+ * bits are written as raw u32 words; the f32 values share the same pool.
+ * Pie and stripe values are stored as cumulative stops so the fragment
+ * shader can find a region with a binary search.
  */
 export function setChart(
   gs: GraphStore,
@@ -162,8 +174,9 @@ export function setChart(
     startAngle: number;
     direction: number;
     opacity: number;
-    values: number[];
+    values: (number | null)[];
     colors: [number, number, number, number][];
+    barDomain?: [number, number] | null;
   } | null,
 ): void {
   const refs = gs.nodes.column(COL.NODE_CHART_REF) as Uint32Array;
@@ -190,26 +203,54 @@ export function setChart(
 
   const { values, colors } = rec;
   const n = values.length;
-  const record = new Array<number>(CHART_HEADER + n * 3);
+  const validityWords = Math.ceil(n / CHART_VALIDITY_BITS_PER_WORD);
+  const recordWords = CHART_HEADER + n * CHART_VALUE_WORDS + validityWords;
+  const record = new Uint32Array(recordWords);
+  const floats = new Float32Array(record.buffer);
+  const barDomain = rec.barDomain ?? [NaN, NaN];
 
-  record[0] = rec.kind;
-  record[1] = rec.size;
-  record[2] = rec.hole;
-  record[3] = rec.startAngle;
-  record[4] = rec.direction;
-  record[5] = rec.opacity;
-  record[6] = n;
+  record[0] = rec.kind >>> 0;
+  floats[1] = rec.size;
+  floats[2] = rec.hole;
+  floats[3] = rec.startAngle;
+  record[4] = rec.direction >>> 0;
+  floats[5] = rec.opacity;
+  record[CHART_COUNT_WORD] = n;
+  floats[CHART_BAR_DOMAIN_MIN_WORD] = barDomain[0];
+  floats[CHART_BAR_DOMAIN_MAX_WORD] = barDomain[1];
+
+  let cumulative = 0;
 
   for (let i = 0; i < n; i++) {
-    const [r, g, b, a] = colors[i];
+    const value = values[i];
+    const valueWord = CHART_HEADER + i * CHART_VALUE_WORDS;
+    const color = colors[i] ?? [0, 0, 0, 0];
+    const validityWord =
+      CHART_HEADER +
+      n * CHART_VALUE_WORDS +
+      Math.floor(i / CHART_VALIDITY_BITS_PER_WORD);
+    const validityBit = i % CHART_VALIDITY_BITS_PER_WORD;
 
-    record[CHART_HEADER + i * 3] = values[i];
-    record[CHART_HEADER + i * 3 + 1] = r + g * 256;
-    record[CHART_HEADER + i * 3 + 2] = b + a * 256;
+    if (value != null) {
+      record[validityWord] |= 1 << validityBit;
+    }
+
+    if (rec.kind === CHART_PIE || rec.kind === CHART_STRIPES) {
+      cumulative += value == null ? 0 : value;
+      floats[valueWord] = cumulative;
+    } else {
+      floats[valueWord] = value == null ? NaN : value;
+    }
+
+    record[valueWord + 1] =
+      (color[0] & 0xff) |
+      ((color[1] & 0xff) << 8) |
+      ((color[2] & 0xff) << 16) |
+      ((color[3] & 0xff) << 24);
   }
 
-  const offset = gs.chartPool.write(slot, record);
-  const ref = packRecordRef(offset, n);
+  const offset = gs.chartPool.writeWords(slot, record);
+  const ref = packChartRef(offset);
 
   if (refs[slot] !== ref) {
     refs[slot] = ref;
@@ -219,7 +260,7 @@ export function setChart(
   gs.dirty.touch();
 }
 
-/** A node's decoded chart record, or null when chartless (round 23). */
+/** A node's decoded chart record, or null when chartless. */
 export function chartAt(
   gs: GraphStore,
   slot: number,
@@ -230,8 +271,9 @@ export function chartAt(
   startAngle: number;
   direction: number;
   opacity: number;
-  values: number[];
+  values: (number | null)[];
   colors: [number, number, number, number][];
+  barDomain: [number, number] | null;
 } | null {
   const ref = (gs.nodes.column(COL.NODE_CHART_REF) as Uint32Array)[slot];
 
@@ -240,38 +282,58 @@ export function chartAt(
   }
 
   const pool = gs.chartPool.data();
-  // the pool's own offset, not the ref's field: exact past the ref's
-  // reach too (round 145)
+  const words = gs.chartPool.wordData();
+  // The pool's own offset remains authoritative after compaction.
   const off = gs.chartPool.offsetOf(slot);
-  const n = ref >>> 24;
-  const values: number[] = [];
+  const n = words[off + CHART_COUNT_WORD];
+  const values: (number | null)[] = [];
   const colors: [number, number, number, number][] = [];
-  // the pool is f32: snap fractions back to a friendly precision
+  const validityStart = off + CHART_HEADER + n * CHART_VALUE_WORDS;
   const snap = (v: number): number => Math.round(v * 1e6) / 1e6;
+  let previousStop = 0;
 
   for (let i = 0; i < n; i++) {
-    const base = off + CHART_HEADER + i * 3;
-    const rg = pool[base + 1];
-    const ba = pool[base + 2];
+    const valueWord = off + CHART_HEADER + i * CHART_VALUE_WORDS;
+    const valid =
+      (words[validityStart + Math.floor(i / CHART_VALIDITY_BITS_PER_WORD)] &
+        (1 << (i % CHART_VALIDITY_BITS_PER_WORD))) !==
+      0;
+    let value = pool[valueWord];
 
-    values.push(snap(pool[base]));
+    if (words[off] === CHART_PIE || words[off] === CHART_STRIPES) {
+      const stop = value;
+
+      value = stop - previousStop;
+      previousStop = stop;
+    }
+
+    values.push(valid ? (Number.isFinite(value) ? snap(value) : value) : null);
+
+    const rgba = words[valueWord + 1];
+
     colors.push([
-      rg % 256,
-      Math.floor(rg / 256),
-      ba % 256,
-      Math.floor(ba / 256),
+      rgba & 0xff,
+      (rgba >>> 8) & 0xff,
+      (rgba >>> 16) & 0xff,
+      rgba >>> 24,
     ]);
   }
 
+  const min = pool[off + CHART_BAR_DOMAIN_MIN_WORD];
+  const max = pool[off + CHART_BAR_DOMAIN_MAX_WORD];
+  const barDomain: [number, number] | null =
+    Number.isNaN(min) && Number.isNaN(max) ? null : [min, max];
+
   return {
-    kind: pool[off],
+    kind: words[off],
     size: snap(pool[off + 1]),
     hole: snap(pool[off + 2]),
     startAngle: pool[off + 3],
-    direction: pool[off + 4],
+    direction: words[off + 4],
     opacity: snap(pool[off + 5]),
     values,
     colors,
+    barDomain,
   };
 }
 

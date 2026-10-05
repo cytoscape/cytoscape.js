@@ -1171,8 +1171,8 @@ export interface GpuErrorInfo {
    * `'out-of-memory'` / `'validation'` / `'internal'` — the device's
    * own error class; `'unfit'` — a buffer the renderer declined to
    * allocate because it would exceed the device's limits, or (round
-   * 145) a chart or image record pool past the 2^24 floats a node's
-   * record ref can address
+   * 145) an image pool past its 2^24-float ref reach, or (round 80.1)
+   * a chart pool past its u32 word-address reach
    */
   kind: 'out-of-memory' | 'validation' | 'internal' | 'unfit';
   /** the device's message, or the renderer's for `'unfit'` */

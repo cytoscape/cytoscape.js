@@ -201,7 +201,7 @@ export class GraphStore implements ModelView {
   polyPool!: CurveBlob;
   /** the 15.2 background-image record pool (IMG_STRIDE floats per image) @internal */
   imagePool!: CurveBlob;
-  /** round 23: chart records (node.chartRef = offset | n << 24) @internal */
+  /** round 80.1: mixed-word chart records (node.chartRef = offset + 1) @internal */
   chartPool!: CurveBlob;
   /** live charted nodes (the chart pass skips at 0) @internal */
   chartedNodes = 0;
@@ -545,11 +545,11 @@ export class GraphStore implements ModelView {
       this.dirty.mark(COL.NODE_IMAGE_REF, slot);
     });
 
-    // round 23: the chart-record pool; a relocation rewrites node.chartRef
+    // round 80.1: chart word offsets; compaction rewrites offset+1 refs
     this.chartPool = new CurveBlob((slot, offset) => {
       const refs = this.nodes.column(COL.NODE_CHART_REF) as Uint32Array;
 
-      refs[slot] = imagesImpl.packRecordRef(offset, refs[slot] >>> 24);
+      refs[slot] = imagesImpl.packChartRef(offset);
       this.dirty.mark(COL.NODE_CHART_REF, slot);
     });
 
@@ -744,12 +744,10 @@ export class GraphStore implements ModelView {
   }
 
   /**
-   * Write (or clear) a node's chart record (round 23).  The blob layout
-   * is CHART_HEADER floats — kind, size, hole, startAngle, direction,
-   * n — then n × (value, r+g·256, b+a·256): colors split across two
-   * small-integer floats (the image-record trick — packed u32 color
-   * bits would risk NaN canonicalization through the f32 pool).
-   * Colors arrive alpha-folded (chart-opacity, the B1 pattern).
+   * Write (or clear) a node's chart record (round 80.1). The mixed
+   * u32/f32 word layout is defined in contract.mts. Colors are passed
+   * alpha-folded (chart-opacity, the B1 pattern); pie and stripe values
+   * are stored as cumulative stops for the shader's binary search.
    */
   setChart(
     slot: number,
@@ -760,14 +758,15 @@ export class GraphStore implements ModelView {
       startAngle: number;
       direction: number;
       opacity: number;
-      values: number[];
+      values: (number | null)[];
       colors: [number, number, number, number][];
+      barDomain?: [number, number] | null;
     } | null,
   ): void {
     imagesImpl.setChart(this, slot, rec);
   }
 
-  /** A node's decoded chart record, or null when chartless (round 23). */
+  /** A node's decoded chart record, or null when chartless (round 80.1). */
   chartAt(slot: number): {
     kind: number;
     size: number;
@@ -775,8 +774,9 @@ export class GraphStore implements ModelView {
     startAngle: number;
     direction: number;
     opacity: number;
-    values: number[];
+    values: (number | null)[];
     colors: [number, number, number, number][];
+    barDomain: [number, number] | null;
   } | null {
     return imagesImpl.chartAt(this, slot);
   }

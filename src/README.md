@@ -7104,51 +7104,48 @@ storage binding), emit `gpuerror` from its own allocation checks
 ledger with the same labels so the soak runs unchanged, and degrade in
 the same order.
 
-### The record ref's reach (round 145)
+### The record ref's reach (round 145; charts revised in round 80.1)
 
-`node.chartRef` and `node.imageRef` pack `offset | count << 24`, so they
-address the first 2^24 floats of their pool (`REF_OFFSET_FLOATS`, 64
-MiB).  Until round 145 nothing checked it: a record appended past that
-ORed its offset's high bits into the count, and both readback and the
-draw read a wrong-length record from the wrong place.  Item 73's
-measurement found it; at the style layer's caps it is reached by the
-305,042nd node charted with 16 slices, or the 349,527th with four
-images, both well inside the 16,776,960-slot ceiling.  The packing is
-unchanged (item 73's sitting decides it); the guard, following round
-138's rule that charts and images degrade rather than refuse:
+`node.imageRef` still packs `offset | count << 24`, so it addresses the
+first 2^24 floats of its pool (`REF_OFFSET_FLOATS`, 64 MiB). Before round
+145, an image record appended past that reach ORed offset bits into the
+count and made readback and drawing use a wrong record. The image fixture
+at its four-image style cap reaches this boundary at the 349,527th node,
+well inside the 16,776,960-slot ceiling.
 
-- **The store never corrupts a ref.**  `packRecordRef` saturates an
-  unaddressable offset at `0xffffff` and keeps the count exact, so a
-  compaction's relocation — which reads the count back out of the ref —
-  writes an exact ref once the record moves back under the reach.
-  Readback (`chartAt`, `nodeImagesAt`, so `style('chart-values')` and
-  `style('background-image')`) takes the offset from the pool's own
-  table, and is exact on either side of the boundary, headless included.
-- **The renderer degrades the feature.**  Once the chart or image pool's
-  used length passes 2^24 floats, the mirror stands a placeholder in, as
-  for a pool past the binding, and the renderer stops drawing that
-  feature for its life with one `gpuerror` (`kind: 'unfit'`, the blob's
-  label, `degraded: 'charts'` or `'images'`, a message naming the 24-bit
-  reach).  No saturated ref is ever drawn.  The check is conservative by
-  at most one record (the one straddling the boundary is still
-  addressable).  The worker host runs the same mirror, so the same rule
-  holds there; its demand meter skips degraded images, since the
-  worker's pool mirror decodes from the ref's field.
+`node.chartRef` no longer shares that packing. Round 80.1 stores the chart
+pool's u32 word offset + 1 (zero means absent), and reads the value count
+from the record header. The record is nine u32 words of mixed f32/u32
+fields, then two words per value (f32 value/stop and raw rgba8), followed
+by a one-bit-per-slot validity map. `CurveBlob.writeWords()` and its
+word-copy compaction keep every colour bit unchanged, including words that
+would become NaNs through a float conversion. The chart pool's addressable
+reach is the smaller of its u32 word field and the device's bindable
+storage-buffer limit; 24-bit chart packing is no longer a practical cap.
+
+- **The store reads its own offset table.** Image refs saturate an
+  unaddressable offset at `0xffffff` and preserve their exact count for
+  compaction. Chart refs store offset+1 and preserve the count in the
+  header. Both readbacks use the pool's own offset table, including after
+  compaction.
+- **The renderer degrades the feature.** A pool that exceeds its address
+  reach or the binding limit gets a placeholder, and the renderer stops
+  drawing that feature for its life with one `gpuerror` (`kind: 'unfit'`,
+  the blob's label, `degraded: 'charts'` or `'images'`). The worker host
+  uses the same mirror and degradation order.
 - **Why degrade, not refuse:** round 138's pre-flight holds only the
   columns a group cannot draw without, and charts and images are the
   degradation order's second step — `cy.add()` refusing a graph because
   its pies no longer fit would be the throw-over-a-feature round 138
   declined.
 - **Not guarded: the custom-polygon pool**, whose ref in
-  `node.borderGeom[0]` has the same packing.  A polygon is the node's
+  `node.borderGeom[0]` has the same packing. A polygon is the node's
   shape, not a feature it can draw without, so it has no degradation
   step; it is reached at ~1M nodes with 8-point custom polygons.
-  Recorded in round 145 as a follow-up.
 
-Specs: `test/record-ref.mjs` at the real boundary (the store, the
-mirror, and both through the public API) and `limits.spec.js`'s "record
-ref's reach" block on both hosts, which draws two pies just inside the
-reach and none once one record is past it.
+Specs: `test/record-ref.mjs` pins image references at their real boundary;
+`test/modules/chart-record.mjs` pins chart word addressing, raw color bits,
+validity, bar-domain metadata, and compaction.
 
 ## First-frame cost: deferred pipelines (round 53)
 
@@ -8273,12 +8270,17 @@ fragment premium is **unmeasurable at scene level** on real hardware
   rule) with the values passthrough as the per-element form.
   Values are **absolute fractions of the whole** (v3's percents: a
   sum under 1 leaves an unpainted remainder, over 1 clamps);
-  slices cap at 16 (v3's N).  Records live in a
-  round-11-compacting blob behind `node.chartRef`; rendering is a
-  dedicated pass (one quad per charted node off the culled visible
-  lists, after the image pass — v3's order — clipped to the node
-  shape at the border's inner edge, SDF-native with px-space AA at
-  slice boundaries), skipped outright while nothing charts.
+  slices currently cap at 16 (round 80 raises this to 255). Records live
+  in a round-11-compacting blob behind `node.chartRef`, an offset+1 u32
+  word ref with the count in the header. The nine-word header holds kind,
+  geometry scalars, count and bar-domain bounds; every value uses one f32
+  word and one raw rgba8 u32 word, with a validity bitmap after the pairs.
+  Pie and stripe values are cumulative stops searched by binary search;
+  readback differences them at the existing 1e-6 precision. Rendering is
+  a dedicated pass (one quad per charted node off the culled visible
+  lists, after the image pass — v3's order — clipped to the node shape at
+  the border's inner edge, SDF-native with px-space AA at slice
+  boundaries), skipped outright while nothing charts.
   Charts are paint-only: never in bb, never pickable.
 
   Pinned by

@@ -149,6 +149,9 @@
           ]
         },
         "chart-colors": { "$ref": "#/$defs/props/chart-colors" },
+        "chart-domain": { "$ref": "#/$defs/props/chart-domain" },
+        "chart-missing-color": { "$ref": "#/$defs/props/chart-missing-color" },
+        "chart-scale": { "$ref": "#/$defs/props/chart-scale" },
         "chart-direction": {
           "anyOf": [
             { "$ref": "#/$defs/props/chart-direction" },
@@ -633,6 +636,9 @@
         "borderStyle": { "$ref": "#/$defs/nodeProps/properties/border-style" },
         "borderWidth": { "$ref": "#/$defs/nodeProps/properties/border-width" },
         "chartColors": { "$ref": "#/$defs/nodeProps/properties/chart-colors" },
+        "chartDomain": { "$ref": "#/$defs/nodeProps/properties/chart-domain" },
+        "chartMissingColor": { "$ref": "#/$defs/nodeProps/properties/chart-missing-color" },
+        "chartScale": { "$ref": "#/$defs/nodeProps/properties/chart-scale" },
         "chartDirection": {
           "$ref": "#/$defs/nodeProps/properties/chart-direction"
         },
@@ -2200,7 +2206,7 @@
         ]
       },
       "chartValues": {
-        "description": "The slice values: non-negative numbers, as an array or a whitespace-separated string. Map them per element with the `{ data: key }` passthrough (the datum is an array).",
+        "description": "Chart dataset values, as an array or a whitespace-separated string. Heat and bar charts accept signed, non-finite and null slots; pie and stripe values are non-negative fractions. Map them per element with the `{ data: key }` passthrough.",
         "anyOf": [
           { "type": "string", "minLength": 1 },
           {
@@ -2208,12 +2214,37 @@
             "minItems": 1,
             "items": {
               "anyOf": [
-                { "type": "number", "minimum": 0 },
-                { "type": "string" }
+                { "type": "number" },
+                { "type": "string" },
+                { "type": "null" }
               ]
             }
           }
         ]
+      },
+      "chartDomain": {
+        "description": "A signed bar geometry domain. Either endpoint may be 'auto'.",
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": { "anyOf": [ { "type": "number" }, { "const": "auto" } ] }
+      },
+      "chartScale": {
+        "description": "Definition-owned numeric colour scale for heat and bar charts.",
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["domain", "range"],
+        "properties": {
+          "scale": { "enum": ["linear", "log", "sqrt", "pow", "symlog", "diverging", "ordinal", "threshold", "quantize"] },
+          "domain": { "type": "array", "minItems": 2, "items": { "anyOf": [ { "type": "number" }, { "const": "auto" } ] } },
+          "range": { "anyOf": [ { "type": "string" }, { "type": "array", "minItems": 2, "items": { "type": "string" } } ] },
+          "clamp": { "type": "boolean" },
+          "exponent": { "type": "number", "exclusiveMinimum": 0 },
+          "base": { "type": "number", "exclusiveMinimum": 0 },
+          "constant": { "type": "number", "exclusiveMinimum": 0 },
+          "interpolate": { "enum": ["oklab", "srgb"] },
+          "bins": { "type": "integer", "minimum": 2 }
+        }
       },
       "chartColors": {
         "description": "The slice colours: a named colour scheme, or colours (an array, or a whitespace-separated string).",
@@ -2384,7 +2415,7 @@
       },
       "layerShape": { "enum": ["round-rectangle", "ellipse"] },
       "visibility": { "enum": ["visible", "hidden"] },
-      "chartKind": { "enum": ["none", "pie", "stripes"] },
+      "chartKind": { "enum": ["none", "pie", "stripes", "heat-strip", "radial-heat", "bar"] },
       "chartDirection": { "enum": ["vertical", "horizontal"] },
       "fontStyle": { "enum": ["normal", "italic", "oblique"] },
       "fontWeightKeyword": { "enum": ["normal", "bold", "bolder", "lighter"] },
@@ -2601,6 +2632,9 @@
         "$ref": "#/$defs/kinds/chartColors",
         "examples": ["category10"]
       },
+      "chart-domain": { "$ref": "#/$defs/kinds/chartDomain", "examples": [["auto", 10]] },
+      "chart-missing-color": { "$ref": "#/$defs/kinds/color", "examples": ["transparent"] },
+      "chart-scale": { "$ref": "#/$defs/kinds/chartScale", "examples": [{ "domain": [0, "auto"], "range": ["blue", "red"] }] },
       "chart-direction": {
         "$ref": "#/$defs/keywords/chartDirection",
         "examples": ["vertical"]

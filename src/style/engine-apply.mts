@@ -8,6 +8,7 @@ import {
   COL,
   CONDITION_FLAGS,
   FLAG_PARENT,
+  CHART_MAX_SLICES,
 } from '../contract.mjs';
 import {
   bindEvaluator,
@@ -25,6 +26,106 @@ import type { GroupDef, StateWriter } from './sheet.mjs';
 import type { StyleEngine } from '../style.mjs';
 import { fastStateWriter, writeEdgePerSlot } from './engine-write.mjs';
 import { openTxn, closeTxn } from './engine-txn.mjs';
+import { chartScaleExtent } from './chart-scale.mjs';
+import { resolveDomain } from '../style-scales.mjs';
+
+/** Values contributing to a chart definition's shared automatic bounds. */
+function chartExtentFor(
+  engine: StyleEngine,
+  group: GroupName,
+  def: GroupDef,
+): [number, number] | null {
+  const computed = def.computed;
+  let lo = Infinity;
+  let hi = -Infinity;
+  const include = (raw: unknown): void => {
+    if (Array.isArray(raw)) {
+      const n = Math.min(raw.length, CHART_MAX_SLICES);
+      for (let i = 0; i < n; i++) {
+        const value = raw[i];
+        if (typeof value !== 'number' || !Number.isFinite(value)) continue;
+        lo = Math.min(lo, value);
+        hi = Math.max(hi, value);
+      }
+    }
+  };
+
+  if (computed.chartValuesKey == null) {
+    include(computed.chartValues);
+  } else {
+    const slots = engine.allSlotsFor(group, def);
+    for (let i = 0; i < slots.length; i++) {
+      include(engine.store.data.get(group, slots[i], computed.chartValuesKey));
+    }
+  }
+
+  return lo === Infinity || hi === -Infinity || lo >= hi ? null : [lo, hi];
+}
+
+/** Refresh chart-owned colour and geometry domains, preserving definition provenance. */
+export function checkChartExtents(
+  engine: StyleEngine,
+  group: GroupName,
+  def: GroupDef,
+  force = false,
+): boolean {
+  const computed = def.computed;
+  if (computed.chartExtentInitialized && !force) return false;
+
+  const needsExtent =
+    ((computed.chartScale?.program.kind === 'continuous' ||
+      computed.chartScale?.program.kind === 'discrete') &&
+      computed.chartScale.program.autoDomain) ||
+    computed.chartDomain?.includes('auto') === true;
+  if (!needsExtent) {
+    computed.chartExtentInitialized = true;
+    return false;
+  }
+
+  const extent = chartExtentFor(engine, group, def);
+  let moved = false;
+  const mapper = computed.chartScale;
+  if (mapper != null) {
+    const changed = chartScaleExtent(mapper, extent);
+    moved = moved || changed;
+    const program = mapper.program;
+    if (
+      (program.kind === 'continuous' || program.kind === 'discrete') &&
+      program.autoDomain &&
+      !program.resolved &&
+      !mapper.warnedUnresolved
+    ) {
+      mapper.warnedUnresolved = true;
+      console.warn(
+        `Auto domain for 'chart-scale' in '${group}' is unresolved; provide a usable extent`,
+      );
+    }
+  }
+
+  if (computed.chartDomain?.includes('auto')) {
+    const next = resolveDomain(computed.chartDomain, extent);
+    const domain: [number, number] | null =
+      next != null && next.length === 2 ? [next[0], next[1]] : null;
+    const previous = computed.chartResolvedDomain;
+    const same =
+      previous === domain ||
+      (previous != null &&
+        domain != null &&
+        previous[0] === domain[0] &&
+        previous[1] === domain[1]);
+    if (!same) {
+      computed.chartResolvedDomain = domain;
+      moved = true;
+    }
+  }
+
+  computed.chartExtentInitialized = true;
+  if (moved && def.partition != null) {
+    def.partition.records.clear();
+    def.partition.diffs.clear();
+  }
+  return moved;
+}
 
 /**
  * Scratch-evaluate every mapped channel and write whole elements — the
@@ -41,6 +142,10 @@ export function applyMapped(
   skipOwned: boolean = false,
 ): void {
   const store = engine.store;
+
+  if (checkChartExtents(engine, group, def)) {
+    slots = engine.allSlotsFor(group, def);
+  }
 
   if (engine.demoted[group]) {
     // formerly kernel-owned bytes are stale everywhere: one full CPU
@@ -657,6 +762,9 @@ export function applyGroupDef(
     if (def.mappers.length > 0) {
       applyMapped(engine, group, def, slots);
     } else {
+      if (checkChartExtents(engine, group, def)) {
+        slots = engine.allSlotsFor(group, def);
+      }
       const computed = def.computed;
 
       // no mappers: nothing varies, so the run needs no writers

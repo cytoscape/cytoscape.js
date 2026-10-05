@@ -1,5 +1,12 @@
 import { color2tuple } from '../util/colors.mjs';
-import { CHART_NONE, CHART_PIE, CHART_STRIPES } from '../contract.mjs';
+import {
+  CHART_NONE,
+  CHART_PIE,
+  CHART_STRIPES,
+  CHART_HEAT_STRIP,
+  CHART_RADIAL_HEAT,
+  CHART_BAR,
+} from '../contract.mjs';
 import { SCHEMES, resolveScheme, hexToRgb } from '../style-schemes.mjs';
 import type { BgLen, BgSize } from '../store/graph-store.mjs';
 import type { RGBA } from './defaults.mjs';
@@ -597,19 +604,23 @@ export const parseChartKind = (prop: string, value: unknown): number => {
   if (value === 'pie') {
     return CHART_PIE;
   }
-  if (value === 'stripes') {
-    return CHART_STRIPES;
-  }
+  if (value === 'stripes') return CHART_STRIPES;
+  if (value === 'heat-strip') return CHART_HEAT_STRIP;
+  if (value === 'radial-heat') return CHART_RADIAL_HEAT;
+  if (value === 'bar') return CHART_BAR;
 
   throw new Error(
-    `The chart kind '${String(value)}' must be 'none', 'pie' or 'stripes'`,
+    `The chart kind '${String(value)}' must be 'none', 'pie', 'stripes', 'heat-strip', 'radial-heat' or 'bar'`,
   );
 };
 
-/** A number list (array or space-separated string) of finite fractions >= 0. */
-export const parseChartValues = (prop: string, value: unknown): number[] => {
+/** Parse chart values while retaining explicit missing and non-finite numeric slots. */
+export const parseChartValues = (
+  prop: string,
+  value: unknown,
+): (number | null)[] => {
   const raw = Array.isArray(value)
-    ? value
+    ? Array.from(value, (v) => (v === undefined ? null : v))
     : typeof value === 'string'
       ? value.trim().split(/\s+/)
       : null;
@@ -619,16 +630,47 @@ export const parseChartValues = (prop: string, value: unknown): number[] => {
   }
 
   return raw.map((v) => {
-    const n = typeof v === 'number' ? v : parseFloat(String(v));
-
-    if (!isFinite(n) || n < 0) {
+    if (v == null) return null;
+    if (typeof v === 'number') return v;
+    if (typeof v !== 'string' || v.trim() === '') {
       throw new Error(
-        `The ${prop} entry '${String(v)}' must be a non-negative number`,
+        `The ${prop} entry '${String(v)}' must be a number or null`,
       );
     }
-
+    const n = Number(v);
+    if (Number.isNaN(n)) {
+      throw new Error(`The ${prop} entry '${String(v)}' must be numeric`);
+    }
     return n;
   });
+};
+
+/** A two-stop numeric chart domain with optional automatic endpoints. */
+export const parseChartDomain = (
+  prop: string,
+  value: unknown,
+): (number | 'auto')[] => {
+  if (!Array.isArray(value) || value.length !== 2) {
+    throw new Error(
+      `The ${prop} must be a two-number domain with optional 'auto' endpoints`,
+    );
+  }
+  const out = value.map((stop, i) => {
+    if (stop === 'auto' && (i === 0 || i === value.length - 1))
+      return 'auto' as const;
+    if (typeof stop !== 'number' || !Number.isFinite(stop)) {
+      throw new Error(`The ${prop} endpoints must be finite numbers or 'auto'`);
+    }
+    return stop;
+  });
+  if (
+    typeof out[0] === 'number' &&
+    typeof out[1] === 'number' &&
+    out[0] >= out[1]
+  ) {
+    throw new Error(`The ${prop} minimum must be less than its maximum`);
+  }
+  return out;
 };
 
 /** A palette: a named scheme, or a color list (array or space-separated). */

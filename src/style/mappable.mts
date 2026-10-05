@@ -4,6 +4,9 @@ import {
   CHART_NONE,
   CHART_PIE,
   CHART_STRIPES,
+  CHART_HEAT_STRIP,
+  CHART_RADIAL_HEAT,
+  CHART_BAR,
 } from '../contract.mjs';
 import type { ChannelKind, Evaluated } from '../style-scales.mjs';
 import type { GroupName } from '../contract.mjs';
@@ -857,7 +860,13 @@ export const MAPPABLE: Record<string, MappableChannel> = {
           ? CHART_PIE
           : v === 'stripes'
             ? CHART_STRIPES
-            : null,
+            : v === 'heat-strip'
+              ? CHART_HEAT_STRIP
+              : v === 'radial-heat'
+                ? CHART_RADIAL_HEAT
+                : v === 'bar'
+                  ? CHART_BAR
+                  : null,
     set: (c, v) => {
       c.chartKind = v as number;
     },

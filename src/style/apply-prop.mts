@@ -52,6 +52,7 @@ import {
   parseStrokeStyle,
   parseChartKind,
   parseChartValues,
+  parseChartDomain,
   parseChartColors,
   parseChartFraction,
   parseYesNo,
@@ -75,6 +76,7 @@ import {
 } from './parse-edge.mjs';
 import { TRANSITION_CONFIG_PROPS } from './compile.mjs';
 import { COMPOUND_PROPS } from './sheet.mjs';
+import { compileChartScale } from './chart-scale.mjs';
 
 /** Apply one (normalized-name) prop onto a computed record. */
 export const applyProp = (
@@ -293,6 +295,24 @@ export const applyProp = (
       break;
     case PROP.CHART_COLORS:
       computed.chartColors = parseChartColors(prop, value);
+      computed.chartColorsAuthored = true;
+      break;
+    case PROP.CHART_SCALE: {
+      const compiled = compileChartScale(value);
+      computed.chartScale = compiled.mapper;
+      computed.chartScaleSpec = compiled.source;
+      break;
+    }
+    case PROP.CHART_DOMAIN:
+      computed.chartDomain = parseChartDomain(prop, value);
+      computed.chartResolvedDomain =
+        typeof computed.chartDomain[0] === 'number' &&
+        typeof computed.chartDomain[1] === 'number'
+          ? [computed.chartDomain[0], computed.chartDomain[1]]
+          : null;
+      break;
+    case PROP.CHART_MISSING_COLOR:
+      computed.chartMissingColor = parseColor(prop, value);
       break;
     case PROP.CHART_SIZE:
       computed.chartSize = parseChartFraction(prop, value);
@@ -908,6 +928,20 @@ export const captureBypassPatch = (
 
     assertGroupProp(group, norm, value);
     applyProp(scratch, norm, value);
+  }
+
+  if (
+    scratch.chartScale != null &&
+    (scratch.chartScale.program.kind === 'continuous' ||
+      scratch.chartScale.program.kind === 'discrete') &&
+    scratch.chartScale.program.autoDomain
+  ) {
+    throw new Error(
+      'A chart-scale bypass requires explicit numeric domain stops',
+    );
+  }
+  if (scratch.chartDomain?.includes('auto')) {
+    throw new Error('A chart-domain bypass requires explicit numeric bounds');
   }
 
   return Object.entries(scratch);

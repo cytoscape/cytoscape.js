@@ -56,6 +56,9 @@ export const PROP = {
   BORDER_WIDTH: 'border-width',
 
   CHART: 'chart',
+  CHART_DOMAIN: 'chart-domain',
+  CHART_MISSING_COLOR: 'chart-missing-color',
+  CHART_SCALE: 'chart-scale',
   CHART_COLORS: 'chart-colors',
   CHART_DIRECTION: 'chart-direction',
   CHART_HOLE: 'chart-hole',

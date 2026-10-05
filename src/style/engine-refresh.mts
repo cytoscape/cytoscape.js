@@ -18,6 +18,7 @@ import type { GroupDef, StateWriter } from './sheet.mjs';
 import type { StyleEngine } from '../style.mjs';
 import {
   applyMapped,
+  checkChartExtents,
   partRecordFor,
   checkAutoExtents,
 } from './engine-apply.mjs';
@@ -219,6 +220,12 @@ export function refreshGroupDefInner(
     chart = chart || entry.chart;
   }
 
+  const chartExtentMoved = chart && checkChartExtents(engine, group, def, true);
+  if (chartExtentMoved) {
+    applyMapped(engine, group, def, engine.allSlotsFor(group, def), true);
+    return;
+  }
+
   const narrow = (): void => {
     // the label/chart-only fast paths
     if (label) {
@@ -416,9 +423,9 @@ export function refreshAutoDomains(engine: StyleEngine): void {
         : [engine.defs[group]];
 
     for (const def of defs) {
-      if (!checkAutoExtents(engine, group, def)) {
-        continue;
-      }
+      const chartMoved = checkChartExtents(engine, group, def, true);
+      const scalarMoved = checkAutoExtents(engine, group, def);
+      if (!chartMoved && !scalarMoved) continue;
 
       applyMapped(engine, group, def, engine.allSlotsFor(group, def), true);
     }

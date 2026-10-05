@@ -464,7 +464,7 @@ const numericDomain = (
 };
 
 /** Resolve automatic endpoints without mutating the authored stops. */
-const resolveDomain = (
+export const resolveDomain = (
   authored: (number | 'auto')[] | null,
   extent: [number, number] | null,
 ): number[] | null => {
@@ -1318,6 +1318,35 @@ const discreteEval = (program: Extract<Program, { kind: 'discrete' }>) => {
 
     return outputs[i];
   };
+};
+
+const numericEvaluators = new WeakMap<
+  object,
+  (value: number) => Evaluated | null
+>();
+
+/** Evaluate a compiled numeric scale without binding it to a sidecar column. */
+export const evaluateNumericProgram = (
+  program: Program,
+  value: number,
+): Evaluated | null => {
+  if (!Number.isFinite(value)) return null;
+
+  let evaluate = numericEvaluators.get(program);
+  if (evaluate == null) {
+    if (program.kind === 'continuous') {
+      evaluate = continuousEval(program);
+    } else if (program.kind === 'discrete') {
+      evaluate = discreteEval(program);
+    } else if (program.kind === 'ordinal') {
+      evaluate = (x) => program.map.get(x) ?? null;
+    } else {
+      return null;
+    }
+    numericEvaluators.set(program, evaluate);
+  }
+
+  return evaluate(value);
 };
 
 /** Test one compiled condition against a data value (missing fails every op). */

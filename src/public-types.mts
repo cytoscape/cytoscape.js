@@ -354,13 +354,19 @@ export interface CaseMapper<Data = Untyped> {
 /** Any data-driven style value: a scale mapper or a conditional. */
 export type MapperSpec<Data = Untyped> = Mapper<Data> | CaseMapper<Data>;
 
-/** A style prop value: a constant, or a mapper object. */
-export type StylePropValue<Data = Untyped> = string | number | MapperSpec<Data>;
+/** A definition-owned numeric colour scale for heat/bar chart values. */
+export type ChartScaleSpec = Omit<Mapper, 'data'>;
+
+/** A style prop value: a constant, mapper, or chart scale object. */
+export type StylePropValue<Data = Untyped> =
+  | string
+  | number
+  | MapperSpec<Data>
+  | ChartScaleSpec;
 
 /**
  * Style props for one element or group; names are kebab-case or
- * camelCase.  Values are constants, scale mappers ({@link Mapper}), or
- * conditionals ({@link CaseMapper}); `label` also takes the
+ * camelCase.  Values are constants, scale mappers ({@link Mapper}), conditionals ({@link CaseMapper}), or chart scale objects ({@link ChartScaleSpec}); `label` also takes the
  * `data(key)` mapper string ('id' reads the first-class id).
  * Node props: background-color, width, height, shape, opacity,
  * border-color, border-width, label, font-size, font-family (constant

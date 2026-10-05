@@ -2,6 +2,7 @@ import { CHART_NONE, LINE_SOLID, SHAPE_ELLIPSE } from '../contract.mjs';
 import { CURVE_DEFAULTS, CURVE_EXTRA_DEFAULTS } from '../store/curve-index.mjs';
 import type { BgLen, BgSize } from '../store/graph-store.mjs';
 import { ENDPT_DEFAULT } from '../curve-geometry.mjs';
+import type { CompiledMapper } from '../style-scales.mjs';
 
 /** One styled end of source/target-endpoint (12c): the parsed form of
  * v3's edgeEndpoint type.  Angles store the *effective* radians (the
@@ -46,11 +47,19 @@ export interface NodeComputed {
   /** chart (round 23): CHART_NONE | CHART_PIE | CHART_STRIPES */
   chartKind: number;
   /** constant value list (null when unset or the data passthrough is used) */
-  chartValues: number[] | null;
+  chartValues: (number | null)[] | null;
   /** the `{ data: key }` passthrough key (per-element arrays) */
   chartValuesKey: string | null;
   /** resolved palette (null = the default category10 scheme) */
   chartColors: RGBA[] | null;
+  chartColorsAuthored: boolean;
+  chartScale: CompiledMapper | null;
+  chartScaleSpec: Record<string, unknown> | null;
+  chartDomain: (number | 'auto')[] | null;
+  chartResolvedDomain: [number, number] | null;
+  chartExtentInitialized: boolean;
+  chartOverflowWarned: boolean;
+  chartMissingColor: RGBA;
   chartSize: number;
   chartHole: number;
   chartStartAngle: number;
@@ -343,6 +352,14 @@ export const NODE_DEFAULTS: NodeComputed = {
   chartValues: null,
   chartValuesKey: null,
   chartColors: null, // the category10 default resolves at write
+  chartColorsAuthored: false,
+  chartScale: null,
+  chartScaleSpec: null,
+  chartDomain: null,
+  chartResolvedDomain: null,
+  chartExtentInitialized: false,
+  chartOverflowWarned: false,
+  chartMissingColor: [0, 0, 0, 0],
   chartSize: 1, // v3's pie-size 100%
   chartHole: 0,
   chartStartAngle: 0,

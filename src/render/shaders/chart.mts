@@ -1,6 +1,8 @@
 import { wgsl } from '../../gpu/wgsl.mjs';
 import {
   CHART_COUNT_WORD,
+  CHART_BAR_DOMAIN_MIN_WORD,
+  CHART_BAR_DOMAIN_MAX_WORD,
   CHART_HEADER,
   CHART_VALUE_WORDS,
   SHAPE_MASK,
@@ -39,6 +41,8 @@ ${SDF}
 const CHART_HEADER_WORDS: u32 = ${CHART_HEADER}u;
 const CHART_VALUE_WORDS: u32 = ${CHART_VALUE_WORDS}u;
 const CHART_COUNT_INDEX: u32 = ${CHART_COUNT_WORD}u;
+const CHART_BAR_MIN_INDEX: u32 = ${CHART_BAR_DOMAIN_MIN_WORD}u;
+const CHART_BAR_MAX_INDEX: u32 = ${CHART_BAR_DOMAIN_MAX_WORD}u;
 const TAU: f32 = 6.28318530718;
 
 struct ChartVSOut {
@@ -91,6 +95,12 @@ fn chartColor(off: u32, n: u32, i: u32) -> vec4f {
   return vec4f(c.rgb * c.a, c.a);
 }
 
+/** Whether a dataset slot contains a finite observation. */
+fn chartValid(off: u32, n: u32, i: u32) -> bool {
+  let base = off + CHART_HEADER_WORDS + n * CHART_VALUE_WORDS + i / 32u;
+  return (chartBlob[base] & (1u << (i % 32u))) != 0u;
+}
+
 /** A pie/stripe stop stored as the value word in each two-word record. */
 fn chartStop(off: u32, i: u32) -> f32 {
   let word = off + CHART_HEADER_WORDS + i * CHART_VALUE_WORDS;
@@ -140,39 +150,123 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
 
   if (clipA <= 0.0) { discard; }
 
-  // the fraction coordinate t in [0, 1), its boundary AA scale in
-  // device px, and the kind's own coverage mask
+  // Signed bars use the shared geometry domain in the header. Each
+  // slot keeps its dataset identity; invalid values leave visible gaps.
+  if (kind == 5u) {
+    let domainMin = bitcast<f32>(chartBlob[off + CHART_BAR_MIN_INDEX]);
+    let domainMax = bitcast<f32>(chartBlob[off + CHART_BAR_MAX_INDEX]);
+    if (n == 0u || domainMin != domainMin || domainMax != domainMax || domainMin >= domainMax) {
+      discard;
+    }
+    let ext = half * size;
+    let horizontal = dirH == 1u;
+    let slotT = select((p.x + ext.x) / max(2.0 * ext.x, 1e-4),
+                       (p.y + ext.y) / max(2.0 * ext.y, 1e-4), horizontal);
+    let slotScalePx = select(2.0 * ext.x, 2.0 * ext.y, horizontal) * frame.zoomDpr;
+    let scaledSlot = clamp(slotT, 0.0, 0.99999994) * f32(n);
+    let index = min(u32(floor(scaledSlot)), n - 1u);
+    if (!chartValid(off, n, index)) { discard; }
+
+    let base = off + CHART_HEADER_WORDS + index * CHART_VALUE_WORDS;
+    let value = bitcast<f32>(chartBlob[base]);
+    if (value != value) { discard; }
+    let zero = clamp(0.0, domainMin, domainMax);
+    let span = domainMax - domainMin;
+    let valueT = clamp((value - domainMin) / span, 0.0, 1.0);
+    let zeroT = clamp((zero - domainMin) / span, 0.0, 1.0);
+
+    var crossCoord: f32;
+    var baselineCoord: f32;
+    var valueCoord: f32;
+    var crossHalf: f32;
+    var scaleValuePx: f32;
+    if (horizontal) {
+      crossCoord = p.y;
+      baselineCoord = -ext.x + zeroT * 2.0 * ext.x;
+      valueCoord = -ext.x + valueT * 2.0 * ext.x;
+      crossHalf = ext.y / f32(n) * 0.44;
+      scaleValuePx = 2.0 * ext.x * frame.zoomDpr;
+    } else {
+      crossCoord = p.x;
+      baselineCoord = ext.y - zeroT * 2.0 * ext.y;
+      valueCoord = ext.y - valueT * 2.0 * ext.y;
+      crossHalf = ext.x / f32(n) * 0.44;
+      scaleValuePx = 2.0 * ext.y * frame.zoomDpr;
+    }
+    let slotCenter = (f32(index) + 0.5) * select(2.0 * ext.x, 2.0 * ext.y, horizontal) / f32(n);
+    let axisCoord = select(p.x + ext.x, p.y + ext.y, horizontal);
+    let crossDistance = abs(axisCoord - slotCenter);
+    let crossAA = max(fwidth(axisCoord), 1e-4);
+    let lowCoord = min(baselineCoord, valueCoord);
+    let highCoord = max(baselineCoord, valueCoord);
+    let valueCoordNow = select(ext.y - p.y, p.x + ext.x, horizontal);
+    let valueDistance = min(valueCoordNow - lowCoord, highCoord - valueCoordNow);
+    let valueAA = max(fwidth(valueCoordNow), 1e-4);
+    let barMask = (1.0 - smoothstep(crossHalf - crossAA, crossHalf, crossDistance))
+      * smoothstep(-valueAA, valueAA, valueDistance);
+    if (barMask <= 0.0) { discard; }
+
+    let color = chartColor(off, n, index);
+    let alpha = clipA * barMask * opacities[slot];
+    if (color.a * alpha <= 0.004) { discard; }
+    return color * alpha;
+  }
+
+  // Pie/stripe fractions and equal-width heat regions share the same
+  // clipping mask; heat kinds choose their slot directly in O(1).
   var t: f32;
   var scalePx: f32;
   var mask: f32;
   var wraps = false;
+  var equalRegions = false;
 
-  if (kind == 1u) { // pie: clockwise from 12 o'clock (v3)
+  if (kind == 1u || kind == 4u) { // pie or radial heat
     let radiusPx = min(half.x, half.y) * size;
     let holeR = radiusPx * hole;
-
     mask = 1.0 - smoothstep(radiusPx - rAA, radiusPx, r);
-
     if (holeR > 0.0) {
       mask = mask * smoothstep(holeR - rAA, holeR, r);
     }
-
     if (mask <= 0.0) { discard; }
-
     t = fract((atan2(p.x, -p.y) - start) / TAU);
-    scalePx = max(r, 1e-3) * TAU * frame.zoomDpr; // arc px per unit t
-    wraps = true; // slice 0 neighbors the last region across t = 0
-  } else { // stripes: a centered size-scaled sub-box
+    scalePx = max(r, 1e-3) * TAU * frame.zoomDpr;
+    wraps = true;
+    equalRegions = kind == 4u;
+  } else { // stripes or linear heat
     let ext = half * size;
-
     mask = (1.0 - smoothstep(ext.x - aaX, ext.x, abs(p.x)))
       * (1.0 - smoothstep(ext.y - aaY, ext.y, abs(p.y)));
-
     if (mask <= 0.0) { discard; }
-
     t = select((p.y + ext.y) / max(ext.y * 2.0, 1e-4),
                (p.x + ext.x) / max(ext.x * 2.0, 1e-4), dirH == 1u);
     scalePx = select(ext.y, ext.x, dirH == 1u) * 2.0 * frame.zoomDpr;
+    equalRegions = kind == 3u;
+  }
+
+  if (equalRegions) {
+    let scaled = clamp(t, 0.0, 0.99999994) * f32(n);
+    let k = min(u32(floor(scaled)), n - 1u);
+    let lower = f32(k) / f32(n);
+    let upper = f32(k + 1u) / f32(n);
+    let dLower = (t - lower) * scalePx;
+    let dUpper = (upper - t) * scalePx;
+    var color = chartColor(off, n, k);
+    if (dLower < 0.5) {
+      if (k > 0u) {
+        color = mix(chartColor(off, n, k - 1u), color, clamp(0.5 + dLower, 0.0, 1.0));
+      } else if (wraps) {
+        color = mix(chartColor(off, n, n - 1u), color, clamp(0.5 + dLower, 0.0, 1.0));
+      }
+    } else if (dUpper < 0.5) {
+      if (k + 1u < n) {
+        color = mix(color, chartColor(off, n, k + 1u), clamp(0.5 - dUpper, 0.0, 1.0));
+      } else if (wraps) {
+        color = mix(color, chartColor(off, n, 0u), clamp(0.5 - dUpper, 0.0, 1.0));
+      }
+    }
+    let alpha = clipA * mask * opacities[slot];
+    if (color.a * alpha <= 0.004) { discard; }
+    return color * alpha;
   }
 
   // Lower-bound search over cumulative stops: first stop strictly

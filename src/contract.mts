@@ -323,6 +323,9 @@ export const STROKE_DOUBLE = 3;
 export const CHART_NONE = 0;
 export const CHART_PIE = 1;
 export const CHART_STRIPES = 2;
+export const CHART_HEAT_STRIP = 3;
+export const CHART_RADIAL_HEAT = 4;
+export const CHART_BAR = 5;
 /**
  * Words before the chart values: kind (u32), size (f32), hole (f32),
  * startAngle (f32), direction (u32), opacity (f32), value count (u32),
@@ -342,8 +345,8 @@ export const CHART_BAR_DOMAIN_MAX_WORD = 8;
 export const CHART_VALIDITY_BITS_PER_WORD = 32;
 /** Highest used-word count an offset+1 u32 reference can describe. */
 export const CHART_REF_MAX_WORDS = 0xffffffff;
-/** Current public cap; round 80 raises this to 255. */
-export const CHART_MAX_SLICES = 16;
+/** Maximum chart dataset slots in one node record (round 80). */
+export const CHART_MAX_SLICES = 255;
 /**
  * Floats an image record ref's 24-bit offset field can address (round
  * 145). `node.imageRef` packs `offset | count << 24`; `node.chartRef`

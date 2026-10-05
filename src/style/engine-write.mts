@@ -11,6 +11,11 @@ import {
   packArrowShapes,
   CHART_MAX_SLICES,
   CHART_NONE,
+  CHART_PIE,
+  CHART_STRIPES,
+  CHART_HEAT_STRIP,
+  CHART_RADIAL_HEAT,
+  CHART_BAR,
   FLAG_NO_EVENTS,
   FLAG_PARENT,
   FLAG_TEXT_EVENTS,
@@ -42,6 +47,7 @@ import type { StateWriter } from './sheet.mjs';
 import type { StyleEngine } from '../style.mjs';
 import { txnPre, txnPost } from './engine-txn.mjs';
 import { bypassPatchAt } from './engine-bypass.mjs';
+import { chartScaleColor } from './chart-scale.mjs';
 
 /** Write `node.fillColor` (the B1 background-opacity fold). */
 export function writeNodeFillColor(
@@ -639,88 +645,136 @@ export function writeEdgePerSlot(
   writeLabel(engine, slot, computed, GROUP_EDGES);
 }
 
-/**
- * Resolve and store a node's chart record (round 23).  Values come
- * from the constant list or the `{ data: key }` passthrough (a
- * per-element array; non-arrays and invalid entries mean no chart);
- * slices cap at CHART_MAX_SLICES and the running total clamps at 1
- * (v3's percent semantics — the remainder stays unpainted).  Colors
- * cycle the palette (category10 by default) and fold chart-opacity
- * into their alphas (the B1 pattern; the header keeps the exact
- * opacity for readback).
- */
+/** Resolve and store a node's chart record. Dataset positions are retained
+ * through missing values and the first 255 entries; pie/stripe fractions
+ * retain their original clamp-at-one semantics. */
 export function writeChart(
   engine: StyleEngine,
   slot: number,
   computed: Computed,
 ): void {
   const store = engine.store;
+  const kind = computed.chartKind;
+  const heat = kind === CHART_HEAT_STRIP || kind === CHART_RADIAL_HEAT;
 
-  if (computed.chartKind === CHART_NONE) {
+  // A passthrough chart-kind mapper has no finite output set to validate
+  // while compiling the sheet. Check its selected runtime kind here.
+  if (heat && computed.chartScale == null) {
+    throw new Error(
+      "Heat charts require 'chart-scale' with an explicit domain and range",
+    );
+  }
+  if (heat && computed.chartColorsAuthored) {
+    throw new Error(
+      "'chart-colors' cannot be used with a heat chart; use 'chart-scale'",
+    );
+  }
+  if (kind === CHART_BAR && computed.chartDomain == null) {
+    throw new Error("Bar charts require 'chart-domain'");
+  }
+  if (kind !== CHART_BAR && computed.chartDomain != null) {
+    throw new Error("'chart-domain' is only valid for a bar chart");
+  }
+  if (!heat && kind !== CHART_BAR && computed.chartScale != null) {
+    throw new Error("'chart-scale' is only valid for heat and bar charts");
+  }
+  if (
+    kind === CHART_BAR &&
+    computed.chartScale != null &&
+    computed.chartColorsAuthored
+  ) {
+    throw new Error(
+      "A bar chart cannot use both 'chart-colors' and 'chart-scale'",
+    );
+  }
+
+  if (kind === CHART_NONE) {
     store.setChart(slot, null);
-
     return;
   }
 
   let raw: readonly unknown[] | null = computed.chartValues;
-
   if (computed.chartValuesKey != null) {
     const dataValue = store.data.get(
       GROUP_NODES,
       slot,
       computed.chartValuesKey,
     );
-
     raw = Array.isArray(dataValue) ? dataValue : null;
   }
 
   if (raw == null || raw.length === 0) {
     store.setChart(slot, null);
-
     return;
   }
 
-  // clamp cumulative fractions at 1 (v3); zero slices keep their
-  // palette position, beyond-full slices drop
-  const values: number[] = [];
+  const n = Math.min(raw.length, CHART_MAX_SLICES);
+  if (raw.length > CHART_MAX_SLICES && !computed.chartOverflowWarned) {
+    computed.chartOverflowWarned = true;
+    console.warn(
+      `Chart values exceed ${CHART_MAX_SLICES}; truncating to the first ${CHART_MAX_SLICES} slots`,
+    );
+  }
+
+  const fractions = kind === CHART_PIE || kind === CHART_STRIPES;
+  const scaled = heat || (kind === CHART_BAR && computed.chartScale != null);
+  const palette = computed.chartColors ?? DEFAULT_CHART_COLORS;
+  const values: (number | null)[] = new Array(n);
+  const colors: [number, number, number, number][] = new Array(n);
+  const op = computed.chartOpacity;
   let acc = 0;
 
-  for (let i = 0; i < raw.length && i < CHART_MAX_SLICES; i++) {
-    if (acc >= 1) {
-      break;
+  for (let i = 0; i < n; i++) {
+    const datum = raw[i];
+    let value: number | null =
+      typeof datum === 'number' && Number.isFinite(datum) ? datum : null;
+
+    // Preserve the older data-array number parsing for pie/stripes. New
+    // signed kinds intentionally do not coerce arbitrary sidecar strings.
+    if (fractions && value == null && datum != null) {
+      const parsed = parseFloat(String(datum));
+      value = Number.isFinite(parsed) ? parsed : null;
     }
 
-    const v =
-      typeof raw[i] === 'number'
-        ? (raw[i] as number)
-        : parseFloat(String(raw[i]));
+    if (fractions) {
+      if (value == null || value < 0) {
+        value = null;
+      } else {
+        const take = Math.min(value, Math.max(0, 1 - acc));
+        value = take;
+        acc += take;
+      }
+    }
+    values[i] = value;
 
-    if (!isFinite(v) || v < 0) {
-      continue;
-    } // sidecar junk: skip the entry
-
-    const take = Math.min(v, 1 - acc);
-
-    values.push(take);
-    acc += take;
+    let color: [number, number, number, number] | null = null;
+    if (scaled && value != null) {
+      color = chartScaleColor(computed.chartScale?.program ?? null, value);
+    } else if (!scaled) {
+      color = palette[i % palette.length];
+    }
+    if (color == null)
+      color = scaled ? computed.chartMissingColor : [0, 0, 0, 0];
+    colors[i] = [color[0], color[1], color[2], Math.round(color[3] * op)];
   }
 
-  if (values.length === 0) {
-    store.setChart(slot, null);
-
-    return;
+  if (scaled && computed.chartScale != null) {
+    const program = computed.chartScale.program;
+    if (
+      (program.kind === 'continuous' || program.kind === 'discrete') &&
+      program.autoDomain &&
+      !program.resolved &&
+      !computed.chartScale.warnedUnresolved
+    ) {
+      computed.chartScale.warnedUnresolved = true;
+      console.warn(
+        "Auto domain for 'chart-scale' is unresolved; provide a usable chart value extent",
+      );
+    }
   }
-
-  const palette = computed.chartColors ?? DEFAULT_CHART_COLORS;
-  const op = computed.chartOpacity;
-  const colors = values.map((_, i) => {
-    const [r, g, b, a] = palette[i % palette.length];
-
-    return [r, g, b, Math.round(a * op)] as [number, number, number, number];
-  });
 
   store.setChart(slot, {
-    kind: computed.chartKind,
+    kind,
     size: computed.chartSize,
     hole: computed.chartHole,
     startAngle: computed.chartStartAngle,
@@ -728,6 +782,7 @@ export function writeChart(
     opacity: op,
     values,
     colors,
+    barDomain: kind === CHART_BAR ? computed.chartResolvedDomain : null,
   });
 }
 

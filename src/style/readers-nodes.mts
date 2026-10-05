@@ -3,6 +3,10 @@ import {
   GROUP_NODES,
   COL,
   CHART_PIE,
+  CHART_STRIPES,
+  CHART_HEAT_STRIP,
+  CHART_RADIAL_HEAT,
+  CHART_BAR,
   FLAG_NO_EVENTS,
   FLAG_SELF_INVISIBLE,
   FLAG_TEXT_EVENTS,
@@ -271,13 +275,27 @@ defineReader([PROP.VISIBILITY], (store, slot, ref) => {
 
 defineReader([PROP.CHART], (store, slot) => {
   const rec = store.chartAt(slot);
-
-  return rec == null ? 'none' : rec.kind === CHART_PIE ? 'pie' : 'stripes';
+  if (rec == null) return 'none';
+  return rec.kind === CHART_PIE
+    ? 'pie'
+    : rec.kind === CHART_STRIPES
+      ? 'stripes'
+      : rec.kind === CHART_HEAT_STRIP
+        ? 'heat-strip'
+        : rec.kind === CHART_RADIAL_HEAT
+          ? 'radial-heat'
+          : rec.kind === CHART_BAR
+            ? 'bar'
+            : 'none';
 });
 
 defineReader(
   [PROP.CHART_VALUES],
-  (store, slot) => store.chartAt(slot)?.values.join(' ') ?? '',
+  (store, slot) =>
+    store
+      .chartAt(slot)
+      ?.values.map((v) => (v == null ? '' : String(v)))
+      .join(' ') ?? '',
 );
 
 defineReader(
@@ -311,6 +329,21 @@ defineReader([PROP.CHART_DIRECTION], (store, slot) =>
 defineReader(
   [PROP.CHART_OPACITY],
   (store, slot) => store.chartAt(slot)?.opacity ?? 1,
+);
+
+defineReader([PROP.CHART_SCALE], (_store, _slot, ref, engine) => {
+  const spec = engine.defFor(ref).computed.chartScaleSpec;
+  return spec == null ? 'none' : JSON.stringify(spec);
+});
+
+defineReader(
+  [PROP.CHART_DOMAIN],
+  (_store, _slot, ref, engine) =>
+    engine.defFor(ref).computed.chartDomain?.join(' ') ?? 'none',
+);
+
+defineReader([PROP.CHART_MISSING_COLOR], (_store, _slot, ref, engine) =>
+  formatRgba(...engine.defFor(ref).computed.chartMissingColor),
 );
 
 defineReader([PROP.GHOST], (store, slot) =>

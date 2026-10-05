@@ -7,6 +7,9 @@ import {
   CHART_STRIPES,
   GROUP_NODES,
   GROUP_EDGES,
+  CHART_HEAT_STRIP,
+  CHART_RADIAL_HEAT,
+  CHART_BAR,
 } from '../contract.mjs';
 import type { Core } from '../core.mjs';
 import type { LegendEntry, LegendGroup, Legend } from '../public-types.mjs';
@@ -21,6 +24,9 @@ const CHART_KEYS = new Set<string>([
   PROP.CHART,
   PROP.CHART_VALUES,
   PROP.CHART_COLORS,
+  PROP.CHART_SCALE,
+  PROP.CHART_DOMAIN,
+  PROP.CHART_MISSING_COLOR,
   PROP.CHART_SIZE,
   PROP.CHART_HOLE,
   PROP.CHART_START_ANGLE,
@@ -44,7 +50,7 @@ const effectiveGroups = (
   group: LegendGroup,
   prop: string,
   blocks: Record<LegendGroup, Record<string, unknown>>,
-): Array<LegendGroup> => {
+): LegendGroup[] => {
   if (group === GROUP_NODES) {
     return hasAuthored(blocks.parents, prop)
       ? [GROUP_NODES]
@@ -155,7 +161,17 @@ const mappingEntry = (
 };
 
 const chartTypeName = (kind: number): string =>
-  kind === CHART_PIE ? 'pie' : kind === CHART_STRIPES ? 'stripes' : 'none';
+  kind === CHART_PIE
+    ? 'pie'
+    : kind === CHART_STRIPES
+      ? 'stripes'
+      : kind === CHART_HEAT_STRIP
+        ? 'heat-strip'
+        : kind === CHART_RADIAL_HEAT
+          ? 'radial-heat'
+          : kind === CHART_BAR
+            ? 'bar'
+            : 'none';
 
 const chartEntry = (
   core: Core,
@@ -196,10 +212,45 @@ const chartEntry = (
       Object.entries(block).find(
         ([key]) => normalizeProp(key) === PROP.CHART_COLORS,
       )?.[1] ?? null,
-    barGeometryDomain: null,
+    barGeometryDomain: def.computed.chartResolvedDomain,
+    colorScale: def.computed.chartScaleSpec,
+    colorDomain: (() => {
+      const program = def.computed.chartScale?.program;
+      return program != null &&
+        (program.kind === 'continuous' || program.kind === 'discrete')
+        ? program.resolvedDomain
+        : null;
+    })(),
+    colorStatus: (() => {
+      const program = def.computed.chartScale?.program;
+      return program == null ||
+        (program.kind !== 'continuous' && program.kind !== 'discrete')
+        ? 'resolved'
+        : program.resolved
+          ? 'resolved'
+          : 'unresolved';
+    })(),
+    missingColor: def.computed.chartMissingColor,
   };
   if (Array.isArray(values)) chart.values = jsonCopy(values);
   if (chartMapper) chart.typeSource = jsonCopy(rawChart);
+
+  let observed = 0;
+  let missing = 0;
+  const liveSlots =
+    group === 'parents' && !core._store.hasCompounds()
+      ? []
+      : core._styleEngine.allSlotsFor('nodes', def);
+  for (const slot of liveSlots) {
+    const rec = core._store.chartAt(slot);
+    if (rec == null) continue;
+    for (const value of rec.values) {
+      observed++;
+      if (value == null) missing++;
+    }
+  }
+  chart.observations = observed;
+  chart.missingValues = missing;
 
   for (const [key, value] of Object.entries(block)) {
     const prop = normalizeProp(key);

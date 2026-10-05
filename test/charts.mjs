@@ -99,18 +99,19 @@ describe('gpu/style: the chart family (round 23)', function () {
     expect(cy._store.chartAt(0)).to.equal(null);
   });
 
-  it('caps at 16 slices and clamps the total at 1 (v3 percents)', function () {
-    var many = new Array(20).fill(0.04);
+  it('caps at 255 slots and clamps the total at 1 (v3 percents)', function () {
+    var many = new Array(256).fill(0.001);
     var cy = makeCy({ chart: 'pie', 'chart-values': many });
 
-    expect(cy._store.chartAt(0).values.length).to.equal(16); // recorded cap
+    expect(cy._store.chartAt(0).values.length).to.equal(255); // recorded cap
 
     var over = makeCy({ chart: 'pie', 'chart-values': [0.8, 0.8, 0.5] });
     var vals = over._store.chartAt(0).values;
 
     expect(vals[0]).to.equal(0.8);
     expect(vals[1]).to.be.closeTo(0.2, 1e-6); // clamped to the remainder
-    expect(vals.length).to.equal(2); // the third slice never draws
+    expect(vals.length).to.equal(3);
+    expect(vals[2]).to.equal(0); // after the total, slots remain aligned
   });
 
   it('chart-opacity folds into the stored slice alphas', function () {
@@ -150,8 +151,242 @@ describe('gpu/style: the chart family (round 23)', function () {
     expect(cy._store.chartAt(0)).to.equal(null);
   });
 
+  it('heat scales share partial numeric domains and preserve missing slots', function () {
+    var cy = cytoscape({
+      elements: [
+        {
+          data: { id: 'a', values: [-1, 0, 2, null] },
+          position: { x: 0, y: 0 },
+        },
+        { data: { id: 'b', values: [-0.5, 1] }, position: { x: 80, y: 0 } },
+      ],
+      style: {
+        nodes: {
+          chart: 'heat-strip',
+          'chart-values': { data: 'values' },
+          'chart-scale': {
+            domain: ['auto', 0, 'auto'],
+            range: ['blue', 'white', 'red'],
+          },
+          'chart-missing-color': 'magenta',
+        },
+      },
+    });
+    var a = cy._store.chartAt(0);
+    var legend = cy.legend().entries.find((entry) => entry.kind === 'chart');
+
+    expect(a.kind).to.equal(3);
+    expect(a.values).to.deep.equal([-1, 0, 2, null]);
+    expect(a.colors[1].slice(0, 3)).to.deep.equal([255, 255, 255]);
+    expect(a.colors[3].slice(0, 3)).to.deep.equal([255, 0, 255]);
+    expect(legend.chart.colorDomain).to.deep.equal([-1, 0, 2]);
+    expect(legend.chart.missingValues).to.equal(1);
+
+    cy.$id('b').data('values', [-0.5, 4]);
+    expect(cy._store.chartAt(1).colors[1].slice(0, 3)).to.deep.equal([
+      255, 0, 0,
+    ]);
+    expect(cy.$id('a').style('chart-values')).to.equal('-1 0 2 ');
+  });
+
+  it('bars keep signed values, shared geometry bounds and palette positions', function () {
+    var cy = cytoscape({
+      elements: [
+        { data: { id: 'a', values: [-3, null, 2] }, position: { x: 0, y: 0 } },
+        { data: { id: 'b', values: [-1, 1] }, position: { x: 80, y: 0 } },
+      ],
+      style: {
+        nodes: {
+          chart: 'bar',
+          'chart-values': { data: 'values' },
+          'chart-domain': ['auto', 'auto'],
+        },
+      },
+    });
+    var a = cy._store.chartAt(0);
+    var legend = cy.legend().entries.find((entry) => entry.kind === 'chart');
+
+    expect(a.kind).to.equal(5);
+    expect(a.values).to.deep.equal([-3, null, 2]);
+    expect(a.barDomain).to.deep.equal([-3, 2]);
+    expect(legend.chart.barGeometryDomain).to.deep.equal([-3, 2]);
+
+    cy.$id('b').data('values', [-1, 4]);
+    expect(cy._store.chartAt(0).barDomain).to.deep.equal([-3, 4]);
+    expect(cy.$id('a').style('chart-domain')).to.equal('auto auto');
+  });
+
+  it('bar scales color independently from geometry and accept explicit node overrides', function () {
+    var cy = cytoscape({
+      elements: [
+        { data: { id: 'a', values: [-5, 2] }, position: { x: 0, y: 0 } },
+        { data: { id: 'b', values: [-2, 4] }, position: { x: 80, y: 0 } },
+      ],
+      style: {
+        nodes: {
+          chart: 'bar',
+          'chart-values': { data: 'values' },
+          'chart-domain': [0, 4],
+          'chart-scale': { domain: [-5, 4], range: ['blue', 'red'] },
+        },
+        bypasses: {
+          a: {
+            'chart-scale': { domain: [-5, 4], range: ['lime', 'black'] },
+          },
+        },
+      },
+    });
+    var a = cy._store.chartAt(0);
+    var b = cy._store.chartAt(1);
+    var legend = cy.legend().entries.find((entry) => entry.kind === 'chart');
+
+    expect(a.barDomain).to.deep.equal([0, 4]);
+    expect(a.colors[0].slice(0, 3)).to.deep.equal([0, 255, 0]);
+    expect(b.colors[0].slice(0, 3)).to.deep.equal([101, 78, 194]);
+    expect(legend.chart.barGeometryDomain).to.deep.equal([0, 4]);
+    expect(legend.chart.colorDomain).to.deep.equal([-5, 4]);
+    expect(() =>
+      cytoscape({
+        style: {
+          nodes: {
+            chart: 'bar',
+            'chart-domain': [0, 1],
+            'chart-scale': { domain: [-1, 'auto'], range: ['blue', 'red'] },
+          },
+          bypasses: {
+            a: {
+              'chart-scale': { domain: [-1, 'auto'], range: ['blue', 'red'] },
+            },
+          },
+        },
+        elements: [{ data: { id: 'a' } }],
+      }),
+    ).to.throw(/bypass requires explicit numeric domain/);
+  });
+
+  it('chart legend changes once after shared extent batches and recovers from empty data', function () {
+    var warnings = [];
+    var warn = console.warn;
+    var cy;
+    console.warn = (...args) => warnings.push(args.join(' '));
+
+    try {
+      cy = cytoscape({
+        elements: [
+          { data: { id: 'a', values: [null, NaN] }, position: { x: 0, y: 0 } },
+          { data: { id: 'b', values: [null] }, position: { x: 80, y: 0 } },
+        ],
+        style: {
+          nodes: {
+            chart: 'heat-strip',
+            'chart-values': { data: 'values' },
+            'chart-scale': { domain: ['auto', 'auto'], range: ['blue', 'red'] },
+          },
+        },
+      });
+      var events = [];
+      cy.on('legendchange', () =>
+        events.push(['legendchange', cy.legend().entries[0].chart.colorDomain]),
+      );
+      cy.on('batchend', () => events.push(['batchend']));
+
+      expect(cy.legend().entries[0].chart.colorStatus).to.equal('unresolved');
+      expect(cy._store.chartAt(0).values).to.deep.equal([null, null]);
+      cy.batch(() => {
+        cy.$id('a').data('values', [-1, 1]);
+        cy.$id('b').data('values', [-3, 5]);
+      });
+      expect(events).to.deep.equal([['legendchange', [-3, 5]], ['batchend']]);
+      expect(cy._store.chartAt(0).colors[0].slice(0, 3)).to.deep.equal([
+        81, 71, 210,
+      ]);
+
+      events.length = 0;
+      cy.$id('a').data('values', [-2, 2]);
+      expect(events).to.deep.equal([]);
+      expect(
+        warnings.filter((warning) => warning.includes('chart-scale')),
+      ).to.have.length(1);
+    } finally {
+      console.warn = warn;
+      cy?.destroy();
+    }
+  });
+
+  it('radial heat uses equal sectors and exposes chart configuration', function () {
+    var cy = makeCy({
+      chart: 'radial-heat',
+      'chart-values': [-1, 0, 2],
+      'chart-scale': { domain: [-1, 0, 2], range: ['blue', 'white', 'red'] },
+    });
+
+    expect(cy.$id('a').style('chart')).to.equal('radial-heat');
+    expect(cy.$id('a').style('chart-scale')).to.equal(
+      JSON.stringify({ domain: [-1, 0, 2], range: ['blue', 'white', 'red'] }),
+    );
+    expect(cy._store.chartAt(0).colors[1].slice(0, 3)).to.deep.equal([
+      255, 255, 255,
+    ]);
+  });
+
   it('rejects bad values and the edges group', function () {
     expect(() => makeCy({ chart: 'donut' })).to.throw();
+    expect(() =>
+      makeCy({ chart: 'heat-strip', 'chart-values': [0, 1] }),
+    ).to.throw(/require 'chart-scale'/);
+    expect(() =>
+      makeCy({
+        chart: 'heat-strip',
+        'chart-values': [0, 1],
+        'chart-scale': { domain: [0, 1], range: ['blue', 'red'] },
+        'chart-colors': ['red'],
+      }),
+    ).to.throw(/cannot be used with a heat chart/);
+    expect(() => makeCy({ chart: 'bar', 'chart-values': [0, 1] })).to.throw(
+      /require 'chart-domain'/,
+    );
+    expect(() =>
+      makeCy({
+        chart: 'bar',
+        'chart-values': [0, 1],
+        'chart-domain': [0, 1],
+        'chart-colors': ['red'],
+        'chart-scale': { domain: [0, 1], range: ['blue', 'red'] },
+      }),
+    ).to.throw(/cannot use both/);
+    expect(() =>
+      makeCy({
+        chart: 'pie',
+        'chart-values': [0.5],
+        'chart-scale': { domain: [0, 1], range: ['blue', 'red'] },
+      }),
+    ).to.throw(/only valid for heat and bar/);
+    expect(() =>
+      cytoscape({
+        elements: [{ data: { id: 'a', kind: 'heat' } }],
+        style: {
+          nodes: {
+            chart: {
+              case: [
+                { when: { data: 'kind', eq: 'heat' }, then: 'heat-strip' },
+              ],
+            },
+            'chart-values': [0, 1],
+          },
+        },
+      }),
+    ).to.throw(/require 'chart-scale'/);
+    expect(() =>
+      cytoscape({
+        elements: [{ data: { id: 'a', kind: 'heat-strip' } }],
+        style: {
+          nodes: {
+            chart: { data: 'kind' },
+            'chart-values': [0, 1],
+          },
+        },
+      }),
+    ).to.throw(/require 'chart-scale'/);
     expect(() => makeCy({ chart: 'pie', 'chart-values': [-1] })).to.throw();
     expect(() =>
       makeCy({ chart: 'pie', 'chart-values': [0.5], 'chart-hole': 2 }),

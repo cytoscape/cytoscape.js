@@ -430,8 +430,26 @@ const kebabNames = (block) =>
 
 /** Whether the compiler takes `{ [group]: { [prop]: value } }`. */
 const compileError = (cy, group, prop, value) => {
+  const companion = {};
+  if (prop === 'chart-scale') {
+    companion.chart = 'heat-strip';
+    companion['chart-values'] = [0, 1];
+  } else if (prop === 'chart-domain') {
+    companion.chart = 'bar';
+    companion['chart-values'] = [0, 1];
+  } else if (
+    prop === 'chart' &&
+    (value === 'heat-strip' || value === 'radial-heat')
+  ) {
+    companion['chart-values'] = [0, 1];
+    companion['chart-scale'] = { domain: [0, 1], range: ['blue', 'red'] };
+  } else if (prop === 'chart' && value === 'bar') {
+    companion['chart-values'] = [0, 1];
+    companion['chart-domain'] = [0, 1];
+  }
+
   try {
-    cy.style({ [group]: { [prop]: value } });
+    cy.style({ [group]: { ...companion, [prop]: value } });
 
     return null;
   } catch (e) {

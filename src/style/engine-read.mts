@@ -1,7 +1,15 @@
 // StyleEngine's read-back side (round 130 split): `readProp` and the
 // per-family resolvers it dispatches to.
 
-import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
+import {
+  GROUP_EDGES,
+  GROUP_NODES,
+  CHART_PIE,
+  CHART_STRIPES,
+  CHART_HEAT_STRIP,
+  CHART_RADIAL_HEAT,
+  CHART_BAR,
+} from '../contract.mjs';
 import { bindEvaluator, isMapperSpec } from '../style-scales.mjs';
 import type { BgLen, BgSize, NodeImageRecord } from '../store/graph-store.mjs';
 import type { GroupName, Ref } from '../contract.mjs';
@@ -462,6 +470,81 @@ export function resolveConst(
 
   for (const m of bound.values()) {
     mappersOut.push(m);
+  }
+
+  // A mapped chart kind may select any statically visible output. Validate
+  // config against the complete set so a heat/bar branch cannot reach the
+  // writer without its scale or geometry domain.
+  const chartKinds = new Set<number>([computed.chartKind]);
+  const chartMapper = mappersOut.find(
+    (mapper) => mapper.m.prop === PROP.CHART,
+  )?.m;
+  const chartKindsUnknown = chartMapper?.program.kind === 'passthrough';
+  if (chartMapper != null) {
+    const program = chartMapper.program;
+    const addKind = (value: unknown): void => {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        chartKinds.add(value);
+      }
+    };
+    if (program.kind === 'const') {
+      addKind(program.value);
+    } else if (program.kind === 'case') {
+      for (const clause of program.clauses) addKind(clause.value);
+      addKind(program.elseValue);
+    } else if (program.kind === 'discrete') {
+      for (const value of program.outputs) addKind(value);
+    } else if (program.kind === 'ordinal') {
+      for (const value of program.map.values()) addKind(value);
+    }
+  }
+  const hasHeat =
+    chartKinds.has(CHART_HEAT_STRIP) || chartKinds.has(CHART_RADIAL_HEAT);
+  const hasBar = chartKinds.has(CHART_BAR);
+  const hasFractionChart =
+    chartKinds.has(CHART_PIE) || chartKinds.has(CHART_STRIPES);
+
+  if (hasHeat) {
+    if (computed.chartScale == null) {
+      throw new Error(
+        "Heat charts require 'chart-scale' with an explicit domain and range",
+      );
+    }
+    if (computed.chartColorsAuthored) {
+      throw new Error(
+        "'chart-colors' cannot be used with a heat chart; use 'chart-scale'",
+      );
+    }
+  }
+  if (hasBar && computed.chartDomain == null) {
+    throw new Error("Bar charts require 'chart-domain'");
+  }
+  if (!chartKindsUnknown && !hasBar && computed.chartDomain != null) {
+    throw new Error("'chart-domain' is only valid for a bar chart");
+  }
+  if (
+    !chartKindsUnknown &&
+    !hasBar &&
+    !hasHeat &&
+    computed.chartScale != null
+  ) {
+    throw new Error("'chart-scale' is only valid for heat and bar charts");
+  }
+  if (hasBar && computed.chartScale != null && computed.chartColorsAuthored) {
+    throw new Error(
+      "A bar chart cannot use both 'chart-colors' and 'chart-scale'",
+    );
+  }
+  if (computed.chartValues != null && hasFractionChart) {
+    if (
+      computed.chartValues.some(
+        (v) => v == null || !Number.isFinite(v) || v < 0,
+      )
+    ) {
+      throw new Error(
+        'Pie and stripe chart values must be finite non-negative numbers',
+      );
+    }
   }
 
   return computed;

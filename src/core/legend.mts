@@ -240,7 +240,7 @@ const chartEntry = (
   const liveSlots =
     group === 'parents' && !core._store.hasCompounds()
       ? []
-      : core._styleEngine.allSlotsFor('nodes', def);
+      : core._styleEngine.allSlotsFor(GROUP_NODES, def);
   for (const slot of liveSlots) {
     const rec = core._store.chartAt(slot);
     if (rec == null) continue;

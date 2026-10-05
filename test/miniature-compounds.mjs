@@ -17,6 +17,23 @@ const make = (style) =>
     ...(style == null ? {} : { style }),
   });
 
+const makeTween = (style = { parents: { 'collapse-scale': 0.25 } }) =>
+  cytoscape({
+    elements: {
+      nodes: [
+        { data: { id: 'p' } },
+        {
+          data: { id: 'a', parent: 'p', scale: 0.4 },
+          position: { x: 0, y: 0 },
+        },
+        { data: { id: 'b', parent: 'p' }, position: { x: 20, y: 0 } },
+        { data: { id: 'q' }, position: { x: 100, y: 0 } },
+      ],
+      edges: [{ data: { id: 'ab', source: 'a', target: 'b' } }],
+    },
+    style,
+  });
+
 const ids = (eles) => eles.map((ele) => ele.id()).sort();
 
 describe('gpu/compounds: miniature compounds (round 148)', function () {
@@ -711,5 +728,341 @@ describe('gpu/compounds: miniature compounds (round 148)', function () {
       .run();
 
     expect(parent.position()).to.deep.equal({ x: 310, y: 170 });
+  });
+
+  it('animates one collapsed target through the normal handle controls', async function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+    const a = cy.$id('a');
+    const b = cy.$id('b');
+    const animation = parent.animation({
+      collapsed: true,
+      duration: 100,
+      easing: 'linear',
+    });
+    const done = animation.play();
+
+    cy._animations.tick(0);
+    expect(parent.collapsed()).to.equal(true);
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(1);
+
+    cy._animations.tick(50);
+    expect(
+      cy._store.appliedCollapseScaleOf(parent._refs[0].slot),
+    ).to.be.closeTo(0.625, 1e-6);
+    expect(a.position().x).to.be.closeTo(3.75, 1e-5);
+    expect(b.position().x).to.be.closeTo(16.25, 1e-5);
+
+    animation.reverse();
+    cy._animations.tick(100);
+    await done;
+
+    expect(parent.collapsed()).to.equal(false);
+    expect(a.position().x).to.be.closeTo(0, 1e-5);
+    expect(b.position().x).to.be.closeTo(20, 1e-5);
+  });
+
+  it('keeps disjoint tweens running and lets an overlapping target take over', async function () {
+    const cy = cytoscape({
+      elements: {
+        nodes: [
+          { data: { id: 'p' } },
+          { data: { id: 'a', parent: 'p' }, position: { x: 10, y: 0 } },
+          { data: { id: 'q' } },
+          { data: { id: 'b', parent: 'q' }, position: { x: 30, y: 0 } },
+        ],
+      },
+      style: { parents: { 'collapse-scale': 0.25 } },
+    });
+    const parent = cy.$id('p');
+    const other = cy.$id('q');
+    const first = parent.animation({
+      collapsed: true,
+      duration: 100,
+      easing: 'linear',
+    });
+    const disjoint = other.animation({
+      collapsed: true,
+      duration: 100,
+      easing: 'linear',
+    });
+    const firstDone = first.play();
+    const disjointDone = disjoint.play();
+
+    cy._animations.tick(0);
+    cy._animations.tick(50);
+
+    const replacement = parent.animation({
+      collapsed: false,
+      duration: 100,
+      easing: 'linear',
+    });
+    const replacementDone = replacement.play();
+    await firstDone;
+    cy._animations.tick(60);
+
+    expect(disjoint.playing()).to.equal(true);
+    expect(replacement.playing()).to.equal(true);
+
+    cy._animations.tick(150);
+    cy._animations.tick(160);
+    await Promise.all([disjointDone, replacementDone]);
+
+    expect(parent.collapsed()).to.equal(false);
+    expect(other.collapsed()).to.equal(true);
+  });
+
+  it('supports collapse timing shorthand and keeps a stopped scale in place', async function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+
+    parent.collapse({ duration: 100, easing: 'linear' });
+    cy._animations.tick(0);
+    cy._animations.tick(50);
+
+    expect(
+      cy._store.appliedCollapseScaleOf(parent._refs[0].slot),
+    ).to.be.closeTo(0.625, 1e-6);
+
+    const animation = parent.animation({
+      collapsed: false,
+      duration: 100,
+      easing: 'linear',
+    });
+    const done = animation.play();
+
+    cy._animations.tick(50);
+    cy._animations.tick(100);
+    animation.stop();
+    await done;
+
+    expect(parent.collapsed()).to.equal(true);
+    expect(
+      cy._store.appliedCollapseScaleOf(parent._refs[0].slot),
+    ).to.be.closeTo(0.8125, 1e-6);
+  });
+
+  it('interrupts only the affected collapse run before a position write', async function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+    const child = cy.$id('a');
+    const animation = parent.animation({
+      collapsed: true,
+      duration: 100,
+      easing: 'linear',
+    });
+    const done = animation.play();
+
+    cy._animations.tick(0);
+    cy._animations.tick(50);
+    child.position({ x: 40, y: 0 });
+    await done;
+
+    expect(parent.collapsed()).to.equal(true);
+    expect(
+      cy._store.appliedCollapseScaleOf(parent._refs[0].slot),
+    ).to.be.closeTo(0.625, 1e-6);
+    expect(child.position().x).to.equal(40);
+    expect(parent.animated()).to.equal(false);
+  });
+
+  it('retargets collapsed factors on style, mapper and bypass writes', function () {
+    const cy = makeTween({
+      parents: { 'collapse-scale': { data: 'scale', fallback: 0.25 } },
+    });
+    const parent = cy.$id('p');
+    const child = cy.$id('a');
+
+    parent.collapse();
+    expect(child.position().x).to.be.closeTo(7.5, 1e-5);
+
+    parent.data('scale', 0.5);
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(
+      0.5,
+    );
+    expect(child.position().x).to.be.closeTo(5, 1e-5);
+
+    parent.style('collapse-scale', 0.75);
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(
+      0.75,
+    );
+    expect(child.position().x).to.be.closeTo(2.5, 1e-5);
+
+    parent.removeStyle('collapse-scale');
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(
+      0.5,
+    );
+    expect(child.position().x).to.be.closeTo(5, 1e-5);
+  });
+
+  it('lets a live style retarget win over an older collapse tween', async function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+    const animation = parent.animation({
+      collapsed: true,
+      duration: 100,
+      easing: 'linear',
+    });
+    let resolved = false;
+    const done = animation.play().then(() => {
+      resolved = true;
+    });
+
+    cy._animations.tick(0);
+    cy._animations.tick(50);
+    parent.style('collapse-scale', 0.5);
+    await done;
+
+    expect(resolved).to.equal(true);
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(
+      0.5,
+    );
+    cy._animations.tick(100);
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(
+      0.5,
+    );
+  });
+
+  it('retargets stylesheet changes once and ignores an identical sheet', function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+    const child = cy.$id('a');
+    const nextSheet = { parents: { 'collapse-scale': 0.5 } };
+
+    parent.collapse();
+
+    let rescaleCalls = 0;
+    const rescale = cy._store.rescaleDescendants.bind(cy._store);
+    cy._store.rescaleDescendants = (...args) => {
+      rescaleCalls++;
+      return rescale(...args);
+    };
+
+    cy.style(nextSheet);
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(
+      0.5,
+    );
+    expect(child.position().x).to.be.closeTo(5, 1e-5);
+    expect(rescaleCalls).to.equal(1);
+
+    cy.style(nextSheet);
+    expect(rescaleCalls).to.equal(1);
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(
+      0.5,
+    );
+  });
+
+  it('continues through lock changes and stop(true) lands on the target', async function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+    const child = cy.$id('a');
+    const animation = parent.animation({
+      collapsed: true,
+      duration: 100,
+      easing: 'linear',
+    });
+    const done = animation.play();
+
+    cy._animations.tick(0);
+    cy._animations.tick(50);
+    const held = child.position();
+
+    child.lock();
+    expect(animation.playing()).to.equal(true);
+    cy._animations.tick(100);
+    await done;
+
+    expect(child.position()).to.deep.equal(held);
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(
+      0.25,
+    );
+
+    const expand = parent.animation({
+      collapsed: false,
+      duration: 100,
+      easing: 'linear',
+    });
+    const expanded = expand.play();
+
+    cy._animations.tick(100);
+    expand.stop(true);
+    await expanded;
+    expect(parent.collapsed()).to.equal(false);
+  });
+
+  it('interrupts a miniature tween before a scoped layout snapshot', async function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+    const animation = parent.animation({
+      collapsed: true,
+      duration: 100,
+      easing: 'linear',
+    });
+    const done = animation.play();
+
+    cy._animations.tick(0);
+    cy._animations.tick(50);
+    const layout = parent.layout({
+      name: 'preset',
+      fit: false,
+      positions: { p: { x: 120, y: 60 } },
+    });
+
+    layout.run();
+    await done;
+    cy._animations.tick(100);
+
+    expect(parent.position()).to.deep.equal({ x: 120, y: 60 });
+    expect(
+      cy._store.appliedCollapseScaleOf(parent._refs[0].slot),
+    ).to.be.closeTo(0.625, 1e-6);
+  });
+
+  it('leaves an unrelated subtree animation running during a position write', async function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+    const unrelated = cy.$id('q');
+    const animation = parent.animation({
+      collapsed: true,
+      duration: 100,
+      easing: 'linear',
+    });
+    const done = animation.play();
+
+    cy._animations.tick(0);
+    cy._animations.tick(50);
+    unrelated.position({ x: 200, y: 0 });
+    expect(animation.playing()).to.equal(true);
+    cy._animations.tick(100);
+    await done;
+
+    expect(unrelated.position().x).to.equal(200);
+    expect(cy._store.appliedCollapseScaleOf(parent._refs[0].slot)).to.equal(
+      0.25,
+    );
+  });
+
+  it('interrupts a miniature tween before rewiring an incident edge', async function () {
+    const cy = makeTween();
+    const parent = cy.$id('p');
+    const edge = cy.$id('ab');
+    const animation = parent.animation({
+      collapsed: true,
+      duration: 100,
+      easing: 'linear',
+    });
+    const done = animation.play();
+
+    cy._animations.tick(0);
+    cy._animations.tick(50);
+    edge.move({ target: 'q' });
+    await done;
+    cy._animations.tick(100);
+
+    expect(animation.playing()).to.equal(false);
+    expect(edge.target().id()).to.equal('q');
+    expect(
+      cy._store.appliedCollapseScaleOf(parent._refs[0].slot),
+    ).to.be.closeTo(0.625, 1e-6);
   });
 });

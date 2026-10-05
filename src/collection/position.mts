@@ -108,6 +108,9 @@ export function _positions(
       }
     }
 
+    self._cy._animations.interruptCollapsedRefs(
+      slots.map((slot) => store.ref(GROUP_NODES, slot)),
+    );
     store.setPositionsConst(slots, x, y);
 
     if (emitIdx != null) {
@@ -157,6 +160,9 @@ export function _positions(
     }
   }
 
+  self._cy._animations.interruptCollapsedRefs(
+    slots.map((slot) => store.ref(GROUP_NODES, slot)),
+  );
   store.setPositions(slots, xy);
 
   if (emitIdx != null) {
@@ -309,6 +315,9 @@ export function _shift(
     }
   }
 
+  self._cy._animations.interruptCollapsedRefs(
+    slots.map((slot) => store.ref(GROUP_NODES, slot)),
+  );
   store.shiftPositions(slots, dx, dy);
 
   if (emitIdx != null) {

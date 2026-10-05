@@ -277,6 +277,12 @@ export class StyleEngine {
       ) => void)
     | null = null;
 
+  /** Live collapse-scale style updates retarget a collapsed parent through
+   * the core's position-and-geometry reconciliation path. @internal */
+  onCollapseScaleChange: ((slot: number) => void) | null = null;
+  private pendingCollapseScaleRetargets = new Set<number>();
+  private flushingCollapseScaleRetargets = false;
+
   /** value reader for mapper/condition keys ('id' is first-class, not in
    * the sidecar; the reserved '::' keys answer a case condition from the
    * flags column — the structural pair since round 14.7, the state
@@ -390,7 +396,11 @@ export class StyleEngine {
    *   value
    */
   setSheet(sheet: Stylesheet, apply: boolean = true): void {
-    engineSheet.setSheet(this, sheet, apply);
+    try {
+      engineSheet.setSheet(this, sheet, apply);
+    } finally {
+      this.flushCollapseScaleRetargets();
+    }
   }
 
   /**
@@ -561,7 +571,11 @@ export class StyleEngine {
    * @internal
    */
   applySheet(unstyled: readonly Ref[] = []): boolean {
-    return engineDiff.applySheet(this, unstyled);
+    try {
+      return engineDiff.applySheet(this, unstyled);
+    } finally {
+      this.flushCollapseScaleRetargets();
+    }
   }
 
   /**
@@ -574,7 +588,42 @@ export class StyleEngine {
    * @internal
    */
   applyBulk(group: GroupName, slots: ArrayLike<number>): void {
-    engineApply.applyBulk(this, group, slots);
+    try {
+      engineApply.applyBulk(this, group, slots);
+    } finally {
+      this.flushCollapseScaleRetargets();
+    }
+  }
+
+  /** @internal */
+  queueCollapseScaleRetarget(slot: number): void {
+    this.pendingCollapseScaleRetargets.add(slot);
+  }
+
+  private flushCollapseScaleRetargets(): void {
+    if (
+      this.txn != null ||
+      this.flushingCollapseScaleRetargets ||
+      this.onCollapseScaleChange == null
+    ) {
+      return;
+    }
+
+    this.flushingCollapseScaleRetargets = true;
+
+    try {
+      while (this.pendingCollapseScaleRetargets.size > 0) {
+        const slots = [...this.pendingCollapseScaleRetargets];
+
+        this.pendingCollapseScaleRetargets.clear();
+
+        for (const slot of slots) {
+          this.onCollapseScaleChange(slot);
+        }
+      }
+    } finally {
+      this.flushingCollapseScaleRetargets = false;
+    }
   }
 
   // -- transitions (round 24.1) --
@@ -685,12 +734,20 @@ export class StyleEngine {
     slots: ArrayLike<number>,
     keys: string[],
   ): void {
-    engineRefresh.refreshMapped(this, group, slots, keys);
+    try {
+      engineRefresh.refreshMapped(this, group, slots, keys);
+    } finally {
+      this.flushCollapseScaleRetargets();
+    }
   }
 
   /** Re-resolve auto domains after add/remove changes; called at mutation boundaries. @internal */
   refreshAutoDomains(): void {
-    engineRefresh.refreshAutoDomains(this);
+    try {
+      engineRefresh.refreshAutoDomains(this);
+    } finally {
+      this.flushCollapseScaleRetargets();
+    }
   }
 
   /**
@@ -719,7 +776,11 @@ export class StyleEngine {
    * @internal
    */
   refreshState(group: GroupName, key: string, slots: ArrayLike<number>): void {
-    engineRefresh.refreshState(this, group, key, slots);
+    try {
+      engineRefresh.refreshState(this, group, key, slots);
+    } finally {
+      this.flushCollapseScaleRetargets();
+    }
   }
 
   // -- read-back (the collection's read-only style getters) --

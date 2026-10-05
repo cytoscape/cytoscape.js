@@ -118,6 +118,17 @@ export class LayoutRun {
       }
     }
 
+    const layoutRefs = slots.map((slot) => store.ref(GROUP_NODES, slot));
+
+    if (eles != null) {
+      layoutRefs.push(...eles._liveRefs());
+    }
+
+    // A layout takes a stable position snapshot. Settle any overlapping
+    // miniature tween first so its descendants are neither half-scaled nor
+    // omitted from the run's model of the starting geometry.
+    cy._animations.interruptCollapsedRefs(layoutRefs);
+
     const pos = store.column(COL.NODE_POSITION) as Float32Array;
     const xy = new Float32Array(slots.length * 2);
 

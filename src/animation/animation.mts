@@ -11,6 +11,7 @@ import {
   normalizeProp,
   parseColor,
   parseNumber,
+  TWEEN_COL,
 } from './channels.mjs';
 import type { RGBA, StyleChannel, ChannelWrite } from './channels.mjs';
 import type { Position } from './handle.mjs';
@@ -21,6 +22,12 @@ import * as applyImpl from './apply.mjs';
 export interface AnimateOptions {
   style?: Record<string, string | number>;
   position?: Partial<Position>;
+  /**
+   * Target the collapsed state of compound parents. This is an element-only
+   * animation channel and may be combined with timing options, but not with
+   * other style, position, or viewport targets.
+   */
+  collapsed?: boolean;
   /** viewport targets (core.animate) */
   pan?: Position;
   /**
@@ -68,6 +75,13 @@ interface CompiledStyle {
   channel: StyleChannel;
   toScalar?: number;
   toColor?: RGBA;
+}
+
+/** The batch-specific implementation behind a collapsed-state tween. */
+export interface CollapsedAnimationDriver {
+  capture(): void;
+  apply(progress: number): void;
+  swapEnds(): void;
 }
 
 /**
@@ -156,6 +170,8 @@ export class Animation {
   /** round 24.1: a transition built from pre-resolved ChannelWrites —
    * capture is a no-op and eligibility/columns derive from the writes */
   private preset = false;
+  /** @internal */
+  collapsedDriver: CollapsedAnimationDriver | null = null;
   /**
    * Round 144: a column animation's per-node targets, `(x, y)` per
    * entry of `refs` — the layout tween, one animation over the scope
@@ -288,6 +304,12 @@ export class Animation {
     this.onComplete = opts.complete ?? null;
     this.style = [];
 
+    if (isViewport && opts.collapsed != null) {
+      throw new Error(
+        'The collapsed target is available on element animations only',
+      );
+    }
+
     // round 21: v4 has no animation queue and no step callback — reject
     // the v3 spellings loudly rather than silently ignoring them
     if ('queue' in (opts as Record<string, unknown>)) {
@@ -368,6 +390,17 @@ export class Animation {
       // a preset transition's channels live in its pre-resolved writes
       for (const w of this.writes) {
         cols.add(w.column);
+      }
+
+      if (this.collapsedDriver != null) {
+        // A collapse tick reapplies descendant and incident-edge geometry,
+        // so it owns every ordinary tween channel on those refs.
+        for (const col of Object.values(COL)) {
+          cols.add(col);
+        }
+        cols.add(TWEEN_COL.NODE_PADDING);
+        cols.add(TWEEN_COL.NODE_FONT_SIZE);
+        cols.add(TWEEN_COL.EDGE_FONT_SIZE);
       }
 
       this._columns = cols;
@@ -626,6 +659,7 @@ export class Animation {
         : clamp01((nowMs - this.startTime) / this.duration);
 
     applyImpl.swapEnds(this);
+    this.collapsedDriver?.swapEnds();
     this.startTime = nowMs - (1 - t) * this.duration;
   }
 
@@ -677,6 +711,9 @@ export class Animation {
    */
   get gpuEligible(): boolean {
     if (this._barred) {
+      return false;
+    }
+    if (this.collapsedDriver != null) {
       return false;
     }
     if (this.isViewport) {
@@ -1047,11 +1084,13 @@ export class Animation {
    */
   capture(): void {
     captureImpl.capture(this);
+    this.collapsedDriver?.capture();
   }
 
   /** @internal */
   apply(e: number): void {
     applyImpl.apply(this, e);
+    this.collapsedDriver?.apply(e);
   }
 
   /** @internal */

@@ -2,6 +2,11 @@
 
 import { GROUP_EDGES, GROUP_NODES, COL, FLAG_PARENT } from '../contract.mjs';
 import type { Ref } from '../contract.mjs';
+import { Animation } from '../animation.mjs';
+import type {
+  AnimateOptions,
+  CollapsedAnimationDriver,
+} from '../animation.mjs';
 import type { FilterLike } from './shared.mjs';
 import type { Collection } from '../collection.mjs';
 
@@ -237,14 +242,271 @@ export function commonAncestors(
 }
 
 /** Collapse or expand every compound parent in ancestor-first order. */
-export function setCollapsed(self: Collection, collapsed: boolean): Collection {
+export function setCollapsed(
+  self: Collection,
+  collapsed: boolean,
+  timing?: Pick<AnimateOptions, 'duration' | 'easing'>,
+): Collection {
   const store = self._store;
+  const targets = parentTargets(self, collapsed);
+
+  if (targets.length === 0) {
+    return self;
+  }
+
+  const scales = new Map<number, number>();
+
+  for (const slot of targets) {
+    scales.set(slot, collapsed ? store.collapseScaleOf(slot) : 1);
+  }
+
+  validateProjectedScales(store, scales);
+
+  if (timing != null) {
+    const ani = createCollapsedAnimation(self, {
+      ...timing,
+      collapsed,
+    });
+
+    self._cy._animations.start(ani);
+
+    return self;
+  }
+
+  applyCollapsedTargets(
+    self,
+    targets.map((slot) => ({
+      slot,
+      collapsed,
+      scale: scales.get(slot) as number,
+    })),
+  );
+
+  return self;
+}
+
+/** Build a collapsed-state animation with ownership over the geometry it refreshes. */
+export function createCollapsedAnimation(
+  self: Collection,
+  opts: AnimateOptions,
+): Animation {
+  if (opts.collapsed == null) {
+    throw new Error('A collapsed animation requires a collapsed target');
+  }
+
+  if (
+    opts.style != null ||
+    opts.position != null ||
+    opts.pan != null ||
+    opts.panBy != null ||
+    opts.zoom != null ||
+    opts.fit != null ||
+    opts.center != null
+  ) {
+    throw new Error(
+      'The collapsed target cannot be combined with other animation targets',
+    );
+  }
+
+  const targets = parentTargets(self, opts.collapsed);
+  const scales = new Map<number, number>();
+
+  for (const slot of targets) {
+    scales.set(slot, opts.collapsed ? self._store.collapseScaleOf(slot) : 1);
+  }
+
+  validateProjectedScales(self._store, scales);
+
+  const ani = new Animation(
+    self._store,
+    null,
+    collapseOwnerRefs(self._store, targets),
+    false,
+    opts,
+    self._cy._styleEngine,
+  );
+
+  ani.collapsedDriver = new CollapsedTween(self, targets, opts.collapsed);
+
+  return ani;
+}
+
+/** Reconcile a live style target change through the immediate collapse path. */
+export function retargetCollapsedScale(self: Collection, slot: number): void {
+  const store = self._store;
+
+  if (
+    !store.isCollapsed(slot) ||
+    !store.hasFlag(GROUP_NODES, slot, FLAG_PARENT)
+  ) {
+    return;
+  }
+
+  applyCollapsedTargets(self, [
+    { slot, collapsed: true, scale: store.collapseScaleOf(slot) },
+  ]);
+}
+
+interface CollapseTarget {
+  slot: number;
+  collapsed: boolean;
+  scale: number;
+}
+
+interface CollapseTrack extends CollapseTarget {
+  fromCollapsed: boolean;
+  fromScale: number;
+}
+
+class CollapsedTween implements CollapsedAnimationDriver {
+  private readonly self: Collection;
+  private readonly targets: number[];
+  private readonly collapsed: boolean;
+  private tracks: CollapseTrack[] = [];
+  private captured = false;
+
+  constructor(self: Collection, targets: number[], collapsed: boolean) {
+    this.self = self;
+    this.targets = targets;
+    this.collapsed = collapsed;
+  }
+
+  capture(): void {
+    if (this.captured) {
+      return;
+    }
+
+    const store = this.self._store;
+    const projected = new Map<number, number>();
+
+    for (const slot of this.targets) {
+      const fromCollapsed = store.isCollapsed(slot);
+      const fromScale = fromCollapsed ? store.appliedCollapseScaleOf(slot) : 1;
+      const toScale = this.collapsed ? store.collapseScaleOf(slot) : 1;
+
+      projected.set(slot, toScale);
+      this.tracks.push({
+        slot,
+        fromCollapsed,
+        fromScale,
+        collapsed: this.collapsed,
+        scale: toScale,
+      });
+    }
+
+    validateProjectedScales(store, projected);
+
+    // Collapse state is observable from the first frame; expansion keeps
+    // the flag until its final frame. Install all starts before notifying.
+    const newlyCollapsed: number[] = [];
+
+    for (const track of this.tracks) {
+      if (track.collapsed && !track.fromCollapsed) {
+        store.setCollapsed(track.slot, true, track.fromScale);
+        newlyCollapsed.push(track.slot);
+      }
+    }
+
+    this.captured = true;
+
+    for (const slot of newlyCollapsed) {
+      this.self._cy._emitOnEle(
+        'collapse',
+        this.self._cy._ele(GROUP_NODES, slot),
+      );
+    }
+  }
+
+  apply(progress: number): void {
+    this.capture();
+
+    if (this.tracks.length === 0) {
+      return;
+    }
+
+    const store = this.self._store;
+    const e = Math.max(0, Math.min(1, progress));
+    const refreshSlots: number[] = [];
+    const movedSlots = new Set<number>();
+    const completedEvents: { slot: number; type: 'collapse' | 'expand' }[] = [];
+
+    for (const track of this.tracks) {
+      const wasCollapsed = store.isCollapsed(track.slot);
+      const oldScale = store.appliedCollapseScaleOf(track.slot);
+      const nextScale = track.fromScale + (track.scale - track.fromScale) * e;
+      const atEnd = e >= 1;
+      const nextCollapsed = atEnd
+        ? track.collapsed
+        : track.fromCollapsed || track.collapsed;
+      const ratio = nextScale / oldScale;
+
+      if (!Number.isFinite(ratio) || ratio <= 0) {
+        throw new Error('collapse scale change is not representable');
+      }
+
+      const moved = store.rescaleDescendants(
+        track.slot,
+        ratio,
+        this.self._cy.autolock() === true,
+      );
+
+      for (const slot of moved) {
+        movedSlots.add(slot);
+      }
+
+      store.setCollapsed(track.slot, nextCollapsed, nextScale);
+
+      if (ratio !== 1 || wasCollapsed !== nextCollapsed) {
+        refreshSlots.push(track.slot);
+      }
+
+      if (wasCollapsed !== nextCollapsed) {
+        completedEvents.push({
+          slot: track.slot,
+          type: nextCollapsed ? 'collapse' : 'expand',
+        });
+      }
+    }
+
+    if (refreshSlots.length > 0) {
+      refreshCollapsedGeometry(this.self, refreshSlots);
+    }
+
+    for (const slot of movedSlots) {
+      this.self._cy._emitOnEle(
+        'position',
+        this.self._cy._ele(GROUP_NODES, slot),
+      );
+    }
+
+    for (const event of completedEvents) {
+      this.self._cy._emitOnEle(
+        event.type,
+        this.self._cy._ele(GROUP_NODES, event.slot),
+      );
+    }
+  }
+
+  swapEnds(): void {
+    for (const track of this.tracks) {
+      const scale = track.fromScale;
+      track.fromScale = track.scale;
+      track.scale = scale;
+
+      const collapsed = track.fromCollapsed;
+      track.fromCollapsed = track.collapsed;
+      track.collapsed = collapsed;
+    }
+  }
+}
+
+function parentTargets(self: Collection, collapsed: boolean): number[] {
   const targets: number[] = [];
   const seen = new Set<number>();
-  const flags = store.hotNodeFlags();
+  const flags = self._store.hotNodeFlags();
 
   for (const ref of self._refs) {
-    if (!store.isCurrent(ref)) {
+    if (!self._store.isCurrent(ref)) {
       continue;
     }
 
@@ -260,16 +522,29 @@ export function setCollapsed(self: Collection, collapsed: boolean): Collection {
     }
   }
 
-  if (targets.length === 0) {
-    return self;
-  }
+  sortParentSlots(self._store, targets);
 
-  const projectedScale = new Map<number, number>();
+  return targets;
+}
 
-  for (const slot of targets) {
-    projectedScale.set(slot, collapsed ? store.collapseScaleOf(slot) : 1);
-  }
+function sortParentSlots(store: Collection['_store'], slots: number[]): void {
+  const depth = (slot: number): number => {
+    let n = 0;
 
+    for (let p = store.parentOf(slot); p >= 0; p = store.parentOf(p)) {
+      n++;
+    }
+
+    return n;
+  };
+
+  slots.sort((a, b) => depth(a) - depth(b) || a - b);
+}
+
+function validateProjectedScales(
+  store: Collection['_store'],
+  projectedScale: ReadonlyMap<number, number>,
+): void {
   for (const slot of store.slotsOrdered(GROUP_NODES)) {
     let factor = 1;
 
@@ -298,62 +573,112 @@ export function setCollapsed(self: Collection, collapsed: boolean): Collection {
       throw new Error('collapse scale would underflow effective geometry');
     }
   }
+}
 
-  const depth = (slot: number): number => {
-    let n = 0;
+function collapseOwnerRefs(
+  store: Collection['_store'],
+  parents: readonly number[],
+): Ref[] {
+  const nodes = new Set<number>(parents);
 
-    for (let p = store.parentOf(slot); p >= 0; p = store.parentOf(p)) {
-      n++;
+  for (const parent of parents) {
+    for (const slot of descendantSlots(store, parent)) {
+      nodes.add(slot);
     }
+  }
 
-    return n;
-  };
+  const refs = [...nodes].map((slot) => store.ref(GROUP_NODES, slot));
+  const edges = new Set<number>();
 
-  targets.sort((a, b) => depth(a) - depth(b) || a - b);
+  for (const slot of nodes) {
+    for (const edge of store.adj.connectedEdges(slot)) {
+      edges.add(edge);
+    }
+  }
 
-  for (const slot of targets) {
+  for (const edge of edges) {
+    refs.push(store.ref(GROUP_EDGES, edge));
+  }
+
+  return refs;
+}
+
+function applyCollapsedTargets(
+  self: Collection,
+  targets: readonly CollapseTarget[],
+): void {
+  const store = self._store;
+  const projected = new Map<number, number>();
+
+  for (const target of targets) {
+    projected.set(target.slot, target.scale);
+  }
+
+  validateProjectedScales(store, projected);
+
+  const ownerRefs = collapseOwnerRefs(
+    store,
+    targets.map((target) => target.slot),
+  );
+
+  self._cy._animations.interruptCollapsedRefs(ownerRefs);
+  const refreshSlots: number[] = [];
+  const movedSlots = new Set<number>();
+  const changedStates: CollapseTarget[] = [];
+
+  for (const target of targets) {
     store.flushDerived();
 
-    const wasCollapsed = store.isCollapsed(slot);
-    const oldScale = store.appliedCollapseScaleOf(slot);
-    const nextScale = collapsed ? store.collapseScaleOf(slot) : 1;
+    const wasCollapsed = store.isCollapsed(target.slot);
+    const oldScale = store.appliedCollapseScaleOf(target.slot);
 
-    if (wasCollapsed === collapsed && oldScale === nextScale) {
+    if (wasCollapsed === target.collapsed && oldScale === target.scale) {
       continue;
     }
 
-    const ratio = nextScale / oldScale;
+    const ratio = target.scale / oldScale;
 
     if (!Number.isFinite(ratio) || ratio <= 0) {
       throw new Error('collapse scale change is not representable');
     }
 
     const moved = store.rescaleDescendants(
-      slot,
+      target.slot,
       ratio,
       self._cy.autolock() === true,
     );
-    store.setCollapsed(slot, collapsed, nextScale);
 
-    if (ratio !== 1) {
-      refreshCollapsedGeometry(self, [slot]);
+    for (const slot of moved) {
+      movedSlots.add(slot);
     }
 
-    store.flushDerived();
+    store.setCollapsed(target.slot, target.collapsed, target.scale);
 
-    for (const movedSlot of moved) {
-      self._cy._emitOnEle('position', self._cy._ele(GROUP_NODES, movedSlot));
+    if (ratio !== 1 || wasCollapsed !== target.collapsed) {
+      refreshSlots.push(target.slot);
     }
 
-    if (wasCollapsed !== collapsed) {
-      self._cy._emitOnEle(
-        collapsed ? 'collapse' : 'expand',
-        self._cy._ele(GROUP_NODES, slot),
-      );
+    if (wasCollapsed !== target.collapsed) {
+      changedStates.push(target);
     }
   }
 
-  return self;
+  if (refreshSlots.length > 0) {
+    refreshCollapsedGeometry(self, refreshSlots);
+  } else {
+    store.flushDerived();
+  }
+
+  for (const slot of movedSlots) {
+    self._cy._emitOnEle('position', self._cy._ele(GROUP_NODES, slot));
+  }
+
+  for (const target of changedStates) {
+    self._cy._emitOnEle(
+      target.collapsed ? 'collapse' : 'expand',
+      self._cy._ele(GROUP_NODES, target.slot),
+    );
+  }
 }
 
 function descendantSlots(store: Collection['_store'], slot: number): number[] {

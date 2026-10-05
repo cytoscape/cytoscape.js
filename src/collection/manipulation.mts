@@ -183,6 +183,16 @@ export function move(
         parentSlot >= 0 &&
         (parentSlot === ref.slot || store.isAncestorOf(ref.slot, parentSlot));
 
+      if (!cyclic) {
+        const affected = [ref];
+
+        if (parentSlot >= 0) {
+          affected.push(store.ref(GROUP_NODES, parentSlot));
+        }
+
+        self._cy._animations.interruptCollapsedRefs(affected);
+      }
+
       if (!cyclic && wantEmit) {
         self._cy._emitOnEle('moveout', self[i]);
       }
@@ -214,12 +224,22 @@ export function move(
     }
 
     const endpoints = store.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+    const oldSource = endpoints[ref.slot * 2];
+    const oldTarget = endpoints[ref.slot * 2 + 1];
+    const nextSource = newSource ?? oldSource;
+    const nextTarget = newTarget ?? oldTarget;
 
-    store.moveEdge(
-      ref.slot,
-      newSource ?? endpoints[ref.slot * 2],
-      newTarget ?? endpoints[ref.slot * 2 + 1],
-    );
+    if (nextSource !== oldSource || nextTarget !== oldTarget) {
+      self._cy._animations.interruptCollapsedRefs([
+        ref,
+        store.ref(GROUP_NODES, oldSource),
+        store.ref(GROUP_NODES, oldTarget),
+        store.ref(GROUP_NODES, nextSource),
+        store.ref(GROUP_NODES, nextTarget),
+      ]);
+    }
+
+    store.moveEdge(ref.slot, nextSource, nextTarget);
 
     if (hasListeners(self._cy._emitter, 'move')) {
       self._cy._emitOnEle('move', self[i]);

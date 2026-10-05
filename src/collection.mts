@@ -1271,8 +1271,9 @@ export class Collection<
    * GPU, so accepting one would mean a curve that silently depended on
    * whether the animation got offloaded.
    *
-   * @param opts — targets (`position`, `style`, plus the viewport forms
-   *   on `cy.animate`), `duration`, `easing`, `delay`, `complete`
+   * @param opts — targets (`position`, `style`, or `collapsed` for compound
+   *   parents; viewport forms apply on `cy.animate`), `duration`,
+   *   `easing`, `delay`, `complete`
    * @returns this collection, for chaining; use `animation()` when you
    *   want the handle
    * @see Collection#animation for the handle form with
@@ -1285,7 +1286,8 @@ export class Collection<
   /**
    * Build an animation for these elements without starting it.
    *
-   * @param opts — the tween targets (`position`, `style`) plus
+   * @param opts — the tween targets (`position`, `style`, or compound
+   *   `collapsed` state) plus
    *   `duration`, `delay`, `easing` and `complete`
    * @returns the handle; nothing runs until `play()`
    */
@@ -2703,23 +2705,28 @@ export class Collection<
 
   /**
    * Scale each compound parent’s descendants into a miniature around
-   * the parent’s current centre. The original nodes, edges and explicit
-   * visibility state remain unchanged.
+   * the parent’s current centre. Pass `{ duration, easing }` to animate
+   * the scale; without options, the operation is immediate. The original
+   * nodes, edges and explicit visibility state remain unchanged.
    *
+   * @param timing — optional animation duration and easing
    * @returns this collection, for chaining
    */
-  collapse(): this {
-    return hierarchyImpl.setCollapsed(this, true) as this;
+  collapse(timing?: Pick<AnimateOptions, 'duration' | 'easing'>): this {
+    return hierarchyImpl.setCollapsed(this, true, timing) as this;
   }
 
   /**
    * Restore each collapsed compound parent’s descendants by reversing
-   * its currently applied scale around the parent’s current centre.
+   * its currently applied scale around the parent’s current centre. Pass
+   * `{ duration, easing }` to animate the restoration; without options,
+   * the operation is immediate.
    *
+   * @param timing — optional animation duration and easing
    * @returns this collection, for chaining
    */
-  expand(): this {
-    return hierarchyImpl.setCollapsed(this, false) as this;
+  expand(timing?: Pick<AnimateOptions, 'duration' | 'easing'>): this {
+    return hierarchyImpl.setCollapsed(this, false, timing) as this;
   }
 
   /**

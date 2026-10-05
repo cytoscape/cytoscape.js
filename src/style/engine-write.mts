@@ -375,6 +375,9 @@ export function writeChannels(
   const store = engine.store;
 
   if (group === GROUP_NODES) {
+    const wasStyled = engine.wasStyled(group, slot);
+    let retargetCollapse = false;
+
     // equal-radii ellipses render via the cheaper exact circle SDF
     const shape =
       computed.shape === SHAPE_ELLIPSE && computed.width === computed.height
@@ -386,7 +389,13 @@ export function writeChannels(
       computed.collapseScale != null &&
       store.hasFlag(GROUP_NODES, slot, FLAG_PARENT)
     ) {
+      const oldScale = store.collapseScaleOf(slot);
+
       store.setCollapseScaleStyle(slot, computed.collapseScale);
+      retargetCollapse =
+        wasStyled &&
+        oldScale !== computed.collapseScale &&
+        store.isCollapsed(slot);
     }
     store.setFlag(GROUP_NODES, slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
     store.setFlag(GROUP_NODES, slot, FLAG_TEXT_EVENTS, computed.textEvents); // 20.3
@@ -459,6 +468,10 @@ export function writeChannels(
     writeImages(engine, slot, computed);
     writeChart(engine, slot, computed);
     writeLabel(engine, slot, computed);
+
+    if (retargetCollapse) {
+      engine.queueCollapseScaleRetarget(slot);
+    }
   } else {
     writeEdgeColumns(engine, slot, computed);
     writeEdgePerSlot(engine, slot, computed);

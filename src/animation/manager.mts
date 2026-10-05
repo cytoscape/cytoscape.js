@@ -406,7 +406,36 @@ export class AnimationManager {
     }
 
     for (const [ani, keys] of this.touching(refs)) {
-      this.detachFrom(ani, keys, false, false);
+      if (ani.collapsedDriver != null) {
+        this.stopOne(ani, false);
+        this.remove(ani);
+      } else {
+        this.detachFrom(ani, keys, false, false);
+      }
+    }
+  }
+
+  /**
+   * Stop whole collapsed-state tweens whose geometry scope intersects refs.
+   *
+   * @param refs — the elements being written or whose topology is changing
+   */
+  interruptCollapsedRefs(refs: readonly Ref[]): void {
+    for (const ani of this.touching(refs).keys()) {
+      if (ani.collapsedDriver != null) {
+        this.stopOne(ani, false);
+        this.remove(ani);
+      }
+    }
+  }
+
+  /** Stop every collapsed-state tween before a topology rewrite. */
+  interruptAllCollapsed(): void {
+    for (const ani of [...this.all]) {
+      if (ani.collapsedDriver != null) {
+        this.stopOne(ani, false);
+        this.remove(ani);
+      }
     }
   }
 
@@ -434,7 +463,10 @@ export class AnimationManager {
         : this.touching(refs);
 
     for (const [ani, keys] of touching) {
-      if (ani.touchedColumns().has(COL.NODE_POSITION)) {
+      if (
+        ani.collapsedDriver == null &&
+        ani.touchedColumns().has(COL.NODE_POSITION)
+      ) {
         this.detachFrom(ani, keys, false, true);
       }
     }

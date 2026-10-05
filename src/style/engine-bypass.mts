@@ -9,7 +9,6 @@ import { normalizeProp } from './normalize.mjs';
 import { captureBypassPatch } from './apply-prop.mjs';
 import type { BypassPatch } from './apply-prop.mjs';
 import type { StyleEngine } from '../style.mjs';
-import { applyBulk } from './engine-apply.mjs';
 import { OPACITY_FOLDS } from './engine-sheet.mjs';
 
 /** Validate a sheet's `bypasses` section into installable entries —
@@ -286,9 +285,9 @@ export function setBypass(
       (p) => owned.has(p) || (OPACITY_FOLDS[p] ?? []).some((c) => owned.has(c)),
     )
   ) {
-    applyBulk(engine, ref.group, engine.store.slotsOrdered(ref.group));
+    engine.applyBulk(ref.group, engine.store.slotsOrdered(ref.group));
   } else {
-    applyBulk(engine, ref.group, [ref.slot]);
+    engine.applyBulk(ref.group, [ref.slot]);
   }
 }
 
@@ -361,5 +360,5 @@ export function removeBypass(
     engine.paintVersion++;
   }
 
-  applyBulk(engine, ref.group, [ref.slot]);
+  engine.applyBulk(ref.group, [ref.slot]);
 }

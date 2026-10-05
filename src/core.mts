@@ -70,6 +70,7 @@ import * as cloneImpl from './core/clone.mjs';
 import type { CloneOptions } from './core/clone.mjs';
 import * as loadImpl from './core/load.mjs';
 import * as emphasisImpl from './core/emphasis.mjs';
+import * as hierarchyImpl from './collection/hierarchy.mjs';
 import type { LoadOptions, LoadRun, LoadState } from './core/load.mjs';
 import type { CoreCaps } from './factory.mjs';
 
@@ -337,6 +338,14 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
     // Round 144: demoted, not settled, so a layout tween runs on to its
     // targets on the CPU rather than stopping where the reparent found it
     this._store.onReparented = (slot) => {
+      const affected = [this._store.ref(GROUP_NODES, slot)];
+      const parent = this._store.parentOf(slot);
+
+      if (parent >= 0) {
+        affected.push(this._store.ref(GROUP_NODES, parent));
+      }
+
+      this._animations.interruptCollapsedRefs(affected);
       this._animations.demoteGpuAll();
       refreshReparentedGeometry(this.collection(), [slot]);
     };
@@ -360,6 +369,8 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
     this._animations = new AnimationManager(() =>
       viewportImpl._afterAnimationTick(this),
     );
+    this._styleEngine.onCollapseScaleChange = (slot) =>
+      hierarchyImpl.retargetCollapsedScale(this.nodes(), slot);
 
     // round 24.1: the engine's transition diffs spawn preset bulk tweens
     // through the manager — the round-21 channel eviction gives uniform

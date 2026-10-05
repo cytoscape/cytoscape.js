@@ -3,6 +3,7 @@
 import { Animation, AnimationHandleImpl } from '../animation.mjs';
 import type { AnimateOptions, AnimationHandle } from '../animation.mjs';
 import type { Collection } from '../collection.mjs';
+import { createCollapsedAnimation } from './hierarchy.mjs';
 
 /**
  * Animate these elements' style and/or position to explicit targets
@@ -41,14 +42,17 @@ export function animate(self: Collection, opts: AnimateOptions): Collection {
   // would be pure allocation here (round 62.4)
   const cy = self._cy;
 
-  const ani = new Animation(
-    cy._store,
-    null,
-    self._liveRefs(),
-    false,
-    opts,
-    cy._styleEngine,
-  );
+  const ani =
+    opts.collapsed == null
+      ? new Animation(
+          cy._store,
+          null,
+          self._liveRefs(),
+          false,
+          opts,
+          cy._styleEngine,
+        )
+      : createCollapsedAnimation(self, opts);
 
   ani.lockAll = cy.autolock() === true;
   cy._animations.start(ani);
@@ -68,14 +72,17 @@ export function animation(
   opts: AnimateOptions,
 ): AnimationHandle {
   const cy = self._cy;
-  const ani = new Animation(
-    cy._store,
-    null,
-    self._liveRefs(),
-    false,
-    opts,
-    cy._styleEngine,
-  );
+  const ani =
+    opts.collapsed == null
+      ? new Animation(
+          cy._store,
+          null,
+          self._liveRefs(),
+          false,
+          opts,
+          cy._styleEngine,
+        )
+      : createCollapsedAnimation(self, opts);
 
   ani.lockAll = cy.autolock() === true;
 

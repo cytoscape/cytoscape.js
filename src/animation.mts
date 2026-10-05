@@ -59,6 +59,9 @@ export type {
 export { AnimationHandleImpl } from './animation/handle.mjs';
 export type { Position, AnimationHandle } from './animation/handle.mjs';
 export { Animation } from './animation/animation.mjs';
-export type { AnimateOptions } from './animation/animation.mjs';
+export type {
+  AnimateOptions,
+  CollapsedAnimationDriver,
+} from './animation/animation.mjs';
 export { AnimationManager } from './animation/manager.mjs';
 export type { GpuTweenSink } from './animation/manager.mjs';

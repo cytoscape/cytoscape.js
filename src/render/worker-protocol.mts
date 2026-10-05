@@ -2,7 +2,6 @@ import { GROUP_EDGES, GROUP_NODES, COLUMN_SPECS } from '../contract.mjs';
 import type {
   ColumnId,
   ColumnSpec,
-  GroupName,
   LabelEntry,
   LabelStream,
 } from '../contract.mjs';

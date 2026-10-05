@@ -508,7 +508,7 @@ export function auditThrowTags(file) {
       continue;
     }
 
-    let name = null;
+    let name;
 
     if (fn) {
       currentClass = null;
@@ -863,7 +863,7 @@ export function auditReturnTags(file) {
       continue;
     }
 
-    let name = null;
+    let name;
 
     if (fn) {
       currentClass = null;

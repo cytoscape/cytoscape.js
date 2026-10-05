@@ -505,7 +505,6 @@ export class LabelDeclutter {
     const order = this.order;
     const n = this.orderLen;
     const rank = this.rank;
-    const gate = this.gate;
     const won = this.won;
 
     if (mode !== DECLUTTER_CULL) {

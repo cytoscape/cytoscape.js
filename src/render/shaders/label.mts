@@ -1,7 +1,6 @@
 import { wgsl } from '../../gpu/wgsl.mjs';
 import {
   STROKE_SOLID,
-  STROKE_DASHED,
   STROKE_DOTTED,
   STROKE_DOUBLE,
 } from '../../contract.mjs';

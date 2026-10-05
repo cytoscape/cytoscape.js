@@ -20,7 +20,6 @@ import type { SubgraphView } from './algo-shared.mjs';
 import {
   GPU_MIN_EDGES_PER_NODE,
   GPU_MIN_N,
-  OFFLOAD_MIN_N,
   inThread,
   resolveExecutor,
   runAlgo,

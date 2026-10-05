@@ -32,3 +32,8 @@ body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; margin
 .commands-hidden #minimap { right: 0.5em; }
 #minimap-cy { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
 #minimap-view { position: absolute; outline: 2px solid rgba(220, 60, 60, 0.85); background: rgba(220, 60, 60, 0.08); pointer-events: none; z-index: 1; }
+
+#chart-demo { border: 1px solid rgba(0, 0, 0, 0.2); padding: 0.4em; background: rgba(255, 255, 255, 0.7); }
+#chart-demo[hidden] { display: none; }
+.chart-demo-legend { display: grid; grid-template-columns: auto 1fr auto; gap: 0.4em; align-items: center; font: 11px monospace; }
+.chart-demo-ramp { height: 0.8em; border: 1px solid #666; background: linear-gradient(to right, #2166ac, #f7f7f7, #b2182b); }

@@ -40,6 +40,17 @@
         <h2>Network</h2>
         <select id="network-select"></select>
         <p id="network-note" class="note"></p>
+        <section id="chart-demo" hidden>
+          <h2>Application chart legend</h2>
+          <p class="note">Radial heat encodes each gene set's normalized enrichment score (NES). All nodes share the live domain; the first node uses an explicit scale override and still contributes its base value.</p>
+          <div class="chart-demo-legend" aria-label="Shared NES colour scale">
+            <span id="chart-domain-min"></span>
+            <div class="chart-demo-ramp"></div>
+            <span id="chart-domain-max"></span>
+          </div>
+          <p id="chart-domain-status" class="note"></p>
+          <button id="chart-extreme-button" type="button">Add a live NES extreme</button>
+        </section>
         <div>
           <label>Style:
             <select id="style-select">

@@ -213,6 +213,8 @@ const chartEntry = (
         ([key]) => normalizeProp(key) === PROP.CHART_COLORS,
       )?.[1] ?? null,
     barGeometryDomain: def.computed.chartResolvedDomain,
+    barGeometryStatus:
+      def.computed.chartResolvedDomain == null ? 'unresolved' : 'resolved',
     colorScale: def.computed.chartScaleSpec,
     colorDomain: (() => {
       const program = def.computed.chartScale?.program;

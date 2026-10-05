@@ -210,6 +210,43 @@ var styles = (function () {
 
   // The clustered variant styles the MCODE parents the way EnrichmentMap styles
   // clusters: no body of their own, the label hanging above the group.
+  function emWebChart(elements, def) {
+    var sheet = emWeb(elements, def);
+    var nodes = (elements.nodes || []).filter(function (node) {
+      return node.data && node.data.parent == null;
+    });
+    var override = nodes[0];
+    var extreme = nodes.find(function (node) {
+      return node !== override && Number.isFinite(node.data.NES);
+    });
+
+    sheet.nodes = Object.assign({}, sheet.nodes, {
+      chart: 'radial-heat',
+      'chart-values': { data: 'chartSeries' },
+      'chart-scale': {
+        domain: ['auto', 0, 'auto'],
+        range: ['#2166ac', '#f7f7f7', '#b2182b'],
+      },
+      'chart-size': 0.88,
+      'chart-hole': 0.68,
+    });
+    if (override && extreme) {
+      sheet.bypasses = {
+        [override.data.id]: {
+          'chart-scale': {
+            domain: [-3, 0, 3],
+            range: ['#2166ac', '#f7f7f7', '#b2182b'],
+          },
+        },
+      };
+      def.chartDemoOverrideId = override.data.id;
+      def.chartDemoExtremeId = extreme.data.id;
+      def.chartDemoExtremeValue = extreme.data.NES;
+    }
+
+    return sheet;
+  }
+
   function emWebClustered(elements, def) {
     var sheet = emWeb(elements, def);
 
@@ -1163,6 +1200,7 @@ var styles = (function () {
 
   var production = {
     'em-web': emWeb,
+    'em-web-chart': emWebChart,
     'em-web-clustered': emWebClustered,
     'em-desktop': emDesktop,
     'white-matter': whiteMatter,

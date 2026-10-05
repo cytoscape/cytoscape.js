@@ -44,7 +44,7 @@ export interface NodeComputed {
   textEvents: boolean;
   /** visibility (round 22): true = paint-only invisible (FLAG_SELF_INVISIBLE) */
   invisible: boolean;
-  /** chart (round 23): CHART_NONE | CHART_PIE | CHART_STRIPES */
+  /** `none`, pie/donut, stripes, heat, radial heat or signed bars. */
   chartKind: number;
   /** A data passthrough selects chart kind at runtime; config is checked on write. */
   chartKindMappedPassthrough: boolean;
@@ -55,12 +55,15 @@ export interface NodeComputed {
   /** resolved palette (null = the default category10 scheme) */
   chartColors: RGBA[] | null;
   chartColorsAuthored: boolean;
+  /** Definition-owned numeric colour scale for heat and bars. */
   chartScale: CompiledMapper | null;
   chartScaleSpec: Record<string, unknown> | null;
+  /** Bar geometry bounds; either outer endpoint may resolve from data. */
   chartDomain: (number | 'auto')[] | null;
   chartResolvedDomain: [number, number] | null;
   chartExtentInitialized: boolean;
   chartOverflowWarned: boolean;
+  /** Colour used for missing heat observations. */
   chartMissingColor: RGBA;
   chartSize: number;
   chartHole: number;

@@ -210,8 +210,18 @@ export const resetInPage = ({ group, prop }) => {
     }
   }
 
-  cy.style(next);
   globalThis.__degrade = { sheet };
+
+  try {
+    cy.style(next);
+  } catch (error) {
+    // A required chart scale/domain has no valid reset value.  The compiler
+    // rejects the stripped sheet atomically; record that contract and let the
+    // normal restore path put the original sheet back before measuring next.
+    const rejected = error instanceof Error ? error.message : String(error);
+
+    return { changed: 0, via: 'sheet', unresettable, rejected };
+  }
 
   let changed = 0;
 
@@ -311,10 +321,10 @@ export const degradeScene = async (page, name, coverage, opts) => {
 
   for (const pair of pairsOf(coverage)) {
     const [group, prop] = pair.split('/');
-    const { changed, via, unresettable } = await page.evaluate(resetInPage, {
-      group,
-      prop,
-    });
+    const { changed, via, unresettable, rejected } = await page.evaluate(
+      resetInPage,
+      { group, prop },
+    );
     const degraded = await stableExport(page, opts);
     const moved = countMoved(baseline, degraded);
     const lost = await page.evaluate(restoreInPage);
@@ -336,6 +346,10 @@ export const degradeScene = async (page, name, coverage, opts) => {
 
     if (unresettable.length > 0) {
       pairs[pair].unresettable = unresettable;
+    }
+
+    if (rejected != null) {
+      pairs[pair].rejected = rejected;
     }
 
     if (lost.length > 0) {

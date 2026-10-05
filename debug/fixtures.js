@@ -130,9 +130,24 @@ var fixtures = (function () {
     return gpuElements;
   }
 
+  function emChartValues(gpuElements) {
+    return Object.assign({}, gpuElements, {
+      nodes: gpuElements.nodes.map(function (node) {
+        return Object.assign({}, node, {
+          data: Object.assign({}, node.data, {
+            chartSeries: Number.isFinite(node.data.NES)
+              ? [node.data.NES]
+              : [null],
+          }),
+        });
+      }),
+    });
+  }
+
   var derivations = {
     'mcode-parents': mcodeParents,
     'source-band': sourceBand,
+    'em-chart-values': emChartValues,
   };
 
   // a small ordinal band so the generated scenes have something to map a

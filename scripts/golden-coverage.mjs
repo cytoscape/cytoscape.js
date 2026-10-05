@@ -341,8 +341,12 @@ export const pairsOf = (capture) =>
  * here, and every entry is still unmoved somewhere.
  */
 export const UNMOVABLE = {
+  'chart-domain':
+    'required by a bar chart in this scene; deleting it makes the stylesheet invalid, so the compiler rejects the reset',
   'chart-colors':
     'reads back the palette its chart-values imply (one colour per value), set or not',
+  'chart-scale':
+    'required by a heat chart in this scene; deleting it makes the stylesheet invalid, so the compiler rejects the reset',
   'background-gradient-stop-positions':
     'reads back the even spread its stop colours imply, set or not',
   'line-gradient-stop-positions':

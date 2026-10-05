@@ -539,11 +539,11 @@ export function resolveConst(
   if (computed.chartValues != null && hasFractionChart) {
     if (
       computed.chartValues.some(
-        (v) => v == null || !Number.isFinite(v) || v < 0,
+        (v) => typeof v === 'number' && Number.isFinite(v) && v < 0,
       )
     ) {
       throw new Error(
-        'Pie and stripe chart values must be finite non-negative numbers',
+        'Pie and stripe chart values must be non-negative when finite',
       );
     }
   }

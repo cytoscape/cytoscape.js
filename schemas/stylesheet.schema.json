@@ -1726,6 +1726,9 @@
           ]
         }
       },
+      "properties": {
+        "chart-scale": { "$ref": "#/$defs/props/chart-scale" }
+      },
       "additionalProperties": { "not": { "type": "object" } },
       "anyOf": [
         { "$ref": "#/$defs/nodes" },
@@ -2206,7 +2209,7 @@
         ]
       },
       "chartValues": {
-        "description": "Chart dataset values, as an array or a whitespace-separated string. Heat and bar charts accept signed, non-finite and null slots; pie and stripe values are non-negative fractions. Map them per element with the `{ data: key }` passthrough.",
+        "description": "Up to 255 ordered chart dataset slots, as an array or whitespace-separated string. Excess slots warn and truncate at runtime without shifting missing positions. Heat and bar charts accept signed values; null slots are missing (the JavaScript API also retains non-finite numbers). Pie and stripe values are non-negative fractions when finite. Map them per element with the `{ data: key }` passthrough.",
         "anyOf": [
           { "type": "string", "minLength": 1 },
           {
@@ -2247,7 +2250,7 @@
         }
       },
       "chartColors": {
-        "description": "The slice colours: a named colour scheme, or colours (an array, or a whitespace-separated string).",
+        "description": "For pie, stripe and bar charts: a named colour scheme, or ordered colours (an array or whitespace-separated string), up to 255 slots. Short named schemes cycle across the data.",
         "anyOf": [
           { "type": "string", "minLength": 1 },
           {

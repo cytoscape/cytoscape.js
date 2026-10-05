@@ -398,6 +398,42 @@ const paramDefs = {
     });
 
     startStats();
+
+    if (def.chartDemo) {
+      const panel = $('#chart-demo');
+      const min = $('#chart-domain-min');
+      const max = $('#chart-domain-max');
+      const status = $('#chart-domain-status');
+      const updateChartLegend = () => {
+        const entry = cy.legend().entries.find((item) => item.kind === 'chart');
+        const domain = entry?.chart?.colorDomain;
+        panel.hidden = false;
+        if (domain == null) {
+          min.textContent = 'unresolved';
+          max.textContent = '';
+          status.textContent = 'Waiting for usable NES values.';
+        } else {
+          min.textContent = Number(domain[0]).toFixed(2);
+          max.textContent = Number(domain[domain.length - 1]).toFixed(2);
+          status.textContent = `Shared chart domain; local override: ${def.chartDemoOverrideId}`;
+        }
+      };
+
+      cy.on('legendchange', updateChartLegend);
+      cy.ready.then(updateChartLegend);
+      $('#chart-extreme-button').addEventListener('click', () => {
+        const extreme = cy.$id(def.chartDemoExtremeId);
+        const domain = cy.legend().entries.find((item) => item.kind === 'chart')
+          ?.chart?.colorDomain;
+        const currentMax = domain?.[domain.length - 1] ?? 3;
+        extreme.data('chartSeries', [Math.max(currentMax + 2, 8)]);
+        $('#chart-extreme-button').disabled = true;
+        $('#chart-extreme-button').textContent =
+          `Updated ${def.chartDemoExtremeId}`;
+      });
+    } else {
+      $('#chart-demo').hidden = true;
+    }
   }
 
   /**

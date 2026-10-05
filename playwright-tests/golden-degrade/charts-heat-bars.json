@@ -1,0 +1,98 @@
+{
+  "golden": "charts-heat-bars",
+  "pixels": 120000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 21703,
+      "elements": 12
+    },
+    "nodes/border-color": {
+      "moved": 6752,
+      "elements": 12
+    },
+    "nodes/border-width": {
+      "moved": 7052,
+      "elements": 12
+    },
+    "nodes/chart": {
+      "moved": 21174,
+      "elements": 10
+    },
+    "nodes/chart-colors": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "pie26",
+        "pie255",
+        "donut",
+        "stripes",
+        "heat",
+        "radial",
+        "bar-v",
+        "bar-h",
+        "missing",
+        "zero"
+      ]
+    },
+    "nodes/chart-direction": {
+      "moved": 3096,
+      "elements": 2
+    },
+    "nodes/chart-domain": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "rejected": "Bar charts require 'chart-domain'"
+    },
+    "nodes/chart-hole": {
+      "moved": 556,
+      "elements": 1
+    },
+    "nodes/chart-missing-color": {
+      "moved": 4046,
+      "elements": 12,
+      "unresettable": [
+        "pie26",
+        "pie255",
+        "donut",
+        "stripes",
+        "heat",
+        "radial",
+        "bar-v",
+        "bar-h",
+        "missing",
+        "zero",
+        "bar-neg",
+        "bar-pos"
+      ]
+    },
+    "nodes/chart-scale": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "rejected": "Heat charts require 'chart-scale' with an explicit domain and range"
+    },
+    "nodes/chart-size": {
+      "moved": 8477,
+      "elements": 10
+    },
+    "nodes/chart-values": {
+      "moved": 21174,
+      "elements": 10,
+      "via": "sheet"
+    },
+    "nodes/height": {
+      "moved": 35898,
+      "elements": 12
+    },
+    "nodes/shape": {
+      "moved": 1798,
+      "elements": 1
+    },
+    "nodes/width": {
+      "moved": 36534,
+      "elements": 12
+    }
+  }
+}

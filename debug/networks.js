@@ -31,6 +31,17 @@ var networks = {
     signKey: 'NES',
     note: 'The enrichmentmap.org style ported to v4: a diverging NES colour mapper, wrapped labels in a matching text outline, haystack edges.',
   },
+  'em-web-chart': {
+    desc: 'EnrichmentMap web with chart scale',
+    nodes: 569,
+    edges: 6899,
+    url: '../v3/debug/webgl/network-em-web.json',
+    derive: 'em-chart-values',
+    labelKey: 'label',
+    chartDemo: true,
+    signKey: 'NES',
+    note: 'A one-value radial heat chart per gene set shares the NES domain. One node keeps an explicit local scale; use the chart control to add an extreme and watch the shared legend update.',
+  },
   'em-web-clustered': {
     desc: 'EnrichmentMap web, clustered',
     nodes: 610,

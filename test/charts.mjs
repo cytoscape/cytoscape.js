@@ -99,11 +99,40 @@ describe('gpu/style: the chart family (round 23)', function () {
     expect(cy._store.chartAt(0)).to.equal(null);
   });
 
-  it('caps at 255 slots and clamps the total at 1 (v3 percents)', function () {
+  it('caps at 255 slots, warns once and keeps missing slots aligned', function () {
     var many = new Array(256).fill(0.001);
-    var cy = makeCy({ chart: 'pie', 'chart-values': many });
+    var colors = Array.from({ length: 256 }, (_, i) => `rgb(${i},0,0)`);
+    many[17] = null;
+    many[254] = Infinity;
+    var warnings = [];
+    var warn = console.warn;
+    var cy;
 
-    expect(cy._store.chartAt(0).values.length).to.equal(255); // recorded cap
+    console.warn = (...args) => warnings.push(args.join(' '));
+    try {
+      cy = cytoscape({
+        elements: [
+          { data: { id: 'a' }, position: { x: 0, y: 0 } },
+          { data: { id: 'b' }, position: { x: 80, y: 0 } },
+        ],
+        style: {
+          nodes: { chart: 'pie', 'chart-values': many, 'chart-colors': colors },
+        },
+      });
+    } finally {
+      console.warn = warn;
+    }
+
+    var record = cy._store.chartAt(0);
+    expect(record.values).to.have.length(255); // the cap-16 control breaks this
+    expect(record.values[16]).to.equal(0.001);
+    expect(record.values[17]).to.equal(null);
+    expect(record.values[254]).to.equal(null);
+    expect(record.colors[17].slice(0, 3)).to.deep.equal([17, 0, 0]);
+    expect(record.colors[254].slice(0, 3)).to.deep.equal([254, 0, 0]);
+    expect(
+      warnings.filter((message) => message.includes('truncating')),
+    ).to.have.length(1);
 
     var over = makeCy({ chart: 'pie', 'chart-values': [0.8, 0.8, 0.5] });
     var vals = over._store.chartAt(0).values;
@@ -112,6 +141,53 @@ describe('gpu/style: the chart family (round 23)', function () {
     expect(vals[1]).to.be.closeTo(0.2, 1e-6); // clamped to the remainder
     expect(vals.length).to.equal(3);
     expect(vals[2]).to.equal(0); // after the total, slots remain aligned
+  });
+
+  it('shares auto extents, excludes missing values and refreshes only changed records', function () {
+    var cy = cytoscape({
+      elements: [
+        {
+          data: { id: 'a', values: [-2, null, NaN, Infinity, 4] },
+          position: { x: 0, y: 0 },
+        },
+        { data: { id: 'b', values: [0, 2] }, position: { x: 80, y: 0 } },
+      ],
+      style: {
+        nodes: {
+          chart: 'heat-strip',
+          'chart-values': { data: 'values' },
+          'chart-scale': {
+            domain: ['auto', 'auto'],
+            range: ['blue', 'red'],
+          },
+        },
+      },
+    });
+    var a = cy._store.chartAt(0);
+    var legend = cy.legend().entries.find((entry) => entry.kind === 'chart');
+    var store = cy._store;
+    var original = store.setChart.bind(store);
+    var writes = 0;
+    store.setChart = (...args) => {
+      writes++;
+      return original(...args);
+    };
+
+    expect(a.values).to.deep.equal([-2, null, null, null, 4]);
+    expect(a.colors[1][3]).to.equal(0); // default missing colour is transparent
+    expect(legend.chart.colorDomain).to.deep.equal([-2, 4]);
+    expect(legend.chart.missingValues).to.equal(3);
+
+    cy.$id('a').data('values', [-2, 1, NaN, Infinity, 4]);
+    expect(writes).to.equal(1); // a stable extent does not rewrite its peers
+
+    writes = 0;
+    cy.batch(() => {
+      cy.$id('a').data('values', [-3, null, NaN, Infinity, 4]);
+      cy.$id('b').data('values', [0, 3]);
+    });
+    expect(writes).to.equal(2); // the new bound rebuilds participants once
+    expect(cy.legend().entries[0].chart.colorDomain).to.deep.equal([-3, 4]);
   });
 
   it('chart-opacity folds into the stored slice alphas', function () {
@@ -209,11 +285,39 @@ describe('gpu/style: the chart family (round 23)', function () {
     expect(a.kind).to.equal(5);
     expect(a.values).to.deep.equal([-3, null, 2]);
     expect(a.barDomain).to.deep.equal([-3, 2]);
+    expect(a.colors[0]).to.deep.equal(cy._store.chartAt(1).colors[0]);
     expect(legend.chart.barGeometryDomain).to.deep.equal([-3, 2]);
 
     cy.$id('b').data('values', [-1, 4]);
     expect(cy._store.chartAt(0).barDomain).to.deep.equal([-3, 4]);
     expect(cy.$id('a').style('chart-domain')).to.equal('auto auto');
+  });
+
+  it('keeps unresolved all-missing bar domains empty and rejects string bounds', function () {
+    var cy = cytoscape({
+      elements: [{ data: { id: 'a', values: [null, NaN, Infinity] } }],
+      style: {
+        nodes: {
+          chart: 'bar',
+          'chart-values': { data: 'values' },
+          'chart-domain': ['auto', 'auto'],
+        },
+      },
+    });
+
+    expect(cy._store.chartAt(0).values).to.deep.equal([null, null, null]);
+    expect(cy._store.chartAt(0).barDomain).to.equal(null);
+    expect(cy.legend().entries[0].chart.barGeometryStatus).to.equal(
+      'unresolved',
+    );
+
+    expect(() =>
+      makeCy({
+        chart: 'bar',
+        'chart-values': [4, 6],
+        'chart-domain': [0, '10'],
+      }),
+    ).to.throw();
   });
 
   it('bar scales color independently from geometry and accept explicit node overrides', function () {
@@ -376,6 +480,13 @@ describe('gpu/style: the chart family (round 23)', function () {
         'chart-colors': ['red'],
       }),
     ).to.throw(/cannot be used with a heat chart/);
+    expect(() =>
+      makeCy({
+        chart: 'heat-strip',
+        'chart-values': [0, 1],
+        'chart-scale': { domain: ['auto', '1'], range: ['blue', 'red'] },
+      }),
+    ).to.throw();
     expect(() => makeCy({ chart: 'bar', 'chart-values': [0, 1] })).to.throw(
       /require 'chart-domain'/,
     );

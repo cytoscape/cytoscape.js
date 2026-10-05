@@ -70,6 +70,8 @@ exercised group-properties move pixels in some golden.
 // in, nor a parent's auto-sized width and height (+5 unexercised, all
 // paintable: background-clip, -image-containment, -image-smoothing,
 // -offset-x, -repeat)
+// round 80: the charts-heat-bars golden sets chart-domain,
+// chart-missing-color and chart-scale (+3 properties in the schema universe).
 // round 105: the bundles-wide golden maps edge width off the stroke's
 // 1/256 px grid, which read line-outline-width and the edge overlay/
 // underlay paddings back as noise — counted as set until the readers
@@ -77,25 +79,27 @@ exercised group-properties move pixels in some golden.
 // newly exercised property, and the pins stand
 const PINNED = {
   universe: 220,
-  unexercised: 80,
-  paintable: 61,
+  unexercised: 77,
+  paintable: 58,
   noStatic: 19,
-  keywordGaps: 69,
+  keywordGaps: 66,
   inert: 47,
 };
 
-/** Tier 2's pinned counts (round 143), from the degrade records. */
+/** Tier 2's pinned counts from the degrade records. */
+// Round 80 adds 15 pairs; chart-domain and chart-scale are required by
+// the bars/heat in its golden, so the stylesheet rejects their removal.
 // round 105: bundles-wide +9 pairs, all nine moving — its line-opacity
 // reset moved nothing until an opacity bypass demoted the kernel-owned
 // colour it folds into (OPACITY_FOLDS)
 const PINNED_DEGRADE = {
-  pairs: 539,
-  moved: 529,
+  pairs: 554,
+  moved: 541,
   decoration: 3,
-  unmoved: 7,
-  exercised: 140,
-  seen: 131,
-  unseen: 9,
+  unmoved: 10,
+  exercised: 143,
+  seen: 132,
+  unseen: 11,
 };
 
 describe('golden coverage: the enumerator (round 135)', function () {

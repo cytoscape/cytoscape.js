@@ -379,6 +379,8 @@ ignores one silently.)*
 | `z-index`, `z-compound-depth`, `z-index-compare` | **dropped outright.** Draw order is structural: compound parents, then edges, then leaf nodes, then labels; slot order within a stream |
 | `pie-*` (48), `pie-size`, `pie-hole`, `pie-start-angle` | `chart: 'pie'` + `chart-values`, `chart-colors`, `chart-size`, `chart-hole`, `chart-start-angle` |
 | `stripe-*` (48), `stripe-size`, `stripe-direction` | `chart: 'stripes'` + the same family, plus `chart-direction` |
+| Multivariate heat charts | `chart: 'heat-strip'` or `'radial-heat'`, `chart-values`, and a required shared `chart-scale` with an explicit domain and colour range |
+| Signed bar charts | `chart: 'bar'`, signed `chart-values`, required `chart-domain`, and optional independent `chart-scale` or `chart-colors` |
 | `content` | `label` |
 | `min-width-bias-left/-right`, `min-height-bias-top/-bottom` | **dropped.** `min-width`/`min-height` clamp centred — v3's default-bias behaviour |
 | `display` | `show()` / `hide()` for the structural tier; the `visibility` style prop for paint-only invisibility |
@@ -394,6 +396,16 @@ ignores one silently.)*
 | `outside-texture-bg-color/-opacity` | **dropped** with `textureOnViewport` |
 | `mid-source-arrow-fill`, `mid-target-arrow-fill` | **dropped.** Mid arrows are always filled |
 | `border-cap`, `border-join` | **dropped.** Dash ends are perpendicular cuts by construction; `border-style`, `border-dash-pattern` and `border-dash-offset` all port |
+
+Chart data retains authored slot order up to 255 values. Pie and stripe values
+remain absolute fractions that clamp at 1; heat and bar values may be signed.
+Null and non-finite values keep their positions, do not contribute to shared
+automatic bounds, and render with `chart-missing-color` (transparent by default
+for heat, a gap for bars). `chart-domain` sets bar geometry bounds separately
+from a bar's optional colour scale. Shared `auto` endpoints use the supplying
+stylesheet definition's finite values; they do not normalize each node. Use
+`cy.legend()` for resolved colour and geometry domains, then render labels and
+axes in the application.
 
 Also renamed or re-scoped without being rejected:
 

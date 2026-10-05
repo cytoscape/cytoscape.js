@@ -4082,6 +4082,203 @@ test.describe('WebGPU visual goldens', () => {
     );
   });
 
+  test('golden: node charts — large pies, heat regions and signed bars (round 80)', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    const pie26 = new Array(26).fill(1 / 26);
+    const pie255 = new Array(255).fill(1 / 255);
+    await makeReadyCy(page, {
+      elements: [
+        {
+          data: { id: 'pie26', kind: 'pie26', values: pie26 },
+          position: { x: -135, y: -90 },
+        },
+        {
+          data: { id: 'pie255', kind: 'pie255', values: pie255 },
+          position: { x: -45, y: -90 },
+        },
+        {
+          data: { id: 'donut', kind: 'donut', values: [0.5, 0.3, 0.2] },
+          position: { x: 45, y: -90 },
+        },
+        {
+          data: { id: 'stripes', kind: 'stripes', values: [0.25, 0.25, 0.5] },
+          position: { x: 135, y: -90 },
+        },
+        {
+          data: { id: 'heat', kind: 'heat', values: [-1, 0, 2, null] },
+          position: { x: -135, y: 0 },
+        },
+        {
+          data: { id: 'radial', kind: 'radial', values: [-1, 0, 2] },
+          position: { x: -45, y: 0 },
+        },
+        {
+          data: { id: 'bar-v', kind: 'bar-v', values: [-4, -1, 0, 2, 4] },
+          position: { x: 45, y: 0 },
+        },
+        {
+          data: { id: 'bar-h', kind: 'bar-h', values: [2, -2, null, 4] },
+          position: { x: 135, y: 0 },
+        },
+        {
+          data: {
+            id: 'missing',
+            kind: 'missing',
+            values: [null, NaN, Infinity],
+          },
+          position: { x: -90, y: 90 },
+        },
+        {
+          data: { id: 'zero', kind: 'zero', values: [0, 0, 0] },
+          position: { x: 0, y: 90 },
+        },
+        {
+          data: { id: 'bar-neg', kind: 'bar-neg', values: [-4, -2] },
+          position: { x: -90, y: 90 },
+        },
+        {
+          data: { id: 'bar-pos', kind: 'bar-pos', values: [2, 4] },
+          position: { x: 90, y: 90 },
+        },
+      ],
+      style: {
+        nodes: {
+          width: 72,
+          height: 68,
+          shape: {
+            case: [
+              {
+                when: { data: 'kind', eq: 'stripes' },
+                then: 'round-rectangle',
+              },
+            ],
+            else: 'ellipse',
+          },
+          'background-color': '#e9edf0',
+          'border-width': 2,
+          'border-color': '#334155',
+          chart: {
+            case: [
+              { when: { data: 'kind', eq: 'pie26' }, then: 'pie' },
+              { when: { data: 'kind', eq: 'pie255' }, then: 'pie' },
+              { when: { data: 'kind', eq: 'donut' }, then: 'pie' },
+              { when: { data: 'kind', eq: 'stripes' }, then: 'stripes' },
+              { when: { data: 'kind', eq: 'heat' }, then: 'heat-strip' },
+              { when: { data: 'kind', eq: 'radial' }, then: 'radial-heat' },
+              { when: { data: 'kind', eq: 'bar-v' }, then: 'bar' },
+              { when: { data: 'kind', eq: 'bar-h' }, then: 'bar' },
+              { when: { data: 'kind', eq: 'missing' }, then: 'heat-strip' },
+              { when: { data: 'kind', eq: 'zero' }, then: 'bar' },
+            ],
+            else: 'none',
+          },
+          'chart-values': { data: 'values' },
+          'chart-scale': {
+            domain: [-4, 0, 4],
+            range: ['#2166ac', '#f7f7f7', '#b2182b'],
+          },
+          'chart-domain': [-4, 4],
+          'chart-missing-color': '#ff00ff',
+          'chart-size': 0.86,
+          'chart-hole': {
+            case: [{ when: { data: 'kind', eq: 'donut' }, then: 0.46 }],
+            else: 0,
+          },
+          'chart-direction': {
+            case: [
+              { when: { data: 'kind', eq: 'stripes' }, then: 'horizontal' },
+              { when: { data: 'kind', eq: 'bar-h' }, then: 'horizontal' },
+            ],
+            else: 'vertical',
+          },
+        },
+        bypasses: {
+          'bar-neg': { 'chart-domain': [-4, -2] },
+          'bar-pos': { 'chart-domain': [2, 4] },
+        },
+      },
+      zoom: 1,
+      pan: { x: 200, y: 150 },
+    });
+    await waitFrames(page);
+
+    await expectGraphFits(page, 'charts-heat-bars');
+    const before = await exportPng(page, { bg: '#fff' });
+    await checkGolden(page, 'charts-heat-bars', before, testInfo);
+
+    await page.evaluate(() => {
+      window.cy.$id('heat').data('values', [-2, 0, 4, null]);
+    });
+    await waitFrames(page);
+    const after = await exportPng(page, { bg: '#fff' });
+    expect(
+      Buffer.from(after).equals(Buffer.from(before)),
+      'mapped chart data refresh changes the heat pixels',
+    ).toBe(false);
+  });
+
+  test('debug: EnrichmentMap chart fixture updates its application legend', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    const debugPage = PAGE.replace(
+      '/playwright-page/index.html',
+      '/debug/index.html?network=em-web-chart&style=production&labels=false',
+    );
+    await page.goto(debugPage);
+    await page.waitForFunction(
+      () =>
+        window.cy != null &&
+        window.cy._store.chartCount() > 0 &&
+        document.querySelector('#chart-demo')?.hidden === false,
+      null,
+      { timeout: 30000 },
+    );
+
+    const before = await page.evaluate(() => {
+      const entry = window.cy
+        .legend()
+        .entries.find((item) => item.kind === 'chart');
+      return {
+        domain: entry.chart.colorDomain,
+        exceptions: entry.exceptions,
+        overrideId: networks['em-web-chart'].chartDemoOverrideId,
+      };
+    });
+    expect(before.domain).toHaveLength(3);
+    expect(before.exceptions).toContainEqual({
+      properties: ['chart-scale'],
+      elementCount: 1,
+    });
+    expect(before.overrideId).toBeTruthy();
+
+    await page.locator('#chart-extreme-button').click();
+    await page.waitForFunction(
+      (previousMax) => {
+        const entry = window.cy
+          .legend()
+          .entries.find((item) => item.kind === 'chart');
+        return entry.chart.colorDomain.at(-1) > previousMax;
+      },
+      before.domain.at(-1),
+      { timeout: 10000 },
+    );
+    const after = await page.evaluate(
+      () =>
+        window.cy.legend().entries.find((item) => item.kind === 'chart').chart
+          .colorDomain,
+    );
+    expect(after.at(-1)).toBeGreaterThan(before.domain.at(-1));
+    await expect(page.locator('#chart-domain-status')).toContainText(
+      'local override',
+    );
+    await expect(page.locator('#chart-extreme-button')).toBeDisabled();
+  });
+
   test('imageMinPx skips image sampling on unreadably small nodes (round 15.7)', async ({
     page,
   }) => {

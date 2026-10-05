@@ -36,17 +36,18 @@ the scope it names.  None of them is a statement about the distance to
 4.0, and "Follow-up hooks" at the end is the closest thing here to an
 honest inventory — an inventory, not an estimate.
 
-## Alpha decisions and remaining implementation (3 October)
+## Alpha decisions and implementation status (3 October)
 
 The alpha interview in the plan record scopes this batch. Rounds 146 and
 147 have landed: arrow vocabulary and hollow compound heads, partial numeric
-scale endpoints, and application-owned legend JSON. Round 80 has landed its
-compact chart-record foundation; the following work remains:
+scale endpoints, and application-owned legend JSON. Round 80 has completed
+255-value charts, shared colour domains and signed bars:
 
-- 80: the compact record and shared chart-scale foundation have landed;
-  visual acceptance for 255-value heat and signed bars remains. Per-node
-  autoscaling and chart labels are excluded; applications own normalization,
-  labels, axes and rendered legends.
+- 146: triangle-tee replaces triangle-cross without an alias; width-aware
+  tee bars and hollow compound end heads.
+- 80: complete. Charts hold 255 ordered values, explicit heat scales, signed
+  bars and definition-owned shared domains. Per-node autoscaling is excluded;
+  applications own normalization, labels, axes and rendered legends.
 - 82: convex, rounded-convex and connected concave compound shapes over
   child outlines, plus label-inclusive sizing, are implemented; final
   measurement and closeout remain.
@@ -8263,48 +8264,73 @@ fragment premium is **unmeasurable at scene level** on real hardware
   `style('visibility')` reads the element's own state.
   `cy.elementsInBox()` stays geometric (invisible elements are
   inside; the box gesture's interactive filter skips them).
-- **Node charts: pie + stripes** (round 23; third-sitting call —
-  "definitely yes, and consider other charts in future"): v3's 101
-  numbered `pie-*`/`stripe-*` props return as the lean 8-prop
-  **`chart` family** (node-only): `chart`
-  (`none | pie | stripes`), `chart-values` (a number list — a
-  constant array/string, or the `{ data: key }` passthrough reading
-  a **per-element array** from the sidecar, refreshed on writes of
-  the key), `chart-colors` (a color list *or* a named scheme from
-  the mapper DSL's palette table — `category10` default, cycling
-  past its length), `chart-size` and `chart-hole` ([0, 1] fractions
-  or 'N%' — the hole makes donuts from the same surface),
-  `chart-start-angle`, `chart-direction`
-  (stripes: `vertical | horizontal`) and `chart-opacity` (folds
-  into slice alphas, the B1 pattern).
+- **Node charts** (round 23; extended in round 80): the node-only `chart`
+  family supports `none`, pie/donut, stripes, `heat-strip`, `radial-heat`
+  and signed `bar`. `chart-values` carries up to 255 ordered slots, from a
+  constant list or the `{ data: key }` passthrough reading a per-element
+  array. Overflow warns once and keeps the first 255 positions, including
+  missing ones; no value or colour shifts to fill a hole. Pie and stripe
+  values keep their older absolute-fraction semantics (sum under 1 leaves
+  a transparent remainder; over 1 clamps). Heat and bars keep finite
+  signed numbers as authored, while null and non-finite entries stay in
+  their slots and do not affect shared auto extents.
 
-  Scalars/enums are
-  mapper-capable; the two list props are constants-only (the 12b
-  rule) with the values passthrough as the per-element form.
-  Values are **absolute fractions of the whole** (v3's percents: a
-  sum under 1 leaves an unpainted remainder, over 1 clamps);
-  slices currently cap at 16 (round 80 raises this to 255). Records live
-  in a round-11-compacting blob behind `node.chartRef`, an offset+1 u32
-  word ref with the count in the header. The nine-word header holds kind,
-  geometry scalars, count and bar-domain bounds; every value uses one f32
-  word and one raw rgba8 u32 word, with a validity bitmap after the pairs.
-  Pie and stripe values are cumulative stops searched by binary search;
-  readback differences them at the existing 1e-6 precision. Rendering is
-  a dedicated pass (one quad per charted node off the culled visible
-  lists, after the image pass — v3's order — clipped to the node shape at
-  the border's inner edge, SDF-native with px-space AA at slice
-  boundaries), skipped outright while nothing charts.
-  Charts are paint-only: never in bb, never pickable.
+  Pie and stripe `chart-colors` use a colour list or named scheme
+  (`category10` by default, cycling when shorter than the data). Heat
+  charts require `chart-scale`, one explicit numeric domain and colour
+  range or scheme; only the outer endpoints may be `auto`, and those
+  resolve from all finite values in the stylesheet definition. Bypasses
+  can provide an explicit local scale while their base values still feed
+  the shared range. `chart-missing-color` sets the heat appearance for a
+  missing value and is transparent by default. Bars require
+  `chart-domain`; its endpoints can be explicit or shared `auto` bounds.
+  Bar geometry uses a zero baseline clamped to those bounds, clips values
+  to the domain and leaves missing slots empty. Their colour is separate:
+  use categorical `chart-colors` or `chart-scale`, never both. Vertical is
+  the default; `chart-direction: horizontal` flips the axis. Geometry and
+  colour domains may differ.
 
-  Pinned by
-  the `charts-pie-stripes` golden and two live v3 parity scenes —
-  pies at **0.000%** (pixel-exact), stripes at 0.005%.  Recorded:
-  charts share the `imageMinPx` readability floor; two upstream v3
-  stripe bugs constrain the stripe parity to vertical square-node
-  scenes (v3's 'horizontal' keyword is inert — its draw switch
-  tests a typo'd 'righward' — and its drawStripe swaps W/H in the
-  centering offsets), with the golden pinning v4's horizontal and
-  non-square behavior.
+  Scalar and enum chart props are mapper-capable; chart lists are
+  constants-only, with the values passthrough as the per-element form.
+  `chart-size`, `chart-hole`, `chart-start-angle`, `chart-direction` and
+  `chart-opacity` retain the pie/stripe controls. A nine-word chart header
+  stores kind, geometry, slot count and bar bounds. Each slot takes two
+  words (one f32 value/stop and one raw rgba8 word), followed by a validity
+  bitmap. The ref is an offset+1 u32 word address; zero means no record.
+  Pie/stripe records hold cumulative stops searched by lower-bound binary
+  search, and readback differences them at the existing 1e-6 precision.
+  The dedicated render pass uses one quad per charted node, clips at the
+  node's inner border, and blends pixels across stops in screen space; it
+  is skipped outright while nothing charts. Charts remain paint-only and
+  are never in bounding boxes or pick results.
+
+  **Portable chart subset.** These are the v4 semantics an adapter can
+  translate and the limits it must report rather than hide:
+
+  | Semantics | v4 chart contract |
+  | --- | --- |
+  | Kinds | Pie/donut, stripes, linear heat-strip, radial heat and signed bars; no point-series charts |
+  | Dataset slots | Authored order, first 255 slots, missing positions retained |
+  | Values | Pie/stripe fractions clamp at 1; heat/bar values may be signed |
+  | Shared scales | Heat colour and bar geometry accept explicit bounds or shared `auto` outer endpoints; heat has no inferred default scale |
+  | Missing data | Excluded from auto extents; heat uses `chart-missing-color`, bars leave gaps |
+  | Palettes | Pie/stripe/bar accept colour lists or named schemes; heat requires `chart-scale` |
+  | Bar geometry | Zero baseline clamped to `chart-domain`; horizontal or vertical; colour domain may differ |
+  | Labels and axes | Application-owned; `cy.legend()` supplies mapping metadata, not a rendered legend |
+
+  CX2 and desktop-style translation stays in adapters outside core. An
+  adapter must name unsupported chart semantics in its diagnostics instead
+  of claiming full desktop fidelity. SVG export (round 77) and WebGL2
+  rendering (round 137) use the shared chart records and resolved domains;
+  they do not infer a separate colour range.
+
+  Pinned by the `charts-pie-stripes` and `charts-heat-bars` goldens plus
+  the live v3 pie/stripe parity scenes — pies at **0.000%** (pixel-exact),
+  stripes at 0.005%. Charts share the `imageMinPx` readability floor. Two
+  upstream v3 stripe bugs constrain parity to vertical square-node scenes
+  (its horizontal keyword is inert and its non-square centering swaps
+  width/height); the round-80 golden pins v4's horizontal and non-square
+  behavior.
 - **Interaction tuning options** (round 20.1, all v3 defaults, all
   ctor options with `multiClickDebounceTime`-style validated
   getter/setters read live by the pointer layer):
@@ -8500,8 +8526,8 @@ fragment premium is **unmeasurable at scene level** on real hardware
   (previously kept ranks); the fit scan and collection
   `boundingBox()` now exclude display-hidden elements (previously a
   gap); `takesUpSpace()` can now differ from `visible()`.
-- **Node charts** (round 23) — the deviations in one place (the
-  charts bullet above carries the detail): 16-slice cap; values are
+- **Node charts** (round 23; extended in round 80) — the deviations in one place (the
+  charts bullet above carries the detail): 255-slot cap; values are
   absolute fractions clamping at 1 (no normalize option — apps
   normalize); list props (`chart-values`, `chart-colors`) are
   constants-only with the `{ data }` passthrough as the per-element

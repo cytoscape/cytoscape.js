@@ -4256,8 +4256,9 @@ a follower keeps its own stylesheet and view state. Optional collapse and
 expand animation uses the ordinary animation handle, with reverse, stop and
 interruption semantics; live collapse-scale restyles retarget the applied
 factor after the style transaction. At 10,000 leaves and 20,000 edges,
-the built-headless animation tick measured about 52 ms median, so this
-large case does not meet a 60 Hz frame budget.
+the built-headless animation tick measured 137 ms median with node/edge
+labels and arrows (58 ms with minimal style), excluding browser rendering;
+the styled case does not meet a 60 Hz frame budget.
 
 Round 82 adds `convex-hull`, `round-convex-hull` and `concave-hull` as
 parent `shape` values. Each contour follows direct children’s actual outer

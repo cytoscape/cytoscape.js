@@ -249,11 +249,15 @@ traffic, wire size and retained memory against expanded controls. At 10,000
 leaves and 20,000 edges (40,001 elements), flat collapse took 144 ms p50,
 and the 64-parent collapse/expand pair took about 867 ms p50. The wire
 remained 1,135,624 bytes in both states; retained memory rose about 3.17 MB
-after collapse. Bulk style recomputation dominated these costs. A separate
-built-headless animation probe measured per-tick p50/p95 of 9.49/13.19 ms at
-2,000 leaves and 52.35/66.43 ms at 10,000 leaves, excluding browser frame
-scheduling. Large miniatures therefore do not promise a 60 Hz tween; they
-also do not reduce the live topology or make many crossing edges cheap.
+after collapse. Bulk style recomputation dominated these costs. The same
+benchmark directly ticks a built-headless collapsed animation at fixed
+16.667 ms timestamps. With labels and triangular arrows on affected nodes
+and edges, CPU tick p50/p95 was 25.13/29.25 ms at 2,000 leaves (132 samples)
+and 137.12/150.50 ms at 10,000 leaves (44 samples). A minimal-style control
+on the same topology measured 9.70/10.30 ms and 57.59/78.51 ms. These are
+CPU tick costs, excluding renderer and browser presentation. Large styled
+miniatures therefore do not promise a 60 Hz tween; they also do not reduce
+the live topology or make many crossing edges cheap.
 
 The exact-position, nested, lock, live-restyle, topology, persistence,
 animation and browser image/export cases live in `test/miniature-compounds.mjs`,

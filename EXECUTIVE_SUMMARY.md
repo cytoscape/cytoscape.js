@@ -12,7 +12,8 @@ positions and effective sizes while leaving original nodes and edges live;
 scoped layouts, JSON/wire persistence, clone/follow and optional animation
 use that same geometry. Live `collapse-scale` restyles retarget the applied
 factor. At 10,000 leaves and 20,000 edges, flat immediate collapse measured
-144 ms median and a built-headless animation tick 52 ms median. Bulk restyling
+144 ms median. A built-headless animation tick measured 137 ms median with
+node/edge labels and arrows, versus 58 ms with minimal style. Bulk restyling
 dominates, so large miniatures are not a 60 Hz animation promise and do not
 reduce topology work. The clustered debug page and PNG export were checked
 at overview and child-detail zoom.

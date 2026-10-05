@@ -6,9 +6,13 @@
 //
 //   npm run build
 //   node --expose-gc --import tsx benchmark/miniature-compounds.mjs
+//   node --import tsx benchmark/miniature-compounds.mjs --animation-large
 //   BENCH_N=20000 node --expose-gc --import tsx benchmark/miniature-compounds.mjs --repeat 7
 //   node --import tsx benchmark/miniature-compounds.mjs --src  # source-path control
 //
+// The animation rows use 44 deterministic manual ticks at 60 Hz.  The
+// default measures 2k descendants with full and minimal sheets;
+// --animation-large adds 10k descendants in both style conditions.
 // Each timed row changes state on every sample and checks the affected leaf
 // count outside the timed region.  `collapse + expand` is a real round trip;
 // no sample measures an already-collapsed no-op.  Memory is retained
@@ -32,6 +36,10 @@ const N = Math.max(1, Number(process.env.BENCH_N) || 2000);
 const REPEAT = Math.max(3, Number(value('--repeat', 15)) || 15);
 const DEPTH = Math.max(4, Math.min(64, Math.floor(Math.sqrt(N))));
 const WARMUP = 3;
+const ANIMATION_TICKS = 44;
+const ANIMATION_FRAME_MS = 1000 / 60;
+const ANIMATION_DURATION_MS = (ANIMATION_TICKS - 1) * ANIMATION_FRAME_MS;
+const ANIMATION_LARGE = args.includes('--animation-large');
 const FROM_SRC = args.includes('--src');
 const bundle = resolve(ROOT, 'build/cytoscape-headless.esm.mjs');
 
@@ -79,6 +87,18 @@ const STYLE = {
     'target-arrow-shape': 'triangle',
   },
 };
+const ANIMATION_STYLES = [
+  {
+    name: 'full labels and arrows',
+    description: 'node/edge labels and triangular source/target arrows',
+    style: STYLE,
+  },
+  {
+    name: 'minimal collapse-scale sheet',
+    description: 'parent collapse-scale only; default node and edge geometry',
+    style: { parents: { 'collapse-scale': SCALE } },
+  },
+];
 
 const now = () => performance.now();
 const median = (samples) => {
@@ -101,6 +121,8 @@ const timingSummary = (samples) => ({
 });
 const near = (a, b) => Math.abs(a - b) <= 1e-4;
 const samePoint = (a, b) => near(a.x, b.x) && near(a.y, b.y);
+const sameAnimationPoint = (a, b) =>
+  Math.abs(a.x - b.x) <= 0.01 && Math.abs(a.y - b.y) <= 0.01;
 
 function buildFixture(depth, n = N) {
   const parents = Array.from({ length: depth }, (_, d) => ({
@@ -110,6 +132,7 @@ function buildFixture(depth, n = N) {
   const rows = Math.ceil(n / columns);
   const leaves = [];
   const outside = [];
+  const outsideIds = [];
   const edges = [];
 
   for (let i = 0; i < n; i++) {
@@ -124,6 +147,7 @@ function buildFixture(depth, n = N) {
       data: { id: `o${i}` },
       position: { x: 10000 + i * 2, y: 10000 + i },
     });
+    outsideIds.push(`o${i}`);
     edges.push(
       {
         data: {
@@ -142,6 +166,7 @@ function buildFixture(depth, n = N) {
     elements: [...parents, ...leaves, ...outside, ...edges],
     depth,
     leafIds: leaves.map((leaf) => leaf.data.id),
+    outsideIds,
     leafCount: n,
     descendantCount: n + depth - 1,
     nodeCount: 2 * n + depth,
@@ -158,12 +183,12 @@ function cloneElements(elements) {
   }));
 }
 
-function makeCy(fixture) {
+function makeCy(fixture, style = STYLE) {
   return cytoscape({
     elements: cloneElements(fixture.elements),
     headless: true,
     layout: { name: 'preset' },
-    style: STYLE,
+    style,
   });
 }
 
@@ -371,7 +396,6 @@ function measureRetargets(cy, fixture) {
 
   for (let i = 0; i < REPEAT; i++) {
     const target = scales[i % scales.length];
-    parent.style('collapse-scale', target);
     const before = leafPositions(cy, fixture);
     const expected = scaledPoints(
       before,
@@ -379,7 +403,10 @@ function measureRetargets(cy, fixture) {
       target / currentScale,
     );
     const t0 = now();
-    parent.collapse();
+    // A scale style write now immediately retargets a collapsed parent.
+    // Time that affected write directly; calling collapse() afterwards
+    // would only measure a no-op and would apply the expectation twice.
+    parent.style('collapse-scale', target);
     const elapsed = now() - t0;
 
     assertTransition(
@@ -758,6 +785,333 @@ async function measureFollow(fixture) {
   return { expandedMs, collapseMs, expandMs };
 }
 
+function assertAnimationTopology(cy, fixture, where) {
+  assertFixture(cy, fixture, where);
+
+  for (let i = 0; i < fixture.leafCount; i++) {
+    const inside = cy.$id(`inside${i}`);
+    const boundary = cy.$id(`boundary${i}`);
+
+    if (
+      inside.data('source') !== `n${i}` ||
+      inside.data('target') !== `n${(i + 1) % fixture.leafCount}` ||
+      boundary.data('source') !== `n${i}` ||
+      boundary.data('target') !== `o${i}`
+    ) {
+      throw new Error(`${where}: edge topology changed at descendant ${i}`);
+    }
+  }
+}
+
+function assertAnimationFrame(
+  cy,
+  fixture,
+  starts,
+  outside,
+  center,
+  baseWidth,
+  expectedScale,
+  where,
+) {
+  const descendants = assertFixture(cy, fixture, where);
+  const parent = cy.$id('p0');
+  const slot = parent._refs[0].slot;
+
+  if (!parent.collapsed()) {
+    throw new Error(`${where}: collapse state was not installed`);
+  }
+
+  if (!near(cy._store.appliedCollapseScaleOf(slot), expectedScale)) {
+    throw new Error(
+      `${where}: applied scale ${cy._store.appliedCollapseScaleOf(slot)}, expected ${expectedScale}`,
+    );
+  }
+
+  let matchedPositions = 0;
+  let movedLeaves = 0;
+  let expectedMovedLeaves = 0;
+  let matchedWidths = 0;
+  let firstMismatch = null;
+
+  for (const id of fixture.leafIds) {
+    const before = starts.get(id);
+    const expected = {
+      x: center.x + expectedScale * (before.x - center.x),
+      y: center.y + expectedScale * (before.y - center.y),
+    };
+    const node = cy.$id(id);
+    const position = node.position();
+
+    if (sameAnimationPoint(expected, position)) {
+      matchedPositions++;
+    } else if (firstMismatch == null) {
+      firstMismatch = { id, before, expected, position, center, expectedScale };
+    }
+
+    if (!sameAnimationPoint(before, position)) {
+      movedLeaves++;
+    }
+
+    if (!sameAnimationPoint(before, expected)) {
+      expectedMovedLeaves++;
+    }
+
+    if (near(node.width(), baseWidth * expectedScale)) {
+      matchedWidths++;
+    }
+  }
+
+  if (matchedPositions !== fixture.leafCount) {
+    throw new Error(
+      `${where}: ${matchedPositions} leaves matched the animated geometry, expected ${fixture.leafCount}; first mismatch ${JSON.stringify(firstMismatch)}`,
+    );
+  }
+
+  if (movedLeaves !== expectedMovedLeaves) {
+    throw new Error(
+      `${where}: ${movedLeaves} leaves moved, expected ${expectedMovedLeaves}`,
+    );
+  }
+
+  if (matchedWidths !== fixture.leafCount) {
+    throw new Error(
+      `${where}: ${matchedWidths} leaves have the expected effective width, expected ${fixture.leafCount}`,
+    );
+  }
+
+  const insideCount = descendants.filter((node) =>
+    node.insideCollapsed(),
+  ).length;
+
+  if (insideCount !== fixture.descendantCount) {
+    throw new Error(
+      `${where}: ${insideCount} descendants are inside a collapsed parent, expected ${fixture.descendantCount}`,
+    );
+  }
+
+  for (const id of fixture.outsideIds) {
+    if (!samePoint(outside.get(id), cy.$id(id).position())) {
+      throw new Error(`${where}: external node ${id} moved`);
+    }
+  }
+}
+
+async function measureAnimationTicks(n, repeat, sheet) {
+  const fixture = buildFixture(1, n);
+  const cy = makeCy(fixture, sheet.style);
+  const parent = cy.$id('p0');
+  const baseWidth = cy.$id('n0').width();
+  const tickMs = [];
+  const runCpuMs = [];
+  const interruptionMs = [];
+  const warmups = 1;
+  const measuredRuns = repeat;
+
+  // This suite advances the shared clock itself.  Disable the manager's
+  // timer driver so slow large-graph ticks cannot race the fixed timeline.
+  cy._animations.raf = null;
+
+  try {
+    assertAnimationTopology(cy, fixture, 'animation fixture');
+
+    const outside = new Map(
+      fixture.outsideIds.map((id) => [id, { ...cy.$id(id).position() }]),
+    );
+
+    for (let run = 0; run < warmups + measuredRuns; run++) {
+      if (parent.collapsed()) {
+        throw new Error('animation fixture did not begin expanded');
+      }
+
+      const center = parent.position();
+      const starts = leafPositions(cy, fixture);
+      const handle = parent.animation({
+        collapsed: true,
+        duration: ANIMATION_DURATION_MS,
+        easing: 'linear',
+      });
+      const done = handle.play();
+      const localTicks = [];
+
+      for (let tick = 0; tick < ANIMATION_TICKS; tick++) {
+        const t = tick * ANIMATION_FRAME_MS;
+        const startedAt = now();
+
+        cy._animations.tick(t);
+
+        const elapsed = now() - startedAt;
+        const scale = 1 + (SCALE - 1) * (tick / (ANIMATION_TICKS - 1));
+
+        assertAnimationFrame(
+          cy,
+          fixture,
+          starts,
+          outside,
+          center,
+          baseWidth,
+          scale,
+          `animation ${n} descendants, tick ${tick + 1}/${ANIMATION_TICKS}`,
+        );
+        localTicks.push(elapsed);
+      }
+
+      await done;
+
+      if (parent.animated() || !parent.collapsed()) {
+        throw new Error('completed collapse animation retained active state');
+      }
+
+      if (run >= warmups) {
+        tickMs.push(...localTicks);
+        runCpuMs.push(localTicks.reduce((sum, sample) => sum + sample, 0));
+      }
+
+      parent.expand();
+
+      if (parent.collapsed()) {
+        throw new Error('animation reset did not expand the parent');
+      }
+
+      const interruptStarts = leafPositions(cy, fixture);
+      const interruptCenter = parent.position();
+      const interrupted = parent.animation({
+        collapsed: true,
+        duration: ANIMATION_DURATION_MS,
+        easing: 'linear',
+      });
+      const interruptedDone = interrupted.play();
+      const midpoint = Math.floor(ANIMATION_TICKS / 2);
+      const midpointTime = midpoint * ANIMATION_FRAME_MS;
+      const midpointScale =
+        1 + (SCALE - 1) * (midpoint / (ANIMATION_TICKS - 1));
+
+      cy._animations.tick(0);
+      assertAnimationFrame(
+        cy,
+        fixture,
+        interruptStarts,
+        outside,
+        interruptCenter,
+        baseWidth,
+        1,
+        `interruption ${n} descendants, tick 1/${ANIMATION_TICKS}`,
+      );
+      cy._animations.tick(midpointTime);
+      assertAnimationFrame(
+        cy,
+        fixture,
+        interruptStarts,
+        outside,
+        interruptCenter,
+        baseWidth,
+        midpointScale,
+        `interruption ${n} descendants, midpoint`,
+      );
+
+      const child = cy.$id(fixture.leafIds[0]);
+      const beforePosition = { ...child.position() };
+      const target = {
+        x: beforePosition.x + 73,
+        y: beforePosition.y - 29,
+      };
+      const beforeWrite = leafPositions(cy, fixture);
+      const startedAt = now();
+
+      child.position(target);
+
+      const interruptElapsed = now() - startedAt;
+
+      await interruptedDone;
+
+      if (parent.animated() || !parent.collapsed()) {
+        throw new Error(
+          'position write did not interrupt the collapse animation',
+        );
+      }
+
+      if (!samePoint(target, child.position())) {
+        throw new Error(
+          'interrupted descendant did not take the requested position',
+        );
+      }
+
+      if (
+        !near(
+          cy._store.appliedCollapseScaleOf(parent._refs[0].slot),
+          midpointScale,
+        )
+      ) {
+        throw new Error(
+          'interruption did not freeze the current miniature scale',
+        );
+      }
+
+      let changedByInteraction = 0;
+
+      for (const id of fixture.leafIds) {
+        const actual = cy.$id(id).position();
+
+        if (!samePoint(beforeWrite.get(id), actual)) {
+          changedByInteraction++;
+        }
+
+        if (
+          id !== fixture.leafIds[0] &&
+          !samePoint(beforeWrite.get(id), actual)
+        ) {
+          throw new Error(`interruption changed unrelated descendant ${id}`);
+        }
+      }
+
+      if (changedByInteraction !== 1) {
+        throw new Error(
+          `interaction changed ${changedByInteraction} descendant positions, expected 1`,
+        );
+      }
+
+      assertAnimationTopology(cy, fixture, 'after interaction interruption');
+
+      for (const id of fixture.outsideIds) {
+        if (!samePoint(outside.get(id), cy.$id(id).position())) {
+          throw new Error(`interaction moved external node ${id}`);
+        }
+      }
+
+      if (run >= warmups) {
+        interruptionMs.push(interruptElapsed);
+      }
+
+      parent.expand();
+    }
+  } finally {
+    cy.destroy();
+  }
+
+  return {
+    style: sheet.name,
+    styleDescription: sheet.description,
+    descendants: fixture.descendantCount,
+    externalNodes: n,
+    edges: fixture.edgeCount,
+    nodes: fixture.nodeCount,
+    elements: fixture.elementCount,
+    ticksPerAnimation: ANIMATION_TICKS,
+    frameIntervalMs: ANIMATION_FRAME_MS,
+    timelineDurationMs: ANIMATION_DURATION_MS,
+    warmupRuns: warmups,
+    measuredRuns,
+    tick: timingSummary(tickMs),
+    cumulativeTickCpu: timingSummary(runCpuMs),
+    interactionInterruption: timingSummary(interruptionMs),
+    samples: {
+      tickCalls: tickMs.length,
+      fullAnimations: runCpuMs.length,
+      interruptions: interruptionMs.length,
+    },
+    _timings: { tickMs, runCpuMs, interruptionMs },
+  };
+}
+
 const flat = buildFixture(1);
 const deep = buildFixture(DEPTH);
 const flatCy = makeCy(flat);
@@ -782,6 +1136,38 @@ const follow = await measureFollow(flat);
 
 flatCy.destroy();
 deepCy.destroy();
+
+const animationMeasurements = [];
+const animationSizes = ANIMATION_LARGE
+  ? [
+      [2000, 3],
+      [10000, 1],
+    ]
+  : [[2000, 3]];
+
+for (const sheet of ANIMATION_STYLES) {
+  for (const [n, repeat] of animationSizes) {
+    animationMeasurements.push(await measureAnimationTicks(n, repeat, sheet));
+  }
+}
+
+const animationSummaries = animationMeasurements.map(
+  ({ _timings, ...summary }) => summary,
+);
+const animationTimingGroups = animationMeasurements.map((measurement) => ({
+  name: `animation ticks — ${measurement.style}, ${measurement.descendants} descendants, ${measurement.externalNodes} external nodes, ${measurement.edges} edges, ${measurement.ticksPerAnimation} frames`,
+  benches: [
+    ...timingRows('animation tick CPU', measurement._timings.tickMs),
+    ...timingRows(
+      'cumulative animation tick CPU',
+      measurement._timings.runCpuMs,
+    ),
+    ...timingRows(
+      'midpoint position-write interruption',
+      measurement._timings.interruptionMs,
+    ),
+  ],
+}));
 
 let memory = null;
 
@@ -850,6 +1236,7 @@ const timingGroups = [
       ...timingRows('expand patch', follow.expandMs),
     ],
   },
+  ...animationTimingGroups,
 ];
 
 console.log(
@@ -895,6 +1282,15 @@ console.log(
           expandedShift: timingSummary(follow.expandedMs),
           collapse: timingSummary(follow.collapseMs),
           expand: timingSummary(follow.expandMs),
+        },
+        animation: {
+          engine: FROM_SRC ? 'src (tsx)' : 'built headless bundle',
+          tickInterval: 'fixed 60 Hz clock; deterministic manual manager ticks',
+          timedRegion:
+            'wall time inside _animations.tick only; topology and geometry assertions run after each tick',
+          limitation:
+            'headless CPU path only; excludes renderer work, browser scheduling and presentation',
+          results: animationSummaries,
         },
       },
     },

@@ -5,10 +5,23 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-10-03 for the alpha design interview; no new
-  implementation round landed in this update. Next: arrows, shared scales
-  and legend JSON, charts, convex then concave hulls, and miniature compounds.
-  The last implementation remains round 145 (29 September), a correctness fix
+- **Last updated**: 2026-10-05 for round 147's scalar scale-domain and
+  legend foundation. Next: arrows (146), chart scales and storage (80), convex
+  then concave hulls (82), and miniature compounds (148).
+
+Round 147 lets numeric continuous and quantize mappers use `auto` at either
+outer domain endpoint while keeping authored stops intact and refreshing live
+bounds as data and graph structure change. Unresolvable extents use the
+configured fallback and recover when eligible data arrives. `cy.legend()`
+returns detached JSON metadata for mappings and existing charts, including
+resolved domains, conditional rules and aggregate bypass exceptions; its
+`legendchange` event follows committed snapshot changes and precedes
+`batchend`. At 2,000 nodes, the measured auto-bound update rewrites the group
+only when the bound moves; unchanged and explicit-bound updates write one
+node, and 100 cached two-entry legend reads take about 428 µs. Chart-scale
+population rules and bar geometry remain in round 80.
+
+Earlier, round 145 (29 September) was a correctness fix
   item 73's chart measurement found: past about 305,000 nodes with
   16-slice pie charts (or 350,000 with four background images each),
   a chart's or image's stored reference silently overflowed, so the

@@ -128,3 +128,25 @@ legend describes its own sheet, data and overrides.
 - Verify, Node, types, throws, soak and relevant Playwright gates. Document
   the empty-domain behaviour change and add examples to the maintained
   docs. Chart fixtures and chart legend acceptance finish in round 80.
+
+### Implementation result (2026-10-05)
+
+The scalar foundation and application legend landed in commit `95e346f5`.
+Continuous and quantize domains accept `auto` at either outer endpoint;
+explicit interior stops, including diverging midpoints, stay authored and
+anchored. Resolved extents update on relevant data and structure changes,
+refresh the whole group only when a bound moves, and recover from unresolved
+populations without recompiling. CPU evaluation and packed GPU programs use
+the same resolved bounds. `cy.legend()` returns detached, deterministic JSON
+metadata for current mappers and existing charts, aggregates bypass
+exceptions, and emits `legendchange` after the committed snapshot changes.
+
+The chart population/domain contract and bar geometry domain remain for
+round 80, which introduces the relevant scaled chart properties. This round
+adds only chart metadata for the chart kinds already present.
+
+The benchmark's one-off write controls passed at N=2,000: moved automatic
+maximum 2,000 writes; unchanged automatic maximum 1; explicit-domain control
+1; 25-write batch with a moved final bound 2,000 writes (one group refresh).
+Repeated 100-entry reads came from the committed legend snapshot. See the
+landed section for the measured timings and gate results.

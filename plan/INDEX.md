@@ -18,12 +18,12 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–124, 126–136, 138–145 |
-| planned | 49–51, 71, 77–78, 80–84, 99, 125, 137, 146–148 |
+| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–124, 126–136, 138–145, 147 |
+| planned | 49–51, 71, 77–78, 80–84, 99, 125, 137, 146, 148 |
 
 ## The sections
 
-190 sections.
+191 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -217,3 +217,4 @@ A round can land with an item held open; the round file says which.
 | 188 | 146 | 2026-10-03 | plan | [Arrow vocabulary and hollow compound heads](rounds/2026-10-03-02-rnd0146-plan-arrow-vocabulary-and-hollow-compounds.md) |
 | 189 | 147 | 2026-10-03 | plan | [Partial scale domains and legend JSON](rounds/2026-10-03-03-rnd0147-plan-partial-scale-domains-and-legend-json.md) |
 | 190 | 148 | 2026-10-03 | plan | [Miniature compounds: actual positions, reversible size scaling](rounds/2026-10-03-04-rnd0148-plan-miniature-compounds.md) |
+| 191 | 147 | 2026-10-05 | landed | [Partial scale domains and legend JSON](rounds/2026-10-05-01-rnd0147-landed-partial-scale-domains-and-legend-json.md) |

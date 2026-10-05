@@ -1,8 +1,8 @@
 // Round 105: the *shape* of a GeneMANIA `search_results` payload, for the
-// converter's specs — not GeneMANIA data.  The real fixtures are fetched per
-// checkout by `node debug/genemania.mjs` and never committed (GeneMANIA
-// grants no licence to redistribute its data), so CI has no real payload to
-// read.  This one carries only the fields the converter reads, laid out as
+// converter's specs — not GeneMANIA data.  The committed fixtures are the
+// converter's *output*, so the specs need a raw payload, and fetching one
+// would put the network in the suite.  This one carries only the fields the
+// converter reads, laid out as
 // the service returns them (checked against a live response, 2026-09-29),
 // with made-up genes and networks: three genes, two network groups, and one
 // pair carrying three parallel edges.

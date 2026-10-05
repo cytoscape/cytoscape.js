@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /*
-Round 105: the two GeneMANIA fixtures — fetched and converted here, never
-checked in.
+Round 105: the two GeneMANIA fixtures — fetched from genemania.org and
+converted here.
 
   node debug/genemania.mjs                    fetch both, write debug/
   node debug/genemania.mjs genemania-tp53     one of them
@@ -23,19 +23,13 @@ selected weighting, 20 result genes, 10 result attributes, every network
 the organism marks `defaultSelected` (read from `/json/resources`, as the
 app reads it) and no attribute groups (none is selected by default).
 
-**Why the fixture is fetched rather than committed.**  GeneMANIA publishes
-no licence for its data.  Its terms (https://pages.genemania.org/privacy/,
-read 2026-09-29) call the service "a free public resource" whose data "is
-based on other public resources", and say: "Some of the original data used
-by the service may be subject to patent, copyright or other intellectual
-property rights that place restrictions on the use or redistribution of
-these data.  It is the responsibility of the users of this service to
-ensure that their use of the service does not infringe on such rights."
-The data archive page (pages.genemania.org/data/) states no licence either.
-Redistribution is therefore not granted, so this repo carries the query
-definitions and this converter, and each checkout fetches its own copy
-into a gitignored file.  The status site never ships these networks, even
-from a checkout that has fetched them (`scripts/status/plan.mjs`).
+**The fixtures are committed** (2026-10-05).  Round 105 kept them out of
+the repo and fetched them per checkout, because GeneMANIA publishes no
+licence for its data and its terms (https://pages.genemania.org/privacy/)
+leave redistribution to the user.  The maintainer, a GeneMANIA coauthor,
+approved including them, so `debug/network-genemania-*.json` is checked in
+and hosted on the status site like any other real export.  This script is
+how they are regenerated, not how a checkout gets them.
 
 The database is pinned: the fixture is "these queries against GeneMANIA's
 13 August 2021 database", so a run against a newer one refuses unless
@@ -347,7 +341,8 @@ async function main(argv) {
       webappVersion: resources.versions?.webappVersion,
       fetched: new Date().toISOString().slice(0, 10),
       source: `${SERVICE}search_results`,
-      terms: 'https://pages.genemania.org/privacy/ — not for redistribution',
+      terms:
+        'https://pages.genemania.org/privacy/ — committed with the GeneMANIA authors’ approval',
     };
     writeFileSync(join(DIR, query.file), JSON.stringify(out));
     console.log(

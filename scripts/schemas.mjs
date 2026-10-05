@@ -7,7 +7,7 @@
 // `schemas/`, and the validator (ajv) is a devDependency the package never
 // imports — v4 has no runtime `validate()` (the eleventh design sitting).
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContext, runInContext } from 'node:vm';
@@ -111,10 +111,6 @@ export const loadDebugGlobal = (name) => {
  * fetched fixtures through `fixtures.toGpuElements` (and the network's
  * derivation), generated ones through the in-page generators at a small
  * size.  Yields `{ id, def, elements }`, `elements` being `{ nodes, edges }`.
- *
- * A fetched network (one with a `fetch` command — GeneMANIA's, round 105)
- * is absent from a fresh checkout and from CI by design, so it is skipped
- * when its file is missing and validated where one has been fetched.
  */
 export function* debugNetworks() {
   const networks = loadDebugGlobal('networks');
@@ -126,11 +122,7 @@ export function* debugNetworks() {
     if (def.generated) {
       elements = fixtures.generate(def.generated, '200x400');
     } else {
-      const path = resolve(DEBUG, def.url);
-
-      if (def.fetch != null && !existsSync(path)) continue;
-
-      const json = JSON.parse(readFileSync(path, 'utf8'));
+      const json = JSON.parse(readFileSync(resolve(DEBUG, def.url), 'utf8'));
 
       elements = fixtures.derive(
         def.derive,

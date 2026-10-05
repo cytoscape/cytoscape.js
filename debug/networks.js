@@ -18,10 +18,6 @@
 //   layout     the layout run at load for a network with no positions
 //              (default `{ name: 'grid' }`)
 //   note       a one-line "what is this fixture for", shown under the dropdown
-//   fetch      the command that fetches a fixture this repo may not
-//              redistribute (round 105); the file is gitignored, the page
-//              names the command when it is missing, and the status site
-//              never ships it
 
 var networks = {
   'em-web': {
@@ -83,18 +79,15 @@ var networks = {
     note: 'The scale fixture, and now the mapper-at-scale one: a diverging colour mapper evaluated on the GPU across 465k edges.',
   },
   // Round 105: GeneMANIA's signature shape — one edge per interaction per
-  // network, so gene pairs carry bundles up to ~30 wide.  **Fetched, not
-  // committed**: GeneMANIA grants no licence to redistribute its data, so
-  // each checkout runs `node debug/genemania.mjs` (the query definitions
-  // and the converter live there) and the JSON is gitignored.  `fetch` is
-  // that command: the page shows it when the file is missing, the module
-  // suite does not require the file, and the status site never ships it.
+  // network, so gene pairs carry bundles up to ~30 wide.  Two real
+  // genemania.org results, committed with the GeneMANIA authors' approval
+  // (2026-10-05); `node debug/genemania.mjs` regenerates them (the query
+  // definitions and the converter live there).
   'genemania-default': {
-    desc: 'GeneMANIA example query (fetched)',
+    desc: 'GeneMANIA example query',
     nodes: 32,
     edges: 712,
     url: 'network-genemania-default.json',
-    fetch: 'node debug/genemania.mjs',
     labelKey: 'name',
     // GeneMANIA runs cose with an ideal edge length of 100 / weight, capped
     // at 150 (so nearly every edge sits between the two); the v4 spelling
@@ -112,11 +105,10 @@ var networks = {
     note: "genemania.org's own example query (twelve human DNA-repair genes, 20 related genes) against its 2021 database: 712 interactions over 203 gene pairs, bundles up to 21 wide, coloured by network type through an ordinal mapper over a dictionary column. Open genemania.org beside it.",
   },
   'genemania-tp53': {
-    desc: 'GeneMANIA TP53 query (fetched)',
+    desc: 'GeneMANIA TP53 query',
     nodes: 21,
     edges: 266,
     url: 'network-genemania-tp53.json',
-    fetch: 'node debug/genemania.mjs',
     labelKey: 'name',
     layout: {
       name: 'force',

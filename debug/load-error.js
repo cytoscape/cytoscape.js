@@ -71,18 +71,6 @@ var loadError = (function () {
       );
     }
 
-    // round 105: a fixture this repo may not redistribute is fetched per
-    // checkout, so a 404 almost always means it has not been yet
-    if (opts.phase === 'http' && !isWire && opts.fetch) {
-      return (
-        'This fixture is not checked in (its data may not be redistributed);\n' +
-        'each checkout fetches its own copy.  From the repo root run\n' +
-        '`' +
-        opts.fetch +
-        '`, then reload.'
-      );
-    }
-
     if (opts.phase === 'http') {
       return isWire
         ? 'debug/status-config.js names this file, so the site was built\n' +
@@ -124,7 +112,6 @@ var loadError = (function () {
    * @param opts.protocol `window.location.protocol`
    * @param opts.error the error itself
    * @param opts.counts `{ nodes, edges }`, when the fixture got that far
-   * @param opts.fetch the network's `fetch` command, when it has one
    */
   function describeLoadFailure(opts) {
     var err = opts.error;

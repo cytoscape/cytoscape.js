@@ -546,7 +546,6 @@ const paramDefs = {
       protocol: window.location.protocol,
       error: err,
       counts: counts,
-      fetch: network.fetch,
     });
   }
 

@@ -13,23 +13,22 @@ import {
   searchRequest,
   defaultNetworkIds,
 } from '../../debug/genemania.mjs';
-import { planDebug } from '../../scripts/status/plan.mjs';
 import { shapeSample } from './fixtures/genemania-shape.mjs';
 
 /*
-Round 105: the GeneMANIA fixtures' converter and their distribution rule.
+Round 105: the GeneMANIA fixtures and their converter.
 
-The fixtures themselves are fetched per checkout (`node debug/genemania.mjs`)
-and gitignored — GeneMANIA grants no licence to redistribute its data — so
-these specs run the converter over the payload's *shape*
-(`fixtures/genemania-shape.mjs`, made-up genes) and pin the conversion rules
-the debug sheet depends on: the same fields the web app's own `loadGraph`
-derives, computed the same way.
+The converter specs run over the payload's *shape*
+(`fixtures/genemania-shape.mjs`, made-up genes), so they need no network,
+and pin the conversion rules the debug sheet depends on: the same fields the
+web app's own `loadGraph` derives, computed the same way.  The fixtures
+themselves were fetched per checkout and gitignored until 2026-10-05, when
+the maintainer — a GeneMANIA coauthor — approved committing them; the last
+spec pins the committed files to their queries and to the pinned database.
 
 Controls, run once each: dropping the network's weight from absoluteWeight
 fails 'weights an interaction by its network'; swapping source/target for the
-GeneMANIA gene ids fails 'names genes as the app does'; deleting the `fetch`
-branch in planDebug fails 'the status site never ships a fetched fixture'.
+GeneMANIA gene ids fails 'names genes as the app does'.
 */
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -158,7 +157,7 @@ describe('the GeneMANIA fixtures (round 105)', function () {
 
     it('the colour key travels as a dictionary column', function () {
       // the sheet's ordinal mapper reads `group`; on the wire (and so on the
-      // hosted harness, were it allowed there) it is a dictionary of the
+      // hosted harness) it is a dictionary of the
       // network-type codes, not a string per edge
       const wire = cytoscape.deserializeElements(
         cytoscape.serializeElements({ nodes, edges }),
@@ -172,27 +171,7 @@ describe('the GeneMANIA fixtures (round 105)', function () {
     });
   });
 
-  it('the status site never ships a fetched fixture, even one on disk', function () {
-    // a fetched network pointed at a fixture that *is* checked in: without
-    // the rule it would be encoded and shipped like any other
-    const networks = {
-      probe: {
-        url: 'network-reactome.json',
-        fetch: 'node debug/genemania.mjs',
-      },
-    };
-    const plan = planDebug({ root: ROOT, networks, wireEnabled: false });
-    const ops = plan.ops.filter(
-      (op) => op.to === 'debug/network-reactome.json',
-    );
-
-    expect(ops).to.have.length(1);
-    expect(ops[0].kind).to.equal('omit');
-    expect(ops[0].reason).to.match(/not redistributable/);
-    expect(plan.dropped).to.deep.equal(['probe']);
-  });
-
-  it('each query writes the file its harness entry fetches', function () {
+  it('each query wrote the committed file its harness entry loads', function () {
     const ctx = createContext({ module: { exports: {} } });
 
     runInContext(readFileSync(join(ROOT, 'debug', 'networks.js'), 'utf8'), ctx);
@@ -202,7 +181,18 @@ describe('the GeneMANIA fixtures (round 105)', function () {
     for (const [id, q] of Object.entries(QUERIES)) {
       expect(networks[id], id).to.not.equal(undefined);
       expect(networks[id].url).to.equal(q.file);
-      expect(networks[id].fetch).to.equal('node debug/genemania.mjs');
+
+      // the file is the query's result against the pinned database, and the
+      // dropdown's counts are the file's
+      const { elements, genemania } = JSON.parse(
+        readFileSync(join(ROOT, 'debug', q.file), 'utf8'),
+      );
+
+      expect(genemania.query, id).to.equal(id);
+      expect(genemania.genes, id).to.deep.equal(q.genes);
+      expect(genemania.dbVersion, id).to.equal(DB_VERSION);
+      expect(elements.nodes, id).to.have.length(networks[id].nodes);
+      expect(elements.edges, id).to.have.length(networks[id].edges);
     }
   });
 });

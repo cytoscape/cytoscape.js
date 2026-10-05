@@ -228,12 +228,14 @@ export class AnimationManager {
           let hit = overlaps.get(other);
 
           if (hit == null) {
-            hit = false;
+            hit = ani.collapsedDriver != null || other.collapsedDriver != null;
 
-            for (const col of other.touchedColumns()) {
-              if (cols.has(col)) {
-                hit = true;
-                break;
+            if (!hit) {
+              for (const col of other.touchedColumns()) {
+                if (cols.has(col)) {
+                  hit = true;
+                  break;
+                }
               }
             }
 

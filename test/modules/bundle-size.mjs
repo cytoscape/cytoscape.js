@@ -98,10 +98,11 @@ the six artifacts measured 601,340 / 186,306; 1,739,949 / 468,132;
 and 1,892,378 / 504,535 (raw / gzip, in the order of the rows below).
 The combined ceilings kept about 1% headroom at that checkpoint.
 
-**Raised after round 148 animation and persistence (2026-10-05).** The
-six artifacts now measure 618,630 / 191,321; 1,784,728 / 480,124;
-1,784,667 / 480,115; 697,628 / 209,941; 1,937,218 / 516,582;
-and 1,937,157 / 516,569 (raw / gzip, row order below). The new ceilings
+**Raised after round 148 animation and persistence (2026-10-05).** After
+replacing animation's dynamic column-table scan with a channel ownership
+marker, the six artifacts measure 617,371 / 190,879; 1,772,543 / 475,563;
+1,772,482 / 475,555; 696,384 / 209,483; 1,925,033 / 511,990;
+and 1,924,972 / 511,978 (raw / gzip, row order below). The new ceilings
 retain roughly 1% headroom and both minified edge artifacts stay below the
 1,000,000-byte budget.
 
@@ -115,13 +116,13 @@ export const EDGE_BUDGET = 1_000_000;
 
 /** Per-artifact ceilings, raw and gzip: measured landing plus headroom. */
 export const RATCHET = {
-  'cytoscape-headless.esm.min.mjs': { raw: 625_000, gzip: 194_000 },
+  'cytoscape-headless.esm.min.mjs': { raw: 624_000, gzip: 194_000 },
   // round 138: gzip 451,000 -> 456,000 (see the header)
-  'cytoscape-headless.esm.mjs': { raw: 1_803_000, gzip: 485_000 },
-  'cytoscape-headless.cjs.js': { raw: 1_803_000, gzip: 485_000 },
-  'cytoscape-headless-gpu.esm.min.mjs': { raw: 705_000, gzip: 213_000 },
-  'cytoscape-headless-gpu.esm.mjs': { raw: 1_958_000, gzip: 522_000 },
-  'cytoscape-headless-gpu.cjs.js': { raw: 1_958_000, gzip: 522_000 },
+  'cytoscape-headless.esm.mjs': { raw: 1_791_000, gzip: 480_000 },
+  'cytoscape-headless.cjs.js': { raw: 1_791_000, gzip: 480_000 },
+  'cytoscape-headless-gpu.esm.min.mjs': { raw: 704_000, gzip: 213_000 },
+  'cytoscape-headless-gpu.esm.mjs': { raw: 1_945_000, gzip: 518_000 },
+  'cytoscape-headless-gpu.cjs.js': { raw: 1_945_000, gzip: 518_000 },
 };
 
 /** The minified headless artifacts the edge budget applies to. */

@@ -11,7 +11,6 @@ import {
   normalizeProp,
   parseColor,
   parseNumber,
-  TWEEN_COL,
 } from './channels.mjs';
 import type { RGBA, StyleChannel, ChannelWrite } from './channels.mjs';
 import type { Position } from './handle.mjs';
@@ -394,13 +393,10 @@ export class Animation {
 
       if (this.collapsedDriver != null) {
         // A collapse tick reapplies descendant and incident-edge geometry,
-        // so it owns every ordinary tween channel on those refs.
-        for (const col of Object.values(COL)) {
-          cols.add(col);
-        }
-        cols.add(TWEEN_COL.NODE_PADDING);
-        cols.add(TWEEN_COL.NODE_FONT_SIZE);
-        cols.add(TWEEN_COL.EDGE_FONT_SIZE);
+        // so manager.start() treats it as conflicting with every channel
+        // on those refs. A sentinel keeps this from looking like a no-op
+        // without retaining the complete COL table in shipped bundles.
+        cols.add('collapse:all');
       }
 
       this._columns = cols;

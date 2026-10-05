@@ -5,9 +5,15 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-10-05 after rounds 146 and 147 landed. Next:
-  chart scales and heat/bars (80), convex then concave hulls (82), and
-  miniature compounds (148).
+- **Last updated**: 2026-10-05 after rounds 80, 146 and 147 landed.
+  Round 82 hull geometry is implemented and awaiting measured closeout;
+  miniature compounds (148) remain in progress.
+
+Round 80 raises pie, donut and stripe charts to 255 ordered slots and adds
+heat strips, radial heat and signed bars. Heat colour scales and bar geometry
+bounds use shared explicit or automatic domains; missing slots keep their
+positions. Apps own chart labels, axes and rendered legends. Line and scatter
+charts remain deferred.
 
 Round 146 keeps one canonical tee-compound arrow spelling, uses edge-width-
 aware tee bars, and renders hollow compound heads as component outlines.
@@ -23,8 +29,8 @@ resolved domains, conditional rules and aggregate bypass exceptions; its
 `legendchange` event follows committed snapshot changes and precedes
 `batchend`. At 2,000 nodes, the measured auto-bound update rewrites the group
 only when the bound moves; unchanged and explicit-bound updates write one
-node, and 100 cached two-entry legend reads take about 428 µs. Chart-scale
-population rules and bar geometry remain in round 80.
+node, and 100 cached two-entry legend reads take about 428 µs. Round 80
+extends these rules to chart-scale populations and bar geometry.
 
 Earlier, round 145 (29 September) was a correctness fix:
   item 73's chart measurement found: past about 305,000 nodes with
@@ -34,12 +40,10 @@ Earlier, round 145 (29 September) was a correctness fix:
   images.  Readback is now exact at any size, and past that point the
   renderer stops drawing charts (or images) and says so with one
   `gpuerror` event, the same way it treats a chart store too large for
-  the GPU, rather than drawing the wrong thing.  How the reference is
-  laid out is now decided for charts: address-only references and 8-byte
-  values, planned in round 80; the existing guard remains until that lands.
-  Custom-polygon node shapes have the same
-  limit at about a million nodes; it is logged, not yet fixed.
-  Earlier the same day round 105, parallel edges at
+  the GPU, rather than drawing the wrong thing. Round 80 also removed the
+  chart's packed count field; custom-polygon node shapes still have a similar
+  logged exposure at about a million nodes.
+  Earlier in this record, round 105, parallel edges at
   GeneMANIA's width: the two GeneMANIA queries the design sitting chose
   (the site's own human example, and TP53) are fetched from
   genemania.org by a script and drawn in the debug page with the site's
@@ -55,7 +59,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   users would meet: pointing at an edge inside a wide bundle picked a
   neighbour near the bundle's ends (it now picks the nearest, as v3
   does), and raising one edge's opacity over a data-mapped colour — the
-  GeneMANIA highlight — did not draw.  Earlier the same day round 144,
+  GeneMANIA highlight — did not draw.  Earlier in this record, round 144,
   animated layouts at scale: a layout with `animate: true` now moves its nodes as one
   animation instead of one per node, so a 20,000-node grid tween draws
   62 frames in its second where it drew 2 (5,000 nodes already drew
@@ -69,7 +73,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   have.  Two defects the new checks found are fixed: cancelling an
   animated layout left the GPU animating the nodes forever, and a node
   outside a layout's tween, moved during it, stayed drawn where it had
-  been.  Earlier the same day round 143, what the goldens
+  been.  Earlier in this record, round 143, what the goldens
   actually see: every style property a visual golden sets was reset to
   its default, one at a time, and the pixels that moved counted — 530
   (golden, property) pairs in 2.2 minutes, 520 moving pixels, 3 moving
@@ -80,7 +84,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   once (it now does, immediately), a label rotation change on its own
   was ignored, and a custom polygon reported a nonsense corner radius.
   It also showed the earlier count had credited five image properties
-  no golden sets.  Earlier the same day round 142, the gesture traces:
+  no golden sets.  Earlier in this record, round 142, the gesture traces:
   ten scripted gestures — drags, box selection, the wheel in each mode,
   pinches, right clicks, taps with and without modifiers, one-finger
   touch, leaving the canvas — now replay in a real browser on both
@@ -94,7 +98,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   `tapunselect` fires for everything a tap deselects, as in v3 — and
   measured, against v3, the event orders and targets that still differ,
   now open decisions.  Every one of the 30 inventoried gestures has a
-  browser-level check.  Earlier the same day round 76, the small style wins:
+  browser-level check.  Earlier in this record, round 76, the small style wins:
   label boxes take v3's `text-border-style` — dashed, dotted and double
   borders, on node and edge labels — drawn along v3's own stroke path,
   and the box border now straddles the box edge as v3's does (it had
@@ -104,7 +108,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   because mid arrows stay filled and v3 uses the width only for a hollow
   head.  Gradients were already v3's props and already shipped; they
   are now priced — a whole scene of gradient fills costs about 1% more
-  GPU time than solid ones.  Earlier the same day round 126 made the
+  GPU time than solid ones.  Earlier in this record, round 126 made the
   bundles smaller without touching what they draw: the column and style
   property names that were spelled once as constants now ship as plain
   strings again, their tables gone from the download, and shader
@@ -113,7 +117,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   the same.  The obvious next step, running the shaders through a
   WGSL minifier, was measured and does not pay here: it needs each
   shader whole, and whole shaders repeat the code the bundle now
-  shares, so the bundle grew by 50–61 KB.  Earlier the same day round
+  shares, so the bundle grew by 50–61 KB.  Earlier in this record, round
   141 finished the worker host: under `renderer: { worker: true }` background images now draw —
   decoded in the worker, so a style change that brings in 1,000 new
   images costs the page 5 ms instead of a 124–142 ms stall — and labels
@@ -121,7 +125,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   not see the page's `@font-face` rules; both match the main-thread
   renderer pixel for pixel.  It is verified end to end in Chromium;
   WebKit here has no WebGPU, so there it verifies the worker-side
-  mechanics only.  Earlier the same day round 140 typed element data: an
+  mechanics only.  Earlier in this record, round 140 typed element data: an
   app that names its node and edge data shapes —
   `cytoscape<Gene, Link>( … )` — gets `cy.nodes().data( 'weight' )` read
   as a number, a misspelt field in `data()`, an element definition, a
@@ -130,7 +134,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   payloads carry the same shapes.  An app that names none sees exactly
   the types it saw before.  The declaration build was measured first
   and keeps the generics and their hover docs in all three shipped
-  declarations.  Earlier the same day round 139 gave apps the hooks
+  declarations.  Earlier in this record, round 139 gave apps the hooks
   for undo and priced the obvious undo: every outermost batch — and so
   every `cy.batch()` and `cy.patch()` — is now bracketed by
   `batchstart` and `batchend` events, so an app snapshots the graph as
@@ -138,7 +142,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   elements that costs 27 ms and 3 MB per transaction and 18–31 ms to
   undo; whether core ships an undo stack of its own — and if so a
   snapshot or an inverse-operation log — is now an open decision with
-  those numbers.  Earlier the same day round 138 took v4 to the GPU's
+  those numbers.  Earlier in this record, round 138 took v4 to the GPU's
   own limits and made running past them loud but survivable: every
   device now asks for what its adapter offers, so on the benchmark
   machine's RX 580 a graph renders to 16,776,960 nodes or edges per
@@ -152,7 +156,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   for every other scene.  `cy.stats().gpu` reports the renderer's own
   allocations, and a browser soak over them ran 10,000 add/remove/
   restyle/zoom cycles flat, after finding and fixing a label cache that
-  grew without end under label churn.  Earlier the same day round 100
+  grew without end under label churn.  Earlier in this record, round 100
   wrote the
   supported-environment matrix: per environment, what runs (the
   headless core, workers, GPU compute, rendering), how that is known
@@ -164,7 +168,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   polyfill and are recorded as unsupported, as are audio worklets.  On
   Cloudflare the limit is CPU, not size: a 439-node graph's ingest,
   metrics and export fit the free plan's 10 ms, its force layout (83 ms)
-  does not.  Earlier the same day round 73 scoped rendering without
+  does not.  Earlier in this record, round 73 scoped rendering without
   WebGPU: a WebGL2 renderer can draw everything the WebGPU one draws,
   measured on the benchmark machine's RX 580 — reading the columns
   from data textures costs nothing measurable, the GPU culling pass
@@ -175,7 +179,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   gap, fetched the same day: WebGL2 96.4% of users, WebGPU 85.7% (plus
   3% partial), the gap in Linux desktops, Firefox off Windows and
   Apple Silicon, and Safari before 26.  The build is planned as its own
-  round, after the drawn features settle.  Earlier the same day
+  round, after the drawn features settle.  Earlier in this record,
   rounds 135 and 136 measured what
   the tests cannot see, ahead of the SVG-export and WebGL parity work:
   every visual golden now records the style properties its scene sets,
@@ -185,25 +189,25 @@ Earlier, round 145 (29 September) was a correctness fix:
   of which 26 had a browser-level assertion and 3 (leaving the canvas,
   the additive tap, anything on the worker renderer) none, until the
   traces covered them the same day.
-  Earlier the same day round 134 moved the attribute
+  Earlier in this record, round 134 moved the attribute
   clusterings off the calling thread — `kMeans`, `kMedoids`,
   `fuzzyCMeans` and `hierarchicalClustering` with a named metric run on
   one worker under `'workers'` and, above a measured size, `'auto'`,
   answering the same clusters bit for bit; their in-thread reference
   runs the same kernel and got 3–10× faster (k-medoids at 5,120 points
-  3.0 s → 0.31 s).  Earlier the same day round 104 made dense labels
+  3.0 s → 0.31 s).  Earlier in this record, round 104 made dense labels
   legible — `label-declutter: 'cull'` hides each node label that would
   overlap a higher-`label-priority` one, so the 465k-edge fixture's
   19,607 labels at fit (99.4% of them overlapping) become 1,545 that do
   not, for ~2 ms a frame, and a pan re-decides nothing; the priority
-  also orders the zoom fade, lowest first.  Earlier the same day round
+  also orders the zoom fade, lowest first.  Earlier in this record, round
   102 made the hover
   highlight one call — `cy.emphasize( node.closedNeighborhood() )` dims
   everything else and draws the neighbourhood above it, at 0.42 ms per
   hover change at a 733-degree hub on the 465k-edge fixture, where
   the per-element opacity spelling apps wrote took 2.9 s; the
   emphasized set is a state the sheet can style, and the dim is the
-  renderer's (+0.64 ms of GPU a frame).  Earlier the same day round 88 made edge overlays and
+  renderer's (+0.64 ms of GPU a frame).  Earlier in this record, round 88 made edge overlays and
   underlays end, turn and reach as v3's — round caps on every stroke, a
   translucent layer that blends once with a round join at every corner
   instead of darkening its own folds, and an overlay whose cap reaches
@@ -242,7 +246,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   a server's next query result reconciled into the live graph by id, in
   one batch, keeping every survivor's selection, position and listeners
   (1.7–2.4× cheaper than destroy-and-recreate at 100k elements and 90%
-  id overlap; a reload stays cheaper below ~70%).  Earlier the same day
+  id overlap; a reload stays cheaper below ~70%).  Earlier in this record,
   round 131 shipped builds for the
   use case: `cytoscape/headless` (no renderer, no WebGPU code — 513 KiB
   minified against the full build's 872 KiB, gated under a
@@ -285,7 +289,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   layout has `cancel()` beside `stop()` — the nodes go back where the
   run found them, `layoutstop` still fires, `promise()` rejects with
   `CancelledError` — and `cy.destroy()` cancels whatever is still in
-  flight.  Earlier the same day: the algorithm tier's follow-ups
+  flight.  Earlier in this record: the algorithm tier's follow-ups
   measured and closed (round 72 — closeness a BFS per source on both
   executors, every routing constant a measured number), a fourth
   executor (round 74 — a pool of plain workers, 12× the reference at
@@ -2030,10 +2034,10 @@ Earlier, round 145 (29 September) was a correctness fix:
 
 ## Open decisions
 
-- Settled on 3 October, awaiting implementation: arrow vocabulary and hollow
-  compounds; 255-value charts with compact records; explicit/partial chart
-  scales; legend JSON/events; convex then concave parent shapes; miniature
-  collapse with live styled scale, optional animation and best-effort locks.
+- Settled on 3 October: round 80's 255-value charts, shared scales and legend
+  metadata landed on 5 October. Remaining from that sitting: arrow vocabulary
+  and hollow compounds; convex then concave parent shapes; miniature collapse
+  with live styled scale, optional animation and best-effort locks.
 - The miniature model keeps original children and edges. Aggregate edges are
   separately deferred, with persistence (leaning toward regeneration) and
   developer-specified direction still open. Automatic viewport snapping,
@@ -2106,7 +2110,7 @@ round, and is regenerated rather than maintained:
 | Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`; edge isolates (`cytoscape/headless` on `workerd`) and Deno's native WebGPU driving the GPU executors (`cytoscape/headless-gpu`) landed 28 Sep.  The scoping pass over every other environment landed 29 Sep as the support matrix.  Still planned: the native Bun/Deno test runners measured and the install/publish story |
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement).  The official JSON schemas landed 28 Sep; their `$id` base waits on the documentation site |
-| Visual features | Explicitly scaled heat/bar charts and application legend metadata; annotations; convex then concave compound shapes; miniature collapse with animation; GPU edge bundling. Aggregate display edges remain separately deferred. |
+| Visual features | Annotations; convex then concave compound shapes; miniature collapse with animation; GPU edge bundling. Aggregate display edges remain separately deferred. |
 | App affordances | Attribute-table and filter fast paths (the Cytoscape Web case).  The DX polish bundle landed 28 Sep, the small style-wins bundle (`text-border-style`, the gradient price) 29 Sep |
 | WebGL2 renderer | Full parity with the WebGPU renderer, for browsers without WebGPU; scoped 29 Sep (backend, capability selection, the measured substitutes, the reach table), built after the drawn-feature rounds and held to a live WebGL-vs-WebGPU parity suite |
 

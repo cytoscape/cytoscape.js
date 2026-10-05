@@ -130,3 +130,90 @@ round 137's port; neither gets its own independent colour-domain inference.
 Open the debug fixture. Run verify, Node, types, throws, soak, schema/module
 and Playwright gates with the controls. Update JSDoc, schemas, migration,
 feature inventory, scope doc, item 73 and the executive summary at landing.
+
+### Landed 2026-10-05
+Round 80 lands the 3 October chart decision. Pie, donut and stripes now share
+one address-only record format with `heat-strip`, `radial-heat` and signed
+`bar` charts. Every included kind accepts at most 255 ordered slots; excess
+values are truncated with one warning, while null and non-finite slots retain
+their positions. Pie and stripe values keep their fraction semantics. Heat
+and bars keep signed values, missing heat slots use `chart-missing-color`,
+and missing bar slots leave gaps.
+
+Heat colour scales and bar geometry domains resolve from explicit numeric
+bounds plus shared automatic outer endpoints. Heat requires `chart-scale`;
+bars require `chart-domain` and may select their colour scale independently.
+The shared resolver updates only changed records when an extent stays fixed,
+and rebuilds its participating records once when a batch moves the extent.
+Bypasses may use an explicit alternative scale and remain exceptions in
+`cy.legend()`. Chart labels, axes and legend rendering remain application
+owned. The shipped schemas permit explicit chart-scale bypasses and reject
+invalid chart combinations. `src/README.md`, migration notes and the feature
+inventory now describe the portable subset and its limits.
+
+The record uses an address-only u32 reference, a header count, two words per
+slot (cumulative f32 plus bit-preserved rgba8) and a validity bitmap. The
+255-slot policy is independent of the reference width. Pie and stripe
+fragments lower-bound-search their cumulative stops; heat and bars index
+equal regions directly. The pixel benchmark compares the search against a
+linear-walk shader and requires identical pixels before it reports time.
+
+#### Measurements
+
+Machine: Intel i9-9900K, Radeon RX 580 (`amd · gcn-4`, hardware WebGPU),
+Chromium/ANGLE/Vulkan with timestamp-query. On 25,000 pie-chart nodes, the
+255-slot linear walk costs 17.037 ms steady GPU time; binary search costs
+1.673 ms. The 1,000-node close-up costs 6.598 ms versus 1.189 ms. All 16
+scene/count pairs produced byte-identical pixels. The 255-slot fit scene has
+25,000 records, 6,375,000 values/regions and a 52.7 MB chart blob; the close
+scene has 1,000 records, 255,000 values/regions and a 2.1 MB blob. At 16
+slots, steady times are 2.424/1.462 ms at 25,000 nodes and 0.967/0.779 ms
+at 1,000 nodes (walk/search).
+The 255-slot first-frame wall times are 36.8/22.0 ms at 25,000 nodes and
+26.4/20.8 ms at 1,000 nodes; first-frame values include shader setup and are
+not the steady-state throughput measure.
+
+The CPU lifecycle benchmark uses 25,000 charted nodes and includes a
+zero-chart control. The zero-chart control creates no chart records or pool
+allocation. At 16/64/255 values per node, record counts are 25,000 and value
+slots are 400,000 / 1,600,000 / 6,375,000; initial chart-pool use is 4.2 /
+13.9 / 52.7 MB. Initial construction takes 231 / 634 / 1,885 ms. Changing
+one node's extreme moves the shared bound and refreshes all 25,000 records
+once in 146 / 394 / 1,366 ms. Removing 10,000 nodes triggers blob
+compaction; the remaining 15,000 records survive explicit slot compaction.
+Explicit compaction takes 32.7 / 17.8 / 22.9 ms. These are measured
+single-run reference values, not performance guarantees.
+After-GC process memory deltas (heap / ArrayBuffer / RSS) are +8.6 / +18.2 /
++72.6 MB at 16 values, +13.0 / +21.3 / +90.2 MB at 64, and +13.1 / +71.6 /
++58.2 MB at 255. The zero-chart control is +5.7 / +7.5 / +20.6 MB. These
+sequential-process deltas include runtime overhead and should not be read as
+per-record allocations.
+
+The bundle ratchets use builds from the word-addressed storage commit
+`bf8a0dda` as their measured before point. The minified headless ESM grows
+569,581 → 585,933 raw bytes and 176,604 → 181,548 gzip bytes; minified GPU
+headless grows 648,611 → 664,966 raw and 195,254 → 200,152 gzip. Unminified
+headless ESM/CJS grow 31,209 bytes raw and about 7.7 KB gzip; GPU ESM/CJS
+grow the same raw amount and about 7.75 KB gzip. Ratchets now allow about
+1% above each round-80 measurement; both minified artifacts remain under
+the 1,000,000-byte edge budget.
+
+#### Verification and controls
+
+- `npm run -s verify` passes; chart, schema (213 assertions), golden
+  coverage (19 assertions), and focused bundle-size suites pass.
+- Playwright's pie/stripes, heat/bars, and EnrichmentMap chart/legend visual
+  specs pass on the local hardware adapter. The new heat/bars golden was
+  captured and replayed without updating it; the EnrichmentMap fixture shows
+  shared colours, an explicit bypass, an extreme-value change and an
+  application-owned legend.
+- The benchmark's pie-walk comparison requires identical pixels for all
+  tested counts in both scenes. The 255-cap control temporarily changed the
+  policy to 16; the chart contract test failed at its expected 255 slots.
+  The 255 policy was restored before commit.
+- Full module, types-surface, throws, worker-soak and cross-runtime gates were
+  not green in this older clone: its public-type inventory predates the five
+  intended chart/legend exports, and its subprocess/worker checks return
+  sandbox failures. The focused schema, golden-coverage, chart-record,
+  plan-record, feature-inventory and bundle-size checks pass. The integrated
+  checkout is the source for the remaining cross-round gates.

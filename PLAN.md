@@ -2180,41 +2180,21 @@ directions".*
     numbered questions with recommendations in
     `plan/rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md`.
 
-73. **Decision settled 2026-10-03; implementation remains round 80.**
-    Cap all included kinds at 255; cumulative-stop binary search, address-only
-    references and 8-byte records. Line/scatter deferred beyond 4.0. Explicit
-    chart domains support auto endpoints through round 147; chart labels and
-    axes are app-owned. The earlier alternatives below are historical.
-    **Chart kinds and their data capacity** (raised by the maintainer
-    2026-09-28, the eleventh sitting, at round 80's slice cap).  The
-    cap is one case of a general limit: the chart record packs
-    `offset | count << 24`, so every kind carries at most 255 values,
-    and per-fragment cost differs by kind — the pie walks its slices
-    (O(n)), heat and bar index (O(1)), and a point-series kind (a
-    scatter plot may carry far more than 64 points) would want a
-    different draw altogether.  The call is a design sitting on which
-    chart kinds v4 will ever draw and what capacity the record gives
-    them — widening the count field if needed, a documented cap per
-    kind by its cost — before round 80 picks the pie cap.  Line and
-    scatter are logged, not declined.  **First measurement**: the
-    render-bench pair (25k charted nodes, 16 vs 64 slices) round 80.3
-    already specifies, plus the record-blob bytes per value.
-    **Scheduled (2026-09-28, the eleventh sitting): a short sitting
-    before round 80**, on the capacity measurement prepared for it.
-    **Prepared (2026-09-29), awaiting the sitting**: per-fragment cost by
-    kind at n = 1…4096 on the RX 580 (`benchmark/chart-capacity.mjs`),
-    the record's storage and the ref's node ceiling, and four numbered
-    questions with recommendations in
-    `plan/rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md`.
-    **The overflow guard is in (round 145, 2026-09-29); the packing
-    call remains.**  The measurement's latent defect — a chart or image
-    pool past 2^24 floats ORing offset bits into the ref's count — is
-    guarded with the packing unchanged: the store saturates the offset
-    and keeps the count exact, readback reads the pool's table, and the
-    renderer degrades charts or images (round 138's order) rather than
-    draw a wrong record.  Question 4 (P1 with the guard, or P2) is still
-    the sitting's; the custom-polygon ref's same exposure is logged in
-    round 145's record.
+73. **Chart kinds and their data capacity — landed in round 80 (2026-10-05).**
+    Pie, donut and stripes now share the 255-slot cap with heat-strip,
+    radial-heat and signed bars. Address-only references, two words per
+    slot plus a validity bitmap, and cumulative-stop binary search replace
+    the packed count and three-float chart record. Heat colour scales and
+    bar geometry bounds use round 147's shared resolver; missing slots keep
+    their positions; chart labels, axes and legend rendering are
+    application-owned. Line and scatter remain deferred beyond 4.0. The
+    measured RX 580 comparison found identical pixels and, at 255 pie
+    values, 1.67 ms versus 17.04 ms for binary search versus a linear walk
+    at 25k nodes. See
+    `plan/rounds/2026-08-14-11-rnd0080-landed-node-charts-heat-bars-and-the-255-slot-ceiling.md`.
+    The 29 September preparation and round 145 overflow guard remain
+    historical evidence; custom-polygon references still have their own
+    logged exposure.
 
 74. **Gradient stop lists from element data** (raised 2026-09-28, the
     eleventh sitting, round 76's open question; **TBD** — the

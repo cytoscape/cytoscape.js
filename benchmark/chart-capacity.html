@@ -104,7 +104,7 @@
 
               // Both variants read cumulative pie stops. Keep the record's
               // dataset colors raw in u32, including NaN-patterned words.
-              stop = ( k + 1 ) / n;
+              var stop = ( k + 1 ) / n;
               blobF[ b ] = stop;
               blobU[ b + 1 ] = ( r | g << 8 | bl << 16 | 255 << 24 ) >>> 0;
               blobU[ off + hdr + valueWords * n + Math.floor( k / a.validityBits ) ] |= 1 << ( k % a.validityBits );
@@ -162,6 +162,7 @@
           var resolveBuf = timestamps ? device.createBuffer({ size: 16 * TIMED, usage: U.QUERY_RESOLVE | U.COPY_SRC }) : null;
           var readTs = timestamps ? device.createBuffer({ size: 16 * TIMED, usage: U.COPY_DST | U.MAP_READ }) : null;
           var wall = [];
+          var firstFrameMs = null;
 
           for( var p = 0; p < WARM + TIMED; p++ ){
             var enc = device.createCommandEncoder();
@@ -184,6 +185,7 @@
             var t0 = performance.now();
             device.queue.submit( [ enc.finish() ] );
             await device.queue.onSubmittedWorkDone();
+            if( p === 0 ){ firstFrameMs = performance.now() - t0; }
             if( t >= 0 ){ wall.push( performance.now() - t0 ); }
           }
 
@@ -235,6 +237,7 @@
           if( qs ){ qs.destroy(); resolveBuf.destroy(); readTs.destroy(); }
 
           return {
+            firstFrameMs: firstFrameMs,
             ms: samples[ Math.floor( samples.length / 2 ) ],
             min: samples[ 0 ],
             max: samples[ samples.length - 1 ],

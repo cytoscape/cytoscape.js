@@ -138,7 +138,7 @@ const rows = [];
 const shapeBits = (SHAPE_ELLIPSE << SHAPE_SHIFT) >>> 0;
 
 console.log(
-  '\nscene      variant        n      gpu ms (median)  covered  blob MiB',
+  '\nscene      variant        n    first ms  steady ms  records       values/regions  covered  blob MiB',
 );
 
 for (const scene of SCENES) {
@@ -199,10 +199,25 @@ for (const scene of SCENES) {
         }
       }
 
-      rows.push({ scene: scene.key, variant: name, n, ...r });
+      const records = scene.nodes;
+      const values = records * n;
+      // This synthetic pie has n positive, non-missing slices per node, so
+      // every valid dataset slot is one chart region submitted to the pass.
+      rows.push({
+        scene: scene.key,
+        variant: name,
+        n,
+        records,
+        values,
+        drawnRegions: values,
+        ...r,
+      });
       console.log(
         `${scene.key.padEnd(10)} ${name.padEnd(14)} ${String(n).padStart(4)}` +
-          `   ${r.ms.toFixed(3).padStart(10)}       ${(r.covered * 100).toFixed(0).padStart(3)}%` +
+          `   ${r.firstFrameMs.toFixed(3).padStart(8)}` +
+          `   ${r.ms.toFixed(3).padStart(9)}   ${String(records).padStart(7)}` +
+          `   ${String(values).padStart(8)}/${String(values).padStart(8)}` +
+          `   ${(r.covered * 100).toFixed(0).padStart(3)}%` +
           `   ${(r.blobBytes / 2 ** 20).toFixed(1).padStart(7)}`,
       );
     }

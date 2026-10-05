@@ -18,10 +18,12 @@ Two limits per artifact:
   one-line edit here.  The headless builds clear either reading by a wide
   margin, which is why the budget is not the number that does the work.
 - **The ratchet** — every slim artifact, raw and gzip (zlib level 9, the
-  status site's measure), under its size at landing plus ~10% headroom.
-  This is what catches a tier leak: a renderer module reached from a slim
-  entry would add tens of kilobytes at once.  A round that grows a slim
-  build on purpose raises its row here, consciously, with the reason.
+  status site's measure), stays under a measured ceiling.  Initial rows
+  allowed about 10% over landing; rounds 126 and 80 re-measured to keep a
+  tighter headroom.  This is what catches a tier leak: a renderer module
+  reached from a slim entry would add tens of kilobytes at once.  A round
+  that grows a slim build on purpose raises its row here, consciously,
+  with the reason.
 
 The full build is recorded, not gated: at landing
 `cytoscape.esm.min.mjs` was 893,415 bytes, 251,250 gzipped; at round
@@ -68,6 +70,35 @@ by 14–130 KB, so no row moves: the ceilings stay the tighter gate, with
 targets: headless 562,015 against 540 KB (4.1% over), headless-gpu
 641,040 against 600 KB (6.8% over).
 
+**Raised, round 80 (2026-10-05, Node 24.18, rolldown 1.1.5).**  The
+shared chart scale compiler, signed bars and chart legend add about
+16 KB raw / 5 KB gzip to each minified headless entry, and 31 KB raw / 8
+KB gzip to each unminified ESM/CJS entry.  Measured against the
+word-addressed storage build at `bf8a0dda`:
+
+  artifact                              before raw / gzip       now raw / gzip
+  cytoscape-headless.esm.min.mjs          569,581 / 176,604       585,933 / 181,548
+  cytoscape-headless.esm.mjs            1,674,021 / 451,552     1,705,230 / 459,260
+  cytoscape-headless.cjs.js             1,673,960 / 451,542     1,705,169 / 459,252
+  cytoscape-headless-gpu.esm.min.mjs      648,611 / 195,254       664,966 / 200,152
+  cytoscape-headless-gpu.esm.mjs        1,826,511 / 488,027     1,857,720 / 495,777
+  cytoscape-headless-gpu.cjs.js         1,826,450 / 488,015     1,857,659 / 495,764
+
+The round 80 ceilings kept roughly 1% headroom over its measured landing:
+592,000 / 184,000; 1,723,000 / 464,000; and 672,000 / 203,000 for the
+minified headless ESM, unminified headless ESM/CJS, and minified GPU
+headless ESM respectively; GPU unminified ESM/CJS use 1,877,000 /
+501,000.  Both minified artifacts remain below the 1,000,000-byte edge
+budget.
+
+**Raised for the combined October 3 implementation (2026-10-05).** After
+round 80 charts, round 82 hulls and round 148 miniature geometry were merged,
+the six artifacts measured 601,340 / 186,306; 1,739,949 / 468,132;
+1,739,888 / 468,122; 680,350 / 204,909; 1,892,439 / 504,546;
+and 1,892,378 / 504,535 (raw / gzip, in the order of the rows below).
+The combined ceilings keep about 1% headroom; they will be remeasured after
+the remaining round 148 consumers land.
+
 Needs the built bundles (`test:modules` builds first).
 */
 
@@ -76,15 +107,15 @@ const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 /** The edge budget: raw bytes of a minified headless artifact. */
 export const EDGE_BUDGET = 1_000_000;
 
-/** Per-artifact ceilings, raw and gzip: landing size + ~10%. */
+/** Per-artifact ceilings, raw and gzip: measured landing plus headroom. */
 export const RATCHET = {
-  'cytoscape-headless.esm.min.mjs': { raw: 578_000, gzip: 184_000 },
+  'cytoscape-headless.esm.min.mjs': { raw: 608_000, gzip: 189_000 },
   // round 138: gzip 451,000 -> 456,000 (see the header)
-  'cytoscape-headless.esm.mjs': { raw: 1_700_000, gzip: 461_000 },
-  'cytoscape-headless.cjs.js': { raw: 1_700_000, gzip: 461_000 },
-  'cytoscape-headless-gpu.esm.min.mjs': { raw: 665_000, gzip: 199_000 },
-  'cytoscape-headless-gpu.esm.mjs': { raw: 1_851_000, gzip: 498_000 },
-  'cytoscape-headless-gpu.cjs.js': { raw: 1_851_000, gzip: 498_000 },
+  'cytoscape-headless.esm.mjs': { raw: 1_758_000, gzip: 473_000 },
+  'cytoscape-headless.cjs.js': { raw: 1_758_000, gzip: 473_000 },
+  'cytoscape-headless-gpu.esm.min.mjs': { raw: 687_000, gzip: 208_000 },
+  'cytoscape-headless-gpu.esm.mjs': { raw: 1_912_000, gzip: 510_000 },
+  'cytoscape-headless-gpu.cjs.js': { raw: 1_912_000, gzip: 510_000 },
 };
 
 /** The minified headless artifacts the edge budget applies to. */

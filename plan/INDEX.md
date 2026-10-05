@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–124, 126–136, 138–147 |
-| planned | 49–51, 71, 77–78, 80–84, 99, 125, 137, 148 |
+| landed | 7–48, 52–70, 72–76, 79–80, 85–98, 100–124, 126–136, 138–147 |
+| planned | 49–51, 71, 77–78, 81–84, 99, 125, 137, 148 |
 
 ## The sections
 
@@ -138,7 +138,7 @@ A round can land with an item held open; the round file says which.
 | 109 | 77 | 2026-08-14 | plan | [SVG vector export](rounds/2026-08-14-08-rnd0077-plan-svg-vector-export.md) |
 | 110 | 78 | 2026-08-14 | plan | [Headless Node image generation](rounds/2026-08-14-09-rnd0078-plan-headless-node-image-generation.md) |
 | 111 | 79 | 2026-08-14 | landed | [Official JSON schemas](rounds/2026-08-14-10-rnd0079-landed-official-json-schemas.md) |
-| 112 | 80 | 2026-08-14 | plan | [Node charts: explicit scales, heat, bars and 255 values](rounds/2026-08-14-11-rnd0080-plan-node-charts-heat-bars-and-the-slice-ceiling.md) |
+| 112 | 80 | 2026-08-14 | landed | [Node charts: explicit scales, heat, bars and 255 values](rounds/2026-08-14-11-rnd0080-landed-node-charts-heat-bars-and-the-255-slot-ceiling.md) |
 | 113 | 81 | 2026-08-14 | plan | [The annotations layer](rounds/2026-08-14-12-rnd0081-plan-the-annotations-layer.md) |
 | 114 | 82 | 2026-08-14 | plan | [Compound hull shapes: convex first, then concave](rounds/2026-08-14-13-rnd0082-plan-cluster-hulls-and-collapse-aggregation-proxies.md) |
 | 115 | 83 | 2026-08-14 | plan | [GPU edge bundling](rounds/2026-08-14-14-rnd0083-plan-gpu-edge-bundling.md) |

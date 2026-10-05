@@ -235,6 +235,12 @@
                 // compositing
                 if( spec.arrows === 'mixed' ){ data.hollow = ( j + k ) & 1; }
 
+                // round 146: vary the line width so tee-bar geometry and
+                // hollow trim take all three size-law branches.
+                if( spec.arrows === 'compound' ){
+                  data.w = [ 1, 4, 12 ][ ( j + k ) % 3 ];
+                }
+
                 edges.push( { data } );
               }
             }
@@ -319,6 +325,18 @@
                 style.push( { selector: 'edge[hollow = 1]', style: {
                   'source-arrow-fill': 'hollow', 'target-arrow-fill': 'hollow'
                 } } );
+              }
+
+              if( scene.spec.arrows === 'compound' ){
+                Object.assign( style[ 1 ].style, {
+                  width: 'data(w)',
+                  'source-arrow-shape': 'triangle-tee',
+                  'target-arrow-shape': 'circle-triangle',
+                  'source-arrow-fill': 'hollow',
+                  'target-arrow-fill': 'hollow',
+                  'source-arrow-width': 'match-line',
+                  'target-arrow-width': '200%'
+                } );
               }
             }
 
@@ -420,6 +438,18 @@
                 edgesStyle = Object.assign( {}, edgesStyle, {
                   'source-arrow-fill': { case: [ { when: { data: 'hollow', eq: 1 }, then: 'hollow' } ], else: 'filled' },
                   'target-arrow-fill': { case: [ { when: { data: 'hollow', eq: 1 }, then: 'hollow' } ], else: 'filled' }
+                } );
+              }
+
+              if( scene.spec.arrows === 'compound' ){
+                edgesStyle = Object.assign( {}, edgesStyle, {
+                  width: { data: 'w' },
+                  'source-arrow-shape': 'triangle-tee',
+                  'target-arrow-shape': 'circle-triangle',
+                  'source-arrow-fill': 'hollow',
+                  'target-arrow-fill': 'hollow',
+                  'source-arrow-width': 'match-line',
+                  'target-arrow-width': '200%'
                 } );
               }
             }

@@ -128,6 +128,14 @@ const SCENES = [
     label: 'generated 25k × 50k arrows (half hollow, 0.6 alpha)',
     page: { n: 25000, m: 50000, arrows: 'mixed' },
   },
+  // Round 146: a discriminating compound-head workload. Both ends are
+  // hollow, use different components and stroke widths, and cycle through
+  // the width/scale branches that change tee geometry and line trimming.
+  {
+    key: 'gen-25k-arrows-compound',
+    label: 'generated 25k × 50k arrows (hollow compounds)',
+    page: { n: 25000, m: 50000, arrows: 'compound' },
+  },
   // round 38: the dashed-polygon fragment premium the sitting accepted
   // (~2x polygon fragment cost where a dash is enabled), priced as a
   // pair over one geometry — `solid` is the baseline branch cost,

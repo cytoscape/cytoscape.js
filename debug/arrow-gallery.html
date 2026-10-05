@@ -6,10 +6,11 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1, maximum-scale=1">
 
     <!--
-    The arrow-head gallery (PLAN.md item 72, prepared 2026-09-29 for the
-    arrow-shape sitting): every head v4 draws, v3's canvas renderer beside
-    v4's WebGPU renderer on the same model, at three edge widths and two
-    arrow-scales, with source, mid-target and target heads on each edge.
+    The arrow-head gallery (PLAN.md item 72): every current head v4 draws,
+    v3's canvas renderer beside v4's WebGPU renderer on the same model, at
+    three edge widths and two arrow-scales. Columns cycle through straight,
+    curved and self-loop routes; each edge carries source, mid-target and
+    target heads.
 
     Needs both UMD bundles: `npm run build` (v4) and `cd v3 && npm run
     build:umd` (or any v3 build that writes v3/build/cytoscape.umd.js).
@@ -74,9 +75,7 @@
       </label>
       <a href="index.html">back to the harness</a>
       <br/>
-      <span class="note">Columns: edge width × arrow-scale.  Each edge carries a source, a mid-target and a
-        target head of the row's shape.  Pan and zoom are synced; scroll to zoom.  The translucent red
-        bar just past each tee-like target head is exactly the edge's width: compare the head's bar with it.</span>
+      <span class="note">Columns: edge width × arrow-scale × route (straight, curved, loop). Each edge carries source, mid-target and target heads. Pan and zoom are synced; scroll to zoom. Red bars mark edge width beside tee-like heads.</span>
     </div>
 
     <div id="p3" class="pane"><div class="tag">v3 (canvas)</div><div id="cy3" class="cy"></div></div>
@@ -88,7 +87,7 @@
         // Rows are ordered so the near-duplicates sit next to each other.
         var SHAPES = [
           'triangle', 'triangle-backcurve', 'vee', 'chevron',
-          'triangle-tee', 'triangle-cross', 'tee', 'square',
+          'triangle-tee', 'tee', 'square',
           'diamond', 'circle', 'circle-triangle'
         ];
         var WIDTHS = [ 1, 4, 12 ];
@@ -103,7 +102,7 @@
         var COLS = [];
         SCALES.forEach(function( s ){
           WIDTHS.forEach(function( w ){
-            COLS.push({ w: w, s: s, size: arrowSize( w, s ) });
+            COLS.push({ w: w, s: s, size: arrowSize( w, s ), route: [ 'straight', 'curve', 'loop' ][WIDTHS.indexOf( w )] });
           });
         });
 
@@ -134,7 +133,7 @@
 
           COLS.forEach(function( c ){
             els.push( node( 'h' + c.i, { x: c.x + c.cellW / 2, y: HEADER_H / 2 }, -1, c.i,
-              { label: 'width ' + c.w + ' · scale ' + c.s, w: 1, h: 1, bo: 0 } ) );
+              { label: 'width ' + c.w + ' · scale ' + c.s + ' · ' + c.route, w: 1, h: 1, bo: 0 } ) );
           });
 
           SHAPES.forEach(function( shape, r ){
@@ -146,16 +145,25 @@
             COLS.forEach(function( c ){
               var id = 'e' + r + '_' + c.i;
 
-              els.push( node( id + 's', { x: c.x + 24, y: y }, r, c.i ) );
-              els.push( node( id + 't', { x: c.x + c.cellW - 24, y: y }, r, c.i ) );
-              els.push({ group: 'edges', data: { id: id, source: id + 's', target: id + 't',
-                row: r, col: c.i, shape: shape, w: c.w, s: c.s } });
+              var loop = c.route === 'loop';
+              var sourceId = id + 's';
+              var targetId = loop ? sourceId : id + 't';
+              var sourceX = loop ? c.x + c.cellW / 2 : c.x + 24;
+
+              els.push( node( sourceId, { x: sourceX, y: y }, r, c.i ) );
+
+              if( !loop ){
+                els.push( node( targetId, { x: c.x + c.cellW - 24, y: y }, r, c.i ) );
+              }
+
+              els.push({ group: 'edges', data: { id: id, source: sourceId, target: targetId,
+                row: r, col: c.i, shape: shape, w: c.w, s: c.s, curve: c.route === 'curve' ? 'unbundled-bezier' : loop ? 'bezier' : 'straight' } });
 
               // the tee's question — is its bar as thick as the edge? — made
               // visible: a translucent red bar exactly the edge's width and
               // the head's lateral extent, just past the target node, so the
               // head's bar and the guide stand side by side at one height
-              if( shape === 'tee' || shape === 'triangle-tee' || shape === 'triangle-cross' ){
+              if( ( shape === 'tee' || shape === 'triangle-tee' ) && !loop ){
                 els.push( node( id + 'g', { x: c.x + c.cellW - 24 + 6 + 4 + c.w / 2, y: y }, r, c.i,
                   { w: c.w, h: Math.max( 0.3 * c.size, 6 ), bg: '#d9534f', bo: 0.6 } ) );
               }
@@ -170,7 +178,8 @@
           var head = opts.headColour === 'same' ? line : '#1d4f91';
 
           return {
-            'curve-style': 'straight',
+            'curve-style': data( 'curve' ),
+            'control-point-distances': [ 32 ],
             'width': data( 'w' ),
             'arrow-scale': data( 's' ),
             'line-color': line,
@@ -256,7 +265,7 @@
           FOCI.push({ key: 'row-' + r, label: 'row: ' + shape, has: function( q ){ return q === r; } });
         });
 
-        FOCI.push({ key: 'dups', label: 'near-duplicates: triangle-tee / triangle-cross / tee',
+        FOCI.push({ key: 'dups', label: 'tee bars: triangle-tee / tee',
           has: function( r ){ return r >= TT && r <= TEE; } });
         FOCI.push({ key: 'dups-thin', label: 'near-duplicates at width 1 and 4, scale 1',
           has: function( r, k ){ return r >= TT && r <= TEE && k <= 1; } });

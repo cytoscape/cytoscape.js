@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
+import { compileChartScale } from '../src/style/chart-scale.mjs';
 
 // Round 23: node charts — v3's pie-*/stripe-* numbered props return as
 // the lean list-valued `chart` family (values from constants or
@@ -551,6 +552,61 @@ describe('gpu/style: the chart family (round 23)', function () {
     ).to.throw(/chart-colors '5' must be a color list or scheme name/);
     expect(() => cytoscape({ style: { edges: { chart: 'pie' } } })).to.throw(
       /node style property/,
+    );
+  });
+
+  it('reports the chart scale and domain validation failures', function () {
+    expect(() => makeCy({ 'chart-scale': 5 })).to.throw(
+      /'chart-scale' value must be a scale object/,
+    );
+
+    var circularScale = { domain: [0, 1], range: ['blue', 'red'] };
+    circularScale.self = circularScale;
+    expect(() => makeCy({ 'chart-scale': circularScale })).to.throw(
+      /'chart-scale' value must be JSON serializable/,
+    );
+
+    expect(() =>
+      compileChartScale({
+        data: 'value',
+        domain: [0, 1],
+        range: ['blue', 'red'],
+      }),
+    ).to.throw(/'chart-scale' takes scale options only/);
+    expect(() =>
+      makeCy({ 'chart-scale': { range: ['blue', 'red'] } }),
+    ).to.throw(/'chart-scale' requires an explicit domain array/);
+    expect(() => makeCy({ 'chart-scale': { domain: [0, 1] } })).to.throw(
+      /'chart-scale' requires an explicit colour range/,
+    );
+
+    expect(() =>
+      makeCy({
+        chart: 'pie',
+        'chart-values': [0.5],
+        'chart-domain': [0, 1],
+      }),
+    ).to.throw(/'chart-domain' is only valid for a bar chart/);
+    expect(() => makeCy({ chart: 'pie', 'chart-values': [true] })).to.throw(
+      /chart-values entry 'true' must be a number or null/,
+    );
+    expect(() =>
+      makeCy({ chart: 'pie', 'chart-values': ['not-a-number'] }),
+    ).to.throw(/chart-values entry 'not-a-number' must be numeric/);
+    expect(() => makeCy({ chart: 'bar', 'chart-domain': [0] })).to.throw(
+      /chart-domain must be a two-number domain/,
+    );
+    expect(() => makeCy({ chart: 'bar', 'chart-domain': [2, 1] })).to.throw(
+      /chart-domain minimum must be less than its maximum/,
+    );
+
+    var cy = makeCy({
+      chart: 'bar',
+      'chart-values': [0, 1],
+      'chart-domain': [0, 1],
+    });
+    expect(() => cy.$id('a').style('chart-domain', ['auto', 'auto'])).to.throw(
+      /chart-domain bypass requires explicit numeric bounds/,
     );
   });
 

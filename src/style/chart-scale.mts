@@ -50,13 +50,6 @@ export function compileChartScale(value: unknown): {
     { kind: 'color', prop: PROP.CHART_SCALE },
   );
 
-  if (
-    mapper.program.kind === 'continuous' &&
-    mapper.program.authoredDomain == null
-  ) {
-    throw new Error("'chart-scale' requires an explicit domain array");
-  }
-
   return { mapper, source };
 }
 

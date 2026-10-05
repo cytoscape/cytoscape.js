@@ -1,6 +1,6 @@
 // Collection's compound hierarchy and DAG traversal (round 130 split).
 
-import { GROUP_EDGES, GROUP_NODES, COL } from '../contract.mjs';
+import { GROUP_EDGES, GROUP_NODES, COL, FLAG_PARENT } from '../contract.mjs';
 import type { Ref } from '../contract.mjs';
 import type { FilterLike } from './shared.mjs';
 import type { Collection } from '../collection.mjs';
@@ -234,6 +234,157 @@ export function commonAncestors(
   );
 
   return criterion == null ? eles : eles.filter(criterion);
+}
+
+/** Collapse or expand every compound parent in ancestor-first order. */
+export function setCollapsed(self: Collection, collapsed: boolean): Collection {
+  const store = self._store;
+  const targets: number[] = [];
+  const seen = new Set<number>();
+  const flags = store.hotNodeFlags();
+
+  for (const ref of self._refs) {
+    if (!store.isCurrent(ref)) {
+      continue;
+    }
+
+    if (ref.group !== GROUP_NODES || (flags[ref.slot] & FLAG_PARENT) === 0) {
+      throw new Error(
+        `${collapsed ? 'collapse()' : 'expand()'} requires compound parents`,
+      );
+    }
+
+    if (!seen.has(ref.slot)) {
+      seen.add(ref.slot);
+      targets.push(ref.slot);
+    }
+  }
+
+  if (targets.length === 0) {
+    return self;
+  }
+
+  const projectedScale = new Map<number, number>();
+
+  for (const slot of targets) {
+    projectedScale.set(slot, collapsed ? store.collapseScaleOf(slot) : 1);
+  }
+
+  for (const slot of store.slotsOrdered(GROUP_NODES)) {
+    let factor = 1;
+
+    for (let p = store.parentOf(slot); p >= 0; p = store.parentOf(p)) {
+      if (projectedScale.has(p)) {
+        factor *= projectedScale.get(p) as number;
+      } else if (store.isCollapsed(p)) {
+        factor *= store.appliedCollapseScaleOf(p);
+      }
+    }
+
+    if (!Number.isFinite(factor) || Math.fround(factor) === 0) {
+      throw new Error('collapse scale would underflow effective geometry');
+    }
+
+    const [width, height] = store.baseSizeOf(slot);
+    const effectiveWidth = Math.fround(width * factor);
+    const effectiveHeight = Math.fround(height * factor);
+
+    if (
+      !Number.isFinite(effectiveWidth) ||
+      !Number.isFinite(effectiveHeight) ||
+      (width > 0 && effectiveWidth === 0) ||
+      (height > 0 && effectiveHeight === 0)
+    ) {
+      throw new Error('collapse scale would underflow effective geometry');
+    }
+  }
+
+  const depth = (slot: number): number => {
+    let n = 0;
+
+    for (let p = store.parentOf(slot); p >= 0; p = store.parentOf(p)) {
+      n++;
+    }
+
+    return n;
+  };
+
+  targets.sort((a, b) => depth(a) - depth(b) || a - b);
+
+  for (const slot of targets) {
+    store.flushDerived();
+
+    const wasCollapsed = store.isCollapsed(slot);
+    const oldScale = store.appliedCollapseScaleOf(slot);
+    const nextScale = collapsed ? store.collapseScaleOf(slot) : 1;
+
+    if (wasCollapsed === collapsed && oldScale === nextScale) {
+      continue;
+    }
+
+    const ratio = nextScale / oldScale;
+
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+      throw new Error('collapse scale change is not representable');
+    }
+
+    const descendants = descendantSlots(store, slot);
+
+    const moved = store.rescaleDescendants(
+      slot,
+      ratio,
+      self._cy.autolock() === true,
+    );
+    store.setCollapsed(slot, collapsed, nextScale);
+
+    if (ratio !== 1) {
+      self._cy._styleEngine.applyBulk(GROUP_NODES, descendants);
+
+      const edgeSlots = new Set<number>();
+
+      for (const child of descendants) {
+        for (const edge of store.adj.connectedEdges(child)) {
+          edgeSlots.add(edge);
+        }
+      }
+
+      if (edgeSlots.size > 0) {
+        self._cy._styleEngine.applyBulk(GROUP_EDGES, [...edgeSlots]);
+      }
+    }
+
+    store.flushDerived();
+
+    for (const movedSlot of moved) {
+      self._cy._emitOnEle('position', self._cy._ele(GROUP_NODES, movedSlot));
+    }
+
+    if (wasCollapsed !== collapsed) {
+      self._cy._emitOnEle(
+        collapsed ? 'collapse' : 'expand',
+        self._cy._ele(GROUP_NODES, slot),
+      );
+    }
+  }
+
+  return self;
+}
+
+function descendantSlots(store: Collection['_store'], slot: number): number[] {
+  const descendants: number[] = [];
+  const stack = [...store.childrenOf(slot)];
+
+  while (stack.length > 0) {
+    const child = stack.pop() as number;
+
+    descendants.push(child);
+
+    for (const nested of store.childrenOf(child)) {
+      stack.push(nested);
+    }
+  }
+
+  return descendants;
 }
 
 /** The first ref when it is a live node, else null — the raw-ref fast read the compound predicates share (the 62.6 shape). */

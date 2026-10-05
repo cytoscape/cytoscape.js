@@ -4240,8 +4240,10 @@ constants or mappers in `(0, 1]`; it can also be pinned by a bypass.
 `collapsed()` and `{ collapsed: true }` describe the parent itself, while
 `insideCollapsed()` answers for strict descendants. Style dimension reads
 keep the authored size, and geometry reads use the inherited effective size.
-This foundation does not yet move descendants or expose `collapse()` and
-`expand()`; those operations land with the geometry consumers in round 148.
+`collapse()` and `expand()` now rescale descendants around the parent's
+current centre, preserve the original graph and hidden state, and keep locked
+subtrees still while their bodies shrink. The full decoration, edge, layout,
+animation and persistence consumers remain in progress for round 148.
 
 Round 82 adds `convex-hull`, `round-convex-hull` and `concave-hull` as
 parent `shape` values. Each contour follows direct children’s actual outer

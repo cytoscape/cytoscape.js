@@ -1178,7 +1178,7 @@ type StylePropValue<Data = Untyped> = string | number | MapperSpec<Data>;
  */
 type StyleProps<Data = Untyped> = Record<string, StylePropValue<Data>>;
 /** A group named by an authored stylesheet definition. */
-type LegendGroup = 'nodes' | 'parents' | 'edges';
+type LegendGroup = typeof GROUP_NODES | 'parents' | typeof GROUP_EDGES;
 /** A bounded summary of style bypasses affecting one shared legend entry. */
 interface LegendException {
   /** Properties overridden on the affected elements. */
@@ -1201,7 +1201,7 @@ interface LegendEntry {
   /** Resolved stops for the primary effective group, or null if unresolved. */
   resolvedDomain?: number[] | null;
   /** Separate resolved stops when one definition styles nodes and parents. */
-  resolvedDomains?: Partial<Record<'nodes' | 'parents' | 'edges', number[] | null>>;
+  resolvedDomains?: Partial<Record<typeof GROUP_NODES | 'parents' | typeof GROUP_EDGES, number[] | null>>;
   range?: string | (string | number)[];
   interpolate?: 'oklab' | 'srgb';
   clamp?: boolean;
@@ -1212,7 +1212,7 @@ interface LegendEntry {
   };
   status?: 'resolved' | 'unresolved' | 'passthrough' | 'conditional' | 'exception-only';
   /** Effective groups styled by a nodes definition. */
-  appliesTo?: Array<'nodes' | 'parents' | 'edges'>;
+  appliesTo?: Array<typeof GROUP_NODES | 'parents' | typeof GROUP_EDGES>;
   /** Chart configuration, excluding per-element chart payloads and ids. */
   chart?: Record<string, unknown>;
   exceptions?: LegendException[];
@@ -3612,11 +3612,19 @@ declare class GraphStore implements ModelView {
   baseSizeOf(slot: number): [number, number];
   /** Product of collapsed ancestors' applied scales. */
   sizeFactorOf(slot: number): number;
+  /** Current applied scale for a collapsed parent, else one. */
+  appliedCollapseScaleOf(slot: number): number;
+  /** Scale unlocked descendant positions around a parent centre. */
+  rescaleDescendants(slot: number, ratio: number, lockAll?: boolean): number[];
   /** Store and read back the parent style's configured scale. */
   setCollapseScaleStyle(slot: number, value: number): void;
+  /** Read the parent's configured miniature target scale. */
   collapseScaleOf(slot: number): number;
+  /** Whether this node carries collapsed compound state. */
   isCollapsed(slot: number): boolean;
+  /** Whether this node has a collapsed strict ancestor. */
   insideCollapsed(slot: number): boolean;
+  /** Set the parent's collapsed state and its applied scale. */
   setCollapsed(slot: number, collapsed: boolean, scale?: number): void;
   /**
    * Link a node under a parent node slot (-1 to orphan).  Cycle-safe:
@@ -6832,6 +6840,21 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * @returns the descendants
    */
   descendants(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
+  /**
+   * Scale each compound parent’s descendants into a miniature around
+   * the parent’s current centre. The original nodes, edges and explicit
+   * visibility state remain unchanged.
+   *
+   * @returns this collection, for chaining
+   */
+  collapse(): this;
+  /**
+   * Restore each collapsed compound parent’s descendants by reversing
+   * its currently applied scale around the parent’s current centre.
+   *
+   * @returns this collection, for chaining
+   */
+  expand(): this;
   /**
    * Nodes sharing a parent with the collection's nodes, excluding them;
    * orphans are nobody's siblings (v3).   *

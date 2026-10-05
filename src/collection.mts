@@ -2702,6 +2702,27 @@ export class Collection<
   }
 
   /**
+   * Scale each compound parent’s descendants into a miniature around
+   * the parent’s current centre. The original nodes, edges and explicit
+   * visibility state remain unchanged.
+   *
+   * @returns this collection, for chaining
+   */
+  collapse(): this {
+    return hierarchyImpl.setCollapsed(this, true) as this;
+  }
+
+  /**
+   * Restore each collapsed compound parent’s descendants by reversing
+   * its currently applied scale around the parent’s current centre.
+   *
+   * @returns this collection, for chaining
+   */
+  expand(): this {
+    return hierarchyImpl.setCollapsed(this, false) as this;
+  }
+
+  /**
    * Nodes sharing a parent with the collection's nodes, excluding them;
    * orphans are nobody's siblings (v3).   *
    * @param criterion — an optional query object or predicate applied to

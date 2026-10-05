@@ -1160,6 +1160,16 @@ export class GraphStore implements ModelView {
     return this.hierarchy.sizeFactorOf(slot);
   }
 
+  /** Current applied scale for a collapsed parent, else one. */
+  appliedCollapseScaleOf(slot: number): number {
+    return this.hierarchy.appliedCollapseScaleOf(slot);
+  }
+
+  /** Scale unlocked descendant positions around a parent centre. */
+  rescaleDescendants(slot: number, ratio: number, lockAll = false): number[] {
+    return positionsImpl.rescaleDescendants(this, slot, ratio, lockAll);
+  }
+
   /** Store and read back the parent style's configured scale. */
   setCollapseScaleStyle(slot: number, value: number): void {
     this.hierarchy.setCollapseScale(slot, value);

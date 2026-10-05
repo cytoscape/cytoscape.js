@@ -1,6 +1,6 @@
 // GraphStore's position writers (round 130 split).
 
-import { COL, FLAG_CHILD, FLAG_PARENT } from '../../contract.mjs';
+import { COL, FLAG_CHILD, FLAG_LOCKED, FLAG_PARENT } from '../../contract.mjs';
 import type { GraphStore } from '../graph-store.mjs';
 import { shiftSubtree } from './compound.mjs';
 
@@ -218,4 +218,86 @@ export function shiftPositions(
   gs.geoEpoch++;
   gs.positionEpoch++;
   gs.dirty.mark(COL.NODE_POSITION, min, max + 1);
+}
+
+/**
+ * Scale a compound's descendants around its current centre. This is a
+ * direct position batch: parent slots in the subtree are not allowed to
+ * trigger their ordinary translate-the-subtree setter while the batch is
+ * being written.
+ *
+ * @returns the slots whose positions changed
+ */
+export function rescaleDescendants(
+  gs: GraphStore,
+  parent: number,
+  ratio: number,
+  lockAll: boolean,
+): number[] {
+  if (ratio === 1 || lockAll) {
+    return [];
+  }
+
+  gs.hierarchy.flush();
+
+  const pos = gs.nodes.column(COL.NODE_POSITION) as Float32Array;
+  const flags = gs.nodes.column(COL.NODE_FLAGS) as Uint32Array;
+  const cx = pos[parent * 2];
+  const cy = pos[parent * 2 + 1];
+  const slots: number[] = [];
+  const moved: number[] = [];
+  const xy: number[] = [];
+  const stack = [...gs.hierarchy.childrenOf(parent)];
+  let min = Infinity;
+  let max = -1;
+
+  while (stack.length > 0) {
+    const slot = stack.pop() as number;
+
+    if ((flags[slot] & FLAG_LOCKED) !== 0) {
+      gs.hierarchy.markAncestors(slot);
+      continue;
+    }
+
+    const x = cx + ratio * (pos[slot * 2] - cx);
+    const y = cy + ratio * (pos[slot * 2 + 1] - cy);
+    const nextX = Math.fround(x);
+    const nextY = Math.fround(y);
+
+    if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) {
+      throw new Error('collapse scale would produce a non-finite position');
+    }
+
+    slots.push(slot);
+    xy.push(nextX, nextY);
+
+    for (const child of gs.hierarchy.childrenOf(slot)) {
+      stack.push(child);
+    }
+  }
+
+  for (let i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+    const x = xy[i * 2];
+    const y = xy[i * 2 + 1];
+
+    if (pos[slot * 2] === x && pos[slot * 2 + 1] === y) {
+      continue;
+    }
+
+    pos[slot * 2] = x;
+    pos[slot * 2 + 1] = y;
+    moved.push(slot);
+    min = Math.min(min, slot);
+    max = Math.max(max, slot);
+    gs.hierarchy.markGeo(slot);
+  }
+
+  if (max >= 0) {
+    gs.geoEpoch++;
+    gs.positionEpoch++;
+    gs.dirty.mark(COL.NODE_POSITION, min, max + 1);
+  }
+
+  return moved;
 }

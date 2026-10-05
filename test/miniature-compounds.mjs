@@ -18,7 +18,7 @@ const make = (style) =>
 
 const ids = (eles) => eles.map((ele) => ele.id()).sort();
 
-describe('gpu/compounds: miniature state and effective size seam (round 148.1)', function () {
+describe('gpu/compounds: miniature compounds (round 148)', function () {
   it('styles and reads a validated parent collapse scale', function () {
     const cy = make({ parents: { collapseScale: 0.25 } });
 
@@ -132,6 +132,207 @@ describe('gpu/compounds: miniature state and effective size seam (round 148.1)',
     expect(child.style('height')).to.equal(28);
     expect(child.width()).to.equal(8);
     expect(child.height()).to.equal(7);
+  });
+
+  it('collapses descendants around the live parent centre and expands in place', function () {
+    const cy = make({
+      nodes: { width: 40, height: 20 },
+      parents: { 'collapse-scale': 0.25 },
+    });
+    const parent = cy.$id('p');
+    const a = cy.$id('a');
+    const b = cy.$id('b');
+    const events = [];
+
+    parent.on('collapse expand', (event) => events.push(event.type));
+    parent.position({ x: 100, y: 100 });
+    a.position({ x: 120, y: 100 });
+    b.position({ x: 80, y: 100 });
+    a.hide();
+    const collapseCenter = parent.position();
+    const beforeA = a.position();
+    const beforeB = b.position();
+
+    parent.collapse();
+
+    expect(parent.collapsed()).to.equal(true);
+    expect(a.position().x).to.equal(
+      collapseCenter.x + 0.25 * (beforeA.x - collapseCenter.x),
+    );
+    expect(b.position().x).to.equal(
+      collapseCenter.x + 0.25 * (beforeB.x - collapseCenter.x),
+    );
+    expect(a.style('width')).to.equal(40);
+    expect(a.width()).to.equal(10);
+    expect(a.visible()).to.equal(false);
+
+    const miniaturePosition = a.position();
+
+    parent.collapse();
+    expect(a.position()).to.deep.equal(miniaturePosition);
+    expect(events).to.deep.equal(['collapse']);
+
+    a.position({ x: 107 });
+    const center = parent.position().x;
+    const currentA = a.position().x;
+    const currentB = b.position().x;
+
+    parent.expand();
+
+    expect(parent.collapsed()).to.equal(false);
+    expect(a.position().x).to.equal(center + 4 * (currentA - center));
+    expect(b.position().x).to.equal(center + 4 * (currentB - center));
+    expect(a.width()).to.equal(40);
+    expect(a.visible()).to.equal(false);
+    expect(events).to.deep.equal(['collapse', 'expand']);
+  });
+
+  it('keeps locked subtrees still while shrinking their bodies', function () {
+    const cy = make({
+      nodes: { width: 40 },
+      parents: { 'collapse-scale': 0.25 },
+    });
+    const parent = cy.$id('p');
+    const a = cy.$id('a');
+    const b = cy.$id('b');
+
+    parent.position({ x: 100, y: 100 });
+    a.position({ x: 120, y: 100 });
+    b.position({ x: 80, y: 100 });
+    a.lock();
+
+    parent.collapse();
+
+    expect(a.position()).to.deep.equal({ x: 120, y: 100 });
+    expect(a.width()).to.equal(10);
+    expect(b.position()).to.deep.equal({ x: 95, y: 100 });
+    expect(b.width()).to.equal(10);
+  });
+
+  it('applies requested nested parent scales once in ancestor-first order', function () {
+    const cy = cytoscape({
+      elements: {
+        nodes: [
+          { data: { id: 'p' } },
+          { data: { id: 'n', parent: 'p' } },
+          { data: { id: 'a', parent: 'n' }, position: { x: 10, y: 0 } },
+          { data: { id: 'b', parent: 'n' }, position: { x: -10, y: 0 } },
+        ],
+      },
+      style: {
+        nodes: { width: 40 },
+        parents: { 'collapse-scale': 0.5 },
+      },
+    });
+    const p = cy.$id('p');
+    const n = cy.$id('n');
+    const a = cy.$id('a');
+    const b = cy.$id('b');
+
+    n.union(p).collapse();
+
+    expect(p.collapsed()).to.equal(true);
+    expect(n.collapsed()).to.equal(true);
+    expect(a.position().x).to.equal(2.5);
+    expect(b.position().x).to.equal(-2.5);
+    expect(a.style('width')).to.equal(40);
+    expect(a.width()).to.equal(10);
+  });
+
+  it('allows an explicitly collapsed parent at scale one', function () {
+    const cy = make({ parents: { 'collapse-scale': 1 } });
+    const parent = cy.$id('p');
+    const child = cy.$id('a');
+    const before = child.position();
+
+    parent.collapse();
+
+    expect(parent.collapsed()).to.equal(true);
+    expect(child.position()).to.deep.equal(before);
+    expect(child.insideCollapsed()).to.equal(true);
+  });
+
+  it('validates all operation targets before changing any parent', function () {
+    const cy = make();
+    const parent = cy.$id('p');
+
+    expect(() => parent.union(cy.$id('q')).collapse()).to.throw(
+      /compound parents/,
+    );
+    expect(parent.collapsed()).to.equal(false);
+    const empty = cy.collection();
+
+    expect(empty.collapse()).to.equal(empty);
+  });
+
+  it('rejects unrepresentable expansion positions before changing state', function () {
+    const cy = make({
+      nodes: { width: 30 },
+      parents: { 'collapse-scale': 0.01 },
+    });
+    const parent = cy.$id('p');
+    const a = cy.$id('a');
+    const b = cy.$id('b');
+
+    parent.position({ x: 0, y: 0 });
+    a.position({ x: 1, y: 0 });
+    b.position({ x: -1, y: 0 });
+    parent.collapse();
+    a.position({ x: 3e37 });
+
+    const beforeB = b.position();
+
+    expect(() => parent.expand()).to.throw(/non-finite position/);
+    expect(parent.collapsed()).to.equal(true);
+    expect(b.position()).to.deep.equal(beforeB);
+  });
+
+  it('rejects a collapsed ancestor product that underflows Float32', function () {
+    const depth = 24;
+    const nodes = Array.from({ length: depth + 1 }, (_, i) => ({
+      data: {
+        id: `p${i}`,
+        ...(i === 0 ? {} : { parent: `p${i - 1}` }),
+      },
+    }));
+
+    nodes.push({ data: { id: 'leaf', parent: `p${depth}` } });
+
+    const cy = cytoscape({
+      elements: { nodes },
+      style: { parents: { 'collapse-scale': 0.01 } },
+    });
+    let parents = cy.collection();
+
+    for (let i = 0; i <= depth; i++) {
+      parents = parents.union(cy.$id(`p${i}`));
+    }
+
+    expect(() => parents.collapse()).to.throw(/underflow effective geometry/);
+    expect(cy.nodes({ collapsed: true })).to.have.length(0);
+  });
+
+  it('rejects effective dimensions that underflow after scaling', function () {
+    const cy = make({
+      nodes: { width: 1e-45 },
+      parents: { 'collapse-scale': 0.1 },
+    });
+    const parent = cy.$id('p');
+    const child = cy.$id('a');
+
+    expect(child.style('width')).to.be.greaterThan(0);
+    expect(() => parent.collapse()).to.throw(/underflow effective geometry/);
+    expect(parent.collapsed()).to.equal(false);
+  });
+
+  it('rejects expansion when stored applied scale has no finite ratio', function () {
+    const cy = make();
+    const parent = cy.$id('p');
+
+    cy._store.setCollapsed(parent._refs[0].slot, true, Number.MIN_VALUE);
+
+    expect(() => parent.expand()).to.throw(/scale change is not representable/);
+    expect(parent.collapsed()).to.equal(true);
   });
 
   it('transitions authored size lanes while geometry stays scaled', function () {

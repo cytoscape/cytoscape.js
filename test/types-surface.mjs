@@ -35,6 +35,7 @@ const EXPECTED_EXPORTS = new Set([
   'BreadthFirstLayoutOptions',
   'CaseClause',
   'CaseMapper',
+  'ChartScaleSpec', // round 80.2
   'CircleLayoutOptions',
   'Collection',
   'ComponentPackingOptions', // round 123.1
@@ -87,6 +88,10 @@ const EXPECTED_EXPORTS = new Set([
   'LoadOptions', // round 103: cy.load()'s options
   'LoadProgress', // round 103: a load's progress (event.progress, the result)
   'LoadRun', // round 103: the promise cy.load() returns, with cancel()
+  'Legend', // round 147: cy.legend()'s detached metadata
+  'LegendEntry', // round 147
+  'LegendException', // round 147
+  'LegendGroup', // round 147
   'ToColumnarOptions', // round 103: the converter's { refs } option
   'PresetLayoutOptions',
   'RadialLayoutOptions', // round 85.1

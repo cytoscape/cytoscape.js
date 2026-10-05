@@ -198,6 +198,7 @@ export const STATE_CONDITIONS = {
   active: { key: '::active', negate: false, nodesOnly: false },
   hovered: { key: '::hovered', negate: false, nodesOnly: false },
   emphasized: { key: '::emphasized', negate: false, nodesOnly: false },
+  collapsed: { key: '::collapsed', negate: false, nodesOnly: true },
 } as const satisfies Record<
   string,
   { key: string; negate: boolean; nodesOnly: boolean }

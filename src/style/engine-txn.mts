@@ -146,6 +146,10 @@ export function readTxnValue(
       );
     }
 
+    if (ch.column === COL.NODE_SIZE) {
+      return engine.store.baseSizeOf(slot)[ch.lane as number];
+    }
+
     const arr = engine.store.column(ch.column as ColumnId) as Float32Array;
 
     return arr[

@@ -1,6 +1,7 @@
 import {
   FLAG_ALIVE,
   FLAG_CHILD,
+  FLAG_COLLAPSED,
   FLAG_PARENT,
   FLAG_VISIBLE,
   NO_SLOT,
@@ -85,6 +86,8 @@ export interface HierarchyHost {
   gen(): Uint32Array;
   /** mark a node.flags slot dirty (renderer upload span) */
   markFlag(slot: number): void;
+  /** update the state flag through the store's conditional-style hook */
+  setCollapsedFlag(slot: number, on: boolean): void;
   /** schedule a frame / mark non-column dirt (DirtyTracker.touch) */
   schedule(): void;
   /** the node.position column (auto-bounds inputs) */
@@ -129,6 +132,10 @@ export class HierarchyIndex {
   private resolvedPad: Map<number, number>;
   /** [left, right, top, bottom] where any per-side padding is set (85.4) */
   private resolvedSides: Map<number, [number, number, number, number]>;
+  /** configured scale from the parent style, defaulting to the alpha value */
+  private collapseScale: Map<number, number>;
+  /** scale currently applied to descendant positions and sizes */
+  private appliedCollapseScale: Map<number, number>;
 
   /**
    * @param host — the store's narrow callback surface; the index never
@@ -148,6 +155,8 @@ export class HierarchyIndex {
     this.compoundStyle = new Map();
     this.resolvedPad = new Map();
     this.resolvedSides = new Map();
+    this.collapseScale = new Map();
+    this.appliedCollapseScale = new Map();
   }
 
   // -- reads --
@@ -234,6 +243,82 @@ export class HierarchyIndex {
     }
 
     return false;
+  }
+
+  /** Whether a strict ancestor of this node is currently collapsed. */
+  insideCollapsed(slot: number): boolean {
+    for (let p = this.parentOf(slot); p >= 0; p = this.parentOf(p)) {
+      if (this.isCollapsed(p)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /** Whether this node is currently a collapsed compound parent. */
+  isCollapsed(slot: number): boolean {
+    return (this.host.flags()[slot] & FLAG_COLLAPSED) !== 0;
+  }
+
+  /** The configured collapse scale (parents default to 0.1). */
+  collapseScaleOf(slot: number): number {
+    return this.collapseScale.get(slot) ?? 0.1;
+  }
+
+  /** Current applied scale, or 1 when the parent is expanded. */
+  appliedCollapseScaleOf(slot: number): number {
+    return this.isCollapsed(slot)
+      ? (this.appliedCollapseScale.get(slot) ?? this.collapseScaleOf(slot))
+      : 1;
+  }
+
+  /** Product of collapsed ancestor scales affecting this node's body. */
+  sizeFactorOf(slot: number): number {
+    let factor = 1;
+
+    for (let p = this.parentOf(slot); p >= 0; p = this.parentOf(p)) {
+      if (this.isCollapsed(p)) {
+        factor *= this.appliedCollapseScaleOf(p);
+      }
+    }
+
+    return factor;
+  }
+
+  /** Store a validated style value. Reconciliation of an active scale is
+   * performed by the collapse operation path. */
+  setCollapseScale(slot: number, value: number): void {
+    if (!Number.isFinite(value) || value <= 0 || value > 1) {
+      throw new Error(
+        `Invalid collapse-scale '${String(value)}' (expected 0 < scale <= 1)`,
+      );
+    }
+
+    this.collapseScale.set(slot, value);
+  }
+
+  /** Set the committed state and its current applied scale. */
+  setCollapsed(slot: number, collapsed: boolean, scale?: number): void {
+    if (collapsed && !this.hasChildren(slot)) {
+      throw new Error('collapse() requires a compound parent');
+    }
+
+    if (collapsed) {
+      const applied = scale ?? this.collapseScaleOf(slot);
+
+      if (!Number.isFinite(applied) || applied <= 0 || applied > 1) {
+        throw new Error(
+          `Invalid collapse-scale '${String(applied)}' (expected 0 < scale <= 1)`,
+        );
+      }
+
+      this.appliedCollapseScale.set(slot, applied);
+    } else {
+      this.appliedCollapseScale.delete(slot);
+    }
+
+    this.host.setCollapsedFlag(slot, collapsed);
   }
 
   /**
@@ -577,6 +662,9 @@ export class HierarchyIndex {
       this.order = null;
       this.host.schedule();
     }
+
+    this.collapseScale.delete(slot);
+    this.appliedCollapseScale.delete(slot);
   }
 
   /** Whether the node still has children (removal must cascade them first). */
@@ -725,6 +813,28 @@ export class HierarchyIndex {
     }
 
     this.compoundStyle = styles;
+
+    const collapseScale = new Map<number, number>();
+    const appliedCollapseScale = new Map<number, number>();
+
+    for (const [p, scale] of this.collapseScale) {
+      const dp = rekey(p);
+
+      if (dp !== NO_SLOT) {
+        collapseScale.set(dp, scale);
+      }
+    }
+
+    for (const [p, scale] of this.appliedCollapseScale) {
+      const dp = rekey(p);
+
+      if (dp !== NO_SLOT) {
+        appliedCollapseScale.set(dp, scale);
+      }
+    }
+
+    this.collapseScale = collapseScale;
+    this.appliedCollapseScale = appliedCollapseScale;
 
     const pads = new Map<number, number>();
 

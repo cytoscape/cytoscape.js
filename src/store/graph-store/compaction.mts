@@ -81,6 +81,7 @@ export function compact(gs: GraphStore): {
     gs.hierarchy.remapSlots(nodesRes.remap, gs.nodes.gen);
     gs.opacityBase = rekeyMap(gs.opacityBase, nodesRes.remap);
     gs.parentFallback = rekeyMap(gs.parentFallback, nodesRes.remap);
+    gs.baseSize = rekeyMap(gs.baseSize, nodesRes.remap);
   }
 
   if (nodesRes != null || edgesRes != null) {

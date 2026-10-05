@@ -12,6 +12,7 @@ import {
   CHART_MAX_SLICES,
   CHART_NONE,
   FLAG_NO_EVENTS,
+  FLAG_PARENT,
   FLAG_TEXT_EVENTS,
   LABEL_MARGIN,
   SHAPE_CIRCLE,
@@ -375,6 +376,12 @@ export function writeChannels(
         : computed.shape;
 
     store.setPair(COL.NODE_SIZE, slot, computed.width, computed.height);
+    if (
+      computed.collapseScale != null &&
+      store.hasFlag(GROUP_NODES, slot, FLAG_PARENT)
+    ) {
+      store.setCollapseScaleStyle(slot, computed.collapseScale);
+    }
     store.setFlag(GROUP_NODES, slot, FLAG_NO_EVENTS, !computed.eventsEnabled); // 20.2
     store.setFlag(GROUP_NODES, slot, FLAG_TEXT_EVENTS, computed.textEvents); // 20.3
     store.setInvisibility(GROUP_NODES, slot, computed.invisible); // 22

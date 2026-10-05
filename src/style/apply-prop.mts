@@ -84,6 +84,18 @@ export const applyProp = (
 ): void => {
   switch (prop) {
     // node properties
+    case PROP.COLLAPSE_SCALE: {
+      const scale = parseNumber(prop, value);
+
+      if (scale <= 0 || scale > 1) {
+        throw new Error(
+          `The ${prop} '${String(value)}' must satisfy 0 < scale <= 1`,
+        );
+      }
+
+      computed.collapseScale = scale;
+      break;
+    }
     case PROP.BACKGROUND_COLOR:
       computed.fillColor = parseColor(prop, value);
       break;
@@ -788,6 +800,10 @@ export const assertGroupProp = (
 
   if (END_LABEL_PROPS.has(norm) && group === GROUP_NODES) {
     throw new Error(`'${norm}' is an edge style property`);
+  }
+
+  if (norm === PROP.COLLAPSE_SCALE && group === GROUP_EDGES) {
+    throw new Error(`'${norm}' is a node style property`);
   }
 
   // the raw sheet value may be a mapper object here, so test the

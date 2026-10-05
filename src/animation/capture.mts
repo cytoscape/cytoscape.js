@@ -316,7 +316,12 @@ export function laneWrite(
   write.lane = lane;
 
   for (let i = 0; i < refs.length; i++) {
-    write.data[i * 2] = arr[refs[i].slot * comps + lane];
+    const slot = refs[i].slot;
+
+    write.data[i * 2] =
+      column === COL.NODE_SIZE
+        ? anim.store.baseSizeOf(slot)[lane]
+        : arr[slot * comps + lane];
     write.data[i * 2 + 1] = to;
   }
 

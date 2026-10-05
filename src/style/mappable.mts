@@ -51,10 +51,27 @@ export interface MappableChannel {
    * enum kinds).
    */
   intern?: boolean;
+  /** Validate numeric outputs for a bounded special channel. */
+  validate?: (value: unknown) => void;
 }
 
 /** Mapper-capable props ('label' rides the labelKey channel instead). */
 export const MAPPABLE: Record<string, MappableChannel> = {
+  [PROP.COLLAPSE_SCALE]: {
+    kind: 'number',
+    groups: [GROUP_NODES],
+    set: (c, v) => {
+      c.collapseScale = v as number;
+    },
+    default: () => 0.1,
+    validate: (v) => {
+      if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0 || v > 1) {
+        throw new Error(
+          `Invalid collapse-scale '${String(v)}' (expected 0 < scale <= 1)`,
+        );
+      }
+    },
+  },
   [PROP.BACKGROUND_COLOR]: {
     kind: 'color',
     groups: [GROUP_NODES],

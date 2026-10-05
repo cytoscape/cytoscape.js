@@ -150,6 +150,8 @@ export const FLAG_DRAWN = 262144;
  * 1.1 s per hover change on ndex-x-large.
  */
 export const FLAG_EMPHASIZED = 524288;
+/** Node-only, store-managed: the compound currently has miniature state. */
+export const FLAG_COLLAPSED = 1048576;
 
 /** The core `dim-opacity` default (round 102): what the rest of the
  * graph composites at while an emphasis is set. */
@@ -186,6 +188,7 @@ export const CONDITION_FLAGS: Readonly<Record<string, number>> = {
   '::active': FLAG_ACTIVE,
   '::hovered': FLAG_HOVERED,
   '::emphasized': FLAG_EMPHASIZED,
+  '::collapsed': FLAG_COLLAPSED,
 };
 
 /** The same binding, bit → key, for the flag-write side. */

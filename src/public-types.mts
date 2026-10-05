@@ -294,6 +294,8 @@ export interface Condition<Data = Untyped> {
   /** structural (round 14.7, nodes only): the element has no parent —
    * v3's `:orphan`, and exactly `{ child: false }` */
   orphan?: boolean;
+  /** state (round 148, nodes only): the compound is in collapsed miniature state */
+  collapsed?: boolean;
   /** state (round 57.1): the element is selected.  This is what v4's
    * **default stylesheet** uses to give selection a colour — nodes'
    * `background-color`, edges' `line-color` and the four arrow colours

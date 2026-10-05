@@ -1107,6 +1107,8 @@ interface Condition<Data = Untyped> {
   /** structural (round 14.7, nodes only): the element has no parent —
    * v3's `:orphan`, and exactly `{ child: false }` */
   orphan?: boolean;
+  /** state (round 148, nodes only): the compound is in collapsed miniature state */
+  collapsed?: boolean;
   /** state (round 57.1): the element is selected.  This is what v4's
    * **default stylesheet** uses to give selection a colour — nodes'
    * `background-color`, edges' `line-color` and the four arrow colours
@@ -3200,6 +3202,8 @@ declare class GraphStore implements ModelView {
   readonly dirty: DirtyTracker;
   /** styled curve records + the lazy derivation of edge.curveParams */
   readonly curves: CurveIndex;
+  /** Authored/resolved node dimensions, before inherited miniature scaling. */
+  baseSize: Map<number, [number, number]>;
   /** fires on the compounds 0 <-> >0 transitions (the core re-configures
    * paint eval: the opacity fold demotes the GPU mapper, round 14.4) */
   onCompoundsToggled: (() => void) | null;
@@ -3604,6 +3608,16 @@ declare class GraphStore implements ModelView {
   paddingSumsOf(slot: number): [number, number];
   /** The declared compound style record (the style readbacks' truth). */
   compoundStyleOf(slot: number): CompoundStyle;
+  /** Resolved dimensions from style, before inherited miniature scaling. */
+  baseSizeOf(slot: number): [number, number];
+  /** Product of collapsed ancestors' applied scales. */
+  sizeFactorOf(slot: number): number;
+  /** Store and read back the parent style's configured scale. */
+  setCollapseScaleStyle(slot: number, value: number): void;
+  collapseScaleOf(slot: number): number;
+  isCollapsed(slot: number): boolean;
+  insideCollapsed(slot: number): boolean;
+  setCollapsed(slot: number, collapsed: boolean, scale?: number): void;
   /**
    * Link a node under a parent node slot (-1 to orphan).  Cycle-safe:
    * a link that would make the node its own ancestor warns and no-ops
@@ -5330,6 +5344,8 @@ interface Query<Data = Untyped> {
   /** structural (nodes only): has no parent — v3's `:orphan`, and
    * exactly `{ child: false }` */
   orphan?: boolean;
+  /** whether this compound parent is in collapsed miniature state (nodes only) */
+  collapsed?: boolean;
   /** data-sidecar conditions per key; a bare value means equality.
    * Typed (round 140), the keys are the queried elements' fields. */
   data?: QueryData<Data>;
@@ -6866,6 +6882,18 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * @returns v3's `:child`; false for edges and removed elements
    */
   isChild(): boolean;
+  /** Whether the first live node is a collapsed compound parent.
+   *
+   * @returns true from collapse start until expansion completes; false
+   *   for leaves, edges and removed elements
+   */
+  collapsed(): boolean;
+  /** Whether the first live node has a collapsed strict ancestor.
+   * The collapsed parent itself answers false.
+   *
+   * @returns true when the node is a descendant of a collapsed parent
+   */
+  insideCollapsed(): boolean;
   /**
    * Whether the first element is a node without a parent.
    *

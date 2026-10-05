@@ -153,6 +153,7 @@ export const EDGE_DEFAULT_BLOCK: StyleProps = {
  * defaults instead (it is not a channel).  Its two colours carry v3's
  * `:parent:selected` tint the same way the nodes block above does. */
 export const PARENT_CHANNEL_OVERLAY: StyleProps = {
+  [PROP.COLLAPSE_SCALE]: 0.1,
   shape: 'rectangle',
   [PROP.BACKGROUND_COLOR]: onSelected('#CCE1F9', '#eee'),
   [PROP.BORDER_WIDTH]: 1,

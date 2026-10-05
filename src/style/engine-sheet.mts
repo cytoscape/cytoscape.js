@@ -84,6 +84,16 @@ export function setSheet(
   // round 133: what the diff compares the new sheet against
   const before = captureBefore(engine);
 
+  if (
+    Object.keys(sheet.nodes ?? {}).some(
+      (key) => normalizeProp(key) === PROP.COLLAPSE_SCALE,
+    )
+  ) {
+    throw new Error(
+      `The style property '${PROP.COLLAPSE_SCALE}' belongs to the parents group`,
+    );
+  }
+
   const coreStyle = resolveCoreProps(sheet.core);
 
   // the parents group (round 14.6): channel props overlay the nodes

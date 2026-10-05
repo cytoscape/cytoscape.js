@@ -95,6 +95,19 @@ export function setPair(
   const arr = gs.table(spec.group).column(id) as Float32Array | Uint32Array;
 
   if (id === COL.NODE_SIZE) {
+    const baseA = a;
+    const baseB = b;
+
+    gs.baseSize.set(slot, [baseA, baseB]);
+
+    if (gs.parentFallback.has(slot)) {
+      gs.parentFallback.set(slot, [baseA, baseB]);
+    }
+
+    const factor = gs.sizeFactorOf(slot);
+    a = baseA * factor;
+    b = baseB * factor;
+
     const half = Math.max(a, b) / 2;
 
     if (half > gs.nodeHalfMax) {
@@ -104,9 +117,6 @@ export function setPair(
     // a style size write on a parent updates the stashed fallback
     // (auto-bounds owns the column and re-derives over the clobber);
     // tracked before the no-op check so the stash never goes stale
-    if (gs.parentFallback.has(slot)) {
-      gs.parentFallback.set(slot, [a, b]);
-    }
   }
 
   if (arr[slot * 2] === a && arr[slot * 2 + 1] === b) {
@@ -150,13 +160,13 @@ export function setLane(
   value: number,
 ): void {
   if (id === COL.NODE_SIZE) {
-    const size = gs.nodes.column(COL.NODE_SIZE) as Float32Array;
+    const [baseWidth, baseHeight] = gs.baseSizeOf(slot);
 
     gs.setPair(
       COL.NODE_SIZE,
       slot,
-      lane === 0 ? value : size[slot * 2],
-      lane === 1 ? value : size[slot * 2 + 1],
+      lane === 0 ? value : baseWidth,
+      lane === 1 ? value : baseHeight,
     );
 
     return;

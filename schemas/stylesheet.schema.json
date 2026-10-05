@@ -1620,6 +1620,12 @@
       "type": "object",
       "$ref": "#/$defs/nodeProps",
       "properties": {
+        "collapse-scale": {
+          "anyOf": [
+            { "$ref": "#/$defs/props/collapse-scale" },
+            { "$ref": "#/$defs/mapper" }
+          ]
+        },
         "compound-sizing-wrt-labels": {
           "$ref": "#/$defs/props/compound-sizing-wrt-labels"
         },
@@ -1633,6 +1639,9 @@
         "padding-top": { "$ref": "#/$defs/props/padding-top" },
         "compoundSizingWrtLabels": {
           "$ref": "#/$defs/parents/properties/compound-sizing-wrt-labels"
+        },
+        "collapseScale": {
+          "$ref": "#/$defs/parents/properties/collapse-scale"
         },
         "minHeight": { "$ref": "#/$defs/parents/properties/min-height" },
         "minWidth": { "$ref": "#/$defs/parents/properties/min-width" },
@@ -1712,7 +1721,11 @@
         }
       },
       "additionalProperties": { "not": { "type": "object" } },
-      "anyOf": [{ "$ref": "#/$defs/nodes" }, { "$ref": "#/$defs/edges" }]
+      "anyOf": [
+        { "$ref": "#/$defs/nodes" },
+        { "$ref": "#/$defs/parents" },
+        { "$ref": "#/$defs/edges" }
+      ]
     },
     "mapper": {
       "description": "A data-driven value: a scale mapper or a case conditional.",
@@ -1874,6 +1887,7 @@
           { "required": ["childless"] },
           { "required": ["child"] },
           { "required": ["orphan"] },
+          { "required": ["collapsed"] },
           { "required": ["selected"] },
           { "required": ["selectable"] },
           { "required": ["locked"] },
@@ -1886,13 +1900,14 @@
       }
     },
     "stateCondition": {
-      "description": "Structural (nodes only: `parent`, `childless`, `child`, `orphan`) or state (`selected`, `selectable`, `locked`, `grabbed`, `grabbable`, `active`, `hovered`, `emphasized`) — each a boolean, one per condition; AND them through the `when` array.",
+      "description": "Structural (nodes only: `parent`, `childless`, `child`, `orphan`) or state (`collapsed`, `selected`, `selectable`, `locked`, `grabbed`, `grabbable`, `active`, `hovered`, `emphasized`) — each a boolean, one per condition; AND them through the `when` array.",
       "type": "object",
       "properties": {
         "parent": { "type": "boolean" },
         "childless": { "type": "boolean" },
         "child": { "type": "boolean" },
         "orphan": { "type": "boolean" },
+        "collapsed": { "type": "boolean" },
         "selected": { "type": "boolean" },
         "selectable": { "type": "boolean" },
         "locked": { "type": "boolean" },
@@ -1908,6 +1923,7 @@
         { "required": ["childless"] },
         { "required": ["child"] },
         { "required": ["orphan"] },
+        { "required": ["collapsed"] },
         { "required": ["selected"] },
         { "required": ["selectable"] },
         { "required": ["locked"] },
@@ -2596,6 +2612,13 @@
       "chart-values": {
         "$ref": "#/$defs/kinds/chartValues",
         "examples": [[1, 2, 3]]
+      },
+      "collapse-scale": {
+        "description": "A collapsed compound's descendant position and size factor: greater than 0 and at most 1.",
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "maximum": 1,
+        "examples": [0.1]
       },
       "color": { "$ref": "#/$defs/kinds/color", "examples": ["#000"] },
       "compound-sizing-wrt-labels": {

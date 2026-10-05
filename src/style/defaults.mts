@@ -25,6 +25,8 @@ export type RGBA = [number, number, number, number];
 
 /** Resolved channel values for one element, before writing to columns. */
 export interface NodeComputed {
+  /** Parent miniature target scale (unset outside the parents overlay). */
+  collapseScale?: number;
   /** text-rotation in radians (27.7); NaN is not valid on nodes. */
   textRotation: number;
 

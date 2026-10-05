@@ -18,6 +18,7 @@ import {
   columnSpecsForGroup,
   DIM_OPACITY_DEFAULT,
   LABEL_DECLUTTER_NONE,
+  FLAG_COLLAPSED,
   FLAG_VISIBLE,
 } from '../contract.mjs';
 import type {
@@ -157,6 +158,8 @@ export class GraphStore implements ModelView {
    * restored to the column when the node becomes a leaf again (14.3)
    * @internal */
   parentFallback = new Map<number, [number, number]>();
+  /** Authored/resolved node dimensions, before inherited miniature scaling. */
+  baseSize = new Map<number, [number, number]>();
   /** fires on the compounds 0 <-> >0 transitions (the core re-configures
    * paint eval: the opacity fold demotes the GPU mapper, round 14.4) */
   onCompoundsToggled: (() => void) | null = null;
@@ -407,6 +410,8 @@ export class GraphStore implements ModelView {
       flags: () => this.nodes.column(COL.NODE_FLAGS) as Uint32Array,
       gen: () => this.nodes.gen,
       markFlag: (slot) => this.dirty.mark(COL.NODE_FLAGS, slot),
+      setCollapsedFlag: (slot, on) =>
+        flagsImpl.setFlag(this, GROUP_NODES, slot, FLAG_COLLAPSED, on),
       schedule: () => this.dirty.touch(),
       positions: () => this.nodes.column(COL.NODE_POSITION) as Float32Array,
       outerHalf: () => this.nodes.column(COL.NODE_OUTER_HALF) as Float32Array,
@@ -417,9 +422,7 @@ export class GraphStore implements ModelView {
           return stashed;
         }
 
-        const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
-
-        return [size[slot * 2], size[slot * 2 + 1]];
+        return this.baseSizeOf(slot);
       },
       labelBounds: (slot) => {
         const entry = this.labels.nodes[slot];
@@ -477,9 +480,7 @@ export class GraphStore implements ModelView {
           // stash the style size: auto-bounds owns the column from here,
           // and the stash is both the degenerate fallback and what a
           // leaf-again node returns to
-          const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
-
-          this.parentFallback.set(slot, [size[slot * 2], size[slot * 2 + 1]]);
+          this.parentFallback.set(slot, this.baseSizeOf(slot));
         } else {
           const stashed = this.parentFallback.get(slot);
 
@@ -1137,6 +1138,49 @@ export class GraphStore implements ModelView {
   /** The declared compound style record (the style readbacks' truth). */
   compoundStyleOf(slot: number): CompoundStyle {
     return this.hierarchy.compoundStyleOf(slot);
+  }
+
+  /** Resolved dimensions from style, before inherited miniature scaling. */
+  baseSizeOf(slot: number): [number, number] {
+    const cached = this.baseSize.get(slot);
+
+    if (cached != null) {
+      return cached;
+    }
+
+    const size = this.nodes.column(COL.NODE_SIZE) as Float32Array;
+
+    return [size[slot * 2], size[slot * 2 + 1]];
+  }
+
+  /** Product of collapsed ancestors' applied scales. */
+  sizeFactorOf(slot: number): number {
+    return this.hierarchy.sizeFactorOf(slot);
+  }
+
+  /** Store and read back the parent style's configured scale. */
+  setCollapseScaleStyle(slot: number, value: number): void {
+    this.hierarchy.setCollapseScale(slot, value);
+  }
+
+  /** Read the parent's configured miniature target scale. */
+  collapseScaleOf(slot: number): number {
+    return this.hierarchy.collapseScaleOf(slot);
+  }
+
+  /** Whether this node carries collapsed compound state. */
+  isCollapsed(slot: number): boolean {
+    return this.hierarchy.isCollapsed(slot);
+  }
+
+  /** Whether this node has a collapsed strict ancestor. */
+  insideCollapsed(slot: number): boolean {
+    return this.hierarchy.insideCollapsed(slot);
+  }
+
+  /** Set the parent's collapsed state and its applied scale. */
+  setCollapsed(slot: number, collapsed: boolean, scale?: number): void {
+    this.hierarchy.setCollapsed(slot, collapsed, scale);
   }
 
   /**

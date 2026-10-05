@@ -948,6 +948,10 @@ describe('schemas: the stylesheet (79.2)', () => {
         { edges: { 'line-color': when({ data: 't', eq: 'a' }) } },
       ],
       [
+        'a collapsed state condition',
+        { parents: { 'background-color': when({ collapsed: true }) } },
+      ],
+      [
         'an AND of a state and a data condition',
         {
           nodes: {
@@ -963,6 +967,10 @@ describe('schemas: the stylesheet (79.2)', () => {
         'a bypass',
         { bypasses: { a: { width: 5, 'background-color': 'red' } } },
       ],
+      [
+        'a parent collapse-scale bypass',
+        { bypasses: { p: { 'collapse-scale': 0.25 } } },
+      ],
       ['core props', { core: { 'selection-box-color': '#ddd' } }],
       ['compound props', { parents: { padding: '10%', 'min-width': 20 } }],
       [
@@ -974,6 +982,11 @@ describe('schemas: the stylesheet (79.2)', () => {
       ['an edge property on nodes', { nodes: { 'curve-style': 'bezier' } }],
       ['a node property on edges', { edges: { 'text-halign': 'left' } }],
       ['a compound property on nodes', { nodes: { padding: 10 } }],
+      ['a parent-only property on nodes', { nodes: { 'collapse-scale': 0.5 } }],
+      [
+        'an out-of-range parent collapse scale',
+        { parents: { 'collapse-scale': 0 } },
+      ],
       [
         'a mapper on a constant-only channel',
         { nodes: { 'arrow-scale': { data: 'x', range: [1, 2] } } },

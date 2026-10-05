@@ -4232,6 +4232,15 @@ exact metrics. Rotation is included, and zoom fading/decluttering do
 not change geometry. A parent's own label never sizes itself. Compound
 props throw outside the parents group.
 
+Round 148.1 establishes collapse state and its style/query surface:
+`parents.collapse-scale` defaults to `0.1` and accepts finite numeric
+constants or mappers in `(0, 1]`; it can also be pinned by a bypass.
+`collapsed()` and `{ collapsed: true }` describe the parent itself, while
+`insideCollapsed()` answers for strict descendants. Style dimension reads
+keep the authored size, and geometry reads use the inherited effective size.
+This foundation does not yet move descendants or expose `collapse()` and
+`expand()`; those operations land with the geometry consumers in round 148.
+
 Readback answers from the per-parent record
 (`style('padding')` returns the declared px number or the percent
 string; leaves read 0, as v3 leaves do).  v3's `:parent:selected`

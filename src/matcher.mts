@@ -77,6 +77,8 @@ export interface Query<Data = Untyped> {
   /** structural (nodes only): has no parent — v3's `:orphan`, and
    * exactly `{ child: false }` */
   orphan?: boolean;
+  /** whether this compound parent is in collapsed miniature state (nodes only) */
+  collapsed?: boolean;
   /** data-sidecar conditions per key; a bare value means equality.
    * Typed (round 140), the keys are the queried elements' fields. */
   data?: QueryData<Data>;

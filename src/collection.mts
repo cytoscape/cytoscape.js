@@ -17,6 +17,7 @@ import {
   FLAG_SELECTABLE,
   FLAG_SELECTED,
   FLAG_VISIBLE,
+  FLAG_COLLAPSED,
 } from './contract.mjs';
 import type { GroupName, Ref } from './contract.mjs';
 import type { GraphStore } from './store/graph-store.mjs';
@@ -2793,6 +2794,31 @@ export class Collection<
     return (
       ref != null && (this._store.hotNodeFlags()[ref.slot] & FLAG_CHILD) !== 0
     );
+  }
+
+  /** Whether the first live node is a collapsed compound parent.
+   *
+   * @returns true from collapse start until expansion completes; false
+   *   for leaves, edges and removed elements
+   */
+  collapsed(): boolean {
+    const ref = hierarchyImpl._liveNodeRef(this);
+
+    return (
+      ref != null &&
+      (this._store.hotNodeFlags()[ref.slot] & FLAG_COLLAPSED) !== 0
+    );
+  }
+
+  /** Whether the first live node has a collapsed strict ancestor.
+   * The collapsed parent itself answers false.
+   *
+   * @returns true when the node is a descendant of a collapsed parent
+   */
+  insideCollapsed(): boolean {
+    const ref = hierarchyImpl._liveNodeRef(this);
+
+    return ref != null && this._store.insideCollapsed(ref.slot);
   }
 
   /**

@@ -19,7 +19,7 @@ import {
   BORDER_POSITION_NAMES,
   STROKE_STYLE_NAMES,
 } from './parse.mjs';
-import { readScalar, readPair, readColor, defineReader } from './readers.mjs';
+import { readScalar, readColor, defineReader } from './readers.mjs';
 
 defineReader([PROP.BACKGROUND_COLOR], (store, slot) =>
   readColor(store, slot, COL.NODE_FILL_COLOR),
@@ -416,8 +416,10 @@ defineReader(
   },
 );
 
-defineReader([PROP.HEIGHT], (store, slot) =>
-  readPair(store, slot, COL.NODE_SIZE, 1),
+defineReader([PROP.HEIGHT], (store, slot) => store.baseSizeOf(slot)[1]);
+
+defineReader([PROP.COLLAPSE_SCALE], (store, slot) =>
+  store.collapseScaleOf(slot),
 );
 
 defineReader(

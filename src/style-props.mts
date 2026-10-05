@@ -64,6 +64,8 @@ export const PROP = {
   CHART_START_ANGLE: 'chart-start-angle',
   CHART_VALUES: 'chart-values',
 
+  COLLAPSE_SCALE: 'collapse-scale',
+
   COLOR: 'color',
 
   COMPOUND_SIZING_WRT_LABELS: 'compound-sizing-wrt-labels',

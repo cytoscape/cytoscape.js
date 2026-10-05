@@ -186,6 +186,7 @@ export const SHAPE_NAMES: Record<number, string> = {
 
 /** Readable props per group ('width' and 'opacity' exist for both). */
 export const NODE_READ: ReadonlySet<string> = new Set([
+  PROP.COLLAPSE_SCALE,
   PROP.BACKGROUND_COLOR,
   PROP.BORDER_COLOR,
   PROP.BORDER_WIDTH,

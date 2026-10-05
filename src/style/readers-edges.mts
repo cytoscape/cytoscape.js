@@ -26,18 +26,12 @@ import {
   TAXI_DIRECTION_NAMES,
   TAXI_TRACK_NAMES,
 } from './parse-edge.mjs';
-import {
-  readScalar,
-  readPair,
-  readColor,
-  readAlpha,
-  defineReader,
-} from './readers.mjs';
+import { readScalar, readColor, readAlpha, defineReader } from './readers.mjs';
 
 // shared names, resolved per group
 defineReader([PROP.WIDTH], (store, slot, ref) =>
   ref.group === GROUP_NODES
-    ? readPair(store, slot, COL.NODE_SIZE, 0)
+    ? store.baseSizeOf(slot)[0]
     : readScalar(store, slot, COL.EDGE_WIDTH),
 );
 

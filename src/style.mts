@@ -288,7 +288,10 @@ export class StyleEngine {
     if (bit != null) {
       // the hierarchy pair is nodes-only; an edge is neither, rather
       // than reading a bit that means nothing on its flags word
-      if (group !== GROUP_NODES && (key === '::parent' || key === '::child')) {
+      if (
+        group !== GROUP_NODES &&
+        (key === '::parent' || key === '::child' || key === '::collapsed')
+      ) {
         return false;
       }
 

@@ -205,13 +205,56 @@ export const compileChannel = (
       ? { ...spec, fallback: TAXI_TURN_AUTO_SENTINEL }
       : spec;
 
+  const m = compileMapper(mapperSpec, {
+    kind: channel.kind,
+    prop,
+    parseEnum: channel.parseEnum,
+  });
+
+  if (channel.validate != null) {
+    const outputs: unknown[] = [];
+
+    if (m.fallback != null) {
+      outputs.push(m.fallback);
+    }
+
+    switch (m.program.kind) {
+      case 'const':
+        outputs.push(m.program.value);
+        break;
+      case 'case':
+        outputs.push(m.program.elseValue);
+        outputs.push(...m.program.clauses.map((clause) => clause.value));
+        break;
+      case 'continuous':
+        if (m.program.outStops.kind === 'number') {
+          outputs.push(...m.program.outStops.values);
+        }
+        break;
+      case 'discrete':
+        outputs.push(...m.program.outputs);
+        break;
+      case 'ordinal':
+        outputs.push(...m.program.map.values());
+        break;
+      case 'passthrough':
+        break;
+    }
+
+    for (const output of outputs) {
+      channel.validate(output);
+    }
+  }
+
   return {
-    m: compileMapper(mapperSpec, {
-      kind: channel.kind,
-      prop,
-      parseEnum: channel.parseEnum,
-    }),
-    channel,
+    m,
+    channel: {
+      ...channel,
+      set: (computed, value) => {
+        channel.validate?.(value);
+        channel.set(computed, value);
+      },
+    },
   };
 };
 

@@ -48,20 +48,22 @@ about 1.39 ms and performed one group refresh (2,000 writes). One hundred
 reads of a two-entry cached legend took about 428 µs total (4.28 µs/read).
 The benchmark asserts those write counts before timing.
 
-The new mapper, legend, and schema specs pass, including controls for partial
-diverging midpoint preservation, unchanged-bound refresh scope, bypassed
-contributors, batch ordering/silence, and returned-object isolation.
-`test:js:quiet`, `typecheck`, `test:types`, schema validation, build, the
-benchmark controls, and `git diff --check` passed. `verify` remains red on the
-same eight pre-existing oxlint warnings in unrelated files. The Node module
-gate reports six subprocess-dependent failures (`bundle-size`,
-`isolate-smoke`, `packaging`, `quiet-reporter`, `quiet-run`, and
-`runtime-smoke`); the soak gate reports only the two worker subprocess cases
-(`force-worker` and `workers`). `test:throws:quiet` exits 1 without diagnostics
-in this sandbox. A focused WebGPU mapper Playwright check could not start its
-configured local server: connection attempts return `EPERM`, and the
-escalated attempt found port 3333 occupied by round 146's browser gate. These
-process/browser gates therefore remain environment-limited rather than
-validated by this clone.
+The new mapper, legend, and schema specs assert partial diverging midpoint
+preservation, unchanged-bound refresh scope, bypassed contributors, batch
+event ordering and silence, and returned-object isolation. The benchmark's
+one-off instrumentation controls also passed. `test:js:quiet`, `typecheck`,
+`test:types`, schema validation, build, benchmark controls, and `git diff
+--check` passed. `verify` remains red on the same eight pre-existing oxlint
+warnings in unrelated files. The Node module gate reports six
+subprocess-dependent failures (`bundle-size`, `isolate-smoke`, `packaging`,
+`quiet-reporter`, `quiet-run`, and `runtime-smoke`) and then hangs; it was
+interrupted. The soak gate reports only the two worker subprocess cases
+(`force-worker` and `workers`). `test:throws:quiet` produced no output during
+its extended run and had to be interrupted, so that gate is unvalidated. A
+focused WebGPU mapper Playwright check could not start its configured local
+server: connection attempts return `EPERM`, and the escalated attempt found
+port 3333 occupied by round 146's browser gate. The status site built, but no
+browser surface was available in CUA to open it. These process/browser gates
+therefore remain environment-limited rather than validated by this clone.
 
 **Round 147 implementation is complete.**

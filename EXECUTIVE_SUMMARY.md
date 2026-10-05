@@ -5,15 +5,20 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-10-05 for round 147's scalar scale-domain and
-  legend foundation. Next: arrows (146), chart scales and storage (80), convex
-  then concave hulls (82), and miniature compounds (148).
+- **Last updated**: 2026-10-05 after rounds 146 and 147 landed. Next:
+  chart scales and heat/bars (80), convex then concave hulls (82), and
+  miniature compounds (148).
+
+Round 146 keeps one canonical tee-compound arrow spelling, uses edge-width-
+aware tee bars, and renders hollow compound heads as component outlines.
+The same-scene renderer cost is 5.4–6.8% in fit and zoom views, below the
+10% mover threshold.
 
 Round 147 lets numeric continuous and quantize mappers use `auto` at either
 outer domain endpoint while keeping authored stops intact and refreshing live
 bounds as data and graph structure change. Unresolvable extents use the
 configured fallback and recover when eligible data arrives. `cy.legend()`
-returns detached JSON metadata for mappings and existing charts, including
+returns detached, headless-safe JSON for mapped properties and current charts,
 resolved domains, conditional rules and aggregate bypass exceptions; its
 `legendchange` event follows committed snapshot changes and precedes
 `batchend`. At 2,000 nodes, the measured auto-bound update rewrites the group
@@ -21,7 +26,7 @@ only when the bound moves; unchanged and explicit-bound updates write one
 node, and 100 cached two-entry legend reads take about 428 µs. Chart-scale
 population rules and bar geometry remain in round 80.
 
-Earlier, round 145 (29 September) was a correctness fix
+Earlier, round 145 (29 September) was a correctness fix:
   item 73's chart measurement found: past about 305,000 nodes with
   16-slice pie charts (or 350,000 with four background images each),
   a chart's or image's stored reference silently overflowed, so the
@@ -335,7 +340,7 @@ Earlier, round 145 (29 September) was a correctness fix
 
 | | |
 |---|---|
-| Automated tests | 3,201 unit · 1,176 module · 38 soak · 630 browser across the Playwright projects (some skip for want of a WebGPU adapter) · a cross-runtime smoke (450 assertions per runtime, over three builds) · an isolate and a workerd smoke of the headless build |
+| Automated tests | 3,220 JavaScript tests across 544 suites; the Node handoff gate (typecheck, modules, soak, throws and lint) passes. The two round 146 browser regressions pass on the final source; the full fixed-port Playwright suite remains unverified while external port 3333 is occupied. |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
 | Visual regression | 52 goldens compared **exactly** — zero differing pixels, each also recording the style properties its scene sets: 140 of 216 are set by some golden, and the 76 no golden sets are counted and gated; resetting each set property on its scene moves pixels for 131 of them, measured and gated · 10 scripted gesture traces replayed on both WebGPU hosts and on v3, compared as numbers · 56 live v3-vs-v4 pixel-parity scenes, 16 of them close-ups at zoom 2–4 · 12 numeric routing-parity scenes · 24 CPU-vs-GPU algorithm-parity scenes |
 | Benchmarks | 30 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points |
@@ -1641,6 +1646,13 @@ Earlier, round 145 (29 September) was a correctness fix
     compute server with no browser in it.  Each build carries exactly
     its tier, walked by a spec, so a leak fails the build rather than
     the size.
+- **5 Oct** — arrow shapes keep their proportions and track the edge
+  - The duplicate triangle-cross spelling is gone without an alias. Tee bars
+    stay visible on thin edges and reach at least the edge width on thick ones;
+    hollow compound ends show each component open, while mid heads stay filled.
+  - Buys one clear compound vocabulary and hollow heads that retain their
+    intended shape. The 25k-node / 50k-edge renderer scene measured a repeatable
+    5–7% GPU-pass cost in fit and zoomed views, below the 10% mover threshold.
 - **29 Sep** — edge overlays end, turn and reach as v3's
   - Every overlay/underlay stroke ends in a round cap, as v3's (they
     were cut square).

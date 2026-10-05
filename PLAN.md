@@ -2152,7 +2152,7 @@ directions".*
     **Call taken (2026-09-28, the eleventh sitting): leave them as they
     are.**  Closed.
 
-72. **Decision settled 2026-10-03; implementation planned in round 146.**
+72. **Decision settled 2026-10-03; implemented and closed 2026-10-05 by round 146.**
     Keep triangle-tee, remove triangle-cross without an alias; both tee bars
     use max(0.1 × arrow size, edge width); hollow compound end heads are
     supported; retain the other shapes and arrow alias. See the alpha

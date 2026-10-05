@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–124, 126–136, 138–145, 147 |
-| planned | 49–51, 71, 77–78, 80–84, 99, 125, 137, 146, 148 |
+| landed | 7–48, 52–70, 72–76, 79, 85–98, 100–124, 126–136, 138–147 |
+| planned | 49–51, 71, 77–78, 80–84, 99, 125, 137, 148 |
 
 ## The sections
 
@@ -214,6 +214,6 @@ A round can land with an item held open; the round file says which.
 | 185 | — | 2026-09-29 | note | [Items 72 and 73 prepared — the head gallery and the chart capacity measurement](rounds/2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md) |
 | 186 | 145 | 2026-09-29 | landed | [The record ref overflow guard: charts and images past 2^24 floats](rounds/2026-09-29-13-rnd0145-landed-the-record-ref-overflow-guard-charts-and-images-past-2-24-floats.md) |
 | 187 | — | 2026-10-03 | note | [Alpha design interview: charts, hulls and miniature compounds](rounds/2026-10-03-01-rnd0000-note-alpha-design-interview.md) |
-| 188 | 146 | 2026-10-03 | plan | [Arrow vocabulary and hollow compound heads](rounds/2026-10-03-02-rnd0146-plan-arrow-vocabulary-and-hollow-compounds.md) |
+| 188 | 146 | 2026-10-03 | landed | [Arrow vocabulary and hollow compound heads](rounds/2026-10-03-02-rnd0146-landed-arrow-vocabulary-and-hollow-compounds.md) |
 | 189 | 147 | 2026-10-03 | landed | [Partial scale domains and legend JSON](rounds/2026-10-03-03-rnd0147-landed-partial-scale-domains-and-legend-json.md) |
 | 190 | 148 | 2026-10-03 | plan | [Miniature compounds: actual positions, reversible size scaling](rounds/2026-10-03-04-rnd0148-plan-miniature-compounds.md) |

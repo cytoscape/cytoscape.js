@@ -389,3 +389,19 @@ mis-draws silently.
    - **(S1) 8 B values: recommend yes**, in the same record change.  It is
      free while the format is open, and closed once the WebGL2 port copies
      it.
+
+### Round 146 closeout (2026-10-05)
+
+The review call landed as planned: `triangle-cross` is removed without an
+alias; both tee bars use `max(0.1 × arrowSize, edgeWidth)`; hollow compound
+end heads outline each component and remain pickable; mid heads remain filled.
+The gallery now exercises widths 1/4/12, scales 1/2, straight/curved/loop
+routes and end/mid placements. At close zoom the width-1 tee and
+circle-triangle showed all components switching to hollow at both scales.
+
+On the same generated 25k-node / 50k-edge scene, the three-run GPU device
+p50 medians rose 5.4–6.8% (0.5–0.6 ms) in fit and zoomed views. Those shifts
+were stable outside the measured repeat spread, but below the repository's
+±10% mover threshold; far zoom varied too widely to call. The full results,
+control outcomes and fixed-port Playwright limitation are in the landed
+round 146 record.

@@ -198,6 +198,15 @@ overview and child-detail zoom. Run verify, Node, types, throws, soak,
 modules/schemas and relevant Playwright gates with controls. SVG 77 and
 WebGL2 137 consume the same effective geometry and snapshot semantics.
 
+**Export/browser handoff at the round-148 integration boundary:** the
+current browser check exercises the live WebGPU image rectangle and
+`png()` readback against the same collapsed geometry. SVG 77 and WebGL2 137
+remain planned here, so neither has an implementation path for a direct
+round-148 integration test yet. Their gates must add miniature cases when
+those renderers land: consume the already-rescaled positions and effective
+sizes, and adopt saved position/factor snapshots without applying the
+collapse transform a second time.
+
 Automatic zoom-triggered expansion and viewport snapping are out of this
 round; viewport snapping to compounds is explicitly a future consideration.
 No fallback-shape prop, synthetic edges, aggregate persistence contract or

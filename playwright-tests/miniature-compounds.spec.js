@@ -74,6 +74,7 @@ test.describe('miniature compound geometry', () => {
         position: child.position(),
         imageFactor,
         picked: (await cy.pick(275, 200))?.id() ?? null,
+        exportUri: await cy.png({ bg: '#fff' }),
       };
     }, image);
 
@@ -82,6 +83,17 @@ test.describe('miniature compound geometry', () => {
     expect(geometry.position.x).toBe(-25);
     expect(geometry.imageFactor).toBe(0.25);
     expect(geometry.picked).toBe('a');
+
+    const exported = decodePng(geometry.exportUri);
+    const exportPixel = (x, y) => {
+      const offset = (y * exported.width + x) * 4;
+      return [...exported.data.subarray(offset, offset + 3)];
+    };
+
+    // PNG export consumes the same effective image rect as the live view:
+    // the 10 px miniature image ends before the 20 px node body does.
+    expect(exportPixel(275, 200)).toEqual([255, 0, 0]);
+    expect(exportPixel(268, 200)).toEqual([0, 255, 0]);
 
     const screenshot = await page.screenshot({
       path: testInfo.outputPath('collapsed-miniature.png'),

@@ -655,42 +655,44 @@ export function writeChart(
 ): void {
   const store = engine.store;
   const kind = computed.chartKind;
-  const heat = kind === CHART_HEAT_STRIP || kind === CHART_RADIAL_HEAT;
-
-  // A passthrough chart-kind mapper has no finite output set to validate
-  // while compiling the sheet. Check its selected runtime kind here.
-  if (heat && computed.chartScale == null) {
-    throw new Error(
-      "Heat charts require 'chart-scale' with an explicit domain and range",
-    );
-  }
-  if (heat && computed.chartColorsAuthored) {
-    throw new Error(
-      "'chart-colors' cannot be used with a heat chart; use 'chart-scale'",
-    );
-  }
-  if (kind === CHART_BAR && computed.chartDomain == null) {
-    throw new Error("Bar charts require 'chart-domain'");
-  }
-  if (kind !== CHART_BAR && computed.chartDomain != null) {
-    throw new Error("'chart-domain' is only valid for a bar chart");
-  }
-  if (!heat && kind !== CHART_BAR && computed.chartScale != null) {
-    throw new Error("'chart-scale' is only valid for heat and bar charts");
-  }
-  if (
-    kind === CHART_BAR &&
-    computed.chartScale != null &&
-    computed.chartColorsAuthored
-  ) {
-    throw new Error(
-      "A bar chart cannot use both 'chart-colors' and 'chart-scale'",
-    );
-  }
-
   if (kind === CHART_NONE) {
     store.setChart(slot, null);
     return;
+  }
+
+  const heat = kind === CHART_HEAT_STRIP || kind === CHART_RADIAL_HEAT;
+
+  // A data passthrough chart-kind mapper has no finite output set to
+  // validate while compiling the sheet. Check the selected runtime kind.
+  if (computed.chartKindMappedPassthrough) {
+    if (heat && computed.chartScale == null) {
+      throw new Error(
+        "Heat charts require 'chart-scale' with an explicit domain and range",
+      );
+    }
+    if (heat && computed.chartColorsAuthored) {
+      throw new Error(
+        "'chart-colors' cannot be used with a heat chart; use 'chart-scale'",
+      );
+    }
+    if (kind === CHART_BAR && computed.chartDomain == null) {
+      throw new Error("Bar charts require 'chart-domain'");
+    }
+    if (kind !== CHART_BAR && computed.chartDomain != null) {
+      throw new Error("'chart-domain' is only valid for a bar chart");
+    }
+    if (!heat && kind !== CHART_BAR && computed.chartScale != null) {
+      throw new Error("'chart-scale' is only valid for heat and bar charts");
+    }
+    if (
+      kind === CHART_BAR &&
+      computed.chartScale != null &&
+      computed.chartColorsAuthored
+    ) {
+      throw new Error(
+        "A bar chart cannot use both 'chart-colors' and 'chart-scale'",
+      );
+    }
   }
 
   let raw: readonly unknown[] | null = computed.chartValues;

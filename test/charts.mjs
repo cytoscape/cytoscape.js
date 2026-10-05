@@ -264,6 +264,40 @@ describe('gpu/style: the chart family (round 23)', function () {
     ).to.throw(/bypass requires explicit numeric domain/);
   });
 
+  it('node scale bypasses leave their values in the shared chart domain and appear as legend exceptions', function () {
+    var cy = cytoscape({
+      elements: [
+        { data: { id: 'a', values: [-1, 1] }, position: { x: 0, y: 0 } },
+        { data: { id: 'b', values: [-7, 2] }, position: { x: 80, y: 0 } },
+      ],
+      style: {
+        nodes: {
+          chart: 'heat-strip',
+          'chart-values': { data: 'values' },
+          'chart-scale': {
+            domain: ['auto', 0, 'auto'],
+            range: ['blue', 'white', 'red'],
+          },
+        },
+        bypasses: {
+          b: {
+            'chart-scale': {
+              domain: [-1, 0, 1],
+              range: ['blue', 'white', 'red'],
+            },
+          },
+        },
+      },
+    });
+    var chart = cy.legend().entries.find((entry) => entry.kind === 'chart');
+
+    expect(chart.chart.colorDomain).to.deep.equal([-7, 0, 2]);
+    expect(chart.exceptions).to.deep.equal([
+      { properties: ['chart-scale'], elementCount: 1 },
+    ]);
+    expect(cy._store.chartAt(1).values).to.deep.equal([-7, 2]);
+  });
+
   it('chart legend changes once after shared extent batches and recovers from empty data', function () {
     var warnings = [];
     var warn = console.warn;

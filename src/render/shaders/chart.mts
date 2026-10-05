@@ -162,7 +162,6 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
     let horizontal = dirH == 1u;
     let slotT = select((p.x + ext.x) / max(2.0 * ext.x, 1e-4),
                        (p.y + ext.y) / max(2.0 * ext.y, 1e-4), horizontal);
-    let slotScalePx = select(2.0 * ext.x, 2.0 * ext.y, horizontal) * frame.zoomDpr;
     let scaledSlot = clamp(slotT, 0.0, 0.99999994) * f32(n);
     let index = min(u32(floor(scaledSlot)), n - 1u);
     if (!chartValid(off, n, index)) { discard; }
@@ -175,33 +174,27 @@ fn fsChart(in: ChartVSOut) -> @location(0) vec4f {
     let valueT = clamp((value - domainMin) / span, 0.0, 1.0);
     let zeroT = clamp((zero - domainMin) / span, 0.0, 1.0);
 
-    var crossCoord: f32;
     var baselineCoord: f32;
     var valueCoord: f32;
     var crossHalf: f32;
-    var scaleValuePx: f32;
     if (horizontal) {
-      crossCoord = p.y;
-      baselineCoord = -ext.x + zeroT * 2.0 * ext.x;
-      valueCoord = -ext.x + valueT * 2.0 * ext.x;
+      baselineCoord = zeroT * 2.0 * ext.x;
+      valueCoord = valueT * 2.0 * ext.x;
       crossHalf = ext.y / f32(n) * 0.44;
-      scaleValuePx = 2.0 * ext.x * frame.zoomDpr;
     } else {
-      crossCoord = p.x;
-      baselineCoord = ext.y - zeroT * 2.0 * ext.y;
-      valueCoord = ext.y - valueT * 2.0 * ext.y;
+      baselineCoord = zeroT * 2.0 * ext.y;
+      valueCoord = valueT * 2.0 * ext.y;
       crossHalf = ext.x / f32(n) * 0.44;
-      scaleValuePx = 2.0 * ext.y * frame.zoomDpr;
     }
     let slotCenter = (f32(index) + 0.5) * select(2.0 * ext.x, 2.0 * ext.y, horizontal) / f32(n);
     let axisCoord = select(p.x + ext.x, p.y + ext.y, horizontal);
     let crossDistance = abs(axisCoord - slotCenter);
-    let crossAA = max(fwidth(axisCoord), 1e-4);
+    let crossAA = select(aaX, aaY, horizontal);
     let lowCoord = min(baselineCoord, valueCoord);
     let highCoord = max(baselineCoord, valueCoord);
     let valueCoordNow = select(ext.y - p.y, p.x + ext.x, horizontal);
     let valueDistance = min(valueCoordNow - lowCoord, highCoord - valueCoordNow);
-    let valueAA = max(fwidth(valueCoordNow), 1e-4);
+    let valueAA = select(aaY, aaX, horizontal);
     let barMask = (1.0 - smoothstep(crossHalf - crossAA, crossHalf, crossDistance))
       * smoothstep(-valueAA, valueAA, valueDistance);
     if (barMask <= 0.0) { discard; }

@@ -480,6 +480,7 @@ export function resolveConst(
     (mapper) => mapper.m.prop === PROP.CHART,
   )?.m;
   const chartKindsUnknown = chartMapper?.program.kind === 'passthrough';
+  computed.chartKindMappedPassthrough = chartKindsUnknown;
   if (chartMapper != null) {
     const program = chartMapper.program;
     const addKind = (value: unknown): void => {

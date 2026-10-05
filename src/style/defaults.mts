@@ -46,6 +46,8 @@ export interface NodeComputed {
   invisible: boolean;
   /** chart (round 23): CHART_NONE | CHART_PIE | CHART_STRIPES */
   chartKind: number;
+  /** A data passthrough selects chart kind at runtime; config is checked on write. */
+  chartKindMappedPassthrough: boolean;
   /** constant value list (null when unset or the data passthrough is used) */
   chartValues: (number | null)[] | null;
   /** the `{ data: key }` passthrough key (per-element arrays) */
@@ -349,6 +351,7 @@ export const NODE_DEFAULTS: NodeComputed = {
   textEvents: false, // v3's default: labels are pointer-transparent
   invisible: false, // visibility: visible (round 22)
   chartKind: CHART_NONE,
+  chartKindMappedPassthrough: false,
   chartValues: null,
   chartValuesKey: null,
   chartColors: null, // the category10 default resolves at write

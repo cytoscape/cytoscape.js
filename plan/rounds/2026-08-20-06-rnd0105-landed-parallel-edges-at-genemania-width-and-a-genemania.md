@@ -118,6 +118,20 @@ genemania-shape.mjs`, made-up genes) or the real file where fetched; the
 status site omits any `fetch` network even from a checkout that has
 fetched it.  The maintainer, as a GeneMANIA author, can revisit this.
 
+**Revisited 2026-10-05: the fixtures are committed.**  The maintainer, a
+GeneMANIA coauthor, approved including the data.  The two JSON files are
+checked in (their `genemania.terms` stamp says so), and the
+fetch-per-checkout machinery is gone: the ignore rule, the `fetch`
+field and its 404 hint, the debug-harness fallback and ignore check,
+and the status site's omission — both networks are now encoded and
+hosted like any other real export.  `node debug/genemania.mjs` remains
+how they are regenerated, and `test/modules/genemania-fixture.mjs` pins
+each committed file to its query, the pinned database and the
+dropdown's counts.  The reversal followed CI run 36719642526, red in
+`ci-node` and both renderer projects because `scripts/schemas.mjs` read
+the files a CI checkout never had (commit 1d671072 had first patched
+that by skipping them).
+
 **The sheet** is the web app's `cyStylesheet` ported: haystack at radius
 0.5, 40% line opacity, width over `absoluteWeightPercent` 1.5–16, size
 over `normScore` 20–60, the query genes hatched, and the app's twelve

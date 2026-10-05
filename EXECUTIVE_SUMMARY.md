@@ -25,14 +25,15 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   GeneMANIA's width: the two GeneMANIA queries the design sitting chose
   (the site's own human example, and TP53) are fetched from
   genemania.org by a script and drawn in the debug page with the site's
-  own style — but not committed or hosted, because GeneMANIA grants no
-  licence to redistribute its data.  Measured with v3 beside, bundle
-  width costs v4 nothing: loading, routing, drawing and picking are flat
-  from 2 to 32 edges per pair at 32,768 edges, where v3's load grows
-  from 1.6 s to 2.3 s; what costs is the curve style (curved bundles
-  about 9× straight haystack lines on the GPU), so haystack is the
-  recommendation at scale and no bundle simplification was built.  A
-  30-wide curved bundle matches v3's drawing to the pixel.  Two fixes
+  own style, and — since 5 October, with the GeneMANIA authors'
+  approval — committed and hosted on the status site.  Measured with
+  v3 beside, bundle width costs v4 nothing: loading, routing, drawing
+  and picking are flat from 2 to 32 edges per pair at 32,768 edges,
+  where v3's load grows from 1.6 s to 2.3 s; what costs is the curve
+  style (curved bundles about 9× straight haystack lines on the GPU),
+  so haystack is the recommendation at scale and no bundle
+  simplification was built.  A 30-wide curved bundle matches v3's
+  drawing to the pixel.  Two fixes
   users would meet: pointing at an edge inside a wide bundle picked a
   neighbour near the bundle's ends (it now picks the nearest, as v3
   does), and raising one edge's opacity over a data-mapped colour — the
@@ -1676,8 +1677,9 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
   - The two GeneMANIA queries the design sitting chose are fetched from
     genemania.org by `node debug/genemania.mjs` and drawn in the debug
     page with the web app's own style — per-network-type colour as one
-    mapper over a string column.  Not committed or hosted: GeneMANIA
-    grants no licence to redistribute its data.
+    mapper over a string column.  First kept out of the repo because
+    GeneMANIA publishes no licence for its data; committed and hosted
+    from 5 Oct with the GeneMANIA authors' approval.
   - Bundle width costs nothing measurable, 2 to 32 edges per pair at
     32,768 edges — load, routing, frame and pick all flat (v3's load
     grows 1.6 s → 2.3 s); curved bundles cost ~9× haystack lines on the

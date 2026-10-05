@@ -278,8 +278,10 @@ last hook (the emphasized set ranks first) and raised no new item.
 Round 105 (parallel edges at GeneMANIA width, landed 2026-09-29 on the
 sitting's calls — two fixtures, per-type colour through a dictionary
 column, haystack in the sweep) fetched both queries from genemania.org
-but commits only the query definitions and the converter, since
-GeneMANIA grants no licence to redistribute its data; its sweep found
+and at first committed only the query definitions and the converter,
+since GeneMANIA grants no licence to redistribute its data — reversed
+2026-10-05, when the maintainer, a GeneMANIA coauthor, approved
+committing and hosting the two fixtures; its sweep found
 bundle width costs v4 nothing measurable (the curve style is the cost:
 bezier ~9× haystack on the device), so no bundle LOD was built and the
 number went to round 82; it made edge picks nearest-wins as v3's are

@@ -7,6 +7,7 @@ import {
 } from '../style-scales.mjs';
 import type { CompiledMapper, Program } from '../style-scales.mjs';
 import type { Mapper } from '../public-types.mjs';
+import { PROP } from '../style-props.mjs';
 
 export type ChartScaleSpec = Omit<Mapper, 'data'>;
 
@@ -46,7 +47,7 @@ export function compileChartScale(value: unknown): {
       data: '__chart_value__',
       scale: (source.scale ?? 'linear') as Mapper['scale'],
     } as Mapper,
-    { kind: 'color', prop: 'chart-scale' },
+    { kind: 'color', prop: PROP.CHART_SCALE },
   );
 
   if (

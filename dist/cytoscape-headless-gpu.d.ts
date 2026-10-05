@@ -236,18 +236,17 @@ declare const COL: {
   readonly NODE_OUTER_HALF: 'node.outerHalf';
   /**
    * Float32Array(4·cap) — *derived* (round 58): [outerHalf.x,
-   * outerHalf.y, shapeId, 0] — `node.outerHalf` and `node.shape` fused
-   * into one column, so a vertex stage that binds both can swap them
+   * outerHalf.y, shapeId, polygonRefBits] — `node.outerHalf` and
+   * `node.shape` fused into one column, so a vertex stage that binds both can swap them
    * for this and spend the freed slot on `edge.width` (the arrow-trim
    * word).  Bound by exactly the two stages that were at the
    * 8-storage-buffer budget with no slot for the trim: the curved
    * layer-stroke VS and the edge-label VS.  Maintained by the store —
    * `updateOuterHalf` writes lanes 0/1 beside every outerHalf write,
-   * the `node.shape` write refreshes lane 2 — and never written
-   * directly.  Shape ids are small integers, so the f32 lane is exact
-   * (`node.borderGeom.y` carrying a shape copy for the node FS is the
-   * precedent).  Nothing reads it on the CPU; `test/modules/`
-   * pins it in lockstep with its two source columns.
+   * the `node.shape` write refreshes lane 2, and polygon writers store
+   * the packed polygon ref as raw u32 bits in lane 3.  The f32 lane is
+   * read only through `bitcast<u32>` by edge boundary shaders.  The
+   * store keeps it in lockstep with the source columns and blob record.
    */
   readonly NODE_OUTER_GEOM: 'node.outerGeom';
   /**
@@ -320,7 +319,9 @@ declare const COL: {
    * images; count ≤ 4 — the recorded multi-image cap).  Records are
    * IMG_STRIDE floats per image (see store/graph-store.mts
    * setNodeImages): registry entry id, packed mode flags, opacity,
-   * position/offset/size values with unit bits, and the sdf tint.
+   * position/offset/size values with unit bits, sdf tint and inherited
+   * size factor (round 148; shader resolves base units then scales the
+   * rectangle with its node).
    * Draw-only paint: nothing in bb, cull-extent or CPU-pick reads it.
    * An offset past `REF_OFFSET_FLOATS` saturates (round 145).
    */
@@ -906,6 +907,10 @@ interface ElementDefinition<Data = Untyped> {
   data?: DefinitionData<Data>;
   /** nodes only */
   position?: Position;
+  /** nodes only: persisted miniature-compound state */
+  collapsed?: boolean;
+  /** nodes only: current applied factor when collapsed; omitted uses the configured collapse-scale */
+  appliedCollapseScale?: number;
   selected?: boolean;
   selectable?: boolean;
   grabbable?: boolean;
@@ -954,6 +959,16 @@ interface ColumnarNodes {
   ids?: (string | undefined)[] | PackedIds;
   /** interleaved x,y pairs, length 2 × count; omitted = all (0, 0) */
   positions?: Float32Array;
+  /**
+   * 1 = collapsed parent; omitted = no explicit state. Loads and patches
+   * adopt this alongside `positions`, without rescaling those coordinates.
+   */
+  collapsed?: Uint8Array;
+  /**
+   * Current applied factor per node. Expanded rows use 1; 0 means resolve
+   * the configured `collapse-scale` for a definition-form state.
+   */
+  appliedCollapseScale?: Float64Array;
   /** 1 = selected; omitted = all unselected */
   selected?: Uint8Array;
   /** 0 = unselectable; omitted = all selectable */
@@ -986,7 +1001,9 @@ interface ColumnarEdges {
 /**
  * Columnar bulk-load form of `elements`: typed-array columns ingest
  * directly into the store with no per-element objects, and edges resolve
- * endpoints by index with no id lookups.  A payload is self-contained —
+ * endpoints by index with no id lookups. Optional miniature-state columns
+ * preserve a node's collapsed flag and applied factor with its current
+ * positions; ingest does not rescale those coordinates. A payload is self-contained —
  * every edge endpoint indexes a node in the same payload — unless it
  * carries `refs`, the ids of nodes already in the graph that it indexes
  * past its own (round 103: a chunk of a progressive `cy.load()`).
@@ -1163,12 +1180,13 @@ interface CaseMapper<Data = Untyped> {
 }
 /** Any data-driven style value: a scale mapper or a conditional. */
 type MapperSpec<Data = Untyped> = Mapper<Data> | CaseMapper<Data>;
-/** A style prop value: a constant, or a mapper object. */
-type StylePropValue<Data = Untyped> = string | number | MapperSpec<Data>;
+/** A definition-owned numeric colour scale for heat/bar chart values. */
+type ChartScaleSpec = Omit<Mapper, 'data'>;
+/** A style prop value: a constant, mapper, or chart scale object. */
+type StylePropValue<Data = Untyped> = string | number | MapperSpec<Data> | ChartScaleSpec;
 /**
  * Style props for one element or group; names are kebab-case or
- * camelCase.  Values are constants, scale mappers ({@link Mapper}), or
- * conditionals ({@link CaseMapper}); `label` also takes the
+ * camelCase.  Values are constants, scale mappers ({@link Mapper}), conditionals ({@link CaseMapper}), or chart scale objects ({@link ChartScaleSpec}); `label` also takes the
  * `data(key)` mapper string ('id' reads the first-class id).
  * Node props: background-color, width, height, shape, opacity,
  * border-color, border-width, label, font-size, font-family (constant
@@ -3204,6 +3222,8 @@ declare class GraphStore implements ModelView {
   readonly curves: CurveIndex;
   /** Authored/resolved node dimensions, before inherited miniature scaling. */
   baseSize: Map<number, [number, number]>;
+  /** Authored arrow widths; their stored columns follow internal edges. */
+  baseArrowWidths: Map<number, [number, number]>;
   /** fires on the compounds 0 <-> >0 transitions (the core re-configures
    * paint eval: the opacity fold demotes the GPU mapper, round 14.4) */
   onCompoundsToggled: (() => void) | null;
@@ -3243,6 +3263,10 @@ declare class GraphStore implements ModelView {
    * it.  Treat as read-only outside the store.
    */
   hierarchyEpoch: number;
+  /** Advances for collapsed-state and applied-factor changes; selection and
+   * other node-flag writes do not move it. Follow uses this to sync a
+   * scale-one collapse without treating view-state changes as graph edits. */
+  miniatureEpoch: number;
   /**
    * Monotonic counter of position writes (round 106): bumped by every
    * explicit write to the position column — `setPosition(s)` and the
@@ -3365,7 +3389,9 @@ declare class GraphStore implements ModelView {
    * modeFlags (fit | repeat<<2 | clip<<4 | containment<<5 |
    * smoothing<<6 | sdf<<7), opacity, posX, posY, offX, offY, w, h,
    * unitFlags (posXPct | posYPct<<1 | offXPct<<2 | offYPct<<3 |
-   * wMode<<4 | hMode<<6), tintRG (r + g×256), tintBA (b + a×256)].
+   * wMode<<4 | hMode<<6), tintRG (r + g×256), tintBA (b + a×256),
+   * inherited size factor (round 148; preserves base image units while
+   * the drawn rectangle follows the miniature node size)].
    * Draw-only paint: no geoEpoch bump, no bb/pick involvement.
    *
    * @param slot — the node slot
@@ -3612,6 +3638,16 @@ declare class GraphStore implements ModelView {
   baseSizeOf(slot: number): [number, number];
   /** Product of collapsed ancestors' applied scales. */
   sizeFactorOf(slot: number): number;
+  /** Product of collapsed ancestors shared by both endpoints of an edge. */
+  edgeSizeFactorOf(edgeSlot: number): number;
+  /** Size factor used by a node or edge label stream. */
+  labelFactorOf(slot: number, group: LabelStream): number;
+  /** Authored node border width before inherited miniature scaling. */
+  baseBorderWidthOf(slot: number): number;
+  /** Authored edge width before shared-ancestor scaling. */
+  baseEdgeWidthOf(slot: number): number;
+  /** Authored arrow stroke widths before shared-ancestor scaling. */
+  baseArrowWidthsOf(slot: number): [number, number];
   /** Current applied scale for a collapsed parent, else one. */
   appliedCollapseScaleOf(slot: number): number;
   /** Scale unlocked descendant positions around a parent centre. */
@@ -4296,6 +4332,12 @@ declare class GraphStore implements ModelView {
 interface AnimateOptions {
   style?: Record<string, string | number>;
   position?: Partial<Position$1>;
+  /**
+   * Target the collapsed state of compound parents. This is an element-only
+   * animation channel and may be combined with timing options, but not with
+   * other style, position, or viewport targets.
+   */
+  collapsed?: boolean;
   /** viewport targets (core.animate) */
   pan?: Position$1;
   /**
@@ -4413,6 +4455,14 @@ declare class AnimationManager {
    * @param jumpToEnd — apply each animation's final frame first
    */
   stop(refs: Ref[], jumpToEnd: boolean): void;
+  /**
+   * Stop whole collapsed-state tweens whose geometry scope intersects refs.
+   *
+   * @param refs — the elements being written or whose topology is changing
+   */
+  interruptCollapsedRefs(refs: readonly Ref[]): void;
+  /** Stop every collapsed-state tween before a topology rewrite. */
+  interruptAllCollapsed(): void;
   /** Per running animation, the packed refs of `refs` it covers. */
   private touching;
   /**
@@ -5050,8 +5100,8 @@ interface PatchDiff<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    * descendants of a removed node); removed elements keep their `id()`
    * and `group()` */
   removed: Collection<NodeData, EdgeData>;
-  /** the surviving elements it changed — data, position or parent —
-   * nodes before edges, in payload order */
+  /** the surviving elements it changed — data, position, parent or
+   * miniature state — nodes before edges, in payload order */
   updated: Collection<NodeData, EdgeData>;
 }
 //#endregion
@@ -5967,8 +6017,9 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * GPU, so accepting one would mean a curve that silently depended on
    * whether the animation got offloaded.
    *
-   * @param opts — targets (`position`, `style`, plus the viewport forms
-   *   on `cy.animate`), `duration`, `easing`, `delay`, `complete`
+   * @param opts — targets (`position`, `style`, or `collapsed` for compound
+   *   parents; viewport forms apply on `cy.animate`), `duration`,
+   *   `easing`, `delay`, `complete`
    * @returns this collection, for chaining; use `animation()` when you
    *   want the handle
    * @see Collection#animation for the handle form with
@@ -5978,7 +6029,8 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
   /**
    * Build an animation for these elements without starting it.
    *
-   * @param opts — the tween targets (`position`, `style`) plus
+   * @param opts — the tween targets (`position`, `style`, or compound
+   *   `collapsed` state) plus
    *   `duration`, `delay`, `easing` and `complete`
    * @returns the handle; nothing runs until `play()`
    */
@@ -6842,19 +6894,24 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
   descendants(criterion?: FilterLike<NodeData, EdgeData, NodeData, NodeData | EdgeData>): Collection<NodeData, EdgeData, NodeData>;
   /**
    * Scale each compound parent’s descendants into a miniature around
-   * the parent’s current centre. The original nodes, edges and explicit
-   * visibility state remain unchanged.
+   * the parent’s current centre. Pass `{ duration, easing }` to animate
+   * the scale; without options, the operation is immediate. The original
+   * nodes, edges and explicit visibility state remain unchanged.
    *
+   * @param timing — optional animation duration and easing
    * @returns this collection, for chaining
    */
-  collapse(): this;
+  collapse(timing?: Pick<AnimateOptions, 'duration' | 'easing'>): this;
   /**
    * Restore each collapsed compound parent’s descendants by reversing
-   * its currently applied scale around the parent’s current centre.
+   * its currently applied scale around the parent’s current centre. Pass
+   * `{ duration, easing }` to animate the restoration; without options,
+   * the operation is immediate.
    *
+   * @param timing — optional animation duration and easing
    * @returns this collection, for chaining
    */
-  expand(): this;
+  expand(timing?: Pick<AnimateOptions, 'duration' | 'easing'>): this;
   /**
    * Nodes sharing a parent with the collection's nodes, excluding them;
    * orphans are nobody's siblings (v3).   *
@@ -7771,6 +7828,8 @@ declare class StyleEngine {
    *   the element's whole declaration
    */
   removeBypass(ref: Ref, id: string, name?: string): void;
+  private pendingCollapseScaleRetargets;
+  private flushingCollapseScaleRetargets;
   /**
    * @param store — the columnar store whose channel columns this engine
    *   resolves style into
@@ -7803,6 +7862,7 @@ declare class StyleEngine {
   json(): Stylesheet;
   /** Re-apply the current sheet (e.g. to re-snapshot live auto-domain extents). */
   update(): void;
+  private flushCollapseScaleRetargets;
 }
 //#endregion
 //#region src/layout/pack.d.mts
@@ -7912,9 +7972,10 @@ declare class LayoutContext {
    */
   constructor(cy: Core, layout: object, options: CustomLayoutOptions);
   /**
-   * The slots to lay out: the scope's nodes, pre-filtered to unlocked
-   * leaves (locked nodes hold their place; parents derive from their
-   * placed children — round 14.11).  Scope order.
+   * The slots to lay out: the scope's unlocked leaves, plus a collapsed
+   * parent when no scoped node lies below it. Locked nodes hold their
+   * place; parents with scoped descendants derive from those descendants.
+   * Scope order.
    *
    * @returns the slots to place, in exactly `cy.nodes()` order — which is
    *   load-bearing rather than incidental, since grid and circle assign
@@ -9014,7 +9075,8 @@ declare class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    * (typed-array columns with edge endpoints as node *indices*), and the
    * binary wire buffer produced by `serializeElements`/`cy.serialize()`.
    * Nodes are added before edges, so an edge may reference a node added in
-   * the same call.
+   * the same call. Wire and columnar inputs may carry miniature state with
+   * current positions; adding them does not rescale those coordinates.
    *
    * Fires `add` per element.  Inside a batch the first style application
    * of the new elements defers to the outermost `endBatch()`, so
@@ -9075,9 +9137,10 @@ declare class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    * the payload is the next state of the *same* graph — the next query
    * result, a server's refresh — and the patch computes what to add,
    * remove and update, applies it as one batch, and returns what it did.
-   * Everything attached to a surviving element survives: selection,
-   * position (unless the payload moves it), bypasses, running
-   * animations, listeners, scratch.  The sheet, the viewport and
+   * A surviving element keeps selection, bypasses, running animations,
+   * listeners and scratch. Position follows the payload when carried;
+   * miniature state and its applied factor are adopted together with
+   * those current positions. The sheet, viewport and
    * graph-level `data()` are never touched — elements only.
    *
    * `json( obj )` restores a *serialized session* and is not in v4
@@ -9094,9 +9157,11 @@ declare class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    *   the payload carries one and kept when it does not — except that a
    *   locked node (or every node, under `autolock`) holds its position
    *   and a compound parent's derives from its children, as at load.
-   *   Its parent follows the payload (none means an orphan).  Its
-   *   selection and its `selectable`/`locked`/`grabbable`/`pannable`
-   *   flags are session state and are never read from the payload.
+   *   Its parent follows the payload (none means an orphan). Its
+   *   miniature state follows when carried; the payload's applied factor
+   *   is installed without rescaling its already-current positions. Its
+   *   selection and `selectable`/`locked`/`grabbable`/`pannable` flags are
+   *   session state and are never read from the payload.
    * - **Added** when the id is new, and when the payload element has no
    *   id — exactly as `cy.add()` would add it, flags included.
    * - **Removed and re-added** when an edge's source or target changed
@@ -9107,7 +9172,8 @@ declare class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    *   parents.  Removal cascades as `remove()` does.
    *
    * Events: `remove`, `add`, `moveout` + `move` (a reparented survivor),
-   * `data` and `position` fire once per element, inside the batch and
+   * `data`, `position`, and committed `collapse`/`expand` state changes
+   * fire once per element, inside the batch and
    * after every mutation has landed; then one core-level **`patch`**
    * event carries the diff as `event.diff` — for an app that only wants
    * the summary.  A patch whose payload equals the state fires no
@@ -10290,4 +10356,4 @@ declare namespace cytoscape {
   export { GpuUnfitError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DefinitionData, type DictColumn, type ElementData, type ElementDefinition, type ElementFields, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GpuErrorInfo, type GpuMemoryStats, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Legend, type LegendEntry, type LegendException, type LegendGroup, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, type WorkerFontFace, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type ChartScaleSpec, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DefinitionData, type DictColumn, type ElementData, type ElementDefinition, type ElementFields, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GpuErrorInfo, type GpuMemoryStats, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Legend, type LegendEntry, type LegendException, type LegendGroup, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, type WorkerFontFace, cytoscape as default };

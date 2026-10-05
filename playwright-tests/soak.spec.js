@@ -15,9 +15,19 @@ first measurement was taken with is `benchmark/scale-ceiling.mjs --soak`
 leak gate): a buffer leaked per cycle must show, to the byte, or every
 flat reading after it passes by doing nothing.
 
-The sizes here are CI's — 200 cycles take ~15 s on SwiftShader.  The
-figures are the ledger's, so they are deterministic: "flat" is exact
-equality over the second half of the samples, not a tolerance.
+The sizes here are CI's.  The figures are the ledger's, so they are
+deterministic: "flat" is exact equality over the second half of the
+samples, not a tolerance.
+
+**The budgets are measured, on SwiftShader** (CI=1 pins it).  Alone on a
+16-thread desktop the three specs take 20 s, 34 s and 45 s; pinned to
+four cores with two workers — a GitHub runner's shape, where the two
+soaks run side by side — 55 s, 90 s and 60 s; and the runner itself is
+about twice slower again (device loss took 2.0 min there, CI run
+37331587280).  That put the first two at ~110 s and ~180 s against
+budgets of 120 s and 180 s, and both timed out on every retry — their
+first CI run, since every run after round 138.4 had died earlier on the
+GeneMANIA fixture.  Each budget is now about twice the runner's figure.
 */
 
 const PAGE = 'http://127.0.0.1:3333/playwright-page/index.html';
@@ -43,7 +53,7 @@ test.describe('the renderer soak (round 138)', () => {
     page,
   }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
-    test.setTimeout(120000);
+    test.setTimeout(240000);
 
     const LEAK = 4096;
     const { samples } = await page.evaluate(soakInPage, {
@@ -69,7 +79,7 @@ test.describe('the renderer soak (round 138)', () => {
     page,
   }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
-    test.setTimeout(180000);
+    test.setTimeout(360000);
 
     const { samples } = await page.evaluate(soakInPage, {
       ...SCENE,
@@ -99,7 +109,7 @@ test.describe('the renderer soak (round 138)', () => {
     page,
   }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
-    test.setTimeout(120000);
+    test.setTimeout(240000);
 
     const out = await page.evaluate(async () => {
       const frame = () => new Promise((r) => requestAnimationFrame(() => r()));

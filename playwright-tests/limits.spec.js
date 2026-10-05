@@ -446,6 +446,10 @@ test.describe('a refused allocation (round 138)', () => {
   test('a refused glyph buffer is reported, labels degrade, and the errors stop', async ({
     page,
   }) => {
+    // 400 labels and 40 drawn frames on SwiftShader: 25–30 s on a GitHub
+    // runner, against the 30 s default (CI run 37331587280: failed once at
+    // 30.1 s, passed on retry at 25.4 s)
+    test.slow();
     await makeScene(page, { nodes: 1 });
     await page.evaluate(() => {
       window.__refuse = 'cy-gpu:glyphs';

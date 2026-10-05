@@ -1,13 +1,17 @@
 import { wgsl } from '../../gpu/wgsl.mjs';
 import {
+  ARROW_BACK,
   ARROW_AXIAL_DEPTH,
   ARROW_COMPOUND_POINTS,
+  ARROW_BAR_HALF_WIDTH,
+  ARROW_BAR_MIN_SIZE_RATIO,
   ARROW_GAP_CONST,
   ARROW_GAP_K,
   ARROW_GAP_K_DEFAULT,
   ARROW_POINTS,
   POLYGON_POINTS,
   ROUND_POLYGON_SOURCE,
+  ARROW_TRIANGLE_TEE_BAR_FRONT,
 } from '../../shape-points.mjs';
 import {
   ARROW_SHAPE_MASK,
@@ -21,7 +25,6 @@ import {
   ARROW_CIRCLE_TRIANGLE,
   ARROW_CIRCLE_TRIANGLE_RADIUS,
   ARROW_TEE,
-  ARROW_TRIANGLE_CROSS,
   ARROW_TRIANGLE_TEE,
   BARREL_CTRL_OFFSET_PCT,
   BARREL_CURVE_SEGMENTS,
@@ -197,11 +200,38 @@ const POLY = polygonSdFns();
 
 // Arrowhead SDFs generated from the shared v3 point tables (tip at the
 // local origin, body toward negative y, scaled uniformly by `s`).
-const arrowSdFns = (): { fns: string; cases: string } => {
+const arrowSdFns = (): {
+  fns: string;
+  cases: string;
+  hollowCases: string;
+} => {
   let fns = '';
   let cases = '';
+  let hollowCases = '';
+
+  // Tee bars share one width law in CPU helpers and WGSL.  The model
+  // width and arrow size are both scaled to device pixels before this
+  // distance is evaluated.
+  fns += `
+fn arrowBarThicknessPx(s: f32, widthPx: f32) -> f32 {
+  return max(${fmtF32(ARROW_BAR_MIN_SIZE_RATIO)} * s, widthPx);
+}
+
+fn arrowBarSD(p: vec2f, s: f32, widthPx: f32, frontY: f32) -> f32 {
+  let thickness = arrowBarThicknessPx(s, widthPx);
+  let half = vec2f(${fmtF32(ARROW_BAR_HALF_WIDTH)} * s, thickness * 0.5);
+  let center = vec2f(0.0, frontY - thickness * 0.5);
+  let q = abs(p - center) - half;
+  return min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0)));
+}
+`;
 
   for (const [id, pts] of ARROW_POINTS) {
+    // Tee is a width-aware rectangle rather than the old 0.1-size table.
+    if (id === ARROW_TEE) {
+      continue;
+    }
+
     const n = pts.length / 2;
     const lits = Array.from(
       { length: n },
@@ -238,6 +268,11 @@ fn arrow${id}SD(p: vec2f, s: f32) -> f32 {
   // function; the dispatch case takes the min.
   for (const [id, parts] of ARROW_COMPOUND_POINTS) {
     parts.forEach((pts, part) => {
+      // triangle-tee's second component is its dynamic width-aware bar.
+      if (id === ARROW_TRIANGLE_TEE && part === 1) {
+        return;
+      }
+
       const n = pts.length / 2;
       const lits = Array.from(
         { length: n },
@@ -268,10 +303,18 @@ fn arrow${id}p${part}SD(p: vec2f, s: f32) -> f32 {
     });
   }
 
+  // tee and triangle-tee use the same width law.  The triangle-tee bar
+  // keeps its front edge detached at -0.4 size.
+  cases +=
+    `    case ${ARROW_TEE}u: { ` +
+    `sd = arrowBarSD(p, s, in.widthModel * frame.zoomDpr, 0.0); }\n`;
+
   // triangle-tee: the triangle plus its detached bar
   cases +=
     `    case ${ARROW_TRIANGLE_TEE}u: { ` +
-    `sd = min(arrow${ARROW_TRIANGLE_TEE}p0SD(p, s), arrow${ARROW_TRIANGLE_TEE}p1SD(p, s)); }\n`;
+    `sd = min(arrow${ARROW_TRIANGLE_TEE}p0SD(p, s), ` +
+    `arrowBarSD(p, s, in.widthModel * frame.zoomDpr, ` +
+    `-${fmtF32(ARROW_TRIANGLE_TEE_BAR_FRONT)} * s)); }\n`;
 
   // circle-triangle: v3's frame, the disc centred on the arrow origin
   // with the triangle behind it.  Before round 56 both this disc and the
@@ -284,14 +327,23 @@ fn arrow${id}p${part}SD(p: vec2f, s: f32) -> f32 {
     `sd = min(arrow${ARROW_CIRCLE_TRIANGLE}p0SD(p, s), ` +
     `length(p) - ${ARROW_CIRCLE_TRIANGLE_RADIUS} * s); }\n`;
 
-  // triangle-cross: the bar's thickness tracks the *edge width*, not the
-  // arrow size, so its points cannot be a static table — this is why the
-  // arrow fragment stage carries the model width as a varying (27.3)
-  cases +=
-    `    case ${ARROW_TRIANGLE_CROSS}u: { ` +
-    `sd = min(arrow${ARROW_TRIANGLE_CROSS}p0SD(p, s), crossBarSD(p, s, in.widthModel * frame.zoomDpr)); }\n`;
+  // For a hollow compound, stroke each part independently and combine
+  // coverage.  Taking abs(unionDistance) instead would add an outline at
+  // touching junctions and darken them when alpha is applied.
+  hollowCases +=
+    `    case ${ARROW_TRIANGLE_TEE}u: { ` +
+    `hollowCoverage = max(` +
+    `arrowCoverage(arrow${ARROW_TRIANGLE_TEE}p0SD(p, s), true, strokePx), ` +
+    `arrowCoverage(arrowBarSD(p, s, in.widthModel * frame.zoomDpr, ` +
+    `-${fmtF32(ARROW_TRIANGLE_TEE_BAR_FRONT)} * s), true, strokePx)); }\n`;
+  hollowCases +=
+    `    case ${ARROW_CIRCLE_TRIANGLE}u: { ` +
+    `hollowCoverage = max(` +
+    `arrowCoverage(arrow${ARROW_CIRCLE_TRIANGLE}p0SD(p, s), true, strokePx), ` +
+    `arrowCoverage(length(p) - ${ARROW_CIRCLE_TRIANGLE_RADIUS} * s, ` +
+    `true, strokePx)); }\n`;
 
-  return { fns, cases };
+  return { fns, cases, hollowCases };
 };
 
 export const ARROW_POLY = arrowSdFns();
@@ -321,9 +373,14 @@ const arrowGapFns = (): string => {
   }
 
   let depths = '';
+  let backs = '';
 
   for (const [id, d] of ARROW_AXIAL_DEPTH) {
     depths += `    case ${id}u: { return ${fmtF32(d)}; }\n`;
+  }
+
+  for (const [id, back] of ARROW_BACK) {
+    backs += `    case ${id}u: { return ${fmtF32(back)} * size; }\n`;
   }
 
   return wgsl`
@@ -331,6 +388,23 @@ const arrowGapFns = (): string => {
 // is a model-space floor, so this must not see a device width)
 fn arrowSizeW(wModel: f32, scale: f32) -> f32 {
   return max(pow(wModel * 13.37, 0.9), 29.0) * scale;
+}
+
+// Width-aware tee bar thickness in model px, shared with shape-points.mts.
+fn arrowBarThicknessW(wModel: f32, scale: f32) -> f32 {
+  return max(${fmtF32(ARROW_BAR_MIN_SIZE_RATIO)} * arrowSizeW(wModel, scale), wModel);
+}
+
+// Furthest extent behind the tip, including the width-aware bars.
+fn arrowBackW(shape: u32, wModel: f32, scale: f32) -> f32 {
+  let size = arrowSizeW(wModel, scale);
+  if (shape == ${ARROW_TEE}u) { return arrowBarThicknessW(wModel, scale); }
+  if (shape == ${ARROW_TRIANGLE_TEE}u) {
+    return ${fmtF32(ARROW_TRIANGLE_TEE_BAR_FRONT)} * size + arrowBarThicknessW(wModel, scale);
+  }
+  switch shape {
+${backs}    default: { return 0.0; }
+  }
 }
 
 // v3's arrowShapes[shape].gap(edge): how far behind the node boundary
@@ -365,7 +439,10 @@ fn scaleOfWord(word: u32) -> f32 {
 // How far back the head covers the edge's axis contiguously, in
 // arrow-frame units.  Generated from ARROW_AXIAL_DEPTH — see the note
 // there for why this is not ARROW_BACK.
-fn arrowAxialDepthW(shape: u32) -> f32 {
+fn arrowAxialDepthW(shape: u32, wModel: f32, scale: f32) -> f32 {
+  if (shape == ${ARROW_TEE}u) {
+    return arrowBarThicknessW(wModel, scale) / arrowSizeW(wModel, scale);
+  }
   switch shape {
 ${depths}    default: { return 0.0; }
   }
@@ -392,7 +469,7 @@ fn arrowDrawTrimW(shape: u32, showsLine: bool, wModel: f32, scale: f32) -> f32 {
   // instead, which reaches the head's own depth.
   if (!showsLine) { return gap; }
 
-  return max(gap, arrowAxialDepthW(shape) * arrowSizeW(wModel, scale));
+  return max(gap, arrowAxialDepthW(shape, wModel, scale) * arrowSizeW(wModel, scale));
 }
 
 // The four shortenings for one edge, packed for the curve evaluators:

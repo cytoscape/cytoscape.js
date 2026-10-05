@@ -649,7 +649,6 @@ test.describe('WebGPU visual goldens', () => {
       // round 27.6: v3's compound heads
       'triangle-tee',
       'circle-triangle',
-      'triangle-cross',
       'triangle-backcurve',
     ];
     const elements = [];
@@ -698,10 +697,10 @@ test.describe('WebGPU visual goldens', () => {
               { when: { data: 'shape', eq: 'square' }, then: 'square' },
               { when: { data: 'shape', eq: 'diamond' }, then: 'diamond' },
               { when: { data: 'shape', eq: 'tee' }, then: 'tee' },
-              // Round 56.  These four were added to the `shapes` list by round
+              // Round 56.  These three were added to the `shapes` list by round
               // 27.6 and never given a clause, so they fell through to
               // `triangle` — and the rows they occupy were below the 300 px
-              // crop, so the golden showed seven heads while claiming eleven.
+              // crop, so the golden showed seven heads while claiming ten.
               // Two defects hiding each other: the crop hid the missing
               // mapper, and the missing mapper meant the crop removed nothing
               // that looked wrong.
@@ -712,10 +711,6 @@ test.describe('WebGPU visual goldens', () => {
               {
                 when: { data: 'shape', eq: 'circle-triangle' },
                 then: 'circle-triangle',
-              },
-              {
-                when: { data: 'shape', eq: 'triangle-cross' },
-                then: 'triangle-cross',
               },
               {
                 when: { data: 'shape', eq: 'triangle-backcurve' },
@@ -744,6 +739,188 @@ test.describe('WebGPU visual goldens', () => {
       await exportPng(page, { bg: '#fff' }),
       testInfo,
     );
+  });
+
+  test('round 146: hollow compounds outline and pick every component', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    const scene = (fill) => ({
+      elements: [
+        { data: { id: 'a' }, position: { x: 80, y: 150 } },
+        { data: { id: 'b' }, position: { x: 320, y: 150 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: {
+          shape: 'ellipse',
+          width: 30,
+          height: 30,
+          'background-color': '#fff',
+          'border-width': 0,
+        },
+        edges: {
+          width: 12,
+          'line-color': '#fff',
+          'source-arrow-shape': 'circle-triangle',
+          'source-arrow-color': '#c0392b',
+          'source-arrow-fill': fill,
+          'source-arrow-width': 4,
+          'target-arrow-shape': 'triangle-tee',
+          'target-arrow-color': '#2c3e50',
+          'target-arrow-fill': fill,
+          'target-arrow-width': 4,
+        },
+      },
+      zoom: 1,
+      pan: { x: 0, y: 0 },
+    });
+
+    await makeReadyCy(page, scene('hollow'));
+    await waitFrames(page, 4);
+
+    const probes = await page.evaluate(() => {
+      const cy = window.cy;
+      const edge = cy.$id('ab');
+      const source = edge.sourceEndpoint();
+      const target = edge.targetEndpoint();
+      const size = Math.max(Math.pow(12 * 13.37, 0.9), 29);
+      const zoom = cy.zoom();
+      const pan = cy.pan();
+      const view = (x, y) => ({ x: x * zoom + pan.x, y: y * zoom + pan.y });
+      const points = {
+        sourceDisc: view(source.x, source.y),
+        sourceTriangle: view(source.x + 0.35 * size, source.y),
+        targetTriangle: view(target.x - 0.2 * size, target.y),
+        targetBar: view(target.x - 0.45 * size, target.y),
+      };
+
+      return { points, size };
+    });
+    const hollowPng = decodePng(await exportPng(page, { bg: '#fff' }));
+    const pixel = (png, point) => {
+      const offset =
+        (Math.round(point.y) * png.width + Math.round(point.x)) * 4;
+
+      return [...png.data.subarray(offset, offset + 3)];
+    };
+    const light = (rgb) => rgb.every((channel) => channel > 220);
+
+    for (const [part, point] of Object.entries(probes.points)) {
+      expect(
+        light(pixel(hollowPng, point)),
+        `${part} remains transparent`,
+      ).toBe(true);
+    }
+
+    const picks = await page.evaluate(async (points) => {
+      const cy = window.cy;
+      const ids = [];
+
+      for (const name of ['sourceTriangle', 'targetBar']) {
+        const p = points[name];
+        const hit = await cy.pick(p.x, p.y);
+
+        ids.push(hit?.id() ?? null);
+      }
+
+      return ids;
+    }, probes.points);
+
+    expect(picks, 'the component union remains pickable').toEqual(['ab', 'ab']);
+
+    await page.evaluate(() => window.cy.destroy());
+    await makeReadyCy(page, scene('filled'));
+    await waitFrames(page, 4);
+
+    const filledPng = decodePng(await exportPng(page, { bg: '#fff' }));
+    const expected = {
+      sourceDisc: [192, 57, 43],
+      sourceTriangle: [192, 57, 43],
+      targetTriangle: [44, 62, 80],
+      targetBar: [44, 62, 80],
+    };
+
+    for (const [part, point] of Object.entries(probes.points)) {
+      const rgb = pixel(filledPng, point);
+
+      expect(
+        rgb.every((channel, i) => Math.abs(channel - expected[part][i]) < 8),
+        `${part} becomes filled; got ${rgb.join(',')}`,
+      ).toBe(true);
+    }
+  });
+
+  test('round 146: wide hollow tee trims and picks its dynamic bar', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    await makeReadyCy(page, {
+      elements: [
+        { data: { id: 'a' }, position: { x: 80, y: 150 } },
+        { data: { id: 'b' }, position: { x: 260, y: 150 } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+      style: {
+        nodes: {
+          shape: 'ellipse',
+          width: 30,
+          height: 30,
+          'background-color': '#95a5a6',
+        },
+        edges: {
+          width: 12,
+          'line-color': '#2c3e50',
+          'target-arrow-shape': 'tee',
+          'target-arrow-color': '#2c3e50',
+          'target-arrow-fill': 'hollow',
+          'target-arrow-width': 2,
+        },
+      },
+      zoom: 1,
+      pan: { x: 0, y: 0 },
+    });
+    await waitFrames(page, 4);
+
+    const probes = await page.evaluate(async () => {
+      const cy = window.cy;
+      const edge = cy.$id('ab');
+      const tip = edge.targetEndpoint();
+      const zoom = cy.zoom();
+      const pan = cy.pan();
+      // The first point lies between the old 9.7 px tee back and the new
+      // 12 px back. A stale trim leaves the thick line visible there.
+      const trim = {
+        x: tip.x * zoom + pan.x - 9.8 * zoom,
+        y: tip.y * zoom + pan.y,
+      };
+      // This point is outside the 12 px line width but inside the widened
+      // bar. Picking uses the same dynamic SDF as regular arrow drawing.
+      const pick = {
+        x: tip.x * zoom + pan.x - 11 * zoom,
+        y: tip.y * zoom + pan.y + 10 * zoom,
+      };
+      const hit = await cy.pick(pick.x, pick.y);
+
+      return { trim, pick, picked: hit?.id() ?? null };
+    });
+    const png = decodePng(await exportPng(page, { bg: '#fff' }));
+    const px = png.data.subarray(
+      (Math.round(probes.trim.y) * png.width + Math.round(probes.trim.x)) * 4,
+      (Math.round(probes.trim.y) * png.width + Math.round(probes.trim.x)) * 4 +
+        3,
+    );
+
+    expect(
+      probes.picked,
+      'the new bar area is part of the arrow hit shape',
+    ).toBe('ab');
+    expect(
+      [...px].every((channel) => channel > 235),
+      'the hollow interior stays clear where an old trim would leave the line',
+    ).toBe(true);
   });
 
   test('golden: the arrow gap — hollow and translucent heads (round 56)', async ({
@@ -4823,17 +5000,12 @@ test.describe('v3-vs-v4 render parity', () => {
   }, testInfo) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
-    // The four heads are built three different ways — a union of two
-    // polygons (triangle-tee), a polygon plus an analytic disc
-    // (circle-triangle), a polygon plus an edge-width-driven bar
-    // (triangle-cross), and a sampled curve baked into a point table
-    // (triangle-backcurve).  v3 judges all four at once.
-    const heads = [
-      'triangle-tee',
-      'circle-triangle',
-      'triangle-cross',
-      'triangle-backcurve',
-    ];
+    // The three remaining compound heads use separate component forms:
+    // triangle-tee combines a polygon and a width-aware bar,
+    // circle-triangle combines a polygon and an analytic disc, and
+    // triangle-backcurve is a sampled curve baked into a point table.
+    // v3 judges all three at once.
+    const heads = ['triangle-tee', 'circle-triangle', 'triangle-backcurve'];
     const elements = [];
 
     heads.forEach((head, i) => {
@@ -4841,7 +5013,8 @@ test.describe('v3-vs-v4 render parity', () => {
 
       elements.push({ data: { id: `a${i}` }, position: { x: -140, y } });
       elements.push({ data: { id: `b${i}` }, position: { x: 140, y } });
-      // widths differ per row so triangle-cross's bar is exercised
+      // Keep triangle-tee at width 2 so this remains the unchanged-shape
+      // parity control; round 146 exercises its wider bar separately.
       elements.push({
         data: { id: `e${i}`, head, w: 2 + i * 2 },
         source: undefined,
@@ -7506,13 +7679,12 @@ test.describe('v3-vs-v4 render parity', () => {
   }, testInfo) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
-    // Twelve heads, three per row, at zoom 3.  This is the scene that
+    // Eleven heads, three per row, at zoom 3.  This is the scene that
     // sees a head's *outline* — a clipped corner, a mis-sized bar, a
     // disc centred a radius out — rather than only its overall extent.
     const heads = [
       'triangle',
       'triangle-tee',
-      'triangle-cross',
       'triangle-backcurve',
       'vee',
       'chevron',

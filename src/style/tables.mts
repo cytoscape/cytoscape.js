@@ -9,7 +9,6 @@ import {
   ARROW_VEE,
   ARROW_CIRCLE_TRIANGLE,
   ARROW_TRIANGLE_BACKCURVE,
-  ARROW_TRIANGLE_CROSS,
   ARROW_TRIANGLE_TEE,
   SHAPE_BARREL,
   SHAPE_BOTTOM_ROUND_RECTANGLE,
@@ -631,7 +630,6 @@ export const ARROW_ENUM: Record<string, number> = {
   // round 27.6: v3's compound heads
   'triangle-tee': ARROW_TRIANGLE_TEE,
   'circle-triangle': ARROW_CIRCLE_TRIANGLE,
-  'triangle-cross': ARROW_TRIANGLE_CROSS,
   'triangle-backcurve': ARROW_TRIANGLE_BACKCURVE,
 };
 
@@ -647,18 +645,5 @@ export const ARROW_NAMES: Record<number, ArrowShape> = {
   [ARROW_TEE]: 'tee',
   [ARROW_TRIANGLE_TEE]: 'triangle-tee',
   [ARROW_CIRCLE_TRIANGLE]: 'circle-triangle',
-  [ARROW_TRIANGLE_CROSS]: 'triangle-cross',
   [ARROW_TRIANGLE_BACKCURVE]: 'triangle-backcurve',
 };
-
-/**
- * The compound heads (27.6).  `arrow-fill: hollow` strokes `abs( sd )`,
- * which is wrong at the seam where a union's two parts meet — and v3
- * does not stroke compounds either — so a hollow compound falls back to
- * filled.  Recorded deviation.
- */
-export const COMPOUND_ARROWS: ReadonlySet<number> = new Set([
-  ARROW_TRIANGLE_TEE,
-  ARROW_CIRCLE_TRIANGLE,
-  ARROW_TRIANGLE_CROSS,
-]);

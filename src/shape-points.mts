@@ -15,7 +15,6 @@ import {
   ARROW_TEE,
   ARROW_TRIANGLE,
   ARROW_TRIANGLE_BACKCURVE,
-  ARROW_TRIANGLE_CROSS,
   ARROW_TRIANGLE_TEE,
   ARROW_VEE,
   SHAPE_CONCAVE_HEXAGON,
@@ -38,6 +37,12 @@ import {
   SHAPE_TRIANGLE,
   SHAPE_VEE,
 } from './contract.mjs';
+
+/** Shared arrow-frame tee geometry, consumed by CPU and generated WGSL. */
+export const ARROW_BAR_MIN_SIZE_RATIO = 0.1;
+export const ARROW_BAR_HALF_WIDTH = 0.15;
+export const ARROW_TEE_BAR_FRONT = 0;
+export const ARROW_TRIANGLE_TEE_BAR_FRONT = 0.4;
 
 /*
 Unit polygon points per shape id, in the [-1, 1] square — the same tables
@@ -96,10 +101,11 @@ const backcurvePoints = (): number[] => {
 };
 
 /**
- * Arrowheads that are a *union* of two disjoint parts (round 27.6), as
- * flat point lists.  Coverage is a smoothstep over the distance, so a
- * union is `min( sdA, sdB )` — the parts need no stitching.
- * `circle-triangle`'s disc is analytic and lives in the shader.
+ * Arrowheads that are a *union* of two parts (round 27.6), as
+ * flat point lists. Filled coverage is a smoothstep over the distance,
+ * so a union is `min(sdA, sdB)`. Width-aware tee bars are supplied by
+ * the shared geometry helpers below. `circle-triangle`'s disc is
+ * analytic and lives in the shader.
  */
 export const ARROW_COMPOUND_POINTS: ReadonlyMap<
   number,
@@ -120,7 +126,6 @@ export const ARROW_COMPOUND_POINTS: ReadonlyMap<
   // report v3's.  56 applies `spacing` to the *tip* for every shape
   // instead, so one table serves both and the arrow frame is v3's.
   [ARROW_CIRCLE_TRIANGLE, [[0, -0.15, 0.15, -0.45, -0.15, -0.45]]],
-  [ARROW_TRIANGLE_CROSS, [[0, 0, 0.15, -0.3, -0.15, -0.3]]],
 ]);
 
 /** shape id → flat [x0, y0, x1, y1, ...] unit points (matching v3's tables) */
@@ -206,9 +211,10 @@ export const ARROW_POINTS: ReadonlyMap<number, readonly number[]> = new Map([
  *
  * The arrow quad is sized from this.  Before round 27.6 it was hardcoded
  * to 0.3, which was the max over the *simple* heads; the compound ones
- * reach 0.5 (triangle-tee) and 0.6 (the shifted circle-triangle), so
- * they drew clipped until this became a computed bound.  Deriving it
- * keeps the next added head from repeating that.
+ * reach 0.5 (triangle-tee) and 0.45 (circle-triangle), so they drew
+ * clipped until this became a computed bound. This is the established
+ * point-table bound; width-aware expansion is applied by the shader and
+ * `arrowBackModel` below.
  */
 export const ARROW_MAX_BACK: number = (() => {
   let max = 0;
@@ -347,7 +353,6 @@ export const ARROW_BACK: ReadonlyMap<number, number> = (() => {
  *     triangle-backcurve 12.0000   0.0000          1.6000
  *     triangle-tee      15.0000    0.0000          2.0000
  *     circle-triangle   15.0000    9.8804          2.0000
- *     triangle-cross    15.0000    0.0000          2.0000
  *     vee                7.8750    0.0000          1.0500
  *     circle            15.0000    9.8804          2.0000
  *     tee                1.0000    1.0000          (constant)
@@ -395,6 +400,80 @@ export const ARROW_GAP_CONST: ReadonlyMap<number, number> = new Map([
  */
 export const arrowSizeModel = (width: number, scale: number): number =>
   Math.max(Math.pow(width * 13.37, 0.9), 29) * scale;
+
+/**
+ * Width-aware thickness shared by plain tee and triangle-tee bars.
+ * Callers reading a packed arrow record pass its quantized x16 scale.
+ *
+ * @param width — the edge width in model px
+ * @param scale — the edge's arrow scale
+ * @returns the bar thickness in model px
+ */
+export const arrowBarThicknessModel = (width: number, scale: number): number =>
+  Math.max(ARROW_BAR_MIN_SIZE_RATIO * arrowSizeModel(width, scale), width);
+
+/**
+ * Shared tee bar rectangle in arrow-frame model coordinates. The tuple is
+ * `[left, top, right, bottom]`; `null` means the shape has no bar.
+ *
+ * @param shape — an ARROW_* id
+ * @param width — the edge width in model px
+ * @param scale — the edge's arrow scale
+ * @returns the bar bounds, or `null` for other heads
+ */
+export const arrowBarBoundsModel = (
+  shape: number,
+  width: number,
+  scale: number,
+): readonly [number, number, number, number] | null => {
+  if (shape !== ARROW_TEE && shape !== ARROW_TRIANGLE_TEE) {
+    return null;
+  }
+
+  const size = arrowSizeModel(width, scale);
+  const thickness = arrowBarThicknessModel(width, scale);
+  const top =
+    shape === ARROW_TEE
+      ? ARROW_TEE_BAR_FRONT * size
+      : -ARROW_TRIANGLE_TEE_BAR_FRONT * size;
+
+  return [
+    -ARROW_BAR_HALF_WIDTH * size,
+    top,
+    ARROW_BAR_HALF_WIDTH * size,
+    top - thickness,
+  ];
+};
+
+/**
+ * Maximum extent behind a head's tip in model px. Tee heads widen
+ * backward from their existing front edge, so their bounds depend on the
+ * edge width as well as arrow size.
+ *
+ * @param shape — an ARROW_* id
+ * @param width — the edge width in model px
+ * @param scale — the edge's arrow scale
+ * @returns the model-space back extent
+ */
+export const arrowBackModel = (
+  shape: number,
+  width: number,
+  scale: number,
+): number => {
+  const size = arrowSizeModel(width, scale);
+
+  if (shape === ARROW_TEE) {
+    return arrowBarThicknessModel(width, scale);
+  }
+
+  if (shape === ARROW_TRIANGLE_TEE) {
+    return (
+      ARROW_TRIANGLE_TEE_BAR_FRONT * size + arrowBarThicknessModel(width, scale)
+    );
+  }
+
+  return (ARROW_BACK.get(shape) ?? 0) * size;
+};
 
 /**
  * v3's `arrowShapes[shape].gap( edge )` — how far behind the node
@@ -496,12 +575,13 @@ export const insideUnitPolygon = (
  *   - `vee` is a notch — on the axis the polygon stops at 0.15 while the
  *     arms run back to 0.3, and v3 shows the line *through* the notch.
  *   - `chevron` likewise, at 0.1.
- *   - `triangle-tee` and `triangle-cross` carry a detached bar behind a
+ *   - `triangle-tee` carries a detached bar behind a
  *     gap, so the contiguous depth is the triangle's 0.3, not the bar's.
  *
  * Computed by walking the axis rather than declared, for the reason
  * round 27.6 made `ARROW_MAX_BACK` computed: a hand-written table is a
- * silent clip (or a silent over-trim) the next time a head is added.
+ * silent clip (or a silent over-trim) the next time a head is added. Tee's
+ * dynamic width is resolved by `arrowAxialDepth` below.
  */
 export const ARROW_AXIAL_DEPTH: ReadonlyMap<number, number> = (() => {
   const depth = new Map<number, number>();
@@ -572,3 +652,26 @@ export const ARROW_AXIAL_DEPTH: ReadonlyMap<number, number> = (() => {
 
   return depth;
 })();
+
+/**
+ * Axial depth for line trimming, normalized by the arrow size. Plain tee
+ * is dynamic because its bar stays joined to the tip while growing to the
+ * edge width; triangle-tee's bar remains detached, so its axial depth
+ * remains the triangle's.
+ *
+ * @param shape — an ARROW_* id
+ * @param width — the edge width in model px
+ * @param scale — the edge's arrow scale
+ * @returns the contiguous depth behind the tip in arrow-size units
+ */
+export const arrowAxialDepth = (
+  shape: number,
+  width: number,
+  scale: number,
+): number => {
+  if (shape === ARROW_TEE) {
+    return arrowBarThicknessModel(width, scale) / arrowSizeModel(width, scale);
+  }
+
+  return ARROW_AXIAL_DEPTH.get(shape) ?? 0;
+};

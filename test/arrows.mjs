@@ -1,5 +1,10 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
+import {
+  ARROW_SHIFT_HOLLOW_SOURCE,
+  ARROW_SHIFT_HOLLOW_TARGET,
+} from '../src/contract.mjs';
+import { COL } from '../src/contract.mjs';
 
 const GRAPH = {
   nodes: [{ data: { id: 'a' } }, { data: { id: 'b' } }],
@@ -102,7 +107,6 @@ describe('gpu/style: arrows', function () {
     for (const shape of [
       'triangle-tee',
       'circle-triangle',
-      'triangle-cross',
       'triangle-backcurve',
     ]) {
       const cy = cytoscape({
@@ -117,22 +121,57 @@ describe('gpu/style: arrows', function () {
     }
   });
 
-  it('a hollow compound head falls back to filled (recorded deviation)', function () {
+  it('rejects triangle-cross without an alias', function () {
     const cy = cytoscape({
       elements: GRAPH,
       style: {
         edges: {
           'target-arrow-shape': 'triangle-tee',
           'target-arrow-color': '#f00',
-          'target-arrow-fill': 'hollow',
         },
       },
     });
 
-    // the stroke abs(sd) is wrong at the seam between a union's parts,
-    // and v3 does not stroke compounds either
-    expect(cy.edges()[0].style('target-arrow-fill')).to.equal('filled');
+    expect(() =>
+      cy.style({ edges: { 'target-arrow-shape': 'triangle-cross' } }),
+    ).to.throw(/unsupported/i);
+    expect(cy.edges()[0].style('target-arrow-shape')).to.equal('triangle-tee');
     cy.destroy();
+  });
+
+  it('hollows compound end heads and keeps each end stroke width', function () {
+    for (const [sourceShape, targetShape] of [
+      ['triangle-tee', 'circle-triangle'],
+      ['circle-triangle', 'triangle-tee'],
+    ]) {
+      const cy = cytoscape({
+        elements: GRAPH,
+        style: {
+          edges: {
+            'source-arrow-shape': sourceShape,
+            'source-arrow-color': '#f00',
+            'source-arrow-fill': 'hollow',
+            'source-arrow-width': 3,
+            'target-arrow-shape': targetShape,
+            'target-arrow-color': '#00f',
+            'target-arrow-fill': 'hollow',
+            'target-arrow-width': 8,
+          },
+        },
+      });
+      const edge = cy.edges()[0];
+      const slot = cy._store.lookup(edge.id()).slot;
+      const shapes = cy._store.column(COL.EDGE_ARROW_SHAPES)[slot];
+      const widths = cy._store.column(COL.EDGE_ARROW_WIDTHS);
+
+      expect(edge.style('source-arrow-fill')).to.equal('hollow');
+      expect(edge.style('target-arrow-fill')).to.equal('hollow');
+      expect(widths[slot * 2]).to.equal(3);
+      expect(widths[slot * 2 + 1]).to.equal(8);
+      expect((shapes >>> ARROW_SHIFT_HOLLOW_SOURCE) & 1).to.equal(1);
+      expect((shapes >>> ARROW_SHIFT_HOLLOW_TARGET) & 1).to.equal(1);
+      cy.destroy();
+    }
   });
 
   it('supports the round-10 arrow shapes with readback', function () {

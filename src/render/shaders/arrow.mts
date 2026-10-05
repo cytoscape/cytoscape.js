@@ -1,5 +1,9 @@
 import { wgsl } from '../../gpu/wgsl.mjs';
-import { ARROW_MAX_BACK, ARROW_MAX_FRONT } from '../../shape-points.mjs';
+import {
+  ARROW_BAR_HALF_WIDTH,
+  ARROW_MAX_BACK,
+  ARROW_MAX_FRONT,
+} from '../../shape-points.mjs';
 import {
   ARROW_SHAPE_MASK,
   ARROW_SHIFT_HOLLOW_SOURCE,
@@ -135,7 +139,10 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // per-edge column); over-growing a filled head's quad costs a few
   // transparent fragments.
   let hollowReach = frame.arrowWidthMax * frame.zoomDpr * 0.5;
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr + hollowReach;
+  let arrowLen = max(
+    sizeMax * ARROW_MAX_BACK,
+    arrowBackW(thisShape, edgeWidths[slot].x, sMax) * frame.zoomDpr
+  ) + hollowReach;
   let halfBase = sizeMax * ARROW_HALF_LATERAL + hollowReach;
 
   let n = vec2f(-dir.y, dir.x);
@@ -167,37 +174,17 @@ fn arrowSizePx(widthModel: f32, scale: f32, zoomDpr: f32) -> f32 {
   return max(pow(widthModel * 13.37, 0.9), 29.0) * scale * zoomDpr;
 }
 
-// v3's triangle-cross bar (27.6): a rectangle spanning the triangle's
-// base, offset to y = -0.4 * s, whose thickness is the *edge width*
-// rather than a fraction of the arrow — v3 shifts its two back points by
-// edgeWidth / size so the bar reads as a continuation of the line.
-fn crossBarSD(p: vec2f, s: f32, edgeWidthPx: f32) -> f32 {
-  let halfX = 0.15 * s;
-  let yTop = -0.4 * s;
-  let yBot = yTop - edgeWidthPx;
-  let c = vec2f(0.0, (yTop + yBot) * 0.5);
-  let h = vec2f(halfX, (yTop - yBot) * 0.5);
-  let q = abs(p - c) - h;
-
-  return min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0)));
-}
-
-
 // v3 scales its arrow point tables by 'size' directly, so 'size' is the
 // point scale, not a length — getting that backwards makes arrows 3.3x
 // too long, which is how it was caught (27.3).
 //
-// The quad has to cover the furthest-reaching head, which is *not* the
-// plain triangle's 0.3: triangle-tee reaches 0.5 and the back-shifted
-// circle-triangle 0.6.  ARROW_MAX_BACK is computed from the tables so
-// adding a head cannot silently clip it (27.6).  triangle-cross's bar
-// additionally hangs the edge width below its base, so that is added at
-// the call site.
+// ARROW_MAX_BACK covers the point-table bounds; arrowBackW extends that
+// per-edge bound for width-aware tee bars. Both draw and pick use it.
 const ARROW_MAX_BACK: f32 = ${ARROW_MAX_BACK};
 // how far in front of the origin a head reaches — nonzero only for the
 // two disc heads, which v3 centres on the origin (round 56)
 const ARROW_MAX_FRONT: f32 = ${ARROW_MAX_FRONT};
-const ARROW_HALF_LATERAL: f32 = 0.15;
+const ARROW_HALF_LATERAL: f32 = ${ARROW_BAR_HALF_WIDTH};
 
 // this end's shape id from the packed word (C1: ends + mids)
 fn endShapeOf(pair: u32, endId: u32) -> u32 {
@@ -236,7 +223,15 @@ ${ARROW_POLY.cases}
 
   let aw = arrowWidths[in.slot];
   let strokePx = select(aw.y, aw.x, end.endId == 1u) * frame.zoomDpr;
-  let alpha = in.color.a * arrowCoverage(sd, hollow, strokePx);
+  var coverage = arrowCoverage(sd, hollow, strokePx);
+  var hollowCoverage = coverage;
+  if (hollow) {
+    switch shape {
+${ARROW_POLY.hollowCases}      default: {}
+    }
+    coverage = hollowCoverage;
+  }
+  let alpha = in.color.a * coverage;
   return vec4f(in.color.rgb * alpha, alpha); // premultiplied
 }
 
@@ -334,7 +329,12 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   // per-edge column); over-growing a filled head's quad costs a few
   // transparent fragments.
   let hollowReach = frame.arrowWidthMax * frame.zoomDpr * 0.5;
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr + hollowReach;
+  let word = arrowWordOf(edgeWidths[slot]);
+  let thisShape = endShapeOf(word, end.endId);
+  let arrowLen = max(
+    sizeMax * ARROW_MAX_BACK,
+    arrowBackW(thisShape, edgeWidths[slot].x, sMax) * frame.zoomDpr
+  ) + hollowReach;
   let halfBase = sizeMax * ARROW_HALF_LATERAL + hollowReach;
 
   let n = vec2f(-dir.y, dir.x);
@@ -417,37 +417,17 @@ fn arrowSizePx(widthModel: f32, scale: f32, zoomDpr: f32) -> f32 {
   return max(pow(widthModel * 13.37, 0.9), 29.0) * scale * zoomDpr;
 }
 
-// v3's triangle-cross bar (27.6): a rectangle spanning the triangle's
-// base, offset to y = -0.4 * s, whose thickness is the *edge width*
-// rather than a fraction of the arrow — v3 shifts its two back points by
-// edgeWidth / size so the bar reads as a continuation of the line.
-fn crossBarSD(p: vec2f, s: f32, edgeWidthPx: f32) -> f32 {
-  let halfX = 0.15 * s;
-  let yTop = -0.4 * s;
-  let yBot = yTop - edgeWidthPx;
-  let c = vec2f(0.0, (yTop + yBot) * 0.5);
-  let h = vec2f(halfX, (yTop - yBot) * 0.5);
-  let q = abs(p - c) - h;
-
-  return min(max(q.x, q.y), 0.0) + length(max(q, vec2f(0.0)));
-}
-
-
 // v3 scales its arrow point tables by 'size' directly, so 'size' is the
 // point scale, not a length — getting that backwards makes arrows 3.3x
 // too long, which is how it was caught (27.3).
 //
-// The quad has to cover the furthest-reaching head, which is *not* the
-// plain triangle's 0.3: triangle-tee reaches 0.5 and the back-shifted
-// circle-triangle 0.6.  ARROW_MAX_BACK is computed from the tables so
-// adding a head cannot silently clip it (27.6).  triangle-cross's bar
-// additionally hangs the edge width below its base, so that is added at
-// the call site.
+// ARROW_MAX_BACK covers the point-table bounds; arrowBackW extends that
+// per-edge bound for width-aware tee bars. Both draw and pick use it.
 const ARROW_MAX_BACK: f32 = ${ARROW_MAX_BACK};
 // how far in front of the origin a head reaches — nonzero only for the
 // two disc heads, which v3 centres on the origin (round 56)
 const ARROW_MAX_FRONT: f32 = ${ARROW_MAX_FRONT};
-const ARROW_HALF_LATERAL: f32 = 0.15;
+const ARROW_HALF_LATERAL: f32 = ${ARROW_BAR_HALF_WIDTH};
 
 // per-edge arrow scale from the packed shapes word (B7): top byte, ×16
 fn arrowScaleOf(pair: u32) -> f32 {
@@ -556,7 +536,12 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // per-edge column); over-growing a filled head's quad costs a few
   // transparent fragments.
   let hollowReach = frame.arrowWidthMax * frame.zoomDpr * 0.5;
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr + hollowReach;
+  let word = arrowWordOf(edgeWidths[slot]);
+  let thisShape = endShapeOf(word, end.endId);
+  let arrowLen = max(
+    sizeMax * ARROW_MAX_BACK,
+    arrowBackW(thisShape, edgeWidths[slot].x, sMax) * frame.zoomDpr
+  ) + hollowReach;
   let halfBase = sizeMax * ARROW_HALF_LATERAL + hollowReach;
 
   let n = vec2f(-dir.y, dir.x);
@@ -596,7 +581,15 @@ ${ARROW_POLY.cases}
 
   let aw = arrowWidths[in.slot];
   let strokePx = select(aw.y, aw.x, end.endId == 1u) * frame.zoomDpr;
-  let alpha = c.a * in.alphaComp * (1.0 - frame.edgeDim) * arrowCoverage(sd, hollow, strokePx);
+  var coverage = arrowCoverage(sd, hollow, strokePx);
+  var hollowCoverage = coverage;
+  if (hollow) {
+    switch shape {
+${ARROW_POLY.hollowCases}      default: {}
+    }
+    coverage = hollowCoverage;
+  }
+  let alpha = c.a * in.alphaComp * (1.0 - frame.edgeDim) * coverage;
   return vec4f(c.rgb * alpha, alpha); // premultiplied
 }
 
@@ -690,7 +683,12 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   // per-edge column); over-growing a filled head's quad costs a few
   // transparent fragments.
   let hollowReach = frame.arrowWidthMax * frame.zoomDpr * 0.5;
-  let arrowLen = sizeMax * ARROW_MAX_BACK + edgeWidths[slot].x * frame.zoomDpr + hollowReach;
+  let word = arrowWordOf(edgeWidths[slot]);
+  let thisShape = endShapeOf(word, end.endId);
+  let arrowLen = max(
+    sizeMax * ARROW_MAX_BACK,
+    arrowBackW(thisShape, edgeWidths[slot].x, sMax) * frame.zoomDpr
+  ) + hollowReach;
   let halfBase = sizeMax * ARROW_HALF_LATERAL + hollowReach;
 
   let n = vec2f(-dir.y, dir.x);

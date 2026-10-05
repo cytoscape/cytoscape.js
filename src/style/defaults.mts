@@ -324,7 +324,6 @@ export type ArrowShape =
   // round 27.6: v3's compound heads
   | 'triangle-tee'
   | 'circle-triangle'
-  | 'triangle-cross'
   | 'triangle-backcurve';
 
 export const NODE_DEFAULTS: NodeComputed = {

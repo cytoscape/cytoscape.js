@@ -740,7 +740,9 @@ var fixtures = (function () {
 
   /** v3's `edge-arrows` demo: one row per arrowhead keyword. */
   function edgeArrowsFixture() {
-    // Every head v4 draws, filled and hollow side by side.  v3's page has a
+    // Every head v4 draws, filled and hollow side by side.  The hollow
+    // triangle-tee row is the desktop app's open compound arrow mapped to
+    // the canonical v4 spelling.  v3's page has a
     // button that toggles `arrow-fill` over the whole graph; alternating it
     // per row shows both at once, which is what you want when the question is
     // "does this head look right", and it exercises the round-56 trim in both
@@ -750,7 +752,6 @@ var fixtures = (function () {
       'triangle',
       'triangle-tee',
       'circle-triangle',
-      'triangle-cross',
       'triangle-backcurve',
       'vee',
       'tee',
@@ -770,7 +771,7 @@ var fixtures = (function () {
       var src = 'a' + i;
       var tgt = 'b' + i;
       // alternate the fill *by row*, so a row reads as one comparison
-      var hollow = Math.floor(i / COLS) % 2 === 1;
+      var hollow = head === 'triangle-tee' || Math.floor(i / COLS) % 2 === 1;
 
       nodes.push({
         data: { id: src, label: head + (hollow ? ' (hollow)' : '') },

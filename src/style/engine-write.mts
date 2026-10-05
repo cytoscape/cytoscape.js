@@ -34,7 +34,6 @@ import {
   DEFAULT_CHART_COLORS,
   IMAGE_CAP,
   ARROW_ENUM,
-  COMPOUND_ARROWS,
 } from './tables.mjs';
 import { gradientStops, resolveArrowWidth } from './parse.mjs';
 import { EMPTY_END_TEXTS } from './sheet.mjs';
@@ -517,9 +516,8 @@ export function writeEdgeColumns(
       tgtArrowId,
       ARROW_ENUM[computed.midSourceArrowShape],
       ARROW_ENUM[computed.midTargetArrowShape],
-      // 27.6: a hollow compound head falls back to filled (recorded)
-      COMPOUND_ARROWS.has(srcArrowId) ? 0 : computed.sourceArrowFill,
-      COMPOUND_ARROWS.has(tgtArrowId) ? 0 : computed.targetArrowFill,
+      computed.sourceArrowFill,
+      computed.targetArrowFill,
       scaleQ,
     ),
   );

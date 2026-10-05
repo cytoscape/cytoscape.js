@@ -499,6 +499,8 @@ app trips on after everything else works.
 | Label bounding boxes | opt-in | **`boundingBox()` includes labels by default**; opt out with `{ includeLabels: false }` |
 | `breadthfirst` without a `boundingBox` | spread over `cy.extent()` in model coordinates, so the drawing scaled with the zoom at the moment it ran | **spread over the viewport in pixels** (round 125.4), as grid, circle, concentric and radial are; identical at zoom 1 |
 | Arrow sizing | `max( (13.37w)^0.9, 29 )` | the same formula, ported in round 27.3 — earlier v4 builds differed |
+| `triangle-cross` arrowhead | accepted as a separate edge-width bar | **throws as an unsupported arrow shape** since round 146; migrate to `triangle-tee`, whose bar uses `max(0.1 × arrowSize, edgeWidth)` and keeps its front at `-0.4 × arrowSize` |
+| Hollow `triangle-tee` / `circle-triangle` end arrows | component outlines | supported since round 146; their parts are outlined independently and coverage is combined once |
 | `outerWidth()` with a border | includes the miter overshoot | plain border-inclusive `outerHalf`, so parent boxes can sit sub-pixel smaller |
 | Compound auto-sizing | can include labels | reads child **body** extents only (`compound-sizing-wrt-labels: 'include'` throws) |
 | `:selected` / `:parent:selected` | default-sheet blocks any later block beats | the same rule, as a `{ when: { selected: true } }` condition in v4's default stylesheet — so naming `background-color` yourself still replaces it, exactly as in v3 |

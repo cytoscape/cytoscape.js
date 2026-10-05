@@ -80,7 +80,7 @@ const PINNED = {
   unexercised: 76,
   paintable: 57,
   noStatic: 19,
-  keywordGaps: 66,
+  keywordGaps: 63,
   inert: 47,
 };
 

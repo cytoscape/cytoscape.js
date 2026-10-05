@@ -38,16 +38,14 @@ honest inventory — an inventory, not an estimate.
 
 ## Alpha decisions and remaining implementation (3 October)
 
-The alpha interview in the plan record scopes the next batch. Round 147 has
-landed partial numeric scale endpoints and application-owned legend JSON for
-scalar mappings and the existing pie/stripe charts. The remaining chart-scale
-work stays in round 80:
+The alpha interview in the plan record scopes this batch. Rounds 146 and
+147 have landed: arrow vocabulary and hollow compound heads, partial numeric
+scale endpoints, and application-owned legend JSON. Round 80 has landed its
+compact chart-record foundation; the following work remains:
 
-- 146: triangle-tee replaces triangle-cross without an alias; width-aware
-  tee bars and hollow compound end heads.
-- 80: 255-value charts, explicit heat scales, signed bars, compact records
-  and shared chart domains. Per-node autoscaling and chart labels are
-  excluded; applications own normalization, labels, axes and rendered legends.
+- 80: 255-value charts, explicit heat scales, signed bars and shared chart
+  domains. Per-node autoscaling and chart labels are excluded; applications
+  own normalization, labels, axes and rendered legends.
 - 82: convex then organic/concave compound shapes over actual child outlines,
   and implementation of the existing compound-sizing-wrt-labels: include.
 - 148: manual miniature compounds, actual positions plus effective-size
@@ -140,8 +138,9 @@ Round 27 (2026-08-02) closed the visual-parity tail rounds 13–16 had
 left: v4 now renders **v3's complete node-shape vocabulary** (the
 seven `round-*` keywords, `cut-rectangle`, `right-rhomboid`,
 `concave-hexagon`, `bottom-round-rectangle` and `barrel`) and
-**v3's complete arrowhead vocabulary** (`triangle-tee`,
-`circle-triangle`, `triangle-cross`, `triangle-backcurve`), sizes
+**v3's remaining arrowhead vocabulary** (`triangle-tee`,
+`circle-triangle`, `triangle-backcurve`; `triangle-cross` was removed in
+round 146), sizes
 arrowheads by v3's own nonlinear formula, and accepts a numeric
 `text-rotation` on any label.  Each family is pinned by a live
 v3-vs-v4 parity diff rather than by a golden alone — see the
@@ -8037,47 +8036,38 @@ fragment premium is **unmeasurable at scene level** on real hardware
   (the arrow-color precedent).
 - **Arrowheads**: `source/target-arrow-shape` supports `triangle`
   (+`arrow` alias), `vee`, `chevron`, `circle`, `square`, `diamond`,
-  `tee` and `none` (round 10 — SDFs generated from v3's arrow point
-  tables and evaluated in the fragment stage; the shape ids ride a
-  fragment-only storage binding, keeping the vertex stage at its
-  8-buffer budget).
+  `tee`, `triangle-tee`, `circle-triangle`, `triangle-backcurve` and
+  `none`. SDFs come from the shared point tables and are evaluated in
+  the fragment stage; packed shape ids keep the vertex stage within its
+  8-buffer budget. Round 146 removed `triangle-cross` without an alias;
+  sheets using that spelling fail normal value validation. Use
+  `triangle-tee` when migrating a cross-style bar.
 
-  **Round 27.6 completed the set** with v3's
-  compound heads: `triangle-tee` (a union of two generated polygons
-  — coverage is a smoothstep over the distance, so a union is just
-  `min( sdA, sdB )`), `circle-triangle` (a polygon plus an analytic
-  disc, pulled back by its radius so the *disc* meets the node
-  boundary — v3's `spacing`; **not** the only head v3 offsets, as
-  this note used to claim: measured off v3's own table at
-  `width: 5, arrow-scale: 1.5`, `circle` offsets by the same
-  9.8804 and `tee` by a constant 1 px),
-  `triangle-cross` (whose bar thickness tracks the **edge width**,
-  resolved per fragment) and `triangle-backcurve` (its quadratic
-  sampled at codegen into an ordinary point table).
+  The established arrow-size law is
+  `max((13.37 × edgeWidth)^0.9, 29) × arrow-scale`, evaluated in model
+  space before zoom. The 29-unit floor is a model-space floor, so using
+  the LOD-floored device width would make arrows grow as the view zooms
+  out. `arrow-scale` is quantized to 1/16 in storage, and that same
+  quantized value sizes the drawn head.
 
-  Recorded
-  deviation: `arrow-fill: hollow` on a compound head falls back to
-  filled — the stroke `abs( sd )` is wrong at the seam where a
-  union's parts meet.  (This note used to add "and v3 does not
-  stroke compounds either", which round 55 checked and found false:
-  v3's `triangleTee` builds both subpaths into one path and
-  `drawArrowShape` strokes whatever path it built.  The seam is the
-  real reason and the only one.)
-  Round 13 B7 added `arrow-scale` (quantized ×1/16 in
-  storage — readback rounds accordingly), `source/target-arrow-fill`
+  Round 146 also made the plain `tee` bar and the `triangle-tee` bar
+  width-aware: both use `max(0.1 × arrowSize, edgeWidth)` in model
+  units. The triangle-tee bar keeps its front at `-0.4 × arrowSize`;
+  the triangle and its placement do not change. CPU geometry helpers in
+  `src/shape-points.mts` provide the same bar thickness, back extent and
+  axial depth used by generated WGSL. The arrow quad grows for the
+  per-edge bar extent in both draw and pick passes, and hollow/translucent
+  tee trimming follows that wider bar without changing `gap` or `spacing`.
+
+  `triangle-tee` and `circle-triangle` compound end heads now honour
+  `arrow-fill: hollow`. Their components are outlined independently,
+  then coverage is combined before colour and opacity are applied;
+  this keeps the touching circle-triangle junction from darkening.
+  Hollow flags and source/target widths remain stored independently.
+  Round 13 B7 added `arrow-scale` and `source/target-arrow-fill`
   (filled | hollow — a stroke ring at the per-end
   `source/target-arrow-width`, which takes px, 'match-line' or % of
-  the edge width, resolved at style-write).
-
-  **Round 27.3 ported
-  v3's arrow sizing**: `max( (13.37 w)^0.9, 29 ) × scale`, evaluated
-  in *model* space before the zoom scale — the 29-unit floor is a
-  model floor, so applying it to the LOD-floored device width would
-  make arrows grow as you zoom out.  Note that v3's `size` is the
-  point-table *scale*, not the drawn length (its tables span 0.3),
-  and that the arrow quad sizes from a computed `ARROW_MAX_BACK`
-  rather than a fixed 0.3, since the compound heads reach 0.5 and
-  0.6.
+  edge width, resolved at style-write).
 
   Round 13
   C1 added `mid-source/mid-target-arrow-shape`/`-color`: mid arrows
@@ -8104,29 +8094,20 @@ fragment premium is **unmeasurable at scene level** on real hardware
   by the round-57.9 hit halo.  (They were not pickable from C1 through
   57.9 — the pick pass stayed edges-only.)
 
-  **Outstanding deviation — v4 draws no arrow `gap`** (round 55,
-  measured; scheduled, *not* accepted).  v3 keeps two shortened
-  endpoints per edge end: the arrow tip at `spacing` behind the node
-  boundary and the drawn *line's* end at `gap` behind it
-  (`2 x width x arrow-scale` for a triangle, less for `vee`,
-  `diamond`, `chevron`, a constant 1 for `tee`).  v4 subtracts
-  neither, so its line runs under the head and out the other side.
+  Line rendering uses the v3 `gap` and tip `spacing` values. For hollow
+  or translucent end heads, the drawn line trim extends to the deeper of
+  the gap and the head's contiguous axial depth; plain tee uses its
+  width-aware bar depth. Accessors and path anchors keep reporting the
+  original gap and spacing, so widening a tee changes ink reach without
+  moving endpoints or midpoints. This reproduces the line-under-head
+  portion of v3's `destination-out` erase without a second pass.
 
-  Three consequences, each measured against v3 by the
-  `parity-arrow-*` scenes: a filled head leaks a wedge of line around
-  its tip where the head is narrower than the line (**3.5%** of the
-  frame); a hollow head shows the line through its interior instead of
-  the background (**11.8%**, and v4 inks more than twice what v3 does
-  in that scene); and a translucent edge composites line and head
-  separately, so 0.5 over 0.5 reads 0.75 (**26.7%**, the largest
-  divergence in the parity suite).  The fix is to trim the line to the
-  head's back extent — which reproduces v3's `destination-out` erase
-  without a second pass — and its constants already live in
-  `src/shape-points.mts`, verified against v3's own functions.  Mid
-  arrows are deliberately out of that scope: they sit mid-line where a
-  trim cannot reach, and `arrow-fill: hollow` on a mid arrow is not
-  supported (decided 2026-09-28: the mid fill prop is dropped; the mid
-  width prop landed in round 76, readback only).
+  Remaining compositing deviations: v3's erase punches through content
+  beneath a hollow or translucent head, and overlapping translucent
+  heads composite separately in v4. Mid arrows stay filled because an
+  endpoint trim cannot reach the line at the midpoint; `mid-*-arrow-fill`
+  is dropped and `mid-*-arrow-width` remains readback-only. Hollow stroke
+  joins are rounded by the distance field, while canvas2d uses miters.
 - **Gestures** (round 10 additions): the **cxttap family** — right
   button emits `cxttapstart` / `cxtdrag` (once moving) / `cxttapend`,
   plus `cxttap` when the press never moved; the browser context menu is

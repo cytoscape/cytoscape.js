@@ -436,7 +436,9 @@ export const ARROW_TEE = 7;
 // the 27.1 repack created, which is what that pass existed for.
 export const ARROW_TRIANGLE_TEE = 8;
 export const ARROW_CIRCLE_TRIANGLE = 9;
-export const ARROW_TRIANGLE_CROSS = 10;
+// Id 10 was used only by an experimental packed format.  Keep it reserved
+// so a stale word is rejected instead of decoding as a different shape.
+export const ARROW_REMOVED_TRIANGLE_CROSS = 10;
 export const ARROW_TRIANGLE_BACKCURVE = 11;
 
 /** v3's circle-triangle circle radius, in arrow-frame units. */
@@ -515,9 +517,9 @@ export const ARROW_SHIFT_SCALE = 24;
  * @param scaleQ — the arrow scale, already quantized to x16 and clamped
  *   into a byte
  * @returns the packed u32
- * @throws if a shape id exceeds the 4-bit field — a silent truncation
- *   here would mis-draw mid arrows only, which is exactly the failure
- *   that went unnoticed before 27.1
+ * @throws if a shape id is reserved or exceeds the 4-bit field — a silent
+ *   truncation here would mis-draw mid arrows only, which is exactly the
+ *   failure that went unnoticed before 27.1
  */
 export const packArrowShapes = (
   source: number,
@@ -529,6 +531,13 @@ export const packArrowShapes = (
   scaleQ: number,
 ): number => {
   for (const id of [source, target, midSource, midTarget]) {
+    if (id === ARROW_REMOVED_TRIANGLE_CROSS) {
+      throw new Error(
+        `Arrow shape id ${id} is the removed triangle-cross record; ` +
+          'migrate it to triangle-tee explicitly',
+      );
+    }
+
     if (id > ARROW_SHAPE_MASK) {
       throw new Error(
         `Arrow shape id ${id} does not fit the ${ARROW_SHAPE_MASK + 1}-shape field; ` +
@@ -557,8 +566,18 @@ export const packArrowShapes = (
  * @param shift — one of the `ARROW_SHIFT_*` end constants
  * @returns the shape id
  */
-export const unpackArrowShape = (packed: number, shift: number): number =>
-  (packed >>> shift) & ARROW_SHAPE_MASK;
+export const unpackArrowShape = (packed: number, shift: number): number => {
+  const id = (packed >>> shift) & ARROW_SHAPE_MASK;
+
+  if (id === ARROW_REMOVED_TRIANGLE_CROSS) {
+    throw new Error(
+      `Arrow shape id ${id} is the removed triangle-cross record; ` +
+        'migrate it to triangle-tee explicitly',
+    );
+  }
+
+  return id;
+};
 
 // -- columns --
 

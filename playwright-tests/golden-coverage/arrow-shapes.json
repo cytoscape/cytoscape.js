@@ -1,9 +1,9 @@
 {
   "golden": "arrow-shapes",
   "elements": {
-    "nodes": 22,
+    "nodes": 20,
     "parents": 0,
-    "edges": 12
+    "edges": 11
   },
   "nodes": {
     "background-color": [
@@ -39,7 +39,6 @@
       "tee",
       "triangle",
       "triangle-backcurve",
-      "triangle-cross",
       "triangle-tee",
       "vee"
     ],

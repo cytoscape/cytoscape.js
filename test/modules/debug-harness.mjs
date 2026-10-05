@@ -525,6 +525,8 @@ describe('debug harness (round 43)', function () {
         .filter(([, want, got]) => got !== want);
 
       expect(wrong, 'arrowheads that fell through the case mapper').to.eql([]);
+      expect(elements.edges.some((e) => e.data.arrow === 'triangle-cross')).to
+        .be.false;
 
       // and both fills are actually present, which is the comparison the
       // fixture alternates rows to make
@@ -533,6 +535,15 @@ describe('debug harness (round 43)', function () {
       );
 
       expect([...fills].sort()).to.eql(['filled', 'hollow']);
+
+      const desktopOpen = elements.edges.find(
+        (e) => e.data.arrow === 'triangle-tee' && e.data.hollow,
+      );
+
+      expect(desktopOpen, 'desktop open compound arrow fixture').to.exist;
+      expect(cy.$id(desktopOpen.data.id).style('target-arrow-fill')).to.equal(
+        'hollow',
+      );
       cy.destroy();
     });
 

@@ -5,6 +5,7 @@ import {
   ARROW_SHIFT_MID_TARGET,
   ARROW_SHIFT_SOURCE,
   ARROW_SHIFT_TARGET,
+  ARROW_REMOVED_TRIANGLE_CROSS,
   SHAPE_MASK,
   SHAPE_SHIFT,
   packArrowShapes,
@@ -25,16 +26,7 @@ produce survives a round trip, and an id that does not fit throws
 instead of truncating.
 */
 
-const ARROW_NAMES = [
-  'none',
-  'triangle',
-  'vee',
-  'chevron',
-  'circle',
-  'square',
-  'diamond',
-  'tee',
-];
+const ARROW_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11];
 
 const SHAPE_NAMES = [
   'circle',
@@ -56,7 +48,7 @@ const SHAPE_NAMES = [
 describe('gpu/packing: the round-27.1 field repacks', function () {
   describe('edge.arrowShapes', function () {
     it('round-trips every id in all four positions', function () {
-      for (let id = 0; id < ARROW_NAMES.length; id++) {
+      for (const id of ARROW_IDS) {
         const packed = packArrowShapes(id, id, id, id, 0, 0, 16);
 
         for (const shift of [
@@ -98,6 +90,18 @@ describe('gpu/packing: the round-27.1 field repacks', function () {
       expect(() => packArrowShapes(0, 0, 99, 0, 0, 0, 16)).to.throw(
         /does not fit/,
       );
+    });
+
+    it('rejects the removed triangle-cross packed record explicitly', function () {
+      expect(() =>
+        packArrowShapes(ARROW_REMOVED_TRIANGLE_CROSS, 0, 0, 0, 0, 0, 16),
+      ).to.throw(/removed triangle-cross record/);
+      expect(() =>
+        unpackArrowShape(
+          ARROW_REMOVED_TRIANGLE_CROSS << ARROW_SHIFT_SOURCE,
+          ARROW_SHIFT_SOURCE,
+        ),
+      ).to.throw(/removed triangle-cross record/);
     });
 
     it('survives a real mid-arrow restyle through the store', function () {

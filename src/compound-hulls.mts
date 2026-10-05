@@ -79,7 +79,15 @@ export function sampleNodeOutline(
  * @returns a counter-clockwise contour with duplicate and interior points removed
  */
 export function convexHull(input: readonly Point[]): Point[] {
-  const points = dedupe(input).sort((a, b) => a.x - b.x || a.y - b.y);
+  return monotoneChain(dedupe(input));
+}
+
+/** Build a monotone-chain hull from points that are already unique. */
+function monotoneChain(
+  points: Point[],
+  maxVertices = MAX_HULL_VERTICES,
+): Point[] {
+  points.sort((a, b) => a.x - b.x || a.y - b.y);
 
   if (points.length <= 2) {
     return points;
@@ -116,13 +124,17 @@ export function convexHull(input: readonly Point[]): Point[] {
   lower.pop();
   upper.pop();
 
-  return capConvexVertices(lower.concat(upper));
+  return capConvexVertices(lower.concat(upper), maxVertices);
 }
 
 /** A deterministic, connected concave outline with convex fallback. */
 export function concaveHull(input: readonly Point[]): Point[] {
   const points = dedupe(input);
-  let hull = convexHull(points);
+  // Reserve two contour slots before capping the convex seed. Otherwise a
+  // capped contour would exceed the GPU limit on its first inward dent and
+  // fall back to convex geometry.
+  const maxDents = 2;
+  let hull = monotoneChain(points, MAX_HULL_VERTICES - maxDents);
 
   if (hull.length < 4) {
     return hull;
@@ -135,12 +147,15 @@ export function concaveHull(input: readonly Point[]): Point[] {
     Math.max(...ys) - Math.min(...ys),
   );
   const minDent = span * 0.015;
-  let guard = Math.min(hull.length, 32);
+  // A handful of well-placed notches carries the useful concavity. Repeatedly
+  // testing every possible cut after each one grows into a costly search on a
+  // parent with many members, while extra notches quickly approach the GPU
+  // contour cap anyway.
+  let guard = Math.min(hull.length, maxDents);
 
-  // A concave outline may bend inward only into empty space.  For each
-  // long convex edge, binary-search the deepest interior midpoint that
-  // still leaves every sampled child outline inside one simple loop.
-  // Short polygon steps already describe the children and need no notch.
+  // A concave outline may bend inward only into empty space. For each long
+  // edge, find the deepest notch that contains no input point and leaves one
+  // simple loop. Short polygon steps already describe the children.
   while (guard-- > 0) {
     let best: { edge: number; point: Point; depth: number } | null = null;
 
@@ -156,23 +171,26 @@ export function concaveHull(input: readonly Point[]): Point[] {
       }
 
       const maxDepth = Math.min(length * 0.35, span * 0.2);
+      const limit = Math.min(
+        maxDepth,
+        maxSafeDentDepth(a, b, length, maxDepth, points),
+      );
+
+      if (limit <= minDent) {
+        continue;
+      }
+
       let lo = 0;
-      let hi = maxDepth;
+      let hi = limit;
       let safe: Point | null = null;
 
-      for (let step = 0; step < 18; step++) {
+      for (let step = 0; step < 12; step++) {
         const depth = (lo + hi) / 2;
         const point = {
           x: (a.x + b.x) / 2 - (dy / length) * depth,
           y: (a.y + b.y) / 2 + (dx / length) * depth,
         };
-        const candidate = [
-          ...hull.slice(0, i + 1),
-          point,
-          ...hull.slice(i + 1),
-        ];
-
-        if (isSimple(candidate) && containsAll(candidate, points)) {
+        if (safeInwardDent(hull, i, point)) {
           safe = point;
           lo = depth;
         } else {
@@ -200,9 +218,7 @@ export function concaveHull(input: readonly Point[]): Point[] {
     ];
   }
 
-  return hull.length > MAX_HULL_VERTICES
-    ? capConvexVertices(convexHull(points))
-    : hull;
+  return hull.length > MAX_HULL_VERTICES ? monotoneChain(points) : hull;
 }
 
 /** Round a convex polygon outward so its contour still contains the input. */
@@ -337,55 +353,95 @@ export function insideContour(
   return false;
 }
 
-function isSimple(hull: Point[]): boolean {
+/** Check only the two new segments of a proposed inward edge bend.
+ *
+ * The current contour is already simple. The analytic depth bound from
+ * `maxSafeDentDepth()` preserves input containment; only the two replacement
+ * segments can introduce a crossing.
+ */
+function safeInwardDent(
+  hull: readonly Point[],
+  edge: number,
+  point: Point,
+): boolean {
+  const a = hull[edge];
+  const b = hull[(edge + 1) % hull.length];
+  const previous = (edge + hull.length - 1) % hull.length;
+  const next = (edge + 2) % hull.length;
+
   for (let i = 0; i < hull.length; i++) {
-    const a = hull[i];
-    const b = hull[(i + 1) % hull.length];
+    if (i === previous || i === edge || i === next) continue;
 
-    for (let j = i + 1; j < hull.length; j++) {
-      if (
-        j === i ||
-        j === (i + 1) % hull.length ||
-        (j + 1) % hull.length === i
-      ) {
-        continue;
-      }
+    const c = hull[i];
+    const d = hull[(i + 1) % hull.length];
 
-      if (segmentsIntersect(a, b, hull[j], hull[(j + 1) % hull.length])) {
-        return false;
-      }
+    if (
+      segmentsIntersect(a, point, c, d) ||
+      segmentsIntersect(point, b, c, d)
+    ) {
+      return false;
     }
   }
 
   return true;
 }
 
-function containsAll(hull: Point[], points: Point[]): boolean {
-  const xs = hull.map((p) => p.x);
-  const ys = hull.map((p) => p.y);
-  const minX = Math.min(...xs);
-  const minY = Math.min(...ys);
-  const halfW = Math.max((Math.max(...xs) - minX) / 2, EPS);
-  const halfH = Math.max((Math.max(...ys) - minY) / 2, EPS);
-  const centerX = minX + halfW;
-  const centerY = minY + halfH;
-  const normalized = hull.flatMap((p) => [
-    (p.x - centerX) / halfW,
-    (p.y - centerY) / halfH,
-  ]);
+/** Find the deepest inward dent whose removed triangle holds no input point.
+ *
+ * A point at inward distance `t` and along-edge distance `s` first enters the
+ * removed triangle at depth `t / (1 - 2 * abs(s) / length)`. The triangles
+ * grow monotonically with depth, so the nearest such point bounds every
+ * deeper candidate without rescanning all inputs during the segment checks.
+ */
+function maxSafeDentDepth(
+  a: Point,
+  b: Point,
+  length: number,
+  maxDepth: number,
+  points: readonly Point[],
+): number {
+  const ux = (b.x - a.x) / length;
+  const uy = (b.y - a.y) / length;
+  const midX = (a.x + b.x) / 2;
+  const midY = (a.y + b.y) / 2;
+  let safeDepth = maxDepth;
 
-  return points.every((p) =>
-    insideContour(normalized, (p.x - centerX) / halfW, (p.y - centerY) / halfH),
-  );
+  for (const point of points) {
+    const dx = point.x - midX;
+    const dy = point.y - midY;
+    const along = dx * ux + dy * uy;
+
+    if (Math.abs(along) >= length / 2 - EPS) continue;
+
+    const inward = ux * dy - uy * dx;
+
+    if (inward <= EPS) {
+      return 0;
+    }
+
+    if (inward > safeDepth) continue;
+
+    const widthAtPoint = 1 - (2 * Math.abs(along)) / length;
+    const pointDepth = inward / widthAtPoint;
+
+    if (pointDepth < safeDepth) {
+      safeDepth = pointDepth;
+    }
+  }
+
+  return safeDepth;
 }
 
-function capConvexVertices(points: Point[]): Point[] {
-  if (points.length <= MAX_HULL_VERTICES) {
+function capConvexVertices(
+  points: Point[],
+  maxVertices = MAX_HULL_VERTICES,
+): Point[] {
+  if (points.length <= maxVertices) {
     return points;
   }
 
-  const step = points.length / MAX_HULL_VERTICES;
-  const indices = Array.from({ length: MAX_HULL_VERTICES }, (_, i) =>
+  const step = points.length / maxVertices;
+  const indices = Array.from({ length: maxVertices }, (_, i) =>
     Math.floor(i * step),
   );
   const selected = indices.map((index) => points[index]);

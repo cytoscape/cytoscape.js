@@ -77,13 +77,16 @@ describe('compound hull geometry', function () {
     const points = circleSamples(0, 0, 40, 512);
     const hull = convexHull(points);
     const rounded = roundConvexHull(points, 6);
+    const concave = concaveHull(points);
 
     expect(hull.length).to.equal(MAX_HULL_VERTICES);
     expect(rounded.length).to.be.at.most(MAX_HULL_VERTICES);
+    expect(concave.length).to.be.at.most(MAX_HULL_VERTICES);
 
     for (const point of points) {
       expect(isInside(hull, point)).to.equal(true);
       expect(isInside(rounded, point)).to.equal(true);
+      expect(isInside(concave, point)).to.equal(true);
     }
   });
 });

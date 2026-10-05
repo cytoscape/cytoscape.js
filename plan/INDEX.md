@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–76, 79–80, 82, 85–98, 100–124, 126–136, 138–147 |
-| planned | 49–51, 71, 77–78, 81, 83–84, 99, 125, 137, 148 |
+| landed | 7–48, 52–70, 72–76, 79–80, 82, 85–98, 100–124, 126–136, 138–148 |
+| planned | 49–51, 71, 77–78, 81, 83–84, 99, 125, 137 |
 
 ## The sections
 
@@ -216,4 +216,4 @@ A round can land with an item held open; the round file says which.
 | 187 | — | 2026-10-03 | note | [Alpha design interview: charts, hulls and miniature compounds](rounds/2026-10-03-01-rnd0000-note-alpha-design-interview.md) |
 | 188 | 146 | 2026-10-03 | landed | [Arrow vocabulary and hollow compound heads](rounds/2026-10-03-02-rnd0146-landed-arrow-vocabulary-and-hollow-compounds.md) |
 | 189 | 147 | 2026-10-03 | landed | [Partial scale domains and legend JSON](rounds/2026-10-03-03-rnd0147-landed-partial-scale-domains-and-legend-json.md) |
-| 190 | 148 | 2026-10-03 | plan | [Miniature compounds: actual positions, reversible size scaling](rounds/2026-10-03-04-rnd0148-plan-miniature-compounds.md) |
+| 190 | 148 | 2026-10-03 | landed | [Miniature compounds: actual positions, reversible size scaling](rounds/2026-10-03-04-rnd0148-landed-miniature-compounds.md) |

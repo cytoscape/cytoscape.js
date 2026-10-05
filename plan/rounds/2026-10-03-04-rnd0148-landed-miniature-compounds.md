@@ -211,3 +211,57 @@ Automatic zoom-triggered expansion and viewport snapping are out of this
 round; viewport snapping to compounds is explicitly a future consideration.
 No fallback-shape prop, synthetic edges, aggregate persistence contract or
 per-child lock ledger is to be reintroduced as an implementation shortcut.
+
+### Implementation record (5 October)
+
+The public collapse state, `collapse-scale`, queries and selectors use the
+ordinary parent and element identities. Each parent stores its current
+applied factor separately from the configured style value. Collapse and
+expand transform current descendant positions around the live parent centre
+and derive effective sizes from base geometry; repeated requests do not
+multiply a prior transform. Current locks suppress position writes while
+size inheritance continues. All original nodes and edges remain in the
+graph, including hidden elements and connections crossing a collapsed
+boundary.
+
+Node bodies, borders, images, charts, labels, hulls, picking and bounds use
+the effective geometry. An edge inherits only the scale of ancestors common
+to both endpoints, so an internal edge shrinks and a crossing edge retains
+its own styled width. A moved or reparented node keeps its supplied model
+position and refreshes its inherited node and incident-edge geometry.
+Scoped layouts classify a collapsed parent as one translated unit only when
+its descendants are absent from that layout's scope; original edges outside
+the scope do not become aggregate connections.
+
+JSON and experimental wire snapshots persist current positions, collapsed
+state and applied factors. Load, patch, initial clone and follow adopt these
+without repeating the transform. Follow copies source positions/factors
+while keeping the follower's sheet and view state. The animation path uses
+one handle with batched parent-factor tracks and one descendant/edge refresh
+per tick; ordinary handle stop/reverse/progress rules and affected-subtree
+interruption apply. Live sheet, mapper and bypass changes retarget a
+collapsed parent after the style transaction; an identical sheet is a
+no-op.
+
+`benchmark/miniature-compounds.mjs` asserts unchanged topology and affected
+counts while measuring descendant scaling, deep nesting, retargets, follow
+traffic, wire size and retained memory against expanded controls. At 10,000
+leaves and 20,000 edges (40,001 elements), flat collapse took 144 ms p50,
+and the 64-parent collapse/expand pair took about 867 ms p50. The wire
+remained 1,135,624 bytes in both states; retained memory rose about 3.17 MB
+after collapse. Bulk style recomputation dominated these costs. A separate
+built-headless animation probe measured per-tick p50/p95 of 9.49/13.19 ms at
+2,000 leaves and 52.35/66.43 ms at 10,000 leaves, excluding browser frame
+scheduling. Large miniatures therefore do not promise a 60 Hz tween; they
+also do not reduce the live topology or make many crossing edges cheap.
+
+The exact-position, nested, lock, live-restyle, topology, persistence,
+animation and browser image/export cases live in `test/miniature-compounds.mjs`,
+`test/miniature-topology.mjs`, `test/miniature-persistence.mjs` and
+`playwright-tests/miniature-compounds.spec.js`. Negative controls deliberately
+broke scoped-parent classification, reparent geometry refresh, load without
+rescaling and PNG's inherited image size; each corresponding test failed.
+The clustered debug page was opened at overview and child-detail zoom after
+collapsing a 52-child parent. SVG 77 and WebGL2 137 remain future consumers
+of the same effective geometry and snapshot semantics, not implementations
+in this round.

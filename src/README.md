@@ -38,32 +38,28 @@ honest inventory — an inventory, not an estimate.
 
 ## Alpha decisions and implementation status (3 October)
 
-The alpha interview in the plan record scopes this batch. Rounds 146 and
-147 have landed: arrow vocabulary and hollow compound heads, partial numeric
-scale endpoints, and application-owned legend JSON. Round 80 has completed
-255-value charts, shared colour domains and signed bars:
+The alpha interview in the plan record scoped this batch. Rounds 80, 82,
+146, 147 and 148 have landed:
 
 - 146: triangle-tee replaces triangle-cross without an alias; width-aware
   tee bars and hollow compound end heads.
 - 80: complete. Charts hold 255 ordered values, explicit heat scales, signed
   bars and definition-owned shared domains. Per-node autoscaling is excluded;
   applications own normalization, labels, axes and rendered legends.
-- 82: convex, rounded-convex and connected concave compound shapes over
-  child outlines, plus label-inclusive sizing, are implemented; final
-  measurement and closeout remain.
-- 148: manual miniature compounds, actual positions plus effective-size
-  multipliers, and collapse state synchronized by follow. JSON and the
-  experimental wire snapshot carry current positions plus each parent's
-  collapsed state and applied factor; load, patch and clone adopt them
-  without rescaling. Children/edges remain real and visible; locked positions
-  stay put while sizes shrink. Style readback stays authored; geometry reads
-  use effective sizes. Scoped layouts and animation remain in progress.
+- 82: convex, rounded-convex and connected concave compound shapes enclose
+  child outlines; label-inclusive sizing is implemented.
+- 148: manual miniature compounds scale actual descendant positions and
+  effective sizes, with optional animation. Original children and edges stay
+  live. JSON, wire, patch, clone and follow preserve current state and
+  applied factors without rescaling. Scoped parent-only layouts translate
+  the group; style reads remain unscaled while geometry reads use effective
+  sizes. Large batches still restyle all affected descendants and edges.
 
 The earlier proxy/aggregate collapse proposal is superseded. Aggregate edges
 are deferred display objects with their own open persistence/direction calls.
 Automatic viewport snapping, obstacle-avoiding hulls and a public concavity
-control remain future maintainer decisions. Existing implementation sections
-below still describe the current code, not these planned capabilities.
+control remain future maintainer decisions. The implementation sections below
+describe the current code.
 
 ## What landed, round by round
 
@@ -4238,7 +4234,7 @@ exact metrics. Rotation is included, and zoom fading/decluttering do
 not change geometry. A parent's own label never sizes itself. Compound
 props throw outside the parents group.
 
-Round 148.1 establishes collapse state and its style/query surface:
+Round 148 establishes collapse state and its style/query surface:
 `parents.collapse-scale` defaults to `0.1` and accepts finite numeric
 constants or mappers in `(0, 1]`; it can also be pinned by a bypass.
 `collapsed()` and `{ collapsed: true }` describe the parent itself, while
@@ -4256,8 +4252,12 @@ connections. JSON and the
 experimental wire format carry current positions plus each parent's
 collapsed state and applied factor. Loads, patches, initial clones and
 follow syncs adopt those together without moving already-rescaled positions;
-a follower keeps its own stylesheet and view state. Animation remains in
-progress for round 148.
+a follower keeps its own stylesheet and view state. Optional collapse and
+expand animation uses the ordinary animation handle, with reverse, stop and
+interruption semantics; live collapse-scale restyles retarget the applied
+factor after the style transaction. At 10,000 leaves and 20,000 edges,
+the built-headless animation tick measured about 52 ms median, so this
+large case does not meet a 60 Hz frame budget.
 
 Round 82 adds `convex-hull`, `round-convex-hull` and `concave-hull` as
 parent `shape` values. Each contour follows direct children’s actual outer

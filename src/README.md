@@ -4091,9 +4091,6 @@ min-size bias props (the centered clamp instead; round 85.4 added
 per-side padding props — `padding-left`/`-right`/`-top`/`-bottom`,
 each px or 'N%' like `padding`, defaulting to the uniform value —
 which cover the bias use cases without touching the clamp),
-`compound-sizing-wrt-labels: 'include'`
-(compound auto-sizing reads child body extents, not labels — the
-reason narrowed by round 16.4, which put labels into public bb/fit),
 `:parent:selected` restyling, and
 `z-compound-depth`/`z-index-compare` (dropped outright with z-index,
 2026-08-01).
@@ -4216,12 +4213,13 @@ The **compound props** live in the parents
 group and are constants-only: `padding` (px, or `'N%'` of the
 children bb per `padding-relative-to`: width | height | average |
 min | max), `min-width`/`min-height` (the centered clamp), and
-`compound-sizing-wrt-labels`, where `'exclude'` is the only
-accepted value (`'include'` throws — compound auto-sizing reads
-the children's *body* extents, not their labels; since round 16.4
-public bb/fit do include labels, but the auto-bounds derivation
-deliberately does not — recorded).  Compound props throw outside the
-parents group.
+`compound-sizing-wrt-labels` (`'exclude'` by default or `'include'`,
+implemented in round 82.1). With `'include'`, each visible direct
+child's model-space label box joins that parent's sizing inputs before
+padding; headless estimates update when the mounted renderer reports
+exact metrics. Rotation is included, and zoom fading/decluttering do
+not change geometry. A parent's own label never sizes itself. Compound
+props throw outside the parents group.
 
 Readback answers from the per-parent record
 (`style('padding')` returns the declared px number or the percent
@@ -8422,9 +8420,7 @@ fragment premium is **unmeasurable at scene level** on real hardware
   anchor outside-to-node rather than v3's outside-to-line;
   `boundingBoxAt` skips parent bodies (fit-target approximation);
   drag sets don't flag descendants `grabbed`; and the min-size
-  bias props / `compound-sizing-wrt-labels: 'include'` (compound
-  auto-sizing reads body extents; public bb includes labels since
-  16.4) /
+  bias props /
   `:parent:selected` / `z-compound-depth`/`z-index-compare` are
   not ported (decided design).
 - **Background images** (round 15) — the deviations in one place

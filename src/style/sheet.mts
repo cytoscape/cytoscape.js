@@ -305,19 +305,13 @@ export const splitCompoundProps = (
         break;
 
       case PROP.COMPOUND_SIZING_WRT_LABELS:
-        if (value === 'include') {
+        if (value !== 'exclude' && value !== 'include') {
           throw new Error(
-            `compound-sizing-wrt-labels: 'include' is unsupported ` +
-              `(compound auto-sizing reads the children's body extents, not labels); use 'exclude'`,
+            `Invalid compound-sizing-wrt-labels '${String(value)}' ('exclude' | 'include')`,
           );
         }
 
-        if (value !== 'exclude') {
-          throw new Error(
-            `Invalid compound-sizing-wrt-labels '${String(value)}' ('exclude' is the only supported value)`,
-          );
-        }
-
+        compound.sizingWrtLabels = value;
         break;
     }
   }

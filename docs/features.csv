@@ -690,7 +690,7 @@ Category,Feature,Status,Comments,Reference
 "Style","chart-start-angle","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
 "Style","chart-values","Implemented","Up to 16 absolute fractions (or percentages); values are not normalized. Constants or a data passthrough.","src/style.mts"
 "Style","color","Implemented","Accepted by the v4 stylesheet. Values and applicable element groups follow the v4 style compiler.","src/style.mts"
-"Style","compound-sizing-wrt-labels","Partial","Parents only; 'exclude' is accepted, 'include' throws. Compound auto-bounds use child bodies; public bounding boxes can include labels.","src/style.mts"
+"Style","compound-sizing-wrt-labels","Implemented","Parents only; defaults to 'exclude'. 'Include' adds visible direct-child model-space label bounds before padding; rotated labels count, zoom LOD does not, and a parent's own label never sizes itself.","src/style.mts"
 "Style","content","Replaced","Use label.","MIGRATING.md"
 "Style","control-point-distance","Replaced","Use control-point-distances (plural).","MIGRATING.md"
 "Style","control-point-distances","Implemented","Edge routing array; constants only. Use an id-keyed style bypass for a different array on each edge.","src/style.mts"

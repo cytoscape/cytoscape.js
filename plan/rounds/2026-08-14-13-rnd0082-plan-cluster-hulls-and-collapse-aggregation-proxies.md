@@ -70,13 +70,14 @@ public controls are implied.
 
 ### 82.1 — label-inclusive compound sizing
 
-Implement `include` in `src/style/sheet.mts`, compound style state and
-`src/store/hierarchy.mts`; replace the hardcoded `exclude` reader. Derive
-sizes from the existing CPU label geometry, estimated headless and refreshed
-when mounted metrics become exact. Avoid recursive parent-label sizing or
-an unbounded render/measure/resize loop. Update the schema and previous
-expected-throw tests in the same commit. Keep public bb label inclusion
-separate from the parent's own sizing policy.
+Implemented 2026-10-05. `include` is accepted in `src/style/sheet.mts`,
+stored per parent and read back; `exclude` remains the default. Sizing uses
+the estimated or exact node-label box, includes rotation and visible ink
+only, and marks only ancestors whose policy includes direct-child labels.
+The parent's own label does not mark or size itself. Renderer metric updates
+refresh the affected ancestry, independent of zoom fading and decluttering.
+The stylesheet schema and the former expected-throw coverage were updated;
+public bounding-box label inclusion remains a separate option.
 
 ### 82.2 — convex and rounded-convex implementation
 

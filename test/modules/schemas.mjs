@@ -923,6 +923,10 @@ describe('schemas: the stylesheet (79.2)', () => {
       ],
       ['core props', { core: { 'selection-box-color': '#ddd' } }],
       ['compound props', { parents: { padding: '10%', 'min-width': 20 } }],
+      [
+        'label-inclusive compound sizing',
+        { parents: { 'compound-sizing-wrt-labels': 'include' } },
+      ],
       ['an unknown sheet key', { node: {} }],
       ['an unknown property', { nodes: { 'background-blacken': 0.5 } }],
       ['an edge property on nodes', { nodes: { 'curve-style': 'bezier' } }],
@@ -996,8 +1000,8 @@ describe('schemas: the stylesheet (79.2)', () => {
         { nodes: { 'transition-timing-function': 'wobble' } },
       ],
       [
-        "compound sizing 'include'",
-        { parents: { 'compound-sizing-wrt-labels': 'include' } },
+        'invalid compound sizing value',
+        { parents: { 'compound-sizing-wrt-labels': 'maybe' } },
       ],
       ['a string min-width', { parents: { 'min-width': '10px' } }],
       ['a v3 selector array', [{ selector: 'node', style: {} }]],

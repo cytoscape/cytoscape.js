@@ -51,6 +51,12 @@ export function markAllLabelsDirty(gs: GraphStore): void {
     }
   }
 
+  for (let slot = 0; slot < gs.labels.nodes.length; slot++) {
+    if (gs.labels.nodes[slot] != null) {
+      gs.hierarchy.markLabelAncestors(slot);
+    }
+  }
+
   gs.dirty.touch();
 }
 
@@ -167,6 +173,10 @@ export function setLabel(
     }
   }
 
+  if (group === GROUP_NODES) {
+    gs.hierarchy.markLabelAncestors(slot);
+  }
+
   // 25.5: no geoEpoch bump — its only consumer is the per-edge exact
   // curve-bb memo, which has no label terms; the label bb terms read
   // the dims maps live
@@ -226,6 +236,9 @@ export function setLabelDims(
   }
 
   gs.labelDims[group].set(slot, { w, h, exact: true });
+  if (group === GROUP_NODES) {
+    gs.hierarchy.markLabelAncestors(slot);
+  }
   gs.dirty.touch(); // no geoEpoch bump (25.5) — see setLabel
 }
 

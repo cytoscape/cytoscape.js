@@ -2256,8 +2256,8 @@
         "minimum": 0
       },
       "compoundSizingWrtLabels": {
-        "description": "'exclude' — the only value: compound auto-sizing reads the children's bodies, not their labels.",
-        "const": "exclude"
+        "description": "Whether a compound parent's auto-sizing includes direct children's model-space label bounds. Defaults to 'exclude'.",
+        "enum": ["exclude", "include"]
       }
     },
     "keywords": {

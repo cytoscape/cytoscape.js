@@ -421,6 +421,57 @@ export class GraphStore implements ModelView {
 
         return [size[slot * 2], size[slot * 2 + 1]];
       },
+      labelBounds: (slot) => {
+        const entry = this.labels.nodes[slot];
+        const box = scanImpl.nodeLabelBox(this, slot);
+
+        if (
+          entry == null ||
+          box == null ||
+          (entry.color >>> 24 === 0 &&
+            entry.outlineColor >>> 24 === 0 &&
+            entry.bgColor >>> 24 === 0 &&
+            entry.bgBorderColor >>> 24 === 0)
+        ) {
+          return null;
+        }
+
+        const stroke = Math.max(
+          entry.outlineColor >>> 24 !== 0 ? entry.outlineWidth / 2 : 0,
+          entry.bgBorderColor >>> 24 !== 0 ? entry.bgBorderWidth / 2 : 0,
+        );
+        const backgroundPadding =
+          entry.bgColor >>> 24 === 0 && entry.bgBorderColor >>> 24 !== 0
+            ? entry.bgPadding
+            : 0;
+        const x1 = box.x1 - backgroundPadding - stroke;
+        const y1 = box.y1 - backgroundPadding - stroke;
+        const x2 = box.x2 + backgroundPadding + stroke;
+        const y2 = box.y2 + backgroundPadding + stroke;
+        const cos = Math.cos(entry.rotation);
+        const sin = Math.sin(entry.rotation);
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        for (const [x, y] of [
+          [x1, y1],
+          [x2, y1],
+          [x2, y2],
+          [x1, y2],
+        ]) {
+          const rx = x * cos - y * sin;
+          const ry = x * sin + y * cos;
+
+          minX = Math.min(minX, rx);
+          minY = Math.min(minY, ry);
+          maxX = Math.max(maxX, rx);
+          maxY = Math.max(maxY, ry);
+        }
+
+        return { x1: minX, y1: minY, x2: maxX, y2: maxY };
+      },
       onFlip: (slot, becameParent) => {
         if (becameParent) {
           // stash the style size: auto-bounds owns the column from here,

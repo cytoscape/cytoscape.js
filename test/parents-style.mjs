@@ -96,17 +96,130 @@ describe('gpu/style: parents sheet group (round 14.6)', function () {
     expect(p3.style('min-width')).to.equal(300);
   });
 
-  it('accepts compound-sizing-wrt-labels: exclude; include throws (auto-sizing reads body extents)', function () {
+  it('accepts and reads both compound-sizing-wrt-labels values', function () {
     const cy = make({ parents: { 'compound-sizing-wrt-labels': 'exclude' } });
 
     expect(cy.$id('p').style('compound-sizing-wrt-labels')).to.equal('exclude');
+    const included = make({
+      parents: { 'compound-sizing-wrt-labels': 'include' },
+    });
 
-    expect(() =>
-      make({ parents: { 'compound-sizing-wrt-labels': 'include' } }),
-    ).to.throw(/include/);
+    expect(included.$id('p').style('compound-sizing-wrt-labels')).to.equal(
+      'include',
+    );
     expect(() =>
       make({ parents: { 'compound-sizing-wrt-labels': 'nope' } }),
     ).to.throw();
+  });
+
+  it('includes direct child label boxes in model space, including rotation, without self-sizing', function () {
+    const elements = {
+      nodes: [
+        { data: { id: 'p', label: 'a very long parent label' } },
+        {
+          data: { id: 'a', parent: 'p', label: 'a long child label' },
+          position: { x: 0, y: 0 },
+        },
+        {
+          data: { id: 'b', parent: 'p', label: 'another long child label' },
+          position: { x: 100, y: 0 },
+        },
+      ],
+      edges: [],
+    };
+    const shared = {
+      nodes: {
+        width: 20,
+        height: 20,
+        label: { data: 'label' },
+        'text-halign': 'left',
+        'text-valign': 'top',
+        'text-rotation': Math.PI / 4,
+      },
+      parents: { padding: 0 },
+    };
+    const exclude = cytoscape({ elements, style: shared });
+    const include = cytoscape({
+      elements,
+      style: {
+        ...shared,
+        parents: {
+          ...shared.parents,
+          'compound-sizing-wrt-labels': 'include',
+        },
+      },
+    });
+    const pExclude = exclude.$id('p');
+    const pInclude = include.$id('p');
+    const includedWidth = pInclude.paddedWidth();
+    const includedHeight = pInclude.paddedHeight();
+
+    expect(pExclude.paddedWidth()).to.equal(120);
+    expect(includedWidth).to.be.greaterThan(pExclude.paddedWidth());
+    expect(includedHeight).to.be.greaterThan(pExclude.paddedHeight());
+
+    // The parent's own label does not feed its size back into itself.
+    pInclude.data('label', 'a much much much much much longer parent label');
+    expect(pInclude.paddedWidth()).to.equal(includedWidth);
+    expect(pInclude.paddedHeight()).to.equal(includedHeight);
+
+    include.zoom({ level: 0.1 });
+    expect(pInclude.paddedWidth()).to.equal(includedWidth);
+    expect(pInclude.paddedHeight()).to.equal(includedHeight);
+
+    include.destroy();
+    exclude.destroy();
+  });
+
+  it('updates label-inclusive bounds on label changes and ignores inkless labels', function () {
+    const elements = {
+      nodes: [
+        { data: { id: 'p' } },
+        { data: { id: 'a', parent: 'p', label: 'short' } },
+      ],
+      edges: [],
+    };
+    const cy = cytoscape({
+      elements,
+      style: {
+        nodes: {
+          width: 20,
+          height: 20,
+          label: { data: 'label' },
+        },
+        parents: { padding: 0, 'compound-sizing-wrt-labels': 'include' },
+      },
+    });
+    const p = cy.$id('p');
+    const before = p.paddedWidth();
+
+    cy.$id('a').data('label', 'this label is much longer and visible');
+    const long = p.paddedWidth();
+
+    expect(long).to.be.greaterThan(before);
+
+    cy.$id('a').data('label', 'tiny');
+    expect(p.paddedWidth()).to.be.lessThan(long);
+    cy.$id('a').hide();
+    expect(p.paddedWidth()).to.equal(20);
+
+    const inkless = cytoscape({
+      elements,
+      style: {
+        nodes: {
+          width: 20,
+          height: 20,
+          label: { data: 'label' },
+          'text-opacity': 0,
+        },
+        parents: { padding: 0, 'compound-sizing-wrt-labels': 'include' },
+      },
+    });
+
+    expect(inkless.$id('p').paddedWidth()).to.equal(20);
+
+    cy.destroy();
+    inkless.destroy();
   });
 
   it('rejects compound props outside the parents group, and mappers on them', function () {

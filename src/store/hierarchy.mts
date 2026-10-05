@@ -34,6 +34,7 @@ export interface CompoundStyle {
   relativeTo: 'width' | 'height' | 'average' | 'min' | 'max';
   minWidth: number;
   minHeight: number;
+  sizingWrtLabels: 'include' | 'exclude';
   paddingLeft?: SidePadding;
   paddingRight?: SidePadding;
   paddingTop?: SidePadding;
@@ -46,6 +47,7 @@ const COMPOUND_STYLE_DEFAULTS: CompoundStyle = {
   relativeTo: 'width',
   minWidth: 0,
   minHeight: 0,
+  sizingWrtLabels: 'exclude',
 };
 
 /*
@@ -91,6 +93,10 @@ export interface HierarchyHost {
   outerHalf(): Float32Array;
   /** the node's current style size (stashed as the degenerate fallback) */
   readSize(slot: number): [number, number];
+  /** the visible portion of a node label in node-local model px */
+  labelBounds(
+    slot: number,
+  ): { x1: number; y1: number; x2: number; y2: number } | null;
   /** a node flipped leaf<->parent (the store stashes/restores its style size) */
   onFlip(slot: number, becameParent: boolean): void;
   /** write derived parent geometry into the real columns (never re-marks) */
@@ -280,6 +286,19 @@ export class HierarchyIndex {
     }
   }
 
+  /** A node-label change affects only ancestors whose sizing policy
+   * includes direct-child labels. The node's own label never sizes it. */
+  markLabelAncestors(slot: number): void {
+    for (let p = this.parentOf(slot); p >= 0; p = this.parentOf(p)) {
+      const style = this.compoundStyle.get(p) ?? COMPOUND_STYLE_DEFAULTS;
+
+      if (style.sizingWrtLabels === 'include' && !this.pending.has(p)) {
+        this.pending.add(p);
+        this.host.schedule();
+      }
+    }
+  }
+
   /**
    * Whether any parent's derived geometry is stale.  True means the
    * columns do not yet agree with the children — reads that must be
@@ -372,6 +391,7 @@ export class HierarchyIndex {
         continue;
       } // stale entry
 
+      const style = this.compoundStyle.get(slot) ?? COMPOUND_STYLE_DEFAULTS;
       let x1 = Infinity,
         y1 = Infinity,
         x2 = -Infinity,
@@ -386,18 +406,33 @@ export class HierarchyIndex {
         const ky = pos[kid * 2 + 1];
         const hw = outer[kid * 2];
         const hh = outer[kid * 2 + 1];
+        let childX1 = kx - hw;
+        let childY1 = ky - hh;
+        let childX2 = kx + hw;
+        let childY2 = ky + hh;
 
-        if (kx - hw < x1) {
-          x1 = kx - hw;
+        if (style.sizingWrtLabels === 'include') {
+          const label = this.host.labelBounds(kid);
+
+          if (label != null) {
+            childX1 = Math.min(childX1, kx + label.x1);
+            childY1 = Math.min(childY1, ky + label.y1);
+            childX2 = Math.max(childX2, kx + label.x2);
+            childY2 = Math.max(childY2, ky + label.y2);
+          }
         }
-        if (kx + hw > x2) {
-          x2 = kx + hw;
+
+        if (childX1 < x1) {
+          x1 = childX1;
         }
-        if (ky - hh < y1) {
-          y1 = ky - hh;
+        if (childX2 > x2) {
+          x2 = childX2;
         }
-        if (ky + hh > y2) {
-          y2 = ky + hh;
+        if (childY1 < y1) {
+          y1 = childY1;
+        }
+        if (childY2 > y2) {
+          y2 = childY2;
         }
       }
 
@@ -419,7 +454,6 @@ export class HierarchyIndex {
         cy = (y1 + y2) / 2;
       }
 
-      const style = this.compoundStyle.get(slot) ?? COMPOUND_STYLE_DEFAULTS;
       const pad = resolvePadding(style, bbW, bbH);
       const coreW = Math.max(bbW, style.minWidth);
       const coreH = Math.max(bbH, style.minHeight);

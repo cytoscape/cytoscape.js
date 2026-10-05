@@ -383,10 +383,10 @@ export interface Stylesheet<
    * (rectangle, #eee fill, 1px #ccc border, padding 10) — constants or
    * mappers — plus the compound props `padding`, `padding-relative-to`,
    * `min-width`, `min-height` and `compound-sizing-wrt-labels`
-   * (constants only; `'exclude'` is the only accepted sizing value —
-   * compound auto-sizing reads the children's body extents, not
-   * their labels — public bb/fit include labels since round 16.4,
-   * the auto-bounds derivation deliberately does not).
+   * (constants only; sizing is `'exclude'` by default, or `'include'`
+   * to add visible direct-child label bounds in model space before
+   * padding. A parent's own label never sizes itself, and zoom LOD does
+   * not affect the geometry).
    */
   parents?: StyleProps<NodeData>;
   /**

@@ -100,7 +100,11 @@ defineReader(
     engine.store.compoundStyleOf(ref.slot).minHeight,
 );
 
-defineReader([PROP.COMPOUND_SIZING_WRT_LABELS], () => 'exclude');
+defineReader(
+  [PROP.COMPOUND_SIZING_WRT_LABELS],
+  (store, slot, ref, engine) =>
+    engine.store.compoundStyleOf(ref.slot).sizingWrtLabels,
+);
 
 // edge channels
 defineReader([PROP.LINE_COLOR], (store, slot) =>

@@ -544,13 +544,13 @@ describe('gpu/mappers', function () {
 
       bindEvaluator(m, data, 'nodes', 0);
 
-      expect(applyAutoExtent(m.program, ...autoExtentFor(m, data, 'nodes'))).to
-        .be.false;
+      expect(applyAutoExtent(m.program, autoExtentFor(m, data, 'nodes'))).to.be
+        .false;
 
       data.set('nodes', 2, 'w', 22);
 
       expect(autoExtentFor(m, data, 'nodes')).to.deep.equal([2, 22]);
-      expect(applyAutoExtent(m.program, 2, 22)).to.be.true;
+      expect(applyAutoExtent(m.program, [2, 22])).to.be.true;
       expect(bindEvaluator(m, data, 'nodes', 0)(1)).to.equal(50);
     });
 
@@ -560,15 +560,89 @@ describe('gpu/mappers', function () {
       expect(
         autoExtentFor(m, dataWith([-5, 0, 1, 100]), 'nodes'),
       ).to.deep.equal([1, 100]);
-      expect(autoExtentFor(m, dataWith([-5, 0]), 'nodes')).to.deep.equal([
-        1, 10,
-      ]);
+      expect(autoExtentFor(m, dataWith([-5, 0]), 'nodes')).to.equal(null);
     });
 
-    it('degenerate extents map to the center of the range', function () {
+    it('leaves degenerate extents unresolved and uses the fallback', function () {
       const ev = evaluator({ data: 'w', range: [0, 100] }, NUM, [5, 5]);
 
-      expect(ev(0)).to.equal(50);
+      expect(ev(0)).to.equal(-1);
+    });
+
+    it('resolves a partial endpoint and keeps explicit stops anchored', function () {
+      const spec = { data: 'w', domain: [0, 'auto'], range: [0, 100] };
+      const m = compileMapper(spec, NUM);
+      const data = dataWith([2, 7, 12]);
+
+      expect(bindEvaluator(m, data, 'nodes', -1)(1)).to.be.closeTo(
+        58.3333333333,
+        1e-8,
+      );
+      expect(m.program.resolvedDomain).to.deep.equal([0, 12]);
+
+      data.set('nodes', 3, 'w', 24);
+      expect(applyAutoExtent(m.program, autoExtentFor(m, data, 'nodes'))).to.be
+        .true;
+      expect(bindEvaluator(m, data, 'nodes', -1)(1)).to.be.closeTo(
+        29.1666666667,
+        1e-8,
+      );
+      expect(m.program.resolvedDomain).to.deep.equal([0, 24]);
+      expect(spec.domain).to.deep.equal([0, 'auto']);
+    });
+
+    it('supports partial diverging bounds while preserving the midpoint', function () {
+      const ev = evaluator(
+        {
+          data: 'w',
+          scale: 'diverging',
+          domain: ['auto', 0, 'auto'],
+          range: ['blue', 'white', 'red'],
+        },
+        COLOR,
+        [-4, 0, 2, 8],
+      );
+
+      expect(ev(1)).to.deep.equal([255, 255, 255, 255]);
+    });
+
+    it('resolves quantize partial endpoints and rejects interior auto stops', function () {
+      const m = compileMapper(
+        {
+          data: 'w',
+          scale: 'quantize',
+          domain: [0, 'auto'],
+          range: 'viridis',
+          bins: 2,
+        },
+        COLOR,
+      );
+
+      expect(
+        bindEvaluator(m, dataWith([2, 10]), 'nodes', [0, 0, 0, 255])(1),
+      ).to.deep.equal([253, 231, 37, 255]);
+      expect(() =>
+        compileMapper(
+          {
+            data: 'w',
+            scale: 'linear',
+            domain: [0, 'auto', 10],
+            range: [0, 1, 2],
+          },
+          NUM,
+        ),
+      ).to.throw(/endpoint 'auto'/);
+    });
+
+    it('recovers after an unresolved extent without recompiling', function () {
+      const m = compileMapper({ data: 'w', range: [0, 100] }, NUM);
+      const data = dataWith([5, 5]);
+
+      expect(bindEvaluator(m, data, 'nodes', -1)(0)).to.equal(-1);
+      data.set('nodes', 2, 'w', 9);
+      expect(applyAutoExtent(m.program, autoExtentFor(m, data, 'nodes'))).to.be
+        .true;
+      expect(bindEvaluator(m, data, 'nodes', -1)(0)).to.equal(0);
     });
 
     it('never rebuilds explicit domains', function () {
@@ -577,7 +651,7 @@ describe('gpu/mappers', function () {
         NUM,
       );
 
-      expect(applyAutoExtent(m.program, 5, 500)).to.be.false;
+      expect(applyAutoExtent(m.program, [5, 500])).to.be.false;
       expect(bindEvaluator(m, dataWith([5]), 'nodes', 0)(0)).to.equal(50);
     });
 
@@ -641,7 +715,7 @@ describe('gpu/mappers', function () {
       // widen the extent; the rebound evaluator must re-evaluate, not
       // answer from the memo the previous binding filled
       data.set('nodes', 2000, 'w', 20);
-      applyAutoExtent(m.program, ...autoExtentFor(m, data, 'nodes'));
+      applyAutoExtent(m.program, autoExtentFor(m, data, 'nodes'));
 
       expect(bindEvaluator(m, data, 'nodes', 0)(1)).to.equal(10);
     });
@@ -1037,16 +1111,125 @@ describe('gpu/mappers', function () {
       expect(cy.$id('c').numericStyle('width')).to.be.closeTo(100 / 3, 1e-5); // f32 column
     });
 
-    it('auto domains see data ingested after the sheet', function () {
+    it('does not re-evaluate untouched slots when a fixed partial bound stays put', function () {
+      const cy = graph({
+        nodes: {
+          width: { data: 'w', domain: [0, 'auto'], range: [10, 110] },
+        },
+      });
+      let writes = 0;
+      const write = cy._styleEngine.write.bind(cy._styleEngine);
+
+      cy._styleEngine.write = (...args) => {
+        writes++;
+        write(...args);
+      };
+      cy.$id('a').data('w', -10);
+
+      expect(writes).to.equal(1);
+      expect(cy.$id('b').numericStyle('width')).to.equal(60);
+    });
+
+    it('updates surviving mappings when removing an automatic extreme', function () {
+      const cy = graph({ nodes: { width: { data: 'w', range: [0, 100] } } });
+
+      expect(cy.$id('b').numericStyle('width')).to.equal(50);
+      cy.$id('c').remove();
+
+      expect(cy.$id('b').numericStyle('width')).to.equal(100);
+    });
+
+    it('returns to fallback when removal leaves a degenerate auto extent', function () {
       const cy = graph(
-        { nodes: { width: { data: 'w', range: [0, 100] } } },
-        [],
+        {
+          nodes: {
+            width: { data: 'w', range: [0, 100], fallback: 77 },
+          },
+        },
+        [{ data: { id: 'a', w: 5 } }, { data: { id: 'b', w: 10 } }],
       );
 
-      cy.add([{ data: { id: 'x', w: 1 } }, { data: { id: 'y', w: 3 } }]);
+      cy.$id('b').remove();
 
-      expect(cy.$id('x').numericStyle('width')).to.equal(0);
-      expect(cy.$id('y').numericStyle('width')).to.equal(100);
+      expect(cy.$id('a').numericStyle('width')).to.equal(77);
+    });
+
+    it('warns once and retains extent state when the same sheet is reapplied', function () {
+      const warnings = [];
+      const warn = console.warn;
+      const style = {
+        nodes: { width: { data: 'w', range: [0, 100], fallback: 77 } },
+      };
+      let cy;
+
+      console.warn = (...args) => warnings.push(args.join(' '));
+
+      try {
+        cy = graph(style, [{ data: { id: 'a', w: 5 } }]);
+        expect(cy.$id('a').numericStyle('width')).to.equal(77);
+
+        cy.add([{ data: { id: 'b', w: 9 } }]);
+        expect(cy.$id('a').numericStyle('width')).to.equal(0);
+        cy.style(style);
+
+        expect(warnings).to.have.length(1);
+        expect(
+          cy._styleEngine.defs.nodes.mappers.find((bm) => bm.m.prop === 'width')
+            .m.program.resolvedDomain,
+        ).to.deep.equal([5, 9]);
+      } finally {
+        console.warn = warn;
+        cy?.destroy();
+      }
+    });
+
+    it('rejects an invalid explicit domain without changing the installed sheet', function () {
+      const cy = graph({
+        core: { 'selection-box-color': '#f00' },
+        nodes: { width: { data: 'w', domain: [0, 10], range: [10, 110] } },
+      });
+      const beforeSheet = cy.style().json();
+      const beforeWidth = cy.$id('b').numericStyle('width');
+      const beforeCore = cy._styleEngine.core().selectionBoxColor.slice();
+
+      expect(() =>
+        cy.style({
+          core: { 'selection-box-color': '#00f' },
+          nodes: {
+            width: { data: 'w', domain: [1, 1], range: [0, 100] },
+          },
+        }),
+      ).to.throw(/strictly ascending/);
+
+      expect(cy.style().json()).to.deep.equal(beforeSheet);
+      expect(cy.$id('b').numericStyle('width')).to.equal(beforeWidth);
+      expect(cy._styleEngine.core().selectionBoxColor).to.deep.equal(
+        beforeCore,
+      );
+      cy.destroy();
+    });
+
+    it('auto domains see data ingested after the sheet', function () {
+      const warnings = [];
+      const warn = console.warn;
+      let cy;
+
+      console.warn = (...args) => warnings.push(args.join(' '));
+
+      try {
+        cy = graph({ nodes: { width: { data: 'w', range: [0, 100] } } }, []);
+
+        cy.add([{ data: { id: 'x', w: 1 } }, { data: { id: 'y', w: 3 } }]);
+
+        expect(cy.$id('x').numericStyle('width')).to.equal(0);
+        expect(cy.$id('y').numericStyle('width')).to.equal(100);
+        // No element evaluated the unresolved mapper: data arrived before
+        // the first style apply, so the initial extent was valid.
+        expect(warnings).to.have.length(0);
+      } finally {
+        console.warn = warn;
+        cy?.destroy();
+      }
     });
 
     it('defers mapped refresh while batching', function () {

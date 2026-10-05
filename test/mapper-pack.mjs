@@ -9,7 +9,11 @@ import {
   KIND,
   FLAG,
 } from '../src/render/mapper-runtime.mjs';
-import { compileMapper } from '../src/style-scales.mjs';
+import {
+  compileMapper,
+  autoExtentFor,
+  applyAutoExtent,
+} from '../src/style-scales.mjs';
 import { srgbToOklab } from '../src/style-schemes.mjs';
 import { DataStore } from '../src/store/data-store.mjs';
 
@@ -86,6 +90,40 @@ describe('gpu/mapper-pack', function () {
 
     expect(packed.ownedColumns).to.deep.equal(['node.opacity']);
     expect(packed.keys).to.deep.equal(['w']);
+  });
+
+  it('packs unresolved auto domains as a fallback constant and recovers', function () {
+    const data = dataWith([5]);
+    const inputMapper = input(
+      { data: 'w', domain: [0, 'auto'], range: [0, 1] },
+      NUM_OPACITY,
+      0.25,
+    );
+
+    expect(
+      applyAutoExtent(
+        inputMapper.m.program,
+        autoExtentFor(inputMapper.m, data, 'nodes'),
+      ),
+    ).to.be.false;
+    const unresolved = packPrograms('nodes', [inputMapper], data, 4);
+    const unresolvedWords = new Uint32Array(unresolved.programData);
+    const unresolvedValues = new Float32Array(unresolved.programData);
+
+    expect(unresolvedWords[1]).to.equal(KIND.CONSTANT);
+    expect(unresolvedWords[9]).to.equal(0);
+    expect(unresolvedValues[12]).to.equal(0.25);
+
+    data.set('nodes', 1, 'w', 9);
+    expect(
+      applyAutoExtent(
+        inputMapper.m.program,
+        autoExtentFor(inputMapper.m, data, 'nodes'),
+      ),
+    ).to.be.true;
+    const resolved = packPrograms('nodes', [inputMapper], data, 4);
+
+    expect(new Uint32Array(resolved.programData)[1]).to.equal(KIND.IDENTITY);
   });
 
   it('packs transform params (log base, pow exponent)', function () {

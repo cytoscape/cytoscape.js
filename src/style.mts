@@ -685,6 +685,11 @@ export class StyleEngine {
     engineRefresh.refreshMapped(this, group, slots, keys);
   }
 
+  /** Re-resolve auto domains after add/remove changes; called at mutation boundaries. @internal */
+  refreshAutoDomains(): void {
+    engineRefresh.refreshAutoDomains(this);
+  }
+
   /**
    * The state-flip refresh (round 61) — `core.onStateChange`'s entry,
    * replacing the `refreshMapped` route that made every select restyle

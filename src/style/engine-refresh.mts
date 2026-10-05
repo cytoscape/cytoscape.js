@@ -4,6 +4,7 @@
 
 import {
   GROUP_NODES,
+  GROUP_EDGES,
   COL,
   CONDITION_FLAGS,
   FLAG_PARENT,
@@ -404,4 +405,22 @@ export function stylesDependOnData(
   }
 
   return false;
+}
+
+/** Rebuild live auto domains after a structural population change. */
+export function refreshAutoDomains(engine: StyleEngine): void {
+  for (const group of [GROUP_NODES, GROUP_EDGES] as const) {
+    const defs =
+      group === GROUP_NODES && engine.store.hasCompounds()
+        ? [engine.defs.nodes, engine.defs.parents]
+        : [engine.defs[group]];
+
+    for (const def of defs) {
+      if (!checkAutoExtents(engine, group, def)) {
+        continue;
+      }
+
+      applyMapped(engine, group, def, engine.allSlotsFor(group, def), true);
+    }
+  }
 }

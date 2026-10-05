@@ -1733,7 +1733,7 @@
       }
     },
     "scaleMapper": {
-      "description": "A data-driven scale: `{ data: key }` alone passes the datum through; adding `range` (and usually `domain`) scales it. Missing or unmappable data resolves to `fallback`, else the channel default. Keys the compiler does not read are ignored.",
+      "description": "A data-driven scale: `{ data: key }` alone passes the datum through; adding `range` (and usually `domain`) scales it. Missing or unmappable data resolves to `fallback`, else the channel default. Continuous numeric and quantize domains may use `auto` at the first and/or last stop, with finite explicit interior stops; diverging scales require an explicit midpoint. An unresolved automatic extent uses the fallback or channel default and warns once for the installed mapping. Ordinal categories named `auto` remain categories. Keys the compiler does not read are ignored.",
       "type": "object",
       "required": ["data"],
       "properties": {
@@ -1757,7 +1757,7 @@
           ]
         },
         "domain": {
-          "description": "Ascending numeric stops (categories for 'ordinal'); 'auto' or omitted tracks the live data extent.",
+          "description": "Ascending numeric stops (categories for 'ordinal'); 'auto' or omitted tracks the live data extent. Continuous numeric and quantize arrays may put 'auto' at either outer endpoint only, with finite explicit interior stops. Diverging domains require a finite explicit midpoint. Empty, degenerate, misordered or transform-incompatible automatic extents are unresolved and use fallback/channel default. An ordinal category named 'auto' stays categorical.",
           "anyOf": [
             { "const": "auto" },
             { "type": "array", "items": { "type": ["string", "number"] } }

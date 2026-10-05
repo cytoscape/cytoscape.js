@@ -36,17 +36,18 @@ the scope it names.  None of them is a statement about the distance to
 4.0, and "Follow-up hooks" at the end is the closest thing here to an
 honest inventory — an inventory, not an estimate.
 
-## Alpha decisions awaiting implementation (3 October)
+## Alpha decisions and remaining implementation (3 October)
 
-The alpha interview in the plan record scopes the next batch;
-none of the following changes is shipped by this planning update:
+The alpha interview in the plan record scopes the next batch. Round 147 has
+landed partial numeric scale endpoints and application-owned legend JSON for
+scalar mappings and the existing pie/stripe charts. The remaining chart-scale
+work stays in round 80:
 
 - 146: triangle-tee replaces triangle-cross without an alias; width-aware
   tee bars and hollow compound end heads.
-- 147 and 80: partial automatic scale endpoints, cy.legend() JSON and
-  legendchange, then 255-value charts, explicit heat scales, signed bars,
-  compact records and shared domains. Per-node autoscaling and chart labels
-  are excluded; applications own normalization, labels, axes and legends.
+- 80: 255-value charts, explicit heat scales, signed bars, compact records
+  and shared chart domains. Per-node autoscaling and chart labels are
+  excluded; applications own normalization, labels, axes and rendered legends.
 - 82: convex then organic/concave compound shapes over actual child outlines,
   and implementation of the existing compound-sizing-wrt-labels: include.
 - 148: manual miniature compounds, actual positions plus effective-size
@@ -3025,14 +3026,25 @@ each is deliberate, not a pass-1 deferral:
 
   Semantics:
   clamp by default; missing/unmappable data resolves to `fallback` else
-  the channel default (never keep-previous — refresh is idempotent);
-  `domain` omitted/'auto' is a **live extent** (Vega-Lite semantics):
-  the data extent re-checks on writes of the mapped key and a moved
-  extent re-derives the whole channel (log auto-extents use positive
-  values only) — the O(n) case; an explicit `domain` keeps every data
-  write O(changed elements), the round-24 performance contract (pin
-  `domain` when a stream grows its own extent — see the transitions
-  bullet).
+  the channel default (never keep-previous — refresh is idempotent).
+  `domain` omitted/'auto' is a **live extent** (Vega-Lite semantics).
+  Numeric continuous and quantize domains may also use `auto` at either
+  outer endpoint, with finite explicit stops between them; diverging
+  scales keep their explicit midpoint anchored. Ordinal categories named
+  `auto` stay categorical. The extent re-checks on mapped-key writes,
+  additions, removals and parent/leaf changes; a moved bound re-derives
+  the whole affected channel, while an unchanged bound writes only the
+  changed elements. Explicit numeric domains retain the O(changed) path.
+  An empty, constant, misordered or transform-incompatible automatic
+  extent is unresolved: values use the mapper fallback or channel default,
+  and that installed mapping warns once. It recovers when eligible data
+  arrives without reapplying the sheet. Log auto-extents use positive
+  values only. This replaces the earlier invented `[0, 1]`/`[1, 10]`
+  fallback intervals; pin a numeric `domain` when a stream should not
+  expand its scale. `cy.legend()` returns detached JSON metadata for the
+  authored mappings and charts, their resolved extents and grouped bypass
+  exceptions; `legendchange` fires once after a committed snapshot changes,
+  before `batchend`. Applications own labels, units and rendered legend UI.
 
   Refresh is dependency-gated per (group, key, channel);
   edge data writes refresh edge channels; `label` takes the passthrough

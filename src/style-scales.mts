@@ -83,6 +83,7 @@ export type Program =
   | {
       kind: 'continuous';
       transform: Transform;
+      diverging: boolean;
       /** ascending transformed input stops, length = output stop count ≥ 2 */
       inStops: Float64Array;
       /** untransformed domain endpoints (clamping happens pre-transform) */
@@ -91,8 +92,14 @@ export type Program =
       outStops: OutputStops;
       clamp: boolean;
       autoDomain: boolean;
-      /** the extent the auto stops were built from (null until first bind) */
-      applied: [number, number] | null;
+      /** authored scale stops (`null` is the legacy whole-auto domain) */
+      authoredDomain: (number | 'auto')[] | null;
+      /** resolved authored stops, or null while the extent is unusable */
+      resolvedDomain: number[] | null;
+      /** Whether evaluation can use the current stop table. */
+      resolved: boolean;
+      /** the resolved domain stops last compiled; null while unresolved */
+      applied: number[] | null;
     }
   | {
       kind: 'discrete';
@@ -101,7 +108,10 @@ export type Program =
       outputs: (number | RGBA)[];
       /** quantize-with-auto-domain only (cuts recompute from the extent) */
       autoDomain: boolean;
-      applied: [number, number] | null;
+      authoredDomain: (number | 'auto')[] | null;
+      resolvedDomain: number[] | null;
+      resolved: boolean;
+      applied: number[] | null;
     }
   | { kind: 'ordinal'; map: Map<string | number, number | RGBA> };
 
@@ -129,6 +139,8 @@ export interface CompiledMapper {
   parseEnum: ((value: unknown) => number | null) | null;
   /** the original spec object, never mutated (json() fidelity) */
   spec: MapperSpec;
+  /** unresolved auto-domain warning is issued once for this installed mapping */
+  warnedUnresolved: boolean;
 }
 
 /** Output of a bound evaluator: the channel value for one slot. */
@@ -396,31 +408,81 @@ const toOutputStops = (
 
 // -- compile --
 
-const numericDomain = (opts: CompileOpts, spec: Mapper): number[] | null => {
+const numericDomain = (
+  opts: CompileOpts,
+  spec: Mapper,
+  partialEndpoints: boolean = false,
+): (number | 'auto')[] | null => {
   const domain = spec.domain;
 
   if (domain == null || domain === 'auto') {
     return null;
   }
 
-  if (
-    !Array.isArray(domain) ||
-    domain.length < 1 ||
-    domain.some((d) => typeof d !== 'number' || !isFinite(d))
-  ) {
+  if (!Array.isArray(domain) || domain.length < 1) {
     throw err(
       opts.prop,
       `domain must be an ascending array of finite numbers, or 'auto'`,
     );
   }
 
-  for (let i = 1; i < domain.length; i++) {
-    if ((domain as number[])[i] <= (domain as number[])[i - 1]) {
+  const parsed = domain.map((d, i) => {
+    if (typeof d === 'number' && isFinite(d)) {
+      return d;
+    }
+
+    if (
+      partialEndpoints &&
+      d === 'auto' &&
+      (i === 0 || i === domain.length - 1)
+    ) {
+      return 'auto';
+    }
+
+    throw err(
+      opts.prop,
+      `domain stops must be finite numbers${partialEndpoints ? " or endpoint 'auto'" : ''}`,
+    );
+  });
+
+  let previous: number | null = null;
+
+  for (const stop of parsed) {
+    if (typeof stop !== 'number') {
+      continue;
+    }
+
+    if (previous != null && stop <= previous) {
       throw err(opts.prop, `domain must be strictly ascending`);
+    }
+
+    previous = stop;
+  }
+
+  return parsed;
+};
+
+/** Resolve automatic endpoints without mutating the authored stops. */
+const resolveDomain = (
+  authored: (number | 'auto')[] | null,
+  extent: [number, number] | null,
+): number[] | null => {
+  if (extent == null) {
+    return null;
+  }
+
+  const source = authored ?? ['auto', 'auto'];
+  const resolved = source.map((stop, i) =>
+    stop === 'auto' ? (i === 0 ? extent[0] : extent[1]) : stop,
+  );
+
+  for (let i = 1; i < resolved.length; i++) {
+    if (resolved[i] <= resolved[i - 1]) {
+      return null;
     }
   }
 
-  return domain as number[];
+  return resolved;
 };
 
 const evenStops = (t0: number, t1: number, n: number): Float64Array => {
@@ -446,15 +508,18 @@ const compileContinuous = (opts: CompileOpts, spec: Mapper): Program => {
   const transform = diverging
     ? ({ kind: 'identity' } as Transform)
     : transformOf(spec, opts.prop);
-  const domain = numericDomain(opts, spec);
-  const autoDomain = domain == null;
+  const domain = numericDomain(opts, spec, true);
+  const autoDomain = domain == null || domain.includes('auto');
 
   if (diverging) {
     if (domain == null || domain.length !== 3) {
       throw err(
         opts.prop,
-        `a diverging scale needs an explicit [min, mid, max] domain`,
+        `a diverging scale needs a [min, mid, max] domain with an explicit midpoint`,
       );
+    }
+    if (domain[1] === 'auto') {
+      throw err(opts.prop, `a diverging scale needs an explicit midpoint`);
     }
   } else if (domain != null && domain.length < 2) {
     throw err(opts.prop, `a continuous domain needs at least 2 stops`);
@@ -463,8 +528,9 @@ const compileContinuous = (opts: CompileOpts, spec: Mapper): Program => {
   if (
     transform.kind === 'log' &&
     domain != null &&
-    domain[0] <= 0 &&
-    domain[domain.length - 1] >= 0
+    domain.every((stop) => typeof stop === 'number') &&
+    (domain[0] as number) <= 0 &&
+    (domain[domain.length - 1] as number) >= 0
   ) {
     throw err(
       opts.prop,
@@ -501,7 +567,7 @@ const compileContinuous = (opts: CompileOpts, spec: Mapper): Program => {
 
   if (autoDomain) {
     inStops = evenStops(0, 1, outputs.length); // placeholder until the extent applies
-  } else if (diverging) {
+  } else if (diverging && domain.every((stop) => typeof stop === 'number')) {
     // piecewise-invert around mid: stop j at t = j/(n-1); t ≤ 0.5 lands in
     // [min, mid], t > 0.5 in [mid, max] — diverging is a compiler, not an evaluator
     const [min, mid, max] = domain as number[];
@@ -513,13 +579,20 @@ const compileContinuous = (opts: CompileOpts, spec: Mapper): Program => {
         ? min + (mid - min) * (t / 0.5)
         : mid + (max - mid) * ((t - 0.5) / 0.5);
     });
-  } else if (pairwise) {
+  } else if (pairwise && domain.every((stop) => typeof stop === 'number')) {
     inStops = Float64Array.from(domain as number[], (d) => fwd(transform, d));
   } else {
     inStops = evenStops(
-      fwd(transform, domain[0]),
-      fwd(transform, domain[1]),
+      fwd(transform, domain[0] as number),
+      fwd(transform, domain[1] as number),
       outputs.length,
+    );
+  }
+
+  if (!autoDomain && !strictlyAscending(inStops)) {
+    throw err(
+      opts.prop,
+      `domain is incompatible with the selected scale transform`,
     );
   }
 
@@ -528,13 +601,17 @@ const compileContinuous = (opts: CompileOpts, spec: Mapper): Program => {
   return {
     kind: 'continuous',
     transform,
+    diverging,
     inStops,
     lo: autoDomain ? 0 : (domain as number[])[0],
     hi: autoDomain ? 1 : (domain as number[])[(domain as number[]).length - 1],
     outStops,
     clamp: spec.clamp ?? true,
     autoDomain,
-    applied: autoDomain ? null : [NaN, NaN],
+    authoredDomain: domain,
+    resolvedDomain: autoDomain ? null : (domain as number[]),
+    resolved: !autoDomain,
+    applied: autoDomain ? null : (domain as number[]),
   };
 };
 
@@ -564,12 +641,15 @@ const compileDiscrete = (opts: CompileOpts, spec: Mapper): Program => {
       cuts: Float64Array.from(cuts),
       outputs,
       autoDomain: false,
-      applied: [NaN, NaN],
+      authoredDomain: cuts,
+      resolvedDomain: cuts as number[],
+      resolved: true,
+      applied: cuts as number[],
     };
   }
 
   // quantize: uniform bins over [lo, hi] (or the live extent)
-  const domain = numericDomain(opts, spec);
+  const domain = numericDomain(opts, spec, true);
 
   if (domain != null && domain.length !== 2) {
     throw err(opts.prop, `a quantize domain must be [min, max] or 'auto'`);
@@ -589,12 +669,26 @@ const compileDiscrete = (opts: CompileOpts, spec: Mapper): Program => {
     kind: 'discrete',
     cuts: new Float64Array(bins - 1),
     outputs,
-    autoDomain: domain == null,
-    applied: domain == null ? null : [NaN, NaN],
+    autoDomain: domain == null || domain.includes('auto'),
+    authoredDomain: domain,
+    resolvedDomain:
+      domain != null && domain.every((stop) => typeof stop === 'number')
+        ? (domain as number[])
+        : null,
+    resolved:
+      domain != null && domain.every((stop) => typeof stop === 'number'),
+    applied:
+      domain != null && domain.every((stop) => typeof stop === 'number')
+        ? (domain as number[])
+        : null,
   };
 
-  if (domain != null) {
-    quantizeCuts(program.cuts, domain[0], domain[1]);
+  if (program.resolvedDomain != null) {
+    quantizeCuts(
+      program.cuts,
+      program.resolvedDomain[0],
+      program.resolvedDomain[1],
+    );
   }
 
   return program;
@@ -812,6 +906,7 @@ export const compileMapper = (
         spec.fallback === undefined ? null : parseOutput(opts, spec.fallback),
       parseEnum: opts.parseEnum ?? null,
       spec,
+      warnedUnresolved: false,
     };
   }
 
@@ -855,6 +950,7 @@ export const compileMapper = (
     fallback,
     parseEnum: opts.parseEnum ?? null,
     spec,
+    warnedUnresolved: false,
   };
 };
 
@@ -869,7 +965,7 @@ export const autoExtentFor = (
   m: CompiledMapper,
   data: DataStore,
   group: GroupName,
-): [number, number] => {
+): [number, number] | null => {
   const positiveOnly =
     m.program.kind === 'continuous' && m.program.transform.kind === 'log';
   const col = data.column(group, m.key);
@@ -885,6 +981,10 @@ export const autoExtentFor = (
       }
 
       const v = values[i];
+
+      if (!isFinite(v)) {
+        continue;
+      }
 
       if (positiveOnly && v <= 0) {
         continue;
@@ -912,8 +1012,8 @@ export const autoExtentFor = (
     }
   }
 
-  if (lo > hi) {
-    return positiveOnly ? [1, 10] : [0, 1];
+  if (lo === Infinity || hi === -Infinity || lo >= hi) {
+    return null;
   }
 
   return [lo, hi];
@@ -926,48 +1026,137 @@ export const autoExtentFor = (
  */
 export const applyAutoExtent = (
   program: Program,
-  lo: number,
-  hi: number,
+  extent: [number, number] | null,
 ): boolean => {
   if (program.kind === 'continuous' && program.autoDomain) {
-    if (
-      program.applied != null &&
-      program.applied[0] === lo &&
-      program.applied[1] === hi
-    ) {
+    const domain = resolveDomain(program.authoredDomain, extent);
+    const previous = program.resolvedDomain;
+    const same =
+      domain != null &&
+      previous != null &&
+      domain.length === previous.length &&
+      domain.every((stop, i) => stop === previous[i]);
+
+    if (same && program.resolved) {
       return false;
     }
 
-    const n = program.inStops.length;
+    if (domain == null || !continuousDomainUsable(program, domain)) {
+      const moved = program.resolved || program.resolvedDomain != null;
 
-    program.inStops = evenStops(
-      fwd(program.transform, lo),
-      fwd(program.transform, hi),
-      n,
-    );
-    program.lo = lo;
-    program.hi = hi;
-    program.applied = [lo, hi];
+      program.resolved = false;
+      program.resolvedDomain = null;
+      program.applied = null;
+
+      return moved;
+    }
+
+    const n = program.inStops.length;
+    const transformed = domain.map((stop) => fwd(program.transform, stop));
+    let stops: Float64Array;
+
+    if (domain.length > 2) {
+      if (program.diverging && domain.length === 3) {
+        const [min, mid, max] = domain;
+
+        stops = Float64Array.from({ length: n }, (_, j) => {
+          const t = j / (n - 1);
+
+          return t <= 0.5
+            ? fwd(program.transform, min + (mid - min) * (t / 0.5))
+            : fwd(program.transform, mid + (max - mid) * ((t - 0.5) / 0.5));
+        });
+      } else {
+        stops = Float64Array.from(transformed);
+      }
+    } else {
+      stops = evenStops(transformed[0], transformed[1], n);
+    }
+
+    if (!strictlyAscending(stops)) {
+      const moved = program.resolved || program.resolvedDomain != null;
+
+      program.resolved = false;
+      program.resolvedDomain = null;
+      program.applied = null;
+
+      return moved;
+    }
+
+    program.inStops = stops;
+    program.lo = domain[0];
+    program.hi = domain[domain.length - 1];
+    program.resolved = true;
+    program.resolvedDomain = domain;
+    program.applied = domain;
 
     return true;
   }
 
   if (program.kind === 'discrete' && program.autoDomain) {
-    if (
-      program.applied != null &&
-      program.applied[0] === lo &&
-      program.applied[1] === hi
-    ) {
+    const domain = resolveDomain(program.authoredDomain, extent);
+    const previous = program.resolvedDomain;
+    const same =
+      domain != null &&
+      previous != null &&
+      domain.length === previous.length &&
+      domain.every((stop, i) => stop === previous[i]);
+
+    if (same && program.resolved) {
       return false;
     }
 
-    quantizeCuts(program.cuts, lo, hi);
-    program.applied = [lo, hi];
+    if (domain == null || domain.length !== 2 || domain[0] >= domain[1]) {
+      const moved = program.resolved || program.resolvedDomain != null;
+
+      program.resolved = false;
+      program.resolvedDomain = null;
+      program.applied = null;
+
+      return moved;
+    }
+
+    quantizeCuts(program.cuts, domain[0], domain[1]);
+    program.resolved = true;
+    program.resolvedDomain = domain;
+    program.applied = domain;
 
     return true;
   }
 
   return false;
+};
+
+const strictlyAscending = (values: ArrayLike<number>): boolean => {
+  for (let i = 0; i < values.length; i++) {
+    if (!isFinite(values[i]) || (i > 0 && values[i] <= values[i - 1])) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const continuousDomainUsable = (
+  program: Extract<Program, { kind: 'continuous' }>,
+  domain: number[],
+): boolean => {
+  if (domain.length < 2 || !strictlyAscending(domain)) {
+    return false;
+  }
+
+  if (
+    program.transform.kind === 'log' &&
+    domain[0] <= 0 !== domain[domain.length - 1] <= 0
+  ) {
+    return false;
+  }
+
+  if (program.transform.kind === 'log' && domain.includes(0)) {
+    return false;
+  }
+
+  return true;
 };
 
 // -- evaluation --
@@ -1062,6 +1251,10 @@ const continuousEval = (program: Extract<Program, { kind: 'continuous' }>) => {
   const { transform, clamp, outStops } = program;
 
   return (x: number): Evaluated | null => {
+    if (!program.resolved) {
+      return null;
+    }
+
     const { inStops, lo, hi } = program; // re-read: auto extents rebuild these
 
     if (transform.kind === 'log' && (x === 0 || x > 0 !== lo > 0)) {
@@ -1109,7 +1302,11 @@ const continuousEval = (program: Extract<Program, { kind: 'continuous' }>) => {
 };
 
 const discreteEval = (program: Extract<Program, { kind: 'discrete' }>) => {
-  return (x: number): Evaluated => {
+  return (x: number): Evaluated | null => {
+    if (!program.resolved) {
+      return null;
+    }
+
     const { cuts, outputs } = program;
     let i = 0;
 
@@ -1220,9 +1417,10 @@ export const bindEvaluator = (
 
   if (
     (program.kind === 'continuous' || program.kind === 'discrete') &&
-    program.applied == null
+    program.autoDomain &&
+    !program.resolved
   ) {
-    applyAutoExtent(program, ...autoExtentFor(m, data, group));
+    applyAutoExtent(program, autoExtentFor(m, data, group));
   }
 
   const col = data.column(group, m.key);

@@ -33,6 +33,7 @@ export function style(
       engine.setBypass(ref, ele.id() as string, props);
     }
 
+    self._cy._checkLegendChange();
     return self;
   }
 
@@ -71,6 +72,7 @@ export function removeStyle(self: Collection, name?: string): Collection {
     engine.removeBypass(ref, ele.id() as string, name);
   }
 
+  self._cy._checkLegendChange();
   return self;
 }
 

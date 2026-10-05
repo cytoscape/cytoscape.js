@@ -29,7 +29,12 @@ import type { GroupDef } from './sheet.mjs';
 import type { StyleEngine } from '../style.mjs';
 import { resolveConst } from './engine-read.mjs';
 import { validateBypasses, installBypasses } from './engine-bypass.mjs';
-import { captureBefore, declOf, noteSheetChange } from './engine-diff.mjs';
+import {
+  captureBefore,
+  declEq,
+  declOf,
+  noteSheetChange,
+} from './engine-diff.mjs';
 
 /**
  * Replace the stylesheet and re-apply it to every live element,
@@ -79,12 +84,7 @@ export function setSheet(
   // round 133: what the diff compares the new sheet against
   const before = captureBefore(engine);
 
-  engine.coreStyle = resolveCoreProps(sheet.core);
-  // the one core prop the renderer reads (round 102): it travels as a
-  // store scalar, so a worker renderer receives it with the rest
-  engine.store.setDimOpacity(engine.coreStyle.dimOpacity);
-  // and round 104's declutter mode, the same way
-  engine.store.setLabelDeclutter(engine.coreStyle.labelDeclutter);
+  const coreStyle = resolveCoreProps(sheet.core);
 
   // the parents group (round 14.6): channel props overlay the nodes
   // block under v3's :parent defaults; the compound props split out
@@ -174,6 +174,36 @@ export function setSheet(
       ...parentsSplit.channels,
     }),
   };
+
+  if (before.defs != null) {
+    for (const key of [GROUP_NODES, GROUP_EDGES, 'parents'] as const) {
+      const previous = before.defs[key].mappers;
+
+      for (const next of defs[key].mappers) {
+        const same = previous.find(
+          (candidate) =>
+            candidate.m.prop === next.m.prop &&
+            declEq(before.defs?.[key].decl.get(next.m.prop), next.m.spec),
+        );
+
+        if (same != null) {
+          // Reapplying the same mapping keeps its live extent and its
+          // once-per-install unresolved-warning state.
+          next.m.program = same.m.program;
+          next.m.warnedUnresolved = same.m.warnedUnresolved;
+        }
+      }
+    }
+  }
+
+  // Commit mutable state only after every group has compiled. A malformed
+  // explicit domain must leave the prior sheet and core props installed.
+  engine.coreStyle = coreStyle;
+  // the one core prop the renderer reads (round 102): it travels as a
+  // store scalar, so a worker renderer receives it with the rest
+  engine.store.setDimOpacity(engine.coreStyle.dimOpacity);
+  // and round 104's declutter mode, the same way
+  engine.store.setLabelDeclutter(engine.coreStyle.labelDeclutter);
 
   engine.parentCompound = { padding: 10, ...parentsSplit.compound };
 

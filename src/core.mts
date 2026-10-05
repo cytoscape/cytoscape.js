@@ -46,6 +46,7 @@ import type {
   ExportOptions,
   LayoutOptions,
   Stylesheet,
+  Legend,
   Position,
   RendererStats,
   ViewportCounts,
@@ -62,6 +63,7 @@ import * as graphDataImpl from './core/graph-data.mjs';
 import * as serializeImpl from './core/serialize.mjs';
 import * as lifecycleImpl from './core/lifecycle.mjs';
 import * as patchImpl from './core/patch.mjs';
+import { buildLegend } from './core/legend.mjs';
 import type { PatchDiff, PatchOptions } from './core/patch.mjs';
 import * as cloneImpl from './core/clone.mjs';
 import type { CloneOptions } from './core/clone.mjs';
@@ -252,6 +254,8 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
   _batchDepth: number;
   /** @internal */
   _batchPending: BatchPending | null;
+  /** Cached serialized legend snapshot; rebuilt only after style-affecting commits. @internal */
+  _legendJSON: string | null;
   /** round 34.2: the memoized unfiltered collections, keyed by store structure epoch @internal */
   _allCache: AllCache | null = null;
   /** round 62.6: the whole-graph memo flattened to one field, so the
@@ -316,7 +320,13 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
     // group (nodes vs the parents overlay, round 14.6); the label entry
     // re-bakes through the same apply
     this._store.onParentFlip = (slot) => {
+      if (this._batchDepth === 0) {
+        this._styleEngine.refreshAutoDomains();
+      }
       this._styleEngine.applyBulk(GROUP_NODES, [slot]);
+      if (this._batchDepth === 0) {
+        this._checkLegendChange();
+      }
     };
 
     // a reparented node's structural case conditions ({ child: ... } /
@@ -402,6 +412,7 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
     this._layoutRuns = new Map();
     this._emphasis = null;
     this._batchPending = null;
+    this._legendJSON = null;
 
     if (options.boxSelectionMode != null) {
       this.boxSelectionMode(options.boxSelectionMode);
@@ -449,6 +460,8 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
     if (options.style != null) {
       this._styleEngine.setSheet(options.style);
     }
+
+    this._primeLegend();
   }
 
   // -- style --
@@ -482,10 +495,52 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
         this._styleEngine.setSheet(sheet);
       }
 
+      if (this._batchDepth === 0) {
+        this._checkLegendChange();
+      }
       this.emit('style');
     }
 
     return this._styleEngine;
+  }
+
+  /**
+   * Read the application's shared mapping and chart metadata. The returned
+   * JSON object is detached; changing it never alters this instance.
+   * Automatic domains expose their authored `auto` stops in the stylesheet
+   * and their current numeric stops here. `legendchange` fires after a
+   * committed snapshot changes, before `batchend` for a batch.
+   *
+   * @returns detached legend entries in stylesheet definition/property order
+   */
+  legend(): Legend {
+    if (this._legendJSON == null) {
+      this._primeLegend();
+    }
+
+    return JSON.parse(this._legendJSON as string) as Legend;
+  }
+
+  /** Establish the current state as the event comparison baseline. @internal */
+  _primeLegend(): void {
+    this._legendJSON = JSON.stringify(buildLegend(this));
+  }
+
+  /** Refresh the legend snapshot and emit only for an observable change. @internal */
+  _checkLegendChange(): void {
+    if (this._destroyed || this._batchDepth > 0) return;
+
+    const next = JSON.stringify(buildLegend(this));
+    const previous = this._legendJSON;
+    this._legendJSON = next;
+
+    if (
+      previous != null &&
+      previous !== next &&
+      this._hasListeners('legendchange')
+    ) {
+      this.emit('legendchange');
+    }
   }
 
   // -- batching --
@@ -556,6 +611,10 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    */
   _maybeCompact(): void {
     batchingImpl._maybeCompact(this);
+    if (this._batchDepth === 0 && !this._destroyed) {
+      this._styleEngine.refreshAutoDomains();
+      this._checkLegendChange();
+    }
   }
 
   /**
@@ -2719,6 +2778,7 @@ export class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
     keys: string[],
   ): void {
     batchingImpl._refreshMappedStyles(this, group, slots, keys);
+    this._checkLegendChange();
   }
 
   _emitOnEle(

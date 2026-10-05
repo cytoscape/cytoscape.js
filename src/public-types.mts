@@ -216,7 +216,10 @@ export type ElementsInput<
  * (continuous), 'diverging' (three-point [min, mid, max] domain),
  * 'ordinal' (categories → outputs), 'threshold' (cut points → bins),
  * 'quantize' (uniform bins).  `domain` omitted or 'auto' tracks the live
- * data extent.  Color ranges take color stops or a named scheme
+ * data extent. Numeric continuous domains may also use 'auto' at either
+ * outer endpoint, with finite numeric stops between them; diverging scales
+ * require an explicit midpoint. An ordinal category named 'auto' remains a
+ * category. Color ranges take color stops or a named scheme
  * ('viridis', 'plasma', 'magma', 'inferno', ColorBrewer ramps,
  * 'category10', 'dark2') and interpolate in OKLab unless
  * `interpolate: 'srgb'`.  Missing or unmappable data resolves to
@@ -236,7 +239,12 @@ export interface Mapper<Data = Untyped> {
     | 'ordinal'
     | 'threshold'
     | 'quantize';
-  /** ascending numeric stops (categories for 'ordinal'); 'auto'/omitted = live data extent */
+  /**
+   * Ascending numeric stops (categories for 'ordinal'); omitted or 'auto'
+   * tracks the live data extent. Continuous and quantize scales may use
+   * 'auto' at the first and/or last stop, with finite explicit values in
+   * between. Diverging scales require an explicit middle stop.
+   */
   domain?: (string | number)[] | 'auto';
   /** output stops (numbers, colors, or keywords), or a named color scheme */
   range?: (string | number)[] | string;
@@ -359,6 +367,58 @@ export type StylePropValue<Data = Untyped> = string | number | MapperSpec<Data>;
  * -color.
  */
 export type StyleProps<Data = Untyped> = Record<string, StylePropValue<Data>>;
+
+/** A group named by an authored stylesheet definition. */
+export type LegendGroup = 'nodes' | 'parents' | 'edges';
+
+/** A bounded summary of style bypasses affecting one shared legend entry. */
+export interface LegendException {
+  /** Properties overridden on the affected elements. */
+  properties: string[];
+  /** Number of distinct live elements carrying one or more listed overrides. */
+  elementCount: number;
+}
+
+/** One shared mapper or chart description returned by {@link Core.legend}. */
+export interface LegendEntry {
+  /** Stable stylesheet-definition/property pair, e.g. `nodes:width`. */
+  id: string;
+  /** The definition that authored this property. */
+  group: LegendGroup;
+  property: string;
+  kind: 'mapping' | 'chart';
+  /** Authored mapper object, retained as JSON data. */
+  source?: Record<string, unknown>;
+  scale?: string;
+  domain?: 'auto' | (string | number)[];
+  /** Resolved stops for the primary effective group, or null if unresolved. */
+  resolvedDomain?: number[] | null;
+  /** Separate resolved stops when one definition styles nodes and parents. */
+  resolvedDomains?: Partial<
+    Record<'nodes' | 'parents' | 'edges', number[] | null>
+  >;
+  range?: string | (string | number)[];
+  interpolate?: 'oklab' | 'srgb';
+  clamp?: boolean;
+  fallback?: string | number | null;
+  missing?: { usesChannelDefault: boolean; fallback: string | number | null };
+  status?:
+    | 'resolved'
+    | 'unresolved'
+    | 'passthrough'
+    | 'conditional'
+    | 'exception-only';
+  /** Effective groups styled by a nodes definition. */
+  appliesTo?: Array<'nodes' | 'parents' | 'edges'>;
+  /** Chart configuration, excluding per-element chart payloads and ids. */
+  chart?: Record<string, unknown>;
+  exceptions?: LegendException[];
+}
+
+/** JSON-safe, detached legend metadata for one Cytoscape instance. */
+export interface Legend {
+  entries: LegendEntry[];
+}
 
 /**
  * The v4 stylesheet — no selectors, no style functions.  Each group key

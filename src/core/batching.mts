@@ -287,4 +287,5 @@ export function _applyStyle(
   }
 
   core._styleEngine.applyBulk(group, slots);
+  core._checkLegendChange();
 }

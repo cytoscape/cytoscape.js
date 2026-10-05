@@ -322,6 +322,7 @@ declare const COL: {
    * setNodeImages): registry entry id, packed mode flags, opacity,
    * position/offset/size values with unit bits, and the sdf tint.
    * Draw-only paint: nothing in bb, cull-extent or CPU-pick reads it.
+   * An offset past `REF_OFFSET_FLOATS` saturates (round 145).
    */
   readonly NODE_IMAGE_REF: 'node.imageRef';
   /**
@@ -329,7 +330,8 @@ declare const COL: {
    * chart blob | slice count << 24 (0 = no chart).  The record is
    * CHART_HEADER floats (kind, size, hole, startAngle, direction,
    * n) then n × (value, packed-rgba-as-float-bits).  Draw-only
-   * paint, like images: nothing in bb, cull-extent or CPU-pick.
+   * paint, like images: nothing in bb, cull-extent or CPU-pick.  An
+   * offset past `REF_OFFSET_FLOATS` saturates (round 145).
    */
   readonly NODE_CHART_REF: 'node.chartRef';
   readonly EDGE_ENDPOINTS: 'edge.endpoints';
@@ -1038,7 +1040,10 @@ type ElementsInput<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> = E
  * (continuous), 'diverging' (three-point [min, mid, max] domain),
  * 'ordinal' (categories → outputs), 'threshold' (cut points → bins),
  * 'quantize' (uniform bins).  `domain` omitted or 'auto' tracks the live
- * data extent.  Color ranges take color stops or a named scheme
+ * data extent. Numeric continuous domains may also use 'auto' at either
+ * outer endpoint, with finite numeric stops between them; diverging scales
+ * require an explicit midpoint. An ordinal category named 'auto' remains a
+ * category. Color ranges take color stops or a named scheme
  * ('viridis', 'plasma', 'magma', 'inferno', ColorBrewer ramps,
  * 'category10', 'dark2') and interpolate in OKLab unless
  * `interpolate: 'srgb'`.  Missing or unmappable data resolves to
@@ -1049,7 +1054,12 @@ interface Mapper<Data = Untyped> {
    * fields */
   data: DataKey<Data>;
   scale?: 'linear' | 'log' | 'sqrt' | 'pow' | 'symlog' | 'diverging' | 'ordinal' | 'threshold' | 'quantize';
-  /** ascending numeric stops (categories for 'ordinal'); 'auto'/omitted = live data extent */
+  /**
+   * Ascending numeric stops (categories for 'ordinal'); omitted or 'auto'
+   * tracks the live data extent. Continuous and quantize scales may use
+   * 'auto' at the first and/or last stop, with finite explicit values in
+   * between. Diverging scales require an explicit middle stop.
+   */
   domain?: (string | number)[] | 'auto';
   /** output stops (numbers, colors, or keywords), or a named color scheme */
   range?: (string | number)[] | string;
@@ -1166,6 +1176,50 @@ type StylePropValue<Data = Untyped> = string | number | MapperSpec<Data>;
  * -color.
  */
 type StyleProps<Data = Untyped> = Record<string, StylePropValue<Data>>;
+/** A group named by an authored stylesheet definition. */
+type LegendGroup = 'nodes' | 'parents' | 'edges';
+/** A bounded summary of style bypasses affecting one shared legend entry. */
+interface LegendException {
+  /** Properties overridden on the affected elements. */
+  properties: string[];
+  /** Number of distinct live elements carrying one or more listed overrides. */
+  elementCount: number;
+}
+/** One shared mapper or chart description returned by {@link Core.legend}. */
+interface LegendEntry {
+  /** Stable stylesheet-definition/property pair, e.g. `nodes:width`. */
+  id: string;
+  /** The definition that authored this property. */
+  group: LegendGroup;
+  property: string;
+  kind: 'mapping' | 'chart';
+  /** Authored mapper object, retained as JSON data. */
+  source?: Record<string, unknown>;
+  scale?: string;
+  domain?: 'auto' | (string | number)[];
+  /** Resolved stops for the primary effective group, or null if unresolved. */
+  resolvedDomain?: number[] | null;
+  /** Separate resolved stops when one definition styles nodes and parents. */
+  resolvedDomains?: Partial<Record<'nodes' | 'parents' | 'edges', number[] | null>>;
+  range?: string | (string | number)[];
+  interpolate?: 'oklab' | 'srgb';
+  clamp?: boolean;
+  fallback?: string | number | null;
+  missing?: {
+    usesChannelDefault: boolean;
+    fallback: string | number | null;
+  };
+  status?: 'resolved' | 'unresolved' | 'passthrough' | 'conditional' | 'exception-only';
+  /** Effective groups styled by a nodes definition. */
+  appliesTo?: Array<'nodes' | 'parents' | 'edges'>;
+  /** Chart configuration, excluding per-element chart payloads and ids. */
+  chart?: Record<string, unknown>;
+  exceptions?: LegendException[];
+}
+/** JSON-safe, detached legend metadata for one Cytoscape instance. */
+interface Legend {
+  entries: LegendEntry[];
+}
 /**
  * The v4 stylesheet — no selectors, no style functions.  Each group key
  * is a props object whose values are constants or mapper objects; all
@@ -1886,7 +1940,9 @@ interface GpuErrorInfo {
   /**
    * `'out-of-memory'` / `'validation'` / `'internal'` — the device's
    * own error class; `'unfit'` — a buffer the renderer declined to
-   * allocate because it would exceed the device's limits
+   * allocate because it would exceed the device's limits, or (round
+   * 145) a chart or image record pool past the 2^24 floats a node's
+   * record ref can address
    */
   kind: 'out-of-memory' | 'validation' | 'internal' | 'unfit';
   /** the device's message, or the renderer's for `'unfit'` */
@@ -8771,6 +8827,16 @@ declare class Core<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData>> {
    */
   style(sheet?: Stylesheet<NodeData, EdgeData>): StyleEngine;
   /**
+   * Read the application's shared mapping and chart metadata. The returned
+   * JSON object is detached; changing it never alters this instance.
+   * Automatic domains expose their authored `auto` stops in the stylesheet
+   * and their current numeric stops here. `legendchange` fires after a
+   * committed snapshot changes, before `batchend` for a batch.
+   *
+   * @returns detached legend entries in stylesheet definition/property order
+   */
+  legend(): Legend;
+  /**
    * Slot-moving compaction, explicit form (round 19.5): move live
    * elements down to a dense slot prefix so `highWater`, column capacity
    * and pass-iteration widths shrink to the current graph instead of its
@@ -10172,4 +10238,4 @@ declare namespace cytoscape {
   export { GpuUnfitError };
 }
 //#endregion
-export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DefinitionData, type DictColumn, type ElementData, type ElementDefinition, type ElementFields, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GpuErrorInfo, type GpuMemoryStats, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, type WorkerFontFace, cytoscape as default };
+export { type AlgoRun, type BoundingBoxInput, type BoxSelectionMode, type BreadthFirstLayoutOptions, type CaseClause, type CaseMapper, type CircleLayoutOptions, type CloneOptions, type Collection, type ColumnarEdges, type ColumnarElements, type ColumnarNodes, type ComponentPackingOptions, type ConcentricLayoutOptions, type Condition, type Core, type CursorMap, type CursorState, type CustomLayout, type CustomLayoutOptions, type CytoscapeOptions, type DataColumn, type DefinitionData, type DictColumn, type ElementData, type ElementDefinition, type ElementFields, type ElementsDefinition, type ElementsInput, type Event, type EventHandler, type EventProps, type EventTarget, type ExportOptions, type FlowLayoutOptions, type FollowOptions, type ForceLayoutOptions, type GpuErrorInfo, type GpuMemoryStats, type GridLayoutOptions, type HeadlessOptions, type LayoutBaseOptions, type LayoutComponentInfo, type LayoutContext, type LayoutImpl, type LayoutOptions, type LayoutScoreMapping, type LayoutSortMapping, type Legend, type LegendEntry, type LegendException, type LegendGroup, type LoadOptions, type LoadProgress, type LoadRun, type Mapper, type MapperSpec, type NO_PARENT, type PackLayoutOptions, type PackedIds, type PatchDiff, type PatchMode, type PatchOptions, type Position, type PresetLayoutOptions, type RadialLayoutOptions, type RandomLayoutOptions, type RendererOptions, type RendererStats, type StylePropValue, type StyleProps, type Stylesheet, type ToColumnarOptions, type ViewportCounts, type WheelBehavior, type WorkerFontFace, cytoscape as default };

@@ -478,12 +478,23 @@ export function checkAutoExtents(
       (program.kind === 'continuous' || program.kind === 'discrete') &&
       program.autoDomain
     ) {
-      if (
-        applyAutoExtent(
-          program,
-          ...autoExtentFor(bm.m, engine.store.data, group),
-        )
-      ) {
+      const extentMoved = applyAutoExtent(
+        program,
+        autoExtentFor(bm.m, engine.store.data, group),
+      );
+
+      if (!program.resolved && !bm.m.warnedUnresolved) {
+        bm.m.warnedUnresolved = true;
+        console.warn(
+          "Auto domain for '" +
+            bm.m.prop +
+            "' in '" +
+            group +
+            "' is unresolved; provide a usable extent or a fallback",
+        );
+      }
+
+      if (extentMoved) {
         moved = true;
 
         if (engine.gpuOwnedProps[group].has(bm.m.prop)) {

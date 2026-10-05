@@ -20,6 +20,8 @@ import type {
   Event,
   EventTarget,
   Mapper,
+  Legend,
+  LegendEntry,
   PatchDiff,
   Stylesheet,
 } from '../../build/dts/index.js';
@@ -116,6 +118,27 @@ const cy = cytoscape<NodeData, EdgeData>({
     parents: { 'border-width': { data: 'weight', range: [1, 3] } },
   },
 });
+
+// Numeric automatic endpoints retain their `auto` spelling in the sheet,
+// and legend consumers receive the public detached JSON types.
+cy.style({
+  nodes: {
+    width: { data: 'weight', domain: [0, 'auto'], range: [10, 40] },
+    'background-color': {
+      data: 'weight',
+      scale: 'diverging',
+      domain: ['auto', 0, 'auto'],
+      range: ['#2166ac', '#f7f7f7', '#b2182b'],
+    },
+  },
+});
+const legend: Legend = cy.legend();
+const legendEntry: LegendEntry | undefined = legend.entries[0];
+const authoredAuto: string | number | undefined =
+  legendEntry?.source?.domain instanceof Array
+    ? legendEntry.source.domain[0]
+    : undefined;
+void authoredAuto;
 
 // data() reads the field's type; a read can miss, so `undefined` joins it
 const weight: number | undefined = cy.nodes().data('weight');

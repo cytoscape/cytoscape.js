@@ -387,7 +387,15 @@ export const packPrograms = (
       }
     }
 
-    if (program.kind === 'passthrough') {
+    if (
+      (program.kind === 'continuous' || program.kind === 'discrete') &&
+      !program.resolved
+    ) {
+      // An unresolved auto domain is the channel fallback on both CPU
+      // and GPU. Keep the mapper installed so a later extent recovery
+      // can repack it without replacing the stylesheet.
+      kind = KIND.CONSTANT;
+    } else if (program.kind === 'passthrough') {
       kind = KIND.PASSTHROUGH;
     } else if (program.kind === 'ordinal') {
       // dict-index LUT: entry i answers dict index i+1; unlisted

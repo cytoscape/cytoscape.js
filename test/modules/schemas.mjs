@@ -790,6 +790,48 @@ describe('schemas: the stylesheet (79.2)', () => {
     ).to.deep.equal(declaredMembers('Condition'));
   });
 
+  it('accepts and compiles partial automatic numeric domains', () => {
+    const sheets = [
+      {
+        nodes: {
+          width: { data: 'value', domain: [0, 'auto'], range: [0, 20] },
+        },
+      },
+      {
+        nodes: {
+          'background-color': {
+            data: 'score',
+            scale: 'diverging',
+            domain: ['auto', 0, 'auto'],
+            range: ['#2166ac', '#f7f7f7', '#b2182b'],
+          },
+        },
+      },
+      {
+        nodes: {
+          shape: {
+            data: 'kind',
+            scale: 'ordinal',
+            domain: ['auto', 'other'],
+            range: ['ellipse', 'rectangle'],
+          },
+        },
+      },
+    ];
+
+    for (const [index, style] of sheets.entries()) {
+      expectValid('stylesheet.schema.json', style, `partial domain ${index}`);
+      const cy = cytoscape({
+        style,
+        elements: [
+          { data: { id: 'a', value: 1, score: -2, kind: 'auto' } },
+          { data: { id: 'b', value: 3, score: 4, kind: 'other' } },
+        ],
+      });
+      cy.destroy();
+    }
+  });
+
   it("takes the declaration's scale and interpolation names", () => {
     const literals = (type, member) => {
       const { checker } = declarations();

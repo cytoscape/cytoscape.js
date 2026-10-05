@@ -14,6 +14,7 @@ import {
   CHART_VALUE_WORDS,
   REF_OFFSET_FLOATS,
   REF_OFFSET_MASK,
+  SHAPE_MASK,
 } from '../../contract.mjs';
 import type { StoreDelta } from '../../contract.mjs';
 import { IMAGE_KIND_AUTO, IMAGE_KIND_SDF } from '../../image-registry.mjs';
@@ -415,9 +416,9 @@ export function polygonPointsAt(
   slot: number,
 ): Float64Array | null {
   const geom = gs.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
-  const shape = (geom[slot * 4 + 1] >>> 16) & 0xf;
+  const shape = (geom[slot * 4 + 1] >>> 16) & SHAPE_MASK;
 
-  if (shape !== 14) {
+  if (shape !== 14 && shape < 27) {
     return null;
   }
 
@@ -434,6 +435,17 @@ export function polygonPointsAt(
   return out;
 }
 
+function setFusedPolyRef(gs: GraphStore, slot: number, ref: number): void {
+  const fused = gs.nodes.column(COL.NODE_OUTER_GEOM) as Float32Array;
+  const bits = new Uint32Array(fused.buffer, fused.byteOffset);
+  const at = slot * 4 + 3;
+
+  if (bits[at] !== ref) {
+    bits[at] = ref;
+    gs.dirty.mark(COL.NODE_OUTER_GEOM, slot);
+  }
+}
+
 /**
  * Store a node's custom polygon points (round 13 C3): flat unit
  * [x, y, ...] pairs, or null to clear.  Returns the packed record
@@ -446,16 +458,19 @@ export function setPolygonPoints(
 ): number {
   if (points == null || points.length === 0) {
     gs.polyPool.free(slot);
+    setFusedPolyRef(gs, slot, 0);
 
     return 0;
   }
 
   const offset = gs.polyPool.write(slot, points);
+  const ref = (offset | ((points.length / 2) << 24)) >>> 0;
 
+  setFusedPolyRef(gs, slot, ref);
   gs.geoEpoch++;
   gs.dirty.touch();
 
-  return (offset | ((points.length / 2) << 24)) >>> 0;
+  return ref;
 }
 
 /**

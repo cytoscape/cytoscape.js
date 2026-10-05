@@ -98,3 +98,55 @@ describe('cy.nodeAt (round 75.4)', function () {
     expect(cy.nodeAt(100, 100)).to.equal(cy.$id('a')[0]);
   });
 });
+
+describe('compound hull node picking', function () {
+  const elements = {
+    nodes: [
+      { data: { id: 'p' } },
+      { data: { id: 'a', parent: 'p' }, position: { x: 0, y: 0 } },
+      { data: { id: 'b', parent: 'p' }, position: { x: 100, y: 0 } },
+      { data: { id: 'c', parent: 'p' }, position: { x: 0, y: 100 } },
+      { data: { id: 'q' }, position: { x: 220, y: 50 } },
+    ],
+    edges: [{ data: { id: 'pq', source: 'p', target: 'q' } }],
+  };
+  const style = {
+    nodes: { width: 8, height: 8 },
+    parents: { padding: 0, shape: 'convex-hull' },
+  };
+
+  it('uses the concave contour for CPU picking and the convex hull as a control', function () {
+    const convex = cytoscape({ elements, style });
+
+    expect(convex.nodeAt(52, 52).id()).to.equal('p');
+    convex.$id('p').style('shape', 'concave-hull');
+    expect(convex.nodeAt(52, 52)).to.equal(null);
+    expect(convex.nodeAt(50, 0).id()).to.equal('p');
+    convex.destroy();
+  });
+
+  it('uses the stored hull contour for straight edge boundary accessors', function () {
+    const cy = cytoscape({ elements, style });
+    const p = cy.$id('p');
+    const endpoint = cy.$id('pq').sourceEndpoint();
+
+    expect(endpoint.x).to.be.greaterThan(p.position().x);
+    expect(endpoint.x).to.be.lessThan(p.position().x + p.width() / 2 - 20);
+    expect(endpoint.y).to.be.closeTo(p.position().y, 0.02);
+    expect(cy.nodeAt(endpoint.x - 0.5, endpoint.y).id()).to.equal('p');
+    expect(cy.nodeAt(endpoint.x + 0.5, endpoint.y)).to.equal(null);
+    cy.destroy();
+  });
+
+  it('terminates a concave parent edge at the outer crossing when its center is in a notch', function () {
+    const cy = cytoscape({ elements, style });
+    const p = cy.$id('p');
+
+    p.style('shape', 'concave-hull');
+    const endpoint = cy.$id('pq').sourceEndpoint();
+
+    expect(endpoint.x).to.be.greaterThan(p.position().x + p.width() / 2 - 1);
+    expect(endpoint.y).to.be.closeTo(p.position().y, 0.02);
+    cy.destroy();
+  });
+});

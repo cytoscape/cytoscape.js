@@ -213,6 +213,8 @@ const computeFrame = (
   tHalfW: number,
   tHalfH: number,
   tShape: number,
+  sPolygon?: ArrayLike<number> | null,
+  tPolygon?: ArrayLike<number> | null,
 ): typeof frameScratch => {
   let ux = txC - sxC;
   let uy = tyC - syC;
@@ -221,8 +223,8 @@ const computeFrame = (
   ux /= uL;
   uy /= uL;
 
-  const offS = boundaryOffset(sShape, sHalfW, sHalfH, ux, uy);
-  const offT = boundaryOffset(tShape, tHalfW, tHalfH, -ux, -uy);
+  const offS = boundaryOffset(sShape, sHalfW, sHalfH, ux, uy, sPolygon);
+  const offT = boundaryOffset(tShape, tHalfW, tHalfH, -ux, -uy, tPolygon);
 
   frameScratch.six = sxC + ux * offS;
   frameScratch.siy = syC + uy * offS;
@@ -276,6 +278,8 @@ export const evalRoute = (
   tHalfH: number,
   tShape: number,
   trim: ArrowTrim = NO_ARROW_TRIM,
+  sPolygon?: ArrayLike<number> | null,
+  tPolygon?: ArrayLike<number> | null,
 ): CurveRoute => {
   const hasEndpt = kind >= CURVE_HAS_ENDPT;
   const base = hasEndpt ? kind - CURVE_HAS_ENDPT : kind;
@@ -305,6 +309,8 @@ export const evalRoute = (
       tHalfW,
       tHalfH,
       tShape,
+      sPolygon,
+      tPolygon,
     );
 
     fSix = f.six;
@@ -334,6 +340,7 @@ export const evalRoute = (
         sHalfH,
         sShape,
         anchorScratch,
+        sPolygon,
       );
       bx1 = anchorScratch.x;
       by1 = anchorScratch.y;
@@ -347,6 +354,7 @@ export const evalRoute = (
         tHalfH,
         tShape,
         anchorScratch,
+        tPolygon,
       );
       bx2 = anchorScratch.x;
       by2 = anchorScratch.y;
@@ -411,12 +419,30 @@ export const evalRoute = (
     tAimX = out.qx[qn - 2];
     tAimY = out.qy[qn - 2];
 
-    const s = setRouteBoundary(sxC, syC, sHalfW, sHalfH, sShape, sAimX, sAimY);
+    const s = setRouteBoundary(
+      sxC,
+      syC,
+      sHalfW,
+      sHalfH,
+      sShape,
+      sAimX,
+      sAimY,
+      sPolygon,
+    );
 
     out.qx[0] = s.x;
     out.qy[0] = s.y;
 
-    const e = setRouteBoundary(txC, tyC, tHalfW, tHalfH, tShape, tAimX, tAimY);
+    const e = setRouteBoundary(
+      txC,
+      tyC,
+      tHalfW,
+      tHalfH,
+      tShape,
+      tAimX,
+      tAimY,
+      tPolygon,
+    );
 
     out.qx[qn - 1] = e.x;
     out.qy[qn - 1] = e.y;
@@ -441,6 +467,7 @@ export const evalRoute = (
         tHalfH,
         tShape,
         anchorScratch,
+        tPolygon,
       );
       sAimX = anchorScratch.x;
       sAimY = anchorScratch.y;
@@ -454,6 +481,7 @@ export const evalRoute = (
         sHalfH,
         sShape,
         anchorScratch,
+        sPolygon,
       );
       tAimX = anchorScratch.x;
       tAimY = anchorScratch.y;
@@ -473,6 +501,7 @@ export const evalRoute = (
       fSix,
       fSiy,
       anchorScratch,
+      sPolygon,
     );
     out.qx[0] = anchorScratch.x;
     out.qy[0] = anchorScratch.y;
@@ -491,6 +520,7 @@ export const evalRoute = (
       fTix,
       fTiy,
       anchorScratch,
+      tPolygon,
     );
     out.qx[qn - 1] = anchorScratch.x;
     out.qy[qn - 1] = anchorScratch.y;
@@ -562,6 +592,7 @@ export const rawEndpointAnchor = (
   halfH: number,
   shape: number,
   out: { x: number; y: number },
+  polygon?: ArrayLike<number> | null,
 ): void => {
   const at = isTarget ? off + 5 : off;
   const mode = blob[at];
@@ -579,7 +610,7 @@ export const rawEndpointAnchor = (
     const a = blob[at + 1];
     const dx = Math.cos(a);
     const dy = Math.sin(a);
-    const bOff = boundaryOffset(shape, halfW, halfH, dx, dy);
+    const bOff = boundaryOffset(shape, halfW, halfH, dx, dy, polygon);
 
     out.x = cx + dx * bOff;
     out.y = cy + dy * bOff;
@@ -612,6 +643,7 @@ export const resolveEndpoint = (
   frameX: number,
   frameY: number,
   out: { x: number; y: number },
+  polygon?: ArrayLike<number> | null,
 ): void => {
   const at = isTarget ? off + 5 : off;
   const mode = blob[at];
@@ -624,9 +656,29 @@ export const resolveEndpoint = (
     out.x = frameX;
     out.y = frameY;
   } else if (mode === ENDPT_POINT || mode === ENDPT_ANGLE) {
-    rawEndpointAnchor(blob, off, isTarget, cx, cy, halfW, halfH, shape, out);
+    rawEndpointAnchor(
+      blob,
+      off,
+      isTarget,
+      cx,
+      cy,
+      halfW,
+      halfH,
+      shape,
+      out,
+      polygon,
+    );
   } else {
-    const b = setRouteBoundary(cx, cy, halfW, halfH, shape, aimX, aimY);
+    const b = setRouteBoundary(
+      cx,
+      cy,
+      halfW,
+      halfH,
+      shape,
+      aimX,
+      aimY,
+      polygon,
+    );
 
     out.x = b.x;
     out.y = b.y;

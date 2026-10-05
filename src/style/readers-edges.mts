@@ -152,7 +152,7 @@ defineReader(
 
 defineReader([PROP.LINE_OUTLINE_WIDTH], (store, slot) => {
   // stored stroke = width + outline width (B4)
-  const rec = (store.column(COL.EDGE_CASING) as Uint32Array)[slot * 2 + 1];
+  const rec = (store.column(COL.EDGE_CASING) as Uint32Array)[slot * 4 + 1];
   const width = (store.column(COL.EDGE_WIDTH) as Float32Array)[slot * 2];
 
   // on the stroke's 1/256 px grid (round 105): a width off the grid
@@ -161,7 +161,7 @@ defineReader([PROP.LINE_OUTLINE_WIDTH], (store, slot) => {
 });
 
 defineReader([PROP.LINE_OUTLINE_COLOR], (store, slot) => {
-  const rgba = (store.column(COL.EDGE_CASING) as Uint32Array)[slot * 2];
+  const rgba = (store.column(COL.EDGE_CASING) as Uint32Array)[slot * 4];
 
   return formatRgba(
     rgba & 0xff,

@@ -371,7 +371,7 @@ export function captureEdgeWidthRides(
     COL.EDGE_UNDERLAY,
   ] as const) {
     const rec = store.column(column) as Uint32Array;
-    const enabled = refs.filter((r) => rec[r.slot * 2] !== 0);
+    const enabled = refs.filter((r) => rec[r.slot * 4] !== 0);
 
     if (enabled.length === 0) {
       continue;
@@ -383,7 +383,7 @@ export function captureEdgeWidthRides(
 
     for (let i = 0; i < enabled.length; i++) {
       const slot = enabled[i].slot;
-      const stroke = rec[slot * 2 + 1] / 256;
+      const stroke = rec[slot * 4 + 1] / 256;
 
       write.data[i * 2] = stroke;
       write.data[i * 2 + 1] = stroke + (toWidth - width[slot * 2]);

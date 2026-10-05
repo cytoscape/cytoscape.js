@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>Compound hulls</title>
+    <style>
+      html, body, #cy { width: 100%; height: 100%; margin: 0; }
+      #cy { position: absolute; inset: 0; background: white; }
+      #controls { position: absolute; z-index: 1; top: 12px; left: 12px; padding: 8px; background: #fffE; font: 14px sans-serif; }
+      #status { font: 12px monospace; margin-top: 6px; }
+    </style>
+    <script src="../build/cytoscape.umd.js"></script>
+  </head>
+  <body>
+    <div id="cy"></div>
+    <div id="controls">
+      <label>Parent shape
+        <select id="shape" onchange="setShape(this.value)">
+          <option>convex-hull</option>
+          <option>round-convex-hull</option>
+          <option>concave-hull</option>
+        </select>
+      </label>
+      <label><input id="labels" type="checkbox" onchange="setSizing(this.checked)" /> Include child labels</label>
+      <div id="status"></div>
+    </div>
+    <script>
+      window.cy = cytoscape({
+        container: document.getElementById('cy'),
+        elements: {
+          nodes: [
+            { data: { id: 'p', label: 'compound parent' } },
+            { data: { id: 'a', parent: 'p', label: 'member A' }, position: { x: 0, y: 0 } },
+            { data: { id: 'b', parent: 'p', label: 'member B' }, position: { x: 100, y: 0 } },
+            { data: { id: 'c', parent: 'p', label: 'member C' }, position: { x: 0, y: 100 } },
+            { data: { id: 'q', label: 'outside' }, position: { x: 220, y: 50 } },
+          ],
+          edges: [{ data: { id: 'pq', source: 'p', target: 'q' } }],
+        },
+        style: {
+          nodes: { width: 8, height: 8, label: { data: 'label' }, 'background-color': '#355a9a', color: '#222' },
+          edges: {
+            width: 2, 'line-color': '#555', 'curve-style': 'unbundled-bezier',
+            'target-arrow-shape': 'triangle',
+            'line-outline-width': 3,
+            'underlay-color': '#ff7a00', 'underlay-padding': 1,
+            'overlay-color': '#0080ff', 'overlay-padding': 2,
+          },
+          parents: {
+            shape: 'convex-hull', padding: 0, 'border-width': 3,
+            'border-color': '#26734d', 'background-color': '#7dc6a4',
+            'background-opacity': 0.65, label: { data: 'label' },
+            'compound-sizing-wrt-labels': 'exclude',
+          },
+        },
+        layout: { name: 'preset' },
+        zoom: 1,
+        pan: { x: 150, y: 150 },
+      });
+
+      window.setShape = function(shape) {
+        cy.$id('p').style('shape', shape);
+        updateStatus();
+      };
+      window.setSizing = function(include) {
+        cy.$id('p').style('compound-sizing-wrt-labels', include ? 'include' : 'exclude');
+        updateStatus();
+      };
+      window.hullStatus = function() {
+        const parent = cy.$id('p');
+        return {
+          shape: parent.style('shape'),
+          bounds: parent.boundingBox(),
+          pick: cy.nodeAt(52, 52)?.id() ?? null,
+          endpoint: cy.$id('pq').sourceEndpoint(),
+        };
+      };
+      function updateStatus() {
+        document.getElementById('status').textContent = JSON.stringify(hullStatus());
+      }
+      cy.ready.then(() => {
+        updateStatus();
+        window.hullsReady = true;
+        window.dispatchEvent(new Event('hulls-ready'));
+      });
+    </script>
+  </body>
+</html>

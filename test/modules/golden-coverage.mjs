@@ -76,11 +76,11 @@ exercised group-properties move pixels in some golden.
 // subtracted the width on the same grid; with that fixed it adds no
 // newly exercised property, and the pins stand
 const PINNED = {
-  universe: 216,
-  unexercised: 76,
-  paintable: 57,
+  universe: 220,
+  unexercised: 80,
+  paintable: 61,
   noStatic: 19,
-  keywordGaps: 63,
+  keywordGaps: 69,
   inert: 47,
 };
 

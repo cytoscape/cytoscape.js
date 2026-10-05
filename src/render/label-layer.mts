@@ -10,7 +10,7 @@ import type { LaidBlock } from '../label-wrap.mjs';
 import { GLYPH_ROTATE, GLYPH_WORDS, GlyphBuffer } from './glyph-buffer.mjs';
 import type { RenderStoreView } from './host.mjs';
 import type { LabelStream } from '../contract.mjs';
-import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
+import { COL, GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 import { LabelDeclutter, nodeLabelRect } from './label-declutter.mjs';
 
 /**
@@ -269,6 +269,10 @@ export class LabelLayer {
   private processGroup(group: LabelStream, glyphs: GlyphBuffer): void {
     const dirty = this.store.takeLabelDirty(group);
     const nodes = group === GROUP_NODES;
+    const endpoints =
+      nodes || dirty.length === 0
+        ? null
+        : (this.store.column(COL.EDGE_ENDPOINTS) as Uint32Array);
 
     if (nodes && dirty.length > 0) {
       this.nodeLabelsTouched = true;
@@ -364,6 +368,8 @@ export class LabelLayer {
           : group === 'edgeTarget'
             ? -(entry.endOffset + 1)
             : 0;
+      const source = endpoints == null ? 0 : endpoints[slot * 2];
+      const target = endpoints == null ? 0 : endpoints[slot * 2 + 1];
 
       const outlineW =
         entry.outlineWidth > 0
@@ -426,6 +432,8 @@ export class LabelLayer {
         f32[at + 12] = zoomDprMin; // the box hides with its text
         f32[at + 13] = endParam; // and anchors with it (D4)
         f32[at + 14] = entry.rotation; // and turns with it (27.7)
+        u32[at + 16] = source;
+        u32[at + 17] = target;
         at += GLYPH_WORDS;
       }
 
@@ -456,6 +464,8 @@ export class LabelLayer {
         f32[at + 12] = zoomDprMin;
         f32[at + 13] = endParam;
         f32[at + 14] = entry.rotation; // 27.7: numeric text-rotation
+        u32[at + 16] = source;
+        u32[at + 17] = target;
         at += GLYPH_WORDS;
       }
 

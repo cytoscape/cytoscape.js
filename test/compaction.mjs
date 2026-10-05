@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { GraphStore } from '../src/store/graph-store.mjs';
-import { FLAG_ALIVE, FLAG_SELECTED, NO_SLOT } from '../src/contract.mjs';
+import { COL, FLAG_ALIVE, FLAG_SELECTED, NO_SLOT } from '../src/contract.mjs';
 
 /*
 Round 19.1 — store-core slot compaction.  `GraphStore.compact()` moves
@@ -118,6 +118,8 @@ describe('gpu/store: slot compaction (19.1)', function () {
     expect(store.count('nodes')).to.equal(10);
     expect(store.count('edges')).to.equal(9);
 
+    const tracked = store.lookup('e20').slot;
+    store.setEdgeLayer(COL.EDGE_CASING, tracked, 0xff0000ff, 6);
     store.compact();
 
     expect(store.highWater('nodes')).to.equal(10);
@@ -132,6 +134,10 @@ describe('gpu/store: slot compaction (19.1)', function () {
 
       expect(endpoints[e.slot * 2]).to.equal(src.slot);
       expect(endpoints[e.slot * 2 + 1]).to.equal(tgt.slot);
+      const casing = store.column(COL.EDGE_CASING);
+
+      expect(casing[e.slot * 4 + 2]).to.equal(src.slot);
+      expect(casing[e.slot * 4 + 3]).to.equal(tgt.slot);
 
       // adjacency answers over the new slots
       expect(store.adj.outDegree(src.slot)).to.equal(1);

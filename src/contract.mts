@@ -267,6 +267,11 @@ export const ROUND_POLYGON_RADIUS_MAX = 8;
 // so like cut-rectangle it is a parameterized shape, not a unit table.
 export const SHAPE_BARREL = 26;
 
+// Round 82: dynamic compound hull contours share the node polygon blob.
+export const SHAPE_CONVEX_HULL = 27;
+export const SHAPE_ROUND_CONVEX_HULL = 28;
+export const SHAPE_CONCAVE_HULL = 29;
+
 /** v3's `getBarrelCurveConstants`, in model px. */
 export const BARREL_HEIGHT_OFFSET_MAX = 15;
 export const BARREL_HEIGHT_OFFSET_PCT = 0.05;
@@ -618,18 +623,17 @@ export const COL = {
   NODE_OUTER_HALF: 'node.outerHalf',
   /**
    * Float32Array(4·cap) — *derived* (round 58): [outerHalf.x,
-   * outerHalf.y, shapeId, 0] — `node.outerHalf` and `node.shape` fused
-   * into one column, so a vertex stage that binds both can swap them
+   * outerHalf.y, shapeId, polygonRefBits] — `node.outerHalf` and
+   * `node.shape` fused into one column, so a vertex stage that binds both can swap them
    * for this and spend the freed slot on `edge.width` (the arrow-trim
    * word).  Bound by exactly the two stages that were at the
    * 8-storage-buffer budget with no slot for the trim: the curved
    * layer-stroke VS and the edge-label VS.  Maintained by the store —
    * `updateOuterHalf` writes lanes 0/1 beside every outerHalf write,
-   * the `node.shape` write refreshes lane 2 — and never written
-   * directly.  Shape ids are small integers, so the f32 lane is exact
-   * (`node.borderGeom.y` carrying a shape copy for the node FS is the
-   * precedent).  Nothing reads it on the CPU; `test/modules/`
-   * pins it in lockstep with its two source columns.
+   * the `node.shape` write refreshes lane 2, and polygon writers store
+   * the packed polygon ref as raw u32 bits in lane 3.  The f32 lane is
+   * read only through `bitcast<u32>` by edge boundary shaders.  The
+   * store keeps it in lockstep with the source columns and blob record.
    */
   NODE_OUTER_GEOM: 'node.outerGeom',
   /**
@@ -899,12 +903,12 @@ export const COLUMN_SPECS: ColumnSpec[] = [
   spec(COL.EDGE_ARROW_WIDTHS, GROUP_EDGES, Float32Array, 2),
   spec(COL.EDGE_MID_SOURCE_ARROW, GROUP_EDGES, Uint8Array, 4),
   spec(COL.EDGE_MID_TARGET_ARROW, GROUP_EDGES, Uint8Array, 4),
-  spec(COL.EDGE_OVERLAY, GROUP_EDGES, Uint32Array, 2),
+  spec(COL.EDGE_OVERLAY, GROUP_EDGES, Uint32Array, 4),
   spec(COL.EDGE_GRADIENT, GROUP_EDGES, Uint32Array, 8),
-  spec(COL.EDGE_CASING, GROUP_EDGES, Uint32Array, 2),
+  spec(COL.EDGE_CASING, GROUP_EDGES, Uint32Array, 4),
   spec(COL.EDGE_DASH_PATTERN, GROUP_EDGES, Float32Array, 4),
   spec(COL.EDGE_DASH_META, GROUP_EDGES, Float32Array, 2),
-  spec(COL.EDGE_UNDERLAY, GROUP_EDGES, Uint32Array, 2),
+  spec(COL.EDGE_UNDERLAY, GROUP_EDGES, Uint32Array, 4),
   spec(COL.EDGE_CURVE_PARAMS, GROUP_EDGES, Float32Array, 4),
 ];
 

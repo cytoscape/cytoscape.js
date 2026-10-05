@@ -140,7 +140,7 @@ export default defineConfig({
       // and limits and soak (round 138), the device limits, the
       // degradation order and the renderer soak over the GPU ledger
       testMatch: [
-        /(renderer|algorithms-gpu|algorithms-workers|load|contexts|limits|soak)\.spec\.js/,
+        /(renderer|compound-hulls|algorithms-gpu|algorithms-workers|load|contexts|limits|soak)\.spec\.js/,
         /status-features\.spec\.mjs/,
       ],
       use: {
@@ -165,7 +165,7 @@ export default defineConfig({
     {
       name: 'renderer-webkit',
       testMatch: [
-        /(renderer|algorithms-gpu|algorithms-workers|load|contexts|limits|soak)\.spec\.js/,
+        /(renderer|compound-hulls|algorithms-gpu|algorithms-workers|load|contexts|limits|soak)\.spec\.js/,
         /status-features\.spec\.mjs/,
       ],
       use: { ...devices['Desktop Safari'] },

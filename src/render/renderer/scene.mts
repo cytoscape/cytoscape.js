@@ -578,7 +578,6 @@ export function encodeCulls(
       Math.max(1, glyphs.buffer().size / GLYPH_BYTES),
       [
         glyphs.buffer(),
-        mirror.buffer(COL.EDGE_ENDPOINTS),
         mirror.buffer(COL.NODE_POSITION),
         mirror.buffer(COL.EDGE_FLAGS),
         mirror.buffer(COL.NODE_FLAGS),

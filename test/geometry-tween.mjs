@@ -387,7 +387,7 @@ describe('gpu/animation: geometry tweens (round 25)', function () {
       });
       const ab = cy.$id('ab');
       const s = ab._first().slot;
-      const stroke = () => cy._store.column('edge.casing')[s * 2 + 1] / 256;
+      const stroke = () => cy._store.column('edge.casing')[s * 4 + 1] / 256;
 
       expect(stroke()).to.be.closeTo(7, 1 / 256); // width + outline
 
@@ -418,8 +418,8 @@ describe('gpu/animation: geometry tweens (round 25)', function () {
       const ab = cy.$id('ab');
       const s = ab._first().slot;
       const overlayStroke = () =>
-        cy._store.column('edge.overlay')[s * 2 + 1] / 256;
-      const underlayRec = () => cy._store.column('edge.underlay')[s * 2 + 1];
+        cy._store.column('edge.overlay')[s * 4 + 1] / 256;
+      const underlayRec = () => cy._store.column('edge.underlay')[s * 4 + 1];
       const underlayBefore = underlayRec();
 
       expect(overlayStroke()).to.be.closeTo(7, 1 / 256); // width + 2·padding

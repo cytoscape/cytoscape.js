@@ -163,6 +163,8 @@ export function curveEvalAt(
     outer[t * 2 + 1],
     shape[t],
     gs.arrowTrimAt(slot),
+    gs.polygonPointsAt(s),
+    gs.polygonPointsAt(t),
   );
 }
 
@@ -213,6 +215,8 @@ export function curveRouteAt(
     outer[t * 2 + 1],
     shape[t],
     gs.arrowTrimAt(slot),
+    gs.polygonPointsAt(s),
+    gs.polygonPointsAt(t),
   );
 }
 
@@ -273,6 +277,8 @@ export function curveRouteAtPositions(
     outer[t * 2 + 1],
     shape[t],
     gs.arrowTrimAt(slot),
+    gs.polygonPointsAt(s),
+    gs.polygonPointsAt(t),
   );
 }
 
@@ -333,6 +339,8 @@ export function curveEvalAtPositions(
     outer[t * 2 + 1],
     shape[t],
     gs.arrowTrimAt(slot),
+    gs.polygonPointsAt(s),
+    gs.polygonPointsAt(t),
   );
 }
 
@@ -445,6 +453,7 @@ export function straightEndpointAt(
     outer[self * 2 + 1],
     dx,
     dy,
+    gs.polygonPointsAt(self),
   );
   const trim = gs.arrowTrimAt(slot);
   const back = arrows

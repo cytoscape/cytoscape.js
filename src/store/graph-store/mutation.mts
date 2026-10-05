@@ -29,6 +29,7 @@ import type {
 import { initialFlags } from './shared.mjs';
 import type { AddElementOpts, GraphStore } from '../graph-store.mjs';
 import { compactOrder } from './compaction.mjs';
+import { updateEdgeLayerEndpoints } from './layers.mjs';
 
 /**
  * Preallocate ahead of a bulk add: grows each table at most once for the
@@ -132,6 +133,7 @@ export function addEdge(
 
   endpoints[slot * 2] = source.slot;
   endpoints[slot * 2 + 1] = target.slot;
+  updateEdgeLayerEndpoints(gs, slot);
 
   (gs.edges.column(COL.EDGE_FLAGS) as Uint32Array)[slot] = initialFlags(
     opts,
@@ -362,6 +364,7 @@ export function moveEdge(
 
   endpoints[slot * 2] = source;
   endpoints[slot * 2 + 1] = target;
+  updateEdgeLayerEndpoints(gs, slot);
 
   gs.adj.addEdge(slot, source, target);
   maybeRebuildAdjacency(gs);

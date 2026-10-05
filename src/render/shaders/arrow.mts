@@ -38,23 +38,24 @@ ${ARROW_GAP_WGSL}
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
 @group(0) @binding(2) var<storage, read> edgeWidths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
-@group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
-@group(0) @binding(6) var<storage, read> arrows: array<u32>;
+@group(0) @binding(4) var<storage, read> nodeOuterGeom: array<vec4f>;
+@group(0) @binding(5) var<storage, read> arrows: array<u32>;
 
 // which end this draw covers: 0 target, 1 source, 2 mid-target,
 // 3 mid-source (C1) — the bind group also swaps in that end's colors
 struct End { endId: u32 }
-@group(0) @binding(7) var<uniform> end: End;
+@group(0) @binding(6) var<uniform> end: End;
 // shape ids packed source | target<<8, hollow bits 16/17, arrow-scale
 // ×16 in the top byte (B7) and the mid shapes (C1) — see the layout
 // above packArrowShapes in contract.mts.  Fragment stage only; the
 // vertex stage reads the same word out of edge.width lane 1 (round 56).
-@group(0) @binding(8) var<storage, read> arrowShapes: array<u32>;
+@group(0) @binding(7) var<storage, read> arrowShapes: array<u32>;
 // hollow stroke widths per end, model px (B7)
-@group(0) @binding(9) var<storage, read> arrowWidths: array<vec2f>;
+@group(0) @binding(8) var<storage, read> arrowWidths: array<vec2f>;
 // curve params: the mid entry point reads the haystack kind (C1)
-@group(0) @binding(10) var<storage, read> curveParams: array<vec4f>;
+@group(0) @binding(9) var<storage, read> curveParams: array<vec4f>;
+
+@group(0) @binding(10) var<storage, read> polyBlob: array<f32>;
 
 @group(1) @binding(0) var<storage, read> visible: array<u32>;
 
@@ -115,11 +116,11 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   // spacing meaning zero to the renderer and v3's value to the
   // accessors.  Now v3's rule applies to every head and the arrow frame
   // is v3's frame, so sourceEndpoint() can report the point drawn.
-  let half = nodeOuterHalf[tipSlot] * frame.zoomDpr;
+  let half = nodeOuterGeom[tipSlot].xy * frame.zoomDpr;
   let word = arrowWordOf(edgeWidths[slot]);
   let thisShape = select(tgtShapeOf(word), srcShapeOf(word), isSource);
   let spacing = arrowSpacingW(thisShape, edgeWidths[slot].x, scaleOfWord(word)) * frame.zoomDpr;
-  let tip = tipC - dir * (boundaryOffset(nodeShapes[tipSlot], half, dir) + spacing);
+  let tip = tipC - dir * (boundaryOffsetPoly(u32(nodeOuterGeom[tipSlot].z), half, dir, bitcast<u32>(nodeOuterGeom[tipSlot].w)) + spacing);
 
   // sizing follows the drawn (floored) edge width; alpha matches the
   // edge LOD.  The quad covers the frame's max arrow-scale (B7) — the
@@ -287,8 +288,8 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   var anchor = (pa + pb) * 0.5;
 
   if (params.w == 6.0) { // haystack: mid of the offset points (v3's rs.mid)
-    pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
-    pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+    pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterGeom[ends.x].xy * params.z;
+    pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterGeom[ends.y].xy * params.z;
     anchor = (pa + pb) * 0.5;
   } else {
     // Round 58: the anchor is v3's rs.mid — the four-point mean
@@ -301,8 +302,8 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
 
     if (ml < 1e-6) { md = vec2f(1.0, 0.0); } else { md = md / ml; }
 
-    let bs = pa + md * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], md);
-    let bt = pb - md * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -md);
+    let bs = pa + md * boundaryOffsetPoly(u32(nodeOuterGeom[ends.x].z), nodeOuterGeom[ends.x].xy, md, bitcast<u32>(nodeOuterGeom[ends.x].w));
+    let bt = pb - md * boundaryOffsetPoly(u32(nodeOuterGeom[ends.y].z), nodeOuterGeom[ends.y].xy, -md, bitcast<u32>(nodeOuterGeom[ends.y].w));
 
     anchor = straightMidW(bs, bt, pa, pb, edgeWidths[slot]);
   }
@@ -384,10 +385,10 @@ ${ROUTE_WGSL}
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
 @group(0) @binding(2) var<storage, read> edgeWidths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
-@group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
-@group(0) @binding(6) var<storage, read> curveParams: array<vec4f>;
-@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;
+@group(0) @binding(4) var<storage, read> nodeOuterGeom: array<vec4f>;
+@group(0) @binding(5) var<storage, read> curveParams: array<vec4f>;
+@group(0) @binding(6) var<storage, read> curveBlob: array<f32>;
+@group(0) @binding(7) var<storage, read> polyBlob: array<f32>;
 
 // 0 target, 1 source, 2 mid-target, 3 mid-source (C1)
 struct End { endId: u32 }
@@ -478,8 +479,8 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   if (params.w <= 2.0 || params.w == 16.0) {
     let g = evalCurveGeom(
       params,
-      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      nodePositions[ends.x], nodeOuterGeom[ends.x].xy, u32(nodeOuterGeom[ends.x].z), bitcast<u32>(nodeOuterGeom[ends.x].w),
+      nodePositions[ends.y], nodeOuterGeom[ends.y].xy, u32(nodeOuterGeom[ends.y].z), bitcast<u32>(nodeOuterGeom[ends.y].w),
       arrowTrimOf(edgeWidths[slot])
     );
 
@@ -494,8 +495,8 @@ fn vsArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   } else {
     var route = evalRouteW(
       params,
-      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      nodePositions[ends.x], nodeOuterGeom[ends.x].xy, u32(nodeOuterGeom[ends.x].z), bitcast<u32>(nodeOuterGeom[ends.x].w),
+      nodePositions[ends.y], nodeOuterGeom[ends.y].xy, u32(nodeOuterGeom[ends.y].z), bitcast<u32>(nodeOuterGeom[ends.y].w),
       arrowTrimOf(edgeWidths[slot])
     );
     let qn = route.n + 2u;
@@ -641,8 +642,8 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   if (params.w <= 2.0 || params.w == 16.0) {
     let g = evalCurveGeom(
       params,
-      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      nodePositions[ends.x], nodeOuterGeom[ends.x].xy, u32(nodeOuterGeom[ends.x].z), bitcast<u32>(nodeOuterGeom[ends.x].w),
+      nodePositions[ends.y], nodeOuterGeom[ends.y].xy, u32(nodeOuterGeom[ends.y].z), bitcast<u32>(nodeOuterGeom[ends.y].w),
       arrowGapTrimOf(edgeWidths[slot]) // round 58: an anchor, not ink — must land on midpoint()
     );
 
@@ -652,8 +653,8 @@ fn vsMidArrow(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) 
   } else {
     var route = evalRouteW(
       params,
-      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      nodePositions[ends.x], nodeOuterGeom[ends.x].xy, u32(nodeOuterGeom[ends.x].z), bitcast<u32>(nodeOuterGeom[ends.x].w),
+      nodePositions[ends.y], nodeOuterGeom[ends.y].xy, u32(nodeOuterGeom[ends.y].z), bitcast<u32>(nodeOuterGeom[ends.y].w),
       arrowGapTrimOf(edgeWidths[slot]) // round 58: an anchor, not ink — must land on midpoint()
     );
     let midTan = routeMidpointW(&route);

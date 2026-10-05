@@ -8,6 +8,9 @@ import {
   STROKE_DOUBLE,
   SHAPE_MASK,
   SHAPE_SHIFT,
+  SHAPE_CONVEX_HULL,
+  SHAPE_ROUND_CONVEX_HULL,
+  SHAPE_CONCAVE_HULL,
 } from '../../contract.mjs';
 import { COMMON, DASH_WGSL } from './common.mjs';
 import { SDF, NODE_PERIM_WGSL } from './sdf.mjs';
@@ -321,7 +324,7 @@ fn fsNode(in: NodeVSOut) -> @location(0) vec4f {
       var oHalf = half + vec2f(dOut);
       var oRadius = radius;
 
-      if (shape == 2u || (shape >= 4u && shape <= 16u)) {
+      if (shape == 2u || (shape >= 4u && shape <= 16u) || shape == ${SHAPE_CONVEX_HULL}u || shape == ${SHAPE_ROUND_CONVEX_HULL}u || shape == ${SHAPE_CONCAVE_HULL}u) {
         // v3's expandPolygon pads in UNIT space (divided by nodeWidth
         // alone), so the y expansion scales by the aspect ratio
         oHalf = half + vec2f(dOut, dOut * half.y / max(half.x, 1e-6));
@@ -499,7 +502,7 @@ fn fsGhost(in: NodeVSOut) -> @location(0) vec4f {
       var oHalf = half + vec2f(dOut);
       var oRadius = radius;
 
-      if (shape == 2u || (shape >= 4u && shape <= 16u)) {
+      if (shape == 2u || (shape >= 4u && shape <= 16u) || shape == ${SHAPE_CONVEX_HULL}u || shape == ${SHAPE_ROUND_CONVEX_HULL}u || shape == ${SHAPE_CONCAVE_HULL}u) {
         // v3's expandPolygon pads in UNIT space (divided by nodeWidth
         // alone), so the y expansion scales by the aspect ratio
         oHalf = half + vec2f(dOut, dOut * half.y / max(half.x, 1e-6));

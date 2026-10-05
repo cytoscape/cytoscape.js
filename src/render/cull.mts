@@ -45,7 +45,7 @@ const INPUT_COUNTS: Record<CullKind, number> = {
   edge: 5,
   curvedEdge: 5,
   glyph: 4,
-  edgeGlyph: 5,
+  edgeGlyph: 4,
   ghost: 5,
   nodeLayer: 4,
   parentNode: 5,
@@ -493,13 +493,12 @@ ${GLYPH_STRUCT}
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<uniform> info: CullInfo;
 @group(0) @binding(2) var<storage, read> glyphs: array<Glyph>;
-@group(0) @binding(3) var<storage, read> endpoints: array<vec2u>;
-@group(0) @binding(4) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(5) var<storage, read> edgeFlags: array<u32>;
-@group(0) @binding(6) var<storage, read> nodeFlags: array<u32>;
-@group(0) @binding(7) var<storage, read_write> wgCounts: array<u32>;
-@group(0) @binding(8) var<storage, read_write> wgOffsets: array<u32>;
-@group(0) @binding(9) var<storage, read_write> visible: array<u32>;
+@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
+@group(0) @binding(4) var<storage, read> edgeFlags: array<u32>;
+@group(0) @binding(5) var<storage, read> nodeFlags: array<u32>;
+@group(0) @binding(6) var<storage, read_write> wgCounts: array<u32>;
+@group(0) @binding(7) var<storage, read_write> wgOffsets: array<u32>;
+@group(0) @binding(8) var<storage, read_write> visible: array<u32>;
 
 // edge-label glyphs: the owner is an edge; it draws when the edge and both
 // endpoint nodes are shown (mirroring the edge cull), positioned at the
@@ -515,7 +514,7 @@ fn isVisible(slot: u32) -> bool {
   if ((edgeFlags[owner] & SHOWN) != SHOWN) { return false; }
   if (!emphasisKeeps(frame.emphasisPass, edgeFlags[owner])) { return false; }
 
-  let ends = endpoints[owner];
+  let ends = vec2u(g.edgeSource, g.edgeTarget);
 
   if ((nodeFlags[ends.x] & SHOWN) != SHOWN) { return false; }
   if ((nodeFlags[ends.y] & SHOWN) != SHOWN) { return false; }

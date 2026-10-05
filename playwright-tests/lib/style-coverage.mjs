@@ -49,6 +49,7 @@ export const MAX_VALUES = 32;
  * block, which the Node gate holds this list to.
  */
 export const COMPOUND_PROPS = [
+  'collapse-scale',
   'compound-sizing-wrt-labels',
   'min-height',
   'min-width',

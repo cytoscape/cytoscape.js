@@ -63,6 +63,7 @@ export function setScalar(
 
     geom[slot * 4 + 2] = value;
     gs.dirty.mark(COL.NODE_OUTER_GEOM, slot);
+    gs.hierarchy.markGeo(slot);
   }
 
   if (id === COL.NODE_BORDER_WIDTH) {
@@ -182,11 +183,11 @@ export function setLane(
     const arr = gs.edges.column(id) as Uint32Array;
     const enc = Math.max(0, Math.round(value * 256));
 
-    if (arr[slot * 2 + 1] === enc) {
+    if (arr[slot * 4 + 1] === enc) {
       return;
     }
 
-    arr[slot * 2 + 1] = enc;
+    arr[slot * 4 + 1] = enc;
     gs.dirty.mark(id, slot);
 
     return;

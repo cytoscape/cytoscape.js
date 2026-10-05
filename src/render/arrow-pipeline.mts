@@ -26,8 +26,7 @@ const ARROW_COLUMNS: ColumnId[] = [
   COL.EDGE_ENDPOINTS,
   COL.EDGE_WIDTH,
   COL.NODE_POSITION,
-  COL.NODE_OUTER_HALF,
-  COL.NODE_SHAPE,
+  COL.NODE_OUTER_GEOM,
 ];
 
 export class ArrowPipeline {
@@ -127,6 +126,11 @@ export class ArrowPipeline {
         {
           // curve params: the mid entry point reads the haystack kind (C1)
           binding: ARROW_COLUMNS.length + 5,
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
+        {
+          binding: ARROW_COLUMNS.length + 6,
           visibility: SHADER_STAGE.VERTEX,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
@@ -250,6 +254,10 @@ export class ArrowPipeline {
           {
             binding: ARROW_COLUMNS.length + 5,
             resource: { buffer: mirror.buffer(COL.EDGE_CURVE_PARAMS) },
+          },
+          {
+            binding: ARROW_COLUMNS.length + 6,
+            resource: { buffer: mirror.polyBlobBuffer() },
           },
         ],
       }),

@@ -18,6 +18,9 @@ import {
   SHAPE_BARREL,
   SHAPE_BOTTOM_ROUND_RECTANGLE,
   SHAPE_CIRCLE,
+  SHAPE_CONVEX_HULL,
+  SHAPE_ROUND_CONVEX_HULL,
+  SHAPE_CONCAVE_HULL,
   SHAPE_CUT_RECTANGLE,
   SHAPE_ELLIPSE,
   SHAPE_POLYGON_CUSTOM,
@@ -235,7 +238,12 @@ export function pickNodeTierAt(
 
     // C3: custom polygons test their blob points (the same record the
     // FS reads — dual consumers of one ref, agreeing by construction)
-    if (shape === SHAPE_POLYGON_CUSTOM) {
+    if (
+      shape === SHAPE_POLYGON_CUSTOM ||
+      shape === SHAPE_CONVEX_HULL ||
+      shape === SHAPE_ROUND_CONVEX_HULL ||
+      shape === SHAPE_CONCAVE_HULL
+    ) {
       const ref = borderGeom[slot * 4];
       const off = ref & 0xffffff;
       const count = ref >>> 24;
@@ -269,7 +277,18 @@ export function pickNodeTierAt(
 }
 
 // inside tests matching the sign of the shader SDFs (sd <= 0 picks)
-function insideShape(
+/** Test whether a local point lies within a node's resolved outline.
+ *
+ * @param shape — the node's style shape identifier
+ * @param x — local x coordinate, in model pixels
+ * @param y — local y coordinate, in model pixels
+ * @param halfW — the outer half-width, including border
+ * @param halfH — the outer half-height, including border
+ * @param radius — the resolved round-rectangle or round-hull radius
+ * @param zoomDpr — the model-to-device scale used by rounded polygons
+ * @returns whether the point is covered by the node shape
+ */
+export function insideShape(
   shape: number,
   dx: number,
   dy: number,

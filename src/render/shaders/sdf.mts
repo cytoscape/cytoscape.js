@@ -37,6 +37,9 @@ import {
   SHAPE_BARREL,
   SHAPE_BOTTOM_ROUND_RECTANGLE,
   SHAPE_CUT_RECTANGLE,
+  SHAPE_CONVEX_HULL,
+  SHAPE_ROUND_CONVEX_HULL,
+  SHAPE_CONCAVE_HULL,
   SHAPE_POLYGON_CUSTOM,
   SHAPE_ROUND_TAG,
   SHAPE_ROUND_TRIANGLE,
@@ -704,7 +707,7 @@ fn nodeSD(shape: u32, p: vec2f, half: vec2f, radius: f32, polyRef: u32, zoomDpr:
     case 1u: { return ellipseSD(p, half); }
     case 2u: { return rectangleSD(p, half); }
 ${POLY.cases}
-    case ${SHAPE_POLYGON_CUSTOM}u: { return customPolySD(p, half, polyRef); }
+    case ${SHAPE_POLYGON_CUSTOM}u, ${SHAPE_CONVEX_HULL}u, ${SHAPE_ROUND_CONVEX_HULL}u, ${SHAPE_CONCAVE_HULL}u: { return customPolySD(p, half, polyRef); }
     case ${SHAPE_CUT_RECTANGLE}u: { return cutRectangleSD(p, half, radius); }
     case ${SHAPE_BOTTOM_ROUND_RECTANGLE}u: { return bottomRoundRectangleSD(p, half, radius); }
     case ${SHAPE_BARREL}u: { return barrelSD(p, half, zoomDpr); }
@@ -1023,7 +1026,7 @@ fn perimeterCoord(shape: u32, p: vec2f, half: vec2f, radius: f32, polyRef: u32, 
     case 0u, 1u: { return ellipsePerimCoord(p, half); }
     case 2u: { return rectanglePerim(p, half); }
 ${POLY.perimCases}
-    case ${SHAPE_POLYGON_CUSTOM}u: { return customPolyPerim(p, half, polyRef); }
+    case ${SHAPE_POLYGON_CUSTOM}u, ${SHAPE_CONVEX_HULL}u, ${SHAPE_ROUND_CONVEX_HULL}u, ${SHAPE_CONCAVE_HULL}u: { return customPolyPerim(p, half, polyRef); }
     case ${SHAPE_CUT_RECTANGLE}u: { return cutRectanglePerim(p, half, radius); }
     case ${SHAPE_BOTTOM_ROUND_RECTANGLE}u: { return bottomRoundRectanglePerim(p, half, radius); }
     case ${SHAPE_BARREL}u: { return barrelPerim(p, half, zoomDpr); }

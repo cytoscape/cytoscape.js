@@ -32,8 +32,7 @@ const EDGE_COLUMNS: { id: ColumnId; stages: number }[] = [
   // and takes that as a flat varying instead.  A whole storage binding
   // for one number is what a stage at its 8-buffer budget cannot afford
   { id: COL.EDGE_CURVE_PARAMS, stages: V },
-  { id: COL.NODE_OUTER_HALF, stages: V },
-  { id: COL.NODE_SHAPE, stages: V },
+  { id: COL.NODE_OUTER_GEOM, stages: V },
   { id: COL.EDGE_LINE_COLOR, stages: F },
   { id: COL.EDGE_OPACITY, stages: F },
   { id: COL.EDGE_LINE_STYLE, stages: F },
@@ -99,14 +98,19 @@ export class EdgePipeline {
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         })),
         {
-          // the overlay/underlay record the layer entry points read (A2)
           binding: EDGE_COLUMNS.length + 1,
+          visibility: V,
+          buffer: { type: 'read-only-storage' },
+        },
+        {
+          // the overlay/underlay record the layer entry points read (A2)
+          binding: EDGE_COLUMNS.length + 2,
           visibility: V | F,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
         {
           // the line-fill gradient record (C2), fragment-only
-          binding: EDGE_COLUMNS.length + 2,
+          binding: EDGE_COLUMNS.length + 3,
           visibility: F,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
@@ -235,10 +239,14 @@ export class EdgePipeline {
         })),
         {
           binding: EDGE_COLUMNS.length + 1,
-          resource: { buffer: mirror.buffer(layer) },
+          resource: { buffer: mirror.polyBlobBuffer() },
         },
         {
           binding: EDGE_COLUMNS.length + 2,
+          resource: { buffer: mirror.buffer(layer) },
+        },
+        {
+          binding: EDGE_COLUMNS.length + 3,
           resource: { buffer: mirror.buffer(COL.EDGE_GRADIENT) },
         },
       ],

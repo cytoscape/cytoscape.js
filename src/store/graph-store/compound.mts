@@ -2,6 +2,7 @@
 // reparenting, visibility and the effective-opacity folds.
 
 import { EDGE_DIST_NODE_POSITION } from '../../curve-geometry.mjs';
+import { sampleNodeOutline } from '../../compound-hulls.mjs';
 import { assignTaxiTracks } from '../../taxi-tracks.mjs';
 import type { TrackEdge } from '../../taxi-tracks.mjs';
 import {
@@ -21,6 +22,7 @@ import {
 } from '../../contract.mjs';
 import type { ColumnId, GroupName, Ref } from '../../contract.mjs';
 import type { GraphStore } from '../graph-store.mjs';
+import { updateEdgeLayerEndpoints } from './layers.mjs';
 import { updateOuterHalf } from './channels.mjs';
 
 /**
@@ -148,7 +150,30 @@ export function replicateEdgeStyle(
     gs.dirty.mark(spec.id, start, start + count);
   }
 
+  // Layer records are mostly style-owned, but their last two words cache
+  // this edge's endpoint slots for the curved layer pipelines.  Repair
+  // those per-element words after the bulk style fill copied the template.
+  for (let slot = start; slot < start + count; slot++) {
+    updateEdgeLayerEndpoints(gs, slot);
+  }
+
   gs.geoEpoch++;
+}
+
+/** The child's body outline in model px, including its outer border. */
+export function nodeOutline(gs: GraphStore, slot: number) {
+  const shape = gs.nodes.column(COL.NODE_SHAPE) as Uint32Array;
+  const half = gs.nodes.column(COL.NODE_OUTER_HALF) as Float32Array;
+  const border = gs.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
+  const shapeId = shape[slot];
+  const hw = half[slot * 2];
+  const hh = half[slot * 2 + 1];
+  const stored = border[slot * 4];
+  const radius =
+    stored === 0xffffffff ? Math.min(hw * 0.5, hh * 0.5, 8) : stored / 256;
+  const polygon = gs.polygonPointsAt(slot);
+
+  return sampleNodeOutline(shapeId, hw, hh, radius, polygon);
 }
 
 /**
@@ -166,15 +191,12 @@ export function materializeParentGeom(
   y: number,
   w: number,
   h: number,
+  hull?: number[],
 ): void {
   const pos = gs.nodes.column(COL.NODE_POSITION) as Float32Array;
   const size = gs.nodes.column(COL.NODE_SIZE) as Float32Array;
   const posChanged = pos[slot * 2] !== x || pos[slot * 2 + 1] !== y;
   const sizeChanged = size[slot * 2] !== w || size[slot * 2 + 1] !== h;
-
-  if (!posChanged && !sizeChanged) {
-    return;
-  }
 
   if (posChanged) {
     pos[slot * 2] = x;
@@ -215,7 +237,45 @@ export function materializeParentGeom(
     }
   }
 
-  gs.geoEpoch++;
+  if (hull != null) {
+    let changed = true;
+    const current = gs.polygonPointsAt(slot);
+
+    if (current != null && current.length === hull.length) {
+      changed = false;
+
+      for (let i = 0; i < hull.length; i++) {
+        if (Math.abs(current[i] - hull[i]) > 1e-5) {
+          changed = true;
+          break;
+        }
+      }
+    }
+
+    if (changed) {
+      const ref = gs.setPolygonPoints(slot, hull);
+      const geom = gs.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
+      const at = slot * 4;
+
+      if (geom[at] !== ref) {
+        geom[at] = ref;
+        gs.dirty.mark(COL.NODE_BORDER_GEOM, slot);
+      }
+
+      const fused = gs.nodes.column(COL.NODE_OUTER_GEOM) as Float32Array;
+      const bits = new Uint32Array(fused.buffer, fused.byteOffset);
+      const fusedAt = slot * 4 + 3;
+
+      if (bits[fusedAt] !== ref) {
+        bits[fusedAt] = ref;
+        gs.dirty.mark(COL.NODE_OUTER_GEOM, slot);
+      }
+    }
+  }
+
+  if (posChanged || sizeChanged) {
+    gs.geoEpoch++;
+  }
 }
 
 /**

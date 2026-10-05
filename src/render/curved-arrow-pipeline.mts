@@ -21,8 +21,7 @@ const VERTEX_COLUMNS: ColumnId[] = [
   COL.EDGE_ENDPOINTS,
   COL.EDGE_WIDTH,
   COL.NODE_POSITION,
-  COL.NODE_OUTER_HALF, // border-inclusive halves (the 12a size-only deviation is gone)
-  COL.NODE_SHAPE,
+  COL.NODE_OUTER_GEOM,
   COL.EDGE_CURVE_PARAMS,
   // + the curve param blob at the next binding; this end's arrow colors
   // moved to the fragment stage (12b — the blob took their vertex slot)
@@ -105,26 +104,32 @@ export class CurvedArrowPipeline {
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
         {
-          // the End uniform: the fragment stage picks this end's shape byte
+          // the dynamic contour pool, paired with NODE_OUTER_GEOM's ref
           binding: VERTEX_COLUMNS.length + 2,
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
+        {
+          // the End uniform: the fragment stage picks this end's shape byte
+          binding: VERTEX_COLUMNS.length + 3,
           visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
           buffer: { type: 'uniform' },
         },
         {
           // this end's arrow colors, fragment-only (12b)
-          binding: VERTEX_COLUMNS.length + 3,
-          visibility: SHADER_STAGE.FRAGMENT,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
-        },
-        {
-          // arrow shape ids, fragment-only
           binding: VERTEX_COLUMNS.length + 4,
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
         {
-          // hollow stroke widths per end (B7), fragment-only
+          // arrow shape ids, fragment-only
           binding: VERTEX_COLUMNS.length + 5,
+          visibility: SHADER_STAGE.FRAGMENT,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
+        {
+          // hollow stroke widths per end (B7), fragment-only
+          binding: VERTEX_COLUMNS.length + 6,
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
@@ -234,18 +239,22 @@ export class CurvedArrowPipeline {
           },
           {
             binding: VERTEX_COLUMNS.length + 2,
-            resource: { buffer: endUniform },
+            resource: { buffer: mirror.polyBlobBuffer() },
           },
           {
             binding: VERTEX_COLUMNS.length + 3,
-            resource: { buffer: mirror.buffer(arrowColumn[end]) },
+            resource: { buffer: endUniform },
           },
           {
             binding: VERTEX_COLUMNS.length + 4,
-            resource: { buffer: mirror.buffer(COL.EDGE_ARROW_SHAPES) },
+            resource: { buffer: mirror.buffer(arrowColumn[end]) },
           },
           {
             binding: VERTEX_COLUMNS.length + 5,
+            resource: { buffer: mirror.buffer(COL.EDGE_ARROW_SHAPES) },
+          },
+          {
+            binding: VERTEX_COLUMNS.length + 6,
             resource: { buffer: mirror.buffer(COL.EDGE_ARROW_WIDTHS) },
           },
         ],

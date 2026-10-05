@@ -13,7 +13,7 @@ garbage.  Uploads are one coalesced dirty span per frame; capacity growth
 reallocates the GPU buffer (old one destroyed behind onSubmittedWorkDone)
 and bumps `version` for lazy bind-group rebuild — the ColumnMirror rules.
 
-CPU-canonical layout, 16 words (64 bytes) per glyph, matching the WGSL
+CPU-canonical layout, 18 words (72 bytes) per glyph, matching the WGSL
 Glyph struct:
   u32 owner word (0xffffffff = dead; else bits 0..30 the owner slot, bit
   31 the autorotate flag — set only on the edge stream), u32 packed RGBA
@@ -25,20 +25,22 @@ Glyph struct:
   (0 on the node and mid-edge streams; on the end-label streams the sign
   picks the end and |v| - 1 is the arc offset — round 13 D4),
   f32 rotation (the label's own text-rotation in radians, 0 when none —
-  round 27.7; autorotate rides the owner word's flag instead), f32 pad.
+  round 27.7; autorotate rides the owner word's flag instead), f32 pad,
+  u32 edge source slot, u32 edge target slot (0 for node labels; the edge
+  cull and label vertex stages share these so contours cost no extra
+  endpoint storage binding).
 A negative u0 marks a solid background quad (no atlas sample); its v0
 carries the run's glyph-block height for LOD purposes.
 */
 
 /*
-Round 27.7 widened this from 14 to 16 to carry a per-glyph rotation.
-15 would have been enough for the data but breaks the struct's 8-byte
-alignment (the vec2f members), so 16 it is — 64 bytes per glyph, up from
-56.  That is a real ~14% cost on the heaviest stream, paid so that a
-numeric `text-rotation` needs no extra storage binding: the edge label
-pipeline is already at 7 storage buffers against a base limit of 8.
+Round 27.7 widened this from 14 to 16 words to carry a per-glyph
+rotation while preserving the struct's 8-byte alignment. Round 82 adds
+two endpoint slots at the tail; the resulting 72-byte record lets edge
+labels share those slots with the hull-contour data without exceeding the
+storage-binding limit.
 */
-export const GLYPH_WORDS = 16;
+export const GLYPH_WORDS = 18;
 export const GLYPH_BYTES = GLYPH_WORDS * 4;
 export const DEAD_GLYPH = 0xffffffff;
 /**

@@ -32,7 +32,34 @@ describe('gpu/edge-casing (round 13 B4)', function () {
     var rec = cy._store.column('edge.casing');
     var slot = cy._store.lookup('e').slot;
 
-    expect(rec[slot * 2 + 1] / 256).to.be.closeTo(10, 0.01); // width + outline
+    expect(rec[slot * 4 + 1] / 256).to.be.closeTo(10, 0.01); // width + outline
+    expect(rec[slot * 4 + 2]).to.equal(
+      cy._store.column('edge.endpoints')[slot * 2],
+    );
+    expect(rec[slot * 4 + 3]).to.equal(
+      cy._store.column('edge.endpoints')[slot * 2 + 1],
+    );
+  });
+
+  it('refreshes cached endpoints when an edge is re-pointed', function () {
+    cy = cytoscape({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { id: 'e', source: 'a', target: 'b' } },
+      ],
+      style: { edges: { 'line-outline-width': 4 } },
+    });
+
+    cy.$id('e').move({ target: 'c' });
+
+    const slot = cy._store.lookup('e').slot;
+    const rec = cy._store.column('edge.casing');
+    const endpoints = cy._store.column('edge.endpoints');
+
+    expect(rec[slot * 4 + 2]).to.equal(endpoints[slot * 2]);
+    expect(rec[slot * 4 + 3]).to.equal(endpoints[slot * 2 + 1]);
   });
 
   it('defaults: no casing (width 0), black', function () {
@@ -48,7 +75,7 @@ describe('gpu/edge-casing (round 13 B4)', function () {
     var rec = cy._store.column('edge.casing');
     var slot = cy._store.lookup('e').slot;
 
-    expect(rec[slot * 2] >>> 24).to.equal(64); // 255 × 0.25
+    expect(rec[slot * 4] >>> 24).to.equal(64); // 255 × 0.25
   });
 
   it('an enabled casing demotes the opacity mapper off the GPU kernel', function () {

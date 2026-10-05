@@ -98,7 +98,7 @@ describe('gpu/node-layers: overlay + underlay (round 13 A2)', function () {
     var rec = cy._store.column('edge.overlay');
     var slot = cy._store.lookup('e').slot;
 
-    expect(rec[slot * 2 + 1] / 256).to.be.closeTo(16, 0.01);
+    expect(rec[slot * 4 + 1] / 256).to.be.closeTo(16, 0.01);
 
     expect(() =>
       cytoscape({ style: { edges: { 'overlay-shape': 'ellipse' } } }),

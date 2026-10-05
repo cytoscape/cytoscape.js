@@ -27,8 +27,7 @@ const VERTEX_COLUMNS: ColumnId[] = [
   COL.EDGE_ENDPOINTS,
   COL.EDGE_WIDTH,
   COL.NODE_POSITION,
-  COL.NODE_OUTER_HALF,
-  COL.NODE_SHAPE,
+  COL.NODE_OUTER_GEOM,
   COL.EDGE_CURVE_PARAMS,
 ];
 
@@ -107,14 +106,19 @@ export class CurvedEdgePipeline {
           visibility: SHADER_STAGE.VERTEX,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
+        {
+          binding: VERTEX_COLUMNS.length + 2,
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
         ...FRAGMENT_COLUMNS.map((id, i) => ({
-          binding: VERTEX_COLUMNS.length + 2 + i,
+          binding: VERTEX_COLUMNS.length + 3 + i,
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         })),
         {
           // the line-fill gradient record (C2), fragment-only
-          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3,
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4,
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
@@ -140,10 +144,7 @@ export class CurvedEdgePipeline {
           buffer: { type: 'uniform' },
         },
         ...VERTEX_COLUMNS.map((id, i) => ({ id, binding: i + 1 }))
-          .filter(
-            (entry) =>
-              entry.id !== COL.NODE_OUTER_HALF && entry.id !== COL.NODE_SHAPE,
-          )
+          .filter((entry) => entry.id !== COL.EDGE_ENDPOINTS)
           .map((entry) => ({
             binding: entry.binding,
             visibility: SHADER_STAGE.VERTEX,
@@ -155,13 +156,13 @@ export class CurvedEdgePipeline {
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
         {
-          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2, // the layer record
-          visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
+          binding: VERTEX_COLUMNS.length + 2,
+          visibility: SHADER_STAGE.VERTEX,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
         {
-          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4, // node.outerGeom
-          visibility: SHADER_STAGE.VERTEX,
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3, // the layer record
+          visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
       ],
@@ -184,10 +185,7 @@ export class CurvedEdgePipeline {
           buffer: { type: 'uniform' },
         },
         ...VERTEX_COLUMNS.map((id, i) => ({ id, binding: i + 1 }))
-          .filter(
-            (entry) =>
-              entry.id !== COL.NODE_OUTER_HALF && entry.id !== COL.NODE_SHAPE,
-          )
+          .filter((entry) => entry.id !== COL.EDGE_ENDPOINTS)
           .map((entry) => ({
             binding: entry.binding,
             visibility: SHADER_STAGE.VERTEX,
@@ -198,24 +196,24 @@ export class CurvedEdgePipeline {
           visibility: SHADER_STAGE.VERTEX,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
+        {
+          binding: VERTEX_COLUMNS.length + 2,
+          visibility: SHADER_STAGE.VERTEX,
+          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
+        },
         ...FRAGMENT_COLUMNS.map((id, i) => ({
-          binding: VERTEX_COLUMNS.length + 2 + i,
+          binding: VERTEX_COLUMNS.length + 3 + i,
           visibility: SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         })),
         {
-          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2, // the casing record
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3, // the casing record
           visibility: SHADER_STAGE.VERTEX | SHADER_STAGE.FRAGMENT,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
         {
-          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3, // the gradient record
+          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4, // the gradient record
           visibility: SHADER_STAGE.FRAGMENT,
-          buffer: { type: 'read-only-storage' as GPUBufferBindingType },
-        },
-        {
-          binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4, // node.outerGeom
-          visibility: SHADER_STAGE.VERTEX,
           buffer: { type: 'read-only-storage' as GPUBufferBindingType },
         },
       ],
@@ -335,7 +333,7 @@ export class CurvedEdgePipeline {
 
     const cased = layer === 'cased';
     const forLayer = layer !== 'main' && !cased;
-    const fused = forLayer || cased; // node.outerGeom in place of outerHalf + shape
+    const fused = forLayer || cased;
     const group = device.createBindGroup({
       label: 'cy-gpu:curved-edge-bind-group',
       layout: cased
@@ -346,11 +344,7 @@ export class CurvedEdgePipeline {
       entries: [
         { binding: 0, resource: { buffer: uniform } },
         ...VERTEX_COLUMNS.map((id, i) => ({ id, binding: i + 1 }))
-          .filter(
-            (entry) =>
-              !fused ||
-              (entry.id !== COL.NODE_OUTER_HALF && entry.id !== COL.NODE_SHAPE),
-          )
+          .filter((entry) => !fused || entry.id !== COL.EDGE_ENDPOINTS)
           .map((entry) => ({
             binding: entry.binding,
             resource: { buffer: mirror.buffer(entry.id) },
@@ -359,23 +353,25 @@ export class CurvedEdgePipeline {
           binding: VERTEX_COLUMNS.length + 1,
           resource: { buffer: mirror.blobBuffer() },
         },
+        {
+          binding: VERTEX_COLUMNS.length + 2,
+          resource: { buffer: mirror.polyBlobBuffer() },
+        },
         ...(forLayer
           ? []
           : FRAGMENT_COLUMNS.map((id, i) => ({
-              binding: VERTEX_COLUMNS.length + 2 + i,
+              binding: VERTEX_COLUMNS.length + 3 + i,
               resource: { buffer: mirror.buffer(id) },
             }))),
         ...(fused
           ? [
               {
-                binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 2,
+                binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3,
                 resource: {
-                  buffer: mirror.buffer(cased ? COL.EDGE_CASING : layer),
+                  buffer: mirror.buffer(
+                    cased ? COL.EDGE_CASING : (layer as ColumnId),
+                  ),
                 },
-              },
-              {
-                binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4,
-                resource: { buffer: mirror.buffer(COL.NODE_OUTER_GEOM) },
               },
             ]
           : []),
@@ -383,7 +379,7 @@ export class CurvedEdgePipeline {
           ? []
           : [
               {
-                binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 3,
+                binding: VERTEX_COLUMNS.length + FRAGMENT_COLUMNS.length + 4,
                 resource: { buffer: mirror.buffer(COL.EDGE_GRADIENT) },
               },
             ]),

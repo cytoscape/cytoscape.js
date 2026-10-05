@@ -1,4 +1,10 @@
 import { wgsl } from '../../gpu/wgsl.mjs';
+import {
+  SHAPE_POLYGON_CUSTOM,
+  SHAPE_CONVEX_HULL,
+  SHAPE_ROUND_CONVEX_HULL,
+  SHAPE_CONCAVE_HULL,
+} from '../../contract.mjs';
 
 /**
  * The per-frame uniform block.  Not a mat3x3 (avoids WGSL alignment
@@ -144,7 +150,7 @@ fn labelFade(heightPx: f32, fadePx: f32) -> f32 {
 `;
 
 /** Glyph instance layout, shared by the label shader and the glyph cull
- * pass; matches GlyphBuffer's CPU layout (16 words / 64 bytes per glyph). */
+ * pass; matches GlyphBuffer's CPU layout (18 words / 72 bytes per glyph). */
 /**
  * The pick fragments' output (round 105): the id, and the fragment's
  * distance from its own stroke's centreline as depth, so the pick
@@ -189,7 +195,9 @@ struct Glyph {
                      // |endParam| - 1 is the arc offset in model px
   rotation: f32,     // 27.7: the label's own rotation, radians (0 = none;
                      // autorotate rides the owner word's flag instead)
-  pad: f32,          // keeps the struct 8-byte aligned (16 words)
+  pad: f32,          // keeps the first block 8-byte aligned
+  edgeSource: u32,   // source endpoint for edge labels; 0 on node labels
+  edgeTarget: u32,   // target endpoint for edge labels; 0 on node labels
 }
 
 const DEAD_GLYPH: u32 = 0xffffffffu;
@@ -243,6 +251,28 @@ fn boundaryOffset(shape: u32, half: vec2f, d: vec2f) -> f32 {
       return 1.0 / max(length(d / max(half, vec2f(1e-4))), 1e-6);
     }
   }
+}
+
+fn boundaryOffsetPoly(shape: u32, half: vec2f, d: vec2f, polyRef: u32) -> f32 {
+  let count = polyRef >> 24u;
+  if ((shape == ${SHAPE_POLYGON_CUSTOM}u || shape == ${SHAPE_CONVEX_HULL}u || shape == ${SHAPE_ROUND_CONVEX_HULL}u || shape == ${SHAPE_CONCAVE_HULL}u) && count >= 3u) {
+    let off = polyRef & 0xffffffu;
+    var best = -1.0;
+    for (var i = 0u; i < count; i = i + 1u) {
+      let j = (i + 1u) % count;
+      let a = vec2f(polyBlob[off + i * 2u], polyBlob[off + i * 2u + 1u]) * half;
+      let b = vec2f(polyBlob[off + j * 2u], polyBlob[off + j * 2u + 1u]) * half;
+      let e = b - a;
+      let denom = d.x * e.y - d.y * e.x;
+      if (abs(denom) < 1e-8) { continue; }
+      let t = (a.x * e.y - a.y * e.x) / denom;
+      let u = (a.x * d.y - a.y * d.x) / denom;
+      if (t >= 0.0 && u >= 0.0 && u <= 1.0) { best = max(best, t); }
+    }
+    if (best >= 0.0) { return best; }
+  }
+
+  return boundaryOffset(shape, half, d);
 }
 `;
 

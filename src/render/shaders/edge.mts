@@ -49,22 +49,22 @@ ${DASH_WGSL}
 @group(0) @binding(2) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
 @group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;
-@group(0) @binding(5) var<storage, read> nodeOuterHalf: array<vec2f>;
-@group(0) @binding(6) var<storage, read> nodeShapes: array<u32>;
+@group(0) @binding(5) var<storage, read> nodeOuterGeom: array<vec4f>;
 // fragment-stage columns (flat instance fetch; the FS skips dashes on
 // straight-triangle fills, and reads that kind off a flat varying rather
 // than binding curveParams — round 57.1)
-@group(0) @binding(7) var<storage, read> lineColors: array<u32>;
-@group(0) @binding(8) var<storage, read> opacities: array<f32>;
-@group(0) @binding(9) var<storage, read> lineStyles: array<u32>; // LINE_* ids
+@group(0) @binding(6) var<storage, read> lineColors: array<u32>;
+@group(0) @binding(7) var<storage, read> opacities: array<f32>;
+@group(0) @binding(8) var<storage, read> lineStyles: array<u32>; // LINE_* ids
 // dash pattern (two on/off pairs, model px) + [offset, cap] (round 13 B3)
-@group(0) @binding(10) var<storage, read> dashPatterns: array<vec4f>;
-@group(0) @binding(11) var<storage, read> dashMetas: array<vec2f>;
+@group(0) @binding(9) var<storage, read> dashPatterns: array<vec4f>;
+@group(0) @binding(10) var<storage, read> dashMetas: array<vec2f>;
 // overlay/underlay record [rgba folded, strokeWidth*256] — only the
 // layer entry points bind it (round 13 A2)
-@group(0) @binding(12) var<storage, read> edgeLayer: array<vec2u>;
+@group(0) @binding(12) var<storage, read> edgeLayer: array<vec4u>;
 // line-fill gradient record (round 13 C2), fragment-only
 @group(0) @binding(13) var<storage, read> edgeGradients: array<array<u32, 8>>;
+@group(0) @binding(11) var<storage, read> polyBlob: array<f32>;
 
 // C2: sRGB line gradient over the packed record (same layout as the
 // node background gradient; linear runs along the edge, radial from
@@ -155,8 +155,8 @@ fn spanTrimmedW(slot: u32, pa: vec2f, pb: vec2f, drawTrim: bool) -> vec4f {
   md = md / ml;
 
   let ends = endpoints[slot];
-  let bs = pa + md * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], md);
-  let bt = pb - md * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -md);
+  let bs = pa + md * boundaryOffsetPoly(u32(nodeOuterGeom[ends.x].z), nodeOuterGeom[ends.x].xy, md, bitcast<u32>(nodeOuterGeom[ends.x].w));
+  let bt = pb - md * boundaryOffsetPoly(u32(nodeOuterGeom[ends.y].z), nodeOuterGeom[ends.y].xy, -md, bitcast<u32>(nodeOuterGeom[ends.y].w));
 
   // v3 shortens each boundary point *toward the far end*, so the two
   // trims are independent and neither can cross the other
@@ -205,8 +205,8 @@ fn edgeVertexAt(slot: u32, vi: u32, widthPx: f32, alphaComp: f32) -> EdgeVSOut {
   var pb = nodePositions[ends.y];
 
   if (params.w == 6.0) { // haystack (12c): hash-stable offsets inside the bodies
-    pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
-    pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+    pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterGeom[ends.x].xy * params.z;
+    pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterGeom[ends.y].xy * params.z;
   }
 
   let corner = quadCorner(vi);
@@ -218,8 +218,8 @@ fn edgeVertexAt(slot: u32, vi: u32, widthPx: f32, alphaComp: f32) -> EdgeVSOut {
     let bl = max(length(bd), 1e-6);
 
     bd = bd / bl;
-    pa = pa + bd * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], bd);
-    pb = pb - bd * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -bd);
+    pa = pa + bd * boundaryOffsetPoly(u32(nodeOuterGeom[ends.x].z), nodeOuterGeom[ends.x].xy, bd, bitcast<u32>(nodeOuterGeom[ends.x].w));
+    pb = pb - bd * boundaryOffsetPoly(u32(nodeOuterGeom[ends.y].z), nodeOuterGeom[ends.y].xy, -bd, bitcast<u32>(nodeOuterGeom[ends.y].w));
     taper = 1.0 - t; // full width at the base, a point at the apex
   } else if (params.w != 6.0) {
     let sp = drawnSpanW(slot, pa, pb);
@@ -391,8 +391,8 @@ fn layerVertex(slot: u32, vi: u32, spanTrim: bool) -> EdgeVSOut {
   var pb = nodePositions[ends.y];
 
   if (params.w == 6.0) { // haystack offsets apply to the layer stroke too
-    pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterHalf[ends.x] * params.z;
-    pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterHalf[ends.y] * params.z;
+    pa = pa + vec2f(cos(params.x), sin(params.x)) * nodeOuterGeom[ends.x].xy * params.z;
+    pb = pb + vec2f(cos(params.y), sin(params.y)) * nodeOuterGeom[ends.y].xy * params.z;
   }
 
   let corner = quadCorner(vi);
@@ -405,8 +405,8 @@ fn layerVertex(slot: u32, vi: u32, spanTrim: bool) -> EdgeVSOut {
     let bl = max(length(bd), 1e-6);
 
     bd = bd / bl;
-    pa = pa + bd * boundaryOffset(nodeShapes[ends.x], nodeOuterHalf[ends.x], bd);
-    pb = pb - bd * boundaryOffset(nodeShapes[ends.y], nodeOuterHalf[ends.y], -bd);
+    pa = pa + bd * boundaryOffsetPoly(u32(nodeOuterGeom[ends.x].z), nodeOuterGeom[ends.x].xy, bd, bitcast<u32>(nodeOuterGeom[ends.x].w));
+    pb = pb - bd * boundaryOffsetPoly(u32(nodeOuterGeom[ends.y].z), nodeOuterGeom[ends.y].xy, -bd, bitcast<u32>(nodeOuterGeom[ends.y].w));
     taper = 1.0 - t;
   } else if (params.w != 6.0) {
     // Round 58: the layer stroke hugs the drawn line — boundary points
@@ -519,10 +519,10 @@ ${DASH_WGSL}
 @group(0) @binding(1) var<storage, read> endpoints: array<vec2u>;
 @group(0) @binding(2) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)
 @group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;
-@group(0) @binding(4) var<storage, read> nodeOuterHalf: array<vec2f>;
-@group(0) @binding(5) var<storage, read> nodeShapes: array<u32>;
-@group(0) @binding(6) var<storage, read> curveParams: array<vec4f>;
-@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;
+@group(0) @binding(4) var<storage, read> nodeOuterGeom: array<vec4f>;
+@group(0) @binding(5) var<storage, read> curveParams: array<vec4f>;
+@group(0) @binding(6) var<storage, read> curveBlob: array<f32>;
+@group(0) @binding(7) var<storage, read> polyBlob: array<f32>;
 // fragment-stage columns (flat instance fetch)
 @group(0) @binding(8) var<storage, read> lineColors: array<u32>;
 @group(0) @binding(9) var<storage, read> opacities: array<f32>;
@@ -534,12 +534,12 @@ ${DASH_WGSL}
 // drop the two node-geometry bindings (4/5) for the fused column below,
 // which keeps the layer vertex stage at the 8-storage-buffer budget
 // with a slot for widths (the arrow-trim word)
-@group(0) @binding(13) var<storage, read> edgeLayer: array<vec2u>;
+@group(0) @binding(13) var<storage, read> edgeLayer: array<vec4u>;
 // line-fill gradient record (round 13 C2), fragment-only
 @group(0) @binding(14) var<storage, read> edgeGradients: array<array<u32, 8>>;
 // round 58: node.outerHalf + node.shape fused ([hx, hy, shape, 0]) —
 // only the layer entry points bind it, in place of bindings 4/5
-@group(0) @binding(15) var<storage, read> nodeOuterGeom: array<vec4f>;
+
 
 // C2: sRGB line gradient (same record layout as the node gradient)
 fn gradientStopPos(rec: array<u32, 8>, i: u32) -> f32 {
@@ -620,8 +620,8 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
   if (params.w <= 2.0 || params.w == 16.0) { // bezier / loop / compound loop: the analytic path
     let g = evalCurveGeom(
       params,
-      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      nodePositions[ends.x], nodeOuterGeom[ends.x].xy, u32(nodeOuterGeom[ends.x].z), bitcast<u32>(nodeOuterGeom[ends.x].w),
+      nodePositions[ends.y], nodeOuterGeom[ends.y].xy, u32(nodeOuterGeom[ends.y].z), bitcast<u32>(nodeOuterGeom[ends.y].w),
       arrowTrimOf(widths[slot])
     );
     let t = f32(tIdx) / CURVE_SEGS_F;
@@ -650,8 +650,8 @@ fn vsCurvedEdge(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32
   } else { // 12b route families: evaluate the route from the param blob
     var route = evalRouteW(
       params,
-      nodePositions[ends.x], nodeOuterHalf[ends.x], nodeShapes[ends.x],
-      nodePositions[ends.y], nodeOuterHalf[ends.y], nodeShapes[ends.y],
+      nodePositions[ends.x], nodeOuterGeom[ends.x].xy, u32(nodeOuterGeom[ends.x].z), bitcast<u32>(nodeOuterGeom[ends.x].w),
+      nodePositions[ends.y], nodeOuterGeom[ends.y].xy, u32(nodeOuterGeom[ends.y].z), bitcast<u32>(nodeOuterGeom[ends.y].w),
       arrowTrimOf(widths[slot])
     );
 
@@ -868,7 +868,7 @@ fn curvedLayerAt(ii: u32, vi: u32, zBase: f32, gapSpan: bool) -> CurvedLayerOut 
   let halfW = f32(rec.y) / 256.0 * frame.zoomDpr * 0.5;
   let seg = vi >> 2u;
   let corner = quadCorner(vi & 3u);
-  let ends = endpoints[slot];
+  let ends = rec.zw;
   let params = curveParams[slot];
   // Round 58: the underlay hugs the drawn line — the same draw trim the
   // line's strip spans, since v3's head erase reaches a layer drawn
@@ -886,15 +886,15 @@ fn curvedLayerAt(ii: u32, vi: u32, zBase: f32, gapSpan: bool) -> CurvedLayerOut 
   if (isBez) {
     g = evalCurveGeom(
       params,
-      nodePositions[ends.x], ga.xy, u32(ga.z),
-      nodePositions[ends.y], gb.xy, u32(gb.z),
+      nodePositions[ends.x], ga.xy, u32(ga.z), bitcast<u32>(ga.w),
+      nodePositions[ends.y], gb.xy, u32(gb.z), bitcast<u32>(gb.w),
       trim
     );
   } else {
     route = evalRouteW(
       params,
-      nodePositions[ends.x], ga.xy, u32(ga.z),
-      nodePositions[ends.y], gb.xy, u32(gb.z),
+      nodePositions[ends.x], ga.xy, u32(ga.z), bitcast<u32>(ga.w),
+      nodePositions[ends.y], gb.xy, u32(gb.z), bitcast<u32>(gb.w),
       trim
     );
     allocRouteQuadsW(&route); // round 93: the map feeds routeVertexW
@@ -1009,11 +1009,10 @@ fn vsCurvedOverlay(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: 
 // the paired casing draw (124.4) and its line instance share it.
 // withLen walks the polyline for the dash distance and the full
 // length, which only the line instance needs.
-fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32, withLen: bool) -> CurvedVSOut {
+fn curvedVertexFused(slot: u32, ends: vec2u, vi: u32, widthPx: f32, alphaComp: f32, pad: f32, withLen: bool) -> CurvedVSOut {
   var out: CurvedVSOut;
   let seg = vi >> 2u;
   let corner = quadCorner(vi & 3u);
-  let ends = endpoints[slot];
   let params = curveParams[slot];
 
   let tIdx = seg + u32((corner.x + 1.0) * 0.5);
@@ -1037,8 +1036,8 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
   if (params.w <= 2.0 || params.w == 16.0) {
     let g = evalCurveGeom(
       params,
-      nodePositions[ends.x], ga.xy, u32(ga.z),
-      nodePositions[ends.y], gb.xy, u32(gb.z),
+      nodePositions[ends.x], ga.xy, u32(ga.z), bitcast<u32>(ga.w),
+      nodePositions[ends.y], gb.xy, u32(gb.z), bitcast<u32>(gb.w),
       trim
     );
     let t = f32(tIdx) / CURVE_SEGS_F;
@@ -1067,8 +1066,8 @@ fn curvedVertexFused(slot: u32, vi: u32, widthPx: f32, alphaComp: f32, pad: f32,
   } else {
     var route = evalRouteW(
       params,
-      nodePositions[ends.x], ga.xy, u32(ga.z),
-      nodePositions[ends.y], gb.xy, u32(gb.z),
+      nodePositions[ends.x], ga.xy, u32(ga.z), bitcast<u32>(ga.w),
+      nodePositions[ends.y], gb.xy, u32(gb.z), bitcast<u32>(gb.w),
       trim
     );
 
@@ -1141,7 +1140,7 @@ fn vsCurvedCased(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
       return out;
     }
 
-    var out = curvedVertexFused(slot, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0, 0.0, false);
+    var out = curvedVertexFused(slot, rec.zw, vi, f32(rec.y) / 256.0 * frame.zoomDpr, 1.0, 0.0, false);
 
     out.casing = 1u;
     return out;
@@ -1149,8 +1148,9 @@ fn vsCurvedCased(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u3
 
   let widthPx = max(widths[slot].x * frame.zoomDpr, frame.edgeWidthFloor);
   let alphaComp = min(widths[slot].x * frame.zoomDpr / max(frame.edgeWidthFloor, 1e-4), 1.0);
+  let rec = edgeLayer[slot];
 
-  return curvedVertexFused(slot, vi, widthPx, alphaComp, frame.pickPadPx, true);
+  return curvedVertexFused(slot, rec.zw, vi, widthPx, alphaComp, frame.pickPadPx, true);
 }
 
 // distance from p to the segment a -> b (a point when a == b)

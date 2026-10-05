@@ -15,6 +15,9 @@ import {
   SHAPE_CIRCLE,
   SHAPE_CONCAVE_HEXAGON,
   SHAPE_CUT_RECTANGLE,
+  SHAPE_CONVEX_HULL,
+  SHAPE_ROUND_CONVEX_HULL,
+  SHAPE_CONCAVE_HULL,
   SHAPE_DIAMOND,
   SHAPE_ELLIPSE,
   SHAPE_HEPTAGON,
@@ -89,6 +92,9 @@ export const SHAPES: Record<string, number> = {
   'round-tag': SHAPE_ROUND_TAG,
   'bottom-round-rectangle': SHAPE_BOTTOM_ROUND_RECTANGLE,
   barrel: SHAPE_BARREL,
+  'convex-hull': SHAPE_CONVEX_HULL,
+  'round-convex-hull': SHAPE_ROUND_CONVEX_HULL,
+  'concave-hull': SHAPE_CONCAVE_HULL,
 };
 
 /** RGBA bytes packed little-endian, matching WGSL unpack4x8unorm. */
@@ -182,6 +188,9 @@ export const SHAPE_NAMES: Record<number, string> = {
   [SHAPE_ROUND_TAG]: 'round-tag',
   [SHAPE_BOTTOM_ROUND_RECTANGLE]: 'bottom-round-rectangle',
   [SHAPE_BARREL]: 'barrel',
+  [SHAPE_CONVEX_HULL]: 'convex-hull',
+  [SHAPE_ROUND_CONVEX_HULL]: 'round-convex-hull',
+  [SHAPE_CONCAVE_HULL]: 'concave-hull',
 };
 
 /** Readable props per group ('width' and 'opacity' exist for both). */

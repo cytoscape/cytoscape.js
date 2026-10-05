@@ -9,6 +9,7 @@ import {
 } from '../../contract.mjs';
 import type { LabelStream, ColumnId, GroupName, Ref } from '../../contract.mjs';
 import { rekeyMap } from './shared.mjs';
+import { updateEdgeLayerEndpoints } from './layers.mjs';
 import type { GroupCompaction, GraphStore } from '../graph-store.mjs';
 
 /**
@@ -47,6 +48,9 @@ export function compact(gs: GraphStore): {
 
     if (hw > 0) {
       gs.dirty.mark(COL.EDGE_ENDPOINTS, 0, hw);
+      for (let slot = 0; slot < hw; slot++) {
+        updateEdgeLayerEndpoints(gs, slot);
+      }
     }
   }
 

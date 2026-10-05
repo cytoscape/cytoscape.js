@@ -388,8 +388,8 @@ defineReader(
         ? COL.EDGE_OVERLAY
         : COL.EDGE_UNDERLAY;
       const erec = (store.column(eid) as Uint32Array).subarray(
-        slot * 2,
-        slot * 2 + 2,
+        slot * 4,
+        slot * 4 + 2,
       );
 
       if (prop.endsWith('-color')) {

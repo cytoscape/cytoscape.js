@@ -172,12 +172,12 @@ export class LabelPipeline {
     const storages: GPUBuffer[] = this.edge
       ? [
           glyphs.buffer(),
-          mirror.buffer(COL.EDGE_ENDPOINTS),
           mirror.buffer(COL.EDGE_WIDTH),
           mirror.buffer(COL.NODE_POSITION),
           mirror.buffer(COL.EDGE_CURVE_PARAMS),
           mirror.buffer(COL.NODE_OUTER_GEOM),
           mirror.blobBuffer(),
+          mirror.polyBlobBuffer(),
         ]
       : [
           glyphs.buffer(),

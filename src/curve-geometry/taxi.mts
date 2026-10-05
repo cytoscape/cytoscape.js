@@ -27,6 +27,7 @@ export const setRouteBoundary = (
   shape: number,
   towardX: number,
   towardY: number,
+  polygon?: ArrayLike<number> | null,
 ): { x: number; y: number } => {
   let dx = towardX - cx;
   let dy = towardY - cy;
@@ -40,7 +41,7 @@ export const setRouteBoundary = (
     dy /= l;
   }
 
-  const off = boundaryOffset(shape, halfW, halfH, dx, dy);
+  const off = boundaryOffset(shape, halfW, halfH, dx, dy, polygon);
 
   boundaryScratch.x = cx + dx * off;
   boundaryScratch.y = cy + dy * off;

@@ -181,7 +181,7 @@ ${edge ? BOUNDARY_WGSL + ARROW_GAP_WGSL + CURVE_WGSL + ROUTE_WGSL + END_WALK_WGS
 // rebuild on drags/layouts/tweens).
 @group(0) @binding(0) var<uniform> frame: Frame;
 @group(0) @binding(1) var<storage, read> glyphs: array<Glyph>;
-${edge ? '@group(0) @binding(2) var<storage, read> endpoints: array<vec2u>;\n@group(0) @binding(3) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)\n@group(0) @binding(4) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(5) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(6) var<storage, read> nodeOuterGeom: array<vec4f>; // [hx, hy, shape, 0] (round 58)\n@group(0) @binding(7) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var<storage, read> nodeOpacity: array<f32>; // element opacity (115.6: labels dim with their node, as v3)\n@group(0) @binding(4) var<storage, read> labelGate: array<f32>; // round 104: the fade scale (the cull already dropped gate 0)\n@group(0) @binding(5) var atlas: texture_2d<f32>;\n@group(0) @binding(6) var atlasSampler: sampler;'}
+${edge ? '@group(0) @binding(2) var<storage, read> widths: array<vec2f>; // .x width, .y arrow bits (round 56)\n@group(0) @binding(3) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(4) var<storage, read> curveParams: array<vec4f>;\n@group(0) @binding(5) var<storage, read> nodeOuterGeom: array<vec4f>; // [hx, hy, shape, polygon ref]\n@group(0) @binding(6) var<storage, read> curveBlob: array<f32>;\n@group(0) @binding(7) var<storage, read> polyBlob: array<f32>;\n@group(0) @binding(8) var atlas: texture_2d<f32>;\n@group(0) @binding(9) var atlasSampler: sampler;' : '@group(0) @binding(2) var<storage, read> nodePositions: array<vec2f>;\n@group(0) @binding(3) var<storage, read> nodeOpacity: array<f32>; // element opacity (115.6: labels dim with their node, as v3)\n@group(0) @binding(4) var<storage, read> labelGate: array<f32>; // round 104: the fade scale (the cull already dropped gate 0)\n@group(0) @binding(5) var atlas: texture_2d<f32>;\n@group(0) @binding(6) var atlasSampler: sampler;'}
 
 // Round 95: the outline goes under the ink.  Glyph quads overlap by
 // construction (each carries the SDF pad halo past its ink), and one
@@ -237,7 +237,7 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   ${
     edge
       ? `let owner = glyphOwner(g.nodeSlot);
-  let ends = endpoints[owner];
+  let ends = vec2u(g.edgeSource, g.edgeTarget);
   let pa = nodePositions[ends.x];
   let pb = nodePositions[ends.y];
   let params = curveParams[owner];
@@ -256,8 +256,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   if ((params.w != 0.0 && params.w <= 2.0) || params.w == 16.0) { // bezier / loop / compound midpoint
     let geom = evalCurveGeom(
       params,
-      pa, gs.xy, u32(gs.z),
-      pb, gt.xy, u32(gt.z),
+      pa, gs.xy, u32(gs.z), bitcast<u32>(gs.w),
+      pb, gt.xy, u32(gt.z), bitcast<u32>(gt.w),
       gTrim
     );
 
@@ -277,8 +277,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
   } else if (params.w > 2.0 && params.w != 7.0) { // route families: v3's midpoint rules
     var route = evalRouteW(
       params,
-      pa, gs.xy, u32(gs.z),
-      pb, gt.xy, u32(gt.z),
+      pa, gs.xy, u32(gs.z), bitcast<u32>(gs.w),
+      pb, gt.xy, u32(gt.z), bitcast<u32>(gt.w),
       gTrim
     );
     let midTan = routeMidpointW(&route);
@@ -295,8 +295,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
     if (ml < 1e-6) { md = vec2f(1.0, 0.0); } else { md = md / ml; }
 
-    let bs = pa + md * boundaryOffset(u32(gs.z), gs.xy, md);
-    let bt = pb - md * boundaryOffset(u32(gt.z), gt.xy, -md);
+    let bs = pa + md * boundaryOffsetPoly(u32(gs.z), gs.xy, md, bitcast<u32>(gs.w));
+    let bt = pb - md * boundaryOffsetPoly(u32(gt.z), gt.xy, -md, bitcast<u32>(gt.w));
 
     anchor = straightMidW(bs, bt, pa, pb, widths[owner]);
   }
@@ -313,8 +313,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     if ((params.w != 0.0 && params.w <= 2.0) || params.w == 16.0) { // bezier / loop / compound
       let geom = evalCurveGeom(
         params,
-        pa, gs.xy, u32(gs.z),
-        pb, gt.xy, u32(gt.z),
+        pa, gs.xy, u32(gs.z), bitcast<u32>(gs.w),
+        pb, gt.xy, u32(gt.z), bitcast<u32>(gt.w),
         gTrim
       );
 
@@ -327,8 +327,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
     } else if (params.w > 2.0 && params.w != 7.0) { // route families
       var endRoute = evalRouteW(
         params,
-        pa, gs.xy, u32(gs.z),
-        pb, gt.xy, u32(gt.z),
+        pa, gs.xy, u32(gs.z), bitcast<u32>(gs.w),
+        pb, gt.xy, u32(gt.z), bitcast<u32>(gt.w),
         gTrim
       );
 
@@ -339,8 +339,8 @@ fn vsLabel(@builtin(vertex_index) vi: u32, @builtin(instance_index) ii: u32) -> 
 
       if (l < 1e-6) { d = vec2f(1.0, 0.0); } else { d = d / l; }
 
-      let sPt = pa + d * boundaryOffset(u32(gs.z), gs.xy, d);
-      let ePt = pb - d * boundaryOffset(u32(gt.z), gt.xy, -d);
+      let sPt = pa + d * boundaryOffsetPoly(u32(gs.z), gs.xy, d, bitcast<u32>(gs.w));
+      let ePt = pb - d * boundaryOffsetPoly(u32(gt.z), gt.xy, -d, bitcast<u32>(gt.w));
 
       // round 58: v3's allpts start at the *gap*-shortened line ends
       // (rs.startX/Y), so the end-label walk does too — shortened

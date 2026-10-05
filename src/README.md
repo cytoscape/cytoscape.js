@@ -43,11 +43,13 @@ The alpha interview in the plan record scopes this batch. Rounds 146 and
 scale endpoints, and application-owned legend JSON. Round 80 has landed its
 compact chart-record foundation; the following work remains:
 
-- 80: 255-value charts, explicit heat scales, signed bars and shared chart
-  domains. Per-node autoscaling and chart labels are excluded; applications
-  own normalization, labels, axes and rendered legends.
-- 82: convex then organic/concave compound shapes over actual child outlines,
-  and implementation of the existing compound-sizing-wrt-labels: include.
+- 80: the compact record and shared chart-scale foundation have landed;
+  visual acceptance for 255-value heat and signed bars remains. Per-node
+  autoscaling and chart labels are excluded; applications own normalization,
+  labels, axes and rendered legends.
+- 82: convex, rounded-convex and connected concave compound shapes over
+  child outlines, plus label-inclusive sizing, are implemented; final
+  measurement and closeout remain.
 - 148: manual miniature compounds, actual positions plus effective-size
   multipliers, optional animation and collapse state synchronized by follow.
   Children/edges remain real and visible; locked positions stay put while
@@ -4241,6 +4243,18 @@ keep the authored size, and geometry reads use the inherited effective size.
 This foundation does not yet move descendants or expose `collapse()` and
 `expand()`; those operations land with the geometry consumers in round 148.
 
+Round 82 adds `convex-hull`, `round-convex-hull` and `concave-hull` as
+parent `shape` values. Each contour follows direct children’s actual outer
+body outline; nested parents contribute their resolved contour. The concave
+shape is one connected region containing every contributing outline, with no
+holes or disconnected islands. It may contain unrelated nodes. An empty hull
+uses the parent’s styled rectangle (rounded rectangle for the two rounded
+shapes); one or two children still use their full outlines. Label bounds join
+those inputs only when `compound-sizing-wrt-labels: 'include'`, before the
+parent padding is applied. The shared CPU contour drives drawing, borders,
+edge endpoints, picking, bounds and layout dimensions, so zoom does not alter
+its topology. There is no public tightness control or obstacle avoidance.
+
 Readback answers from the per-parent record
 (`style('padding')` returns the declared px number or the percent
 string; leaves read 0, as v3 leaves do).  v3's `:parent:selected`
@@ -7642,6 +7656,13 @@ fragment premium is **unmeasurable at scene level** on real hardware
   so in `emit( 'a b' )` a handler for `a` that calls `off( 'b' )` does
   not stop `b` firing; v4's emitter snapshots per event, so the removal
   takes effect.
+- **Compound hulls** (round 82): `convex-hull`, `round-convex-hull` and
+  `concave-hull` size around actual visible direct-child outlines; nested
+  parents contribute their contour. `compound-sizing-wrt-labels: 'include'`
+  adds direct-child label bounds before parent padding. Concave hulls remain
+  a single connected region and may cover nonmember nodes; holes, disconnected
+  regions, obstacle avoidance and a public concavity control are out of scope.
+  Empty hulls fall back to the parent’s styled rectangle or rounded rectangle.
 - **No z-index**: compound parent bodies draw first (round 14.9, in
   depth-asc/slot-asc order), then edges, then leaf nodes, then labels;
   within a stream draw order is slot order (≈ insertion order, but a

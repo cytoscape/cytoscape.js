@@ -1,4 +1,7 @@
 import {
+  SHAPE_CONVEX_HULL,
+  SHAPE_ROUND_CONVEX_HULL,
+  SHAPE_CONCAVE_HULL,
   FLAG_ALIVE,
   FLAG_CHILD,
   FLAG_COLLAPSED,
@@ -6,6 +9,12 @@ import {
   FLAG_VISIBLE,
   NO_SLOT,
 } from '../contract.mjs';
+import {
+  compoundHull,
+  normalizeContour,
+  roundedRectangleContour,
+  type Point,
+} from '../compound-hulls.mjs';
 
 const SHOWN = FLAG_ALIVE | FLAG_VISIBLE;
 
@@ -96,6 +105,10 @@ export interface HierarchyHost {
   outerHalf(): Float32Array;
   /** the node's current style size (stashed as the degenerate fallback) */
   readSize(slot: number): [number, number];
+  /** the node's resolved shape id */
+  shape(slot: number): number;
+  /** child outer outline, in node-local model px */
+  outline(slot: number): Point[];
   /** the visible portion of a node label in node-local model px */
   labelBounds(
     slot: number,
@@ -103,7 +116,14 @@ export interface HierarchyHost {
   /** a node flipped leaf<->parent (the store stashes/restores its style size) */
   onFlip(slot: number, becameParent: boolean): void;
   /** write derived parent geometry into the real columns (never re-marks) */
-  materialize(slot: number, x: number, y: number, w: number, h: number): void;
+  materialize(
+    slot: number,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    hull?: number[],
+  ): void;
 }
 
 export class HierarchyIndex {
@@ -136,6 +156,8 @@ export class HierarchyIndex {
   private collapseScale: Map<number, number>;
   /** scale currently applied to descendant positions and sizes */
   private appliedCollapseScale: Map<number, number>;
+  /** corner-radius style input retained separately from the hull pool ref */
+  private hullRadius: Map<number, number>;
 
   /**
    * @param host — the store's narrow callback surface; the index never
@@ -157,6 +179,7 @@ export class HierarchyIndex {
     this.resolvedSides = new Map();
     this.collapseScale = new Map();
     this.appliedCollapseScale = new Map();
+    this.hullRadius = new Map();
   }
 
   // -- reads --
@@ -436,6 +459,18 @@ export class HierarchyIndex {
     return [2 * pad, 2 * pad];
   }
 
+  /** Store the rounded-hull radius separately from borderGeom's blob ref. */
+  setHullRadius(slot: number, radius: number): void {
+    const resolved = radius < 0 ? 8 : radius;
+
+    if (this.hullRadius.get(slot) === resolved) {
+      return;
+    }
+
+    this.hullRadius.set(slot, resolved);
+    this.markGeo(slot);
+  }
+
   /** The declared compound style record (defaults for leaves). */
   compoundStyleOf(slot: number): CompoundStyle {
     return this.compoundStyle.get(slot) ?? COMPOUND_STYLE_DEFAULTS;
@@ -477,6 +512,17 @@ export class HierarchyIndex {
       } // stale entry
 
       const style = this.compoundStyle.get(slot) ?? COMPOUND_STYLE_DEFAULTS;
+      const shape = this.host.shape(slot);
+
+      if (
+        shape === SHAPE_CONVEX_HULL ||
+        shape === SHAPE_ROUND_CONVEX_HULL ||
+        shape === SHAPE_CONCAVE_HULL
+      ) {
+        this.flushHull(slot, kids, style, shape, pos, flags);
+        continue;
+      }
+
       let x1 = Infinity,
         y1 = Infinity,
         x2 = -Infinity,
@@ -591,6 +637,153 @@ export class HierarchyIndex {
         );
       }
     }
+  }
+
+  private flushHull(
+    slot: number,
+    kids: readonly number[],
+    style: CompoundStyle,
+    shape: number,
+    pos: Float32Array,
+    flags: Uint32Array,
+  ): void {
+    const points: Point[] = [];
+
+    for (const kid of kids) {
+      if ((flags[kid] & SHOWN) !== SHOWN) {
+        continue;
+      }
+
+      const x = pos[kid * 2];
+      const y = pos[kid * 2 + 1];
+
+      for (const point of this.host.outline(kid)) {
+        points.push({ x: x + point.x, y: y + point.y });
+      }
+
+      if (style.sizingWrtLabels === 'include') {
+        const label = this.host.labelBounds(kid);
+
+        if (label != null) {
+          points.push(
+            { x: x + label.x1, y: y + label.y1 },
+            { x: x + label.x2, y: y + label.y1 },
+            { x: x + label.x2, y: y + label.y2 },
+            { x: x + label.x1, y: y + label.y2 },
+          );
+        }
+      }
+    }
+
+    const fallback = points.length === 0;
+    let bbW: number;
+    let bbH: number;
+    let cx: number;
+    let cy: number;
+
+    if (points.length === 0) {
+      const [w, h] = this.host.readSize(slot);
+
+      bbW = w;
+      bbH = h;
+      cx = pos[slot * 2];
+      cy = pos[slot * 2 + 1];
+      points.push(
+        { x: cx - w / 2, y: cy - h / 2 },
+        { x: cx + w / 2, y: cy - h / 2 },
+        { x: cx + w / 2, y: cy + h / 2 },
+        { x: cx - w / 2, y: cy + h / 2 },
+      );
+    } else {
+      let x1 = Infinity;
+      let y1 = Infinity;
+      let x2 = -Infinity;
+      let y2 = -Infinity;
+
+      for (const point of points) {
+        x1 = Math.min(x1, point.x);
+        y1 = Math.min(y1, point.y);
+        x2 = Math.max(x2, point.x);
+        y2 = Math.max(y2, point.y);
+      }
+
+      bbW = x2 - x1;
+      bbH = y2 - y1;
+      cx = (x1 + x2) / 2;
+      cy = (y1 + y2) / 2;
+    }
+
+    const pad = resolvePadding(style, bbW, bbH);
+    const coreW = Math.max(bbW, style.minWidth);
+    const coreH = Math.max(bbH, style.minHeight);
+    let padL = pad;
+    let padR = pad;
+    let padT = pad;
+    let padB = pad;
+
+    if (
+      style.paddingLeft != null ||
+      style.paddingRight != null ||
+      style.paddingTop != null ||
+      style.paddingBottom != null
+    ) {
+      padL = resolveSidePadding(style.paddingLeft, style, bbW, bbH, pad);
+      padR = resolveSidePadding(style.paddingRight, style, bbW, bbH, pad);
+      padT = resolveSidePadding(style.paddingTop, style, bbW, bbH, pad);
+      padB = resolveSidePadding(style.paddingBottom, style, bbW, bbH, pad);
+      this.resolvedSides.set(slot, [padL, padR, padT, padB]);
+    } else {
+      this.resolvedSides.delete(slot);
+    }
+
+    this.resolvedPad.set(slot, pad);
+
+    const extraX = (coreW - bbW) / 2;
+    const extraY = (coreH - bbH) / 2;
+    const shiftX = (padR - padL) / 2;
+    const shiftY = (padB - padT) / 2;
+    const width = coreW + padL + padR;
+    const height = coreH + padT + padB;
+    const nextX = cx + shiftX;
+    const nextY = cy + shiftY;
+    const expanded: Point[] = [];
+
+    for (const point of points) {
+      for (const dx of [-padL - extraX, padR + extraX]) {
+        for (const dy of [-padT - extraY, padB + extraY]) {
+          expanded.push({ x: point.x + dx, y: point.y + dy });
+        }
+      }
+    }
+
+    const radius = this.hullRadius.get(slot) ?? 8;
+    const world =
+      fallback && shape !== SHAPE_CONVEX_HULL
+        ? roundedRectangleContour(nextX, nextY, width, height, radius)
+        : compoundHull(shape, expanded, radius);
+    let x1 = Infinity;
+    let y1 = Infinity;
+    let x2 = -Infinity;
+    let y2 = -Infinity;
+
+    for (const point of world) {
+      x1 = Math.min(x1, point.x);
+      y1 = Math.min(y1, point.y);
+      x2 = Math.max(x2, point.x);
+      y2 = Math.max(y2, point.y);
+    }
+
+    const finalX = (x1 + x2) / 2;
+    const finalY = (y1 + y2) / 2;
+    const finalW = x2 - x1;
+    const finalH = y2 - y1;
+    const local = world.map((point) => ({
+      x: point.x - finalX,
+      y: point.y - finalY,
+    }));
+    const contour = normalizeContour(local, finalW / 2, finalH / 2);
+
+    this.host.materialize(slot, finalX, finalY, finalW, finalH, contour);
   }
 
   // -- maintenance --

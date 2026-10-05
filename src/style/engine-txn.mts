@@ -142,7 +142,7 @@ export function readTxnValue(
       ch.column === COL.EDGE_UNDERLAY
     ) {
       return (
-        (engine.store.column(ch.column) as Uint32Array)[slot * 2 + 1] / 256
+        (engine.store.column(ch.column) as Uint32Array)[slot * 4 + 1] / 256
       );
     }
 

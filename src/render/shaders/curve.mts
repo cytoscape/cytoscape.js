@@ -30,27 +30,27 @@ struct CurveGeom {
   kind: f32,
 }
 
-fn curveBoundaryPoint(c: vec2f, half: vec2f, shape: u32, toward: vec2f) -> vec2f {
+fn curveBoundaryPoint(c: vec2f, half: vec2f, shape: u32, polyRef: u32, toward: vec2f) -> vec2f {
   var d = toward - c;
   let l = length(d);
 
   if (l < 1e-6) { d = vec2f(1.0, 0.0); } else { d = d / l; }
 
-  return c + d * boundaryOffset(shape, half, d);
+  return c + d * boundaryOffsetPoly(shape, half, d, polyRef);
 }
 
 // setBoundaryPoint's twin (round 56): the boundary point shortened by
 // 'amount' toward the near control, which is v3's own construction.
 fn curveBoundaryShortened(
-  c: vec2f, half: vec2f, shape: u32, toward: vec2f, amount: f32
+  c: vec2f, half: vec2f, shape: u32, polyRef: u32, toward: vec2f, amount: f32
 ) -> vec2f {
-  return shortenTowardW(curveBoundaryPoint(c, half, shape, toward), toward, amount);
+  return shortenTowardW(curveBoundaryPoint(c, half, shape, polyRef, toward), toward, amount);
 }
 
 fn evalCurveGeom(
   params: vec4f,
-  sC: vec2f, sHalf: vec2f, sShape: u32,
-  tC: vec2f, tHalf: vec2f, tShape: u32,
+  sC: vec2f, sHalf: vec2f, sShape: u32, sPolyRef: u32,
+  tC: vec2f, tHalf: vec2f, tShape: u32, tPolyRef: u32,
   trim: vec4f
 ) -> CurveGeom {
   var g: CurveGeom;
@@ -64,10 +64,10 @@ fn evalCurveGeom(
     g.c1 = c1;
     g.c2 = c2;
     g.m = (c1 + c2) * 0.5;
-    g.s = curveBoundaryShortened(sC, sHalf, sShape, c1, trim.x);
-    g.e = curveBoundaryShortened(tC, tHalf, tShape, c2, trim.y);
-    g.aS = curveBoundaryShortened(sC, sHalf, sShape, c1, trim.z);
-    g.aE = curveBoundaryShortened(tC, tHalf, tShape, c2, trim.w);
+    g.s = curveBoundaryShortened(sC, sHalf, sShape, sPolyRef, c1, trim.x);
+    g.e = curveBoundaryShortened(tC, tHalf, tShape, tPolyRef, c2, trim.y);
+    g.aS = curveBoundaryShortened(sC, sHalf, sShape, sPolyRef, c1, trim.z);
+    g.aE = curveBoundaryShortened(tC, tHalf, tShape, tPolyRef, c2, trim.w);
 
     return g;
   }
@@ -86,10 +86,10 @@ fn evalCurveGeom(
     g.c1 = c1;
     g.c2 = c2;
     g.m = (c1 + c2) * 0.5;
-    g.s = curveBoundaryShortened(sC, sHalf, sShape, c1, trim.x);
-    g.e = curveBoundaryShortened(tC, tHalf, tShape, c2, trim.y);
-    g.aS = curveBoundaryShortened(sC, sHalf, sShape, c1, trim.z);
-    g.aE = curveBoundaryShortened(tC, tHalf, tShape, c2, trim.w);
+    g.s = curveBoundaryShortened(sC, sHalf, sShape, sPolyRef, c1, trim.x);
+    g.e = curveBoundaryShortened(tC, tHalf, tShape, tPolyRef, c2, trim.y);
+    g.aS = curveBoundaryShortened(sC, sHalf, sShape, sPolyRef, c1, trim.z);
+    g.aE = curveBoundaryShortened(tC, tHalf, tShape, tPolyRef, c2, trim.w);
 
     return g;
   }
@@ -100,8 +100,8 @@ fn evalCurveGeom(
 
   u = u / uL;
 
-  let si = sC + u * boundaryOffset(sShape, sHalf, u);
-  let ti = tC - u * boundaryOffset(tShape, tHalf, -u);
+  let si = sC + u * boundaryOffsetPoly(sShape, sHalf, u, sPolyRef);
+  let ti = tC - u * boundaryOffsetPoly(tShape, tHalf, -u, tPolyRef);
   let d = ti - si;
   var l = length(d);
 
@@ -113,10 +113,10 @@ fn evalCurveGeom(
 
   g.c1 = c;
   g.c2 = c;
-  g.s = curveBoundaryShortened(sC, sHalf, sShape, c, trim.x);
-  g.e = curveBoundaryShortened(tC, tHalf, tShape, c, trim.y);
-  g.aS = curveBoundaryShortened(sC, sHalf, sShape, c, trim.z);
-  g.aE = curveBoundaryShortened(tC, tHalf, tShape, c, trim.w);
+  g.s = curveBoundaryShortened(sC, sHalf, sShape, sPolyRef, c, trim.x);
+  g.e = curveBoundaryShortened(tC, tHalf, tShape, tPolyRef, c, trim.y);
+  g.aS = curveBoundaryShortened(sC, sHalf, sShape, sPolyRef, c, trim.z);
+  g.aE = curveBoundaryShortened(tC, tHalf, tShape, tPolyRef, c, trim.w);
   g.m = 0.25 * g.s + 0.5 * c + 0.25 * g.e;
 
   return g;
@@ -180,7 +180,7 @@ const ENDPT_ANGLE_W: f32 = 4.0;
 // the raw anchor of an endpoint-block entry: the manual point for the
 // point form, the ray's boundary point for the angle form, else the
 // node center (rawEndpointAnchor's twin)
-fn rawEndptAnchorW(off: u32, isTgt: bool, c: vec2f, half: vec2f, shape: u32) -> vec2f {
+fn rawEndptAnchorW(off: u32, isTgt: bool, c: vec2f, half: vec2f, shape: u32, polyRef: u32) -> vec2f {
   let at = select(off, off + 5u, isTgt);
   let mode = curveBlob[at];
 
@@ -195,7 +195,7 @@ fn rawEndptAnchorW(off: u32, isTgt: bool, c: vec2f, half: vec2f, shape: u32) -> 
   if (mode == ENDPT_ANGLE_W) {
     let d = vec2f(cos(curveBlob[at + 1u]), sin(curveBlob[at + 1u]));
 
-    return c + d * boundaryOffset(shape, half, d);
+    return c + d * boundaryOffsetPoly(shape, half, d, polyRef);
   }
 
   return c;
@@ -203,7 +203,7 @@ fn rawEndptAnchorW(off: u32, isTgt: bool, c: vec2f, half: vec2f, shape: u32) -> 
 
 // resolveEndpoint's twin: mode-pick + the distance shorten toward the aim
 fn resolveEndptW(
-  off: u32, isTgt: bool, c: vec2f, half: vec2f, shape: u32, aim: vec2f, framePt: vec2f
+  off: u32, isTgt: bool, c: vec2f, half: vec2f, shape: u32, polyRef: u32, aim: vec2f, framePt: vec2f
 ) -> vec2f {
   let at = select(off, off + 5u, isTgt);
   let mode = curveBlob[at];
@@ -215,9 +215,9 @@ fn resolveEndptW(
   } else if (mode == ENDPT_LINE_W) {
     p = framePt;
   } else if (mode == ENDPT_POINT_W || mode == ENDPT_ANGLE_W) {
-    p = rawEndptAnchorW(off, isTgt, c, half, shape);
+    p = rawEndptAnchorW(off, isTgt, c, half, shape, polyRef);
   } else {
-    p = curveBoundaryPoint(c, half, shape, aim);
+    p = curveBoundaryPoint(c, half, shape, polyRef, aim);
   }
 
   if (dist != 0.0) {
@@ -257,15 +257,15 @@ struct RouteFrame { b1: vec2f, b2: vec2f, nrm: vec2f, fsi: vec2f, fti: vec2f }
 // the weighted-base frame: 'node-position' (mode 1) measures between the
 // centers but keeps the intersection-frame normal (v3's quirk)
 fn routeFrame(
-  mode: f32, sC: vec2f, sHalf: vec2f, sShape: u32, tC: vec2f, tHalf: vec2f, tShape: u32
+  mode: f32, sC: vec2f, sHalf: vec2f, sShape: u32, sPolyRef: u32, tC: vec2f, tHalf: vec2f, tShape: u32, tPolyRef: u32
 ) -> RouteFrame {
   var u = tC - sC;
   let uL = max(length(u), 1e-6);
 
   u = u / uL;
 
-  let si = sC + u * boundaryOffset(sShape, sHalf, u);
-  let ti = tC - u * boundaryOffset(tShape, tHalf, -u);
+  let si = sC + u * boundaryOffsetPoly(sShape, sHalf, u, sPolyRef);
+  let ti = tC - u * boundaryOffsetPoly(tShape, tHalf, -u, tPolyRef);
   let d = ti - si;
   var l = length(d);
 
@@ -292,8 +292,8 @@ fn subDWH(dxy: f32, dwh: f32) -> f32 {
 
 fn evalRouteW(
   header: vec4f,
-  sC: vec2f, sHalf: vec2f, sShape: u32,
-  tC: vec2f, tHalf: vec2f, tShape: u32,
+  sC: vec2f, sHalf: vec2f, sShape: u32, sPolyRef: u32,
+  tC: vec2f, tHalf: vec2f, tShape: u32, tPolyRef: u32,
   trim: vec4f
 ) -> Route {
   var r: Route;
@@ -316,7 +316,7 @@ fn evalRouteW(
   if (kind == 3.0 || kind == 4.0) { // MULTI / SEGMENTS
     let n = min(u32(header.z), MAX_ROUTE_PTS);
     let mode = curveBlob[off];
-    var f = routeFrame(mode, sC, sHalf, sShape, tC, tHalf, tShape);
+    var f = routeFrame(mode, sC, sHalf, sShape, sPolyRef, tC, tHalf, tShape, tPolyRef);
 
     fS = f.fsi;
     fT = f.fti;
@@ -324,8 +324,8 @@ fn evalRouteW(
     if (mode == 2.0 && hasEndpt) {
       // edge-distances: 'endpoints' — base points are the raw manual
       // anchors, normal recomputed from them (v3's recalcVectorNormInverse)
-      f.b1 = rawEndptAnchorW(blockOff, false, sC, sHalf, sShape);
-      f.b2 = rawEndptAnchorW(blockOff, true, tC, tHalf, tShape);
+      f.b1 = rawEndptAnchorW(blockOff, false, sC, sHalf, sShape, sPolyRef);
+      f.b2 = rawEndptAnchorW(blockOff, true, tC, tHalf, tShape, tPolyRef);
 
       let d = f.b2 - f.b1;
       let l = max(length(d), 1e-6);
@@ -488,19 +488,19 @@ fn evalRouteW(
 
   if (!hasEndpt) {
     // endpoints on the node boundaries toward the first/last interior point
-    r.q[0u] = curveBoundaryPoint(sC, sHalf, sShape, sAim);
-    r.q[qn - 1u] = curveBoundaryPoint(tC, tHalf, tShape, tAim);
+    r.q[0u] = curveBoundaryPoint(sC, sHalf, sShape, sPolyRef, sAim);
+    r.q[qn - 1u] = curveBoundaryPoint(tC, tHalf, tShape, tPolyRef, tAim);
   } else {
     // 12c: resolve each end through its endpoint-block entry.  With no
     // interior points (n = 0, the straight-with-endpoints chord) each end
     // aims at the other end's raw anchor (v3's lines path).
     if (r.n == 0u) {
-      sAim = rawEndptAnchorW(blockOff, true, tC, tHalf, tShape);
-      tAim = rawEndptAnchorW(blockOff, false, sC, sHalf, sShape);
+      sAim = rawEndptAnchorW(blockOff, true, tC, tHalf, tShape, tPolyRef);
+      tAim = rawEndptAnchorW(blockOff, false, sC, sHalf, sShape, sPolyRef);
     }
 
-    r.q[0u] = resolveEndptW(blockOff, false, sC, sHalf, sShape, sAim, fS);
-    r.q[qn - 1u] = resolveEndptW(blockOff, true, tC, tHalf, tShape, tAim, fT);
+    r.q[0u] = resolveEndptW(blockOff, false, sC, sHalf, sShape, sPolyRef, sAim, fS);
+    r.q[qn - 1u] = resolveEndptW(blockOff, true, tC, tHalf, tShape, tPolyRef, tAim, fT);
   }
 
   // Round 56: v3's two shortenings, the evalRoute twin.  The route's own

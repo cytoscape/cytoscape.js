@@ -39,7 +39,39 @@ export const boundaryOffset = (
   halfH: number,
   dx: number,
   dy: number,
+  polygon?: ArrayLike<number> | null,
 ): number => {
+  if (polygon != null && polygon.length >= 6) {
+    let best = -Infinity;
+    const count = polygon.length / 2;
+
+    for (let i = 0; i < count; i++) {
+      const j = (i + 1) % count;
+      const ax = polygon[i * 2] * halfW;
+      const ay = polygon[i * 2 + 1] * halfH;
+      const bx = polygon[j * 2] * halfW;
+      const by = polygon[j * 2 + 1] * halfH;
+      const ex = bx - ax;
+      const ey = by - ay;
+      const denom = dx * ey - dy * ex;
+
+      if (Math.abs(denom) < 1e-8) {
+        continue;
+      }
+
+      const t = (ax * ey - ay * ex) / denom;
+      const u = (ax * dy - ay * dx) / denom;
+
+      if (t >= 0 && u >= 0 && u <= 1) {
+        best = Math.max(best, t);
+      }
+    }
+
+    if (Number.isFinite(best)) {
+      return best;
+    }
+  }
+
   if (shape === SHAPE_RECTANGLE || shape === SHAPE_ROUND_RECTANGLE) {
     const ix = halfW / Math.max(Math.abs(dx), 1e-4);
     const iy = halfH / Math.max(Math.abs(dy), 1e-4);
@@ -219,6 +251,8 @@ export const evalCurve = (
   tHalfH: number,
   tShape: number,
   trim: ArrowTrim = NO_ARROW_TRIM,
+  sPolygon?: ArrayLike<number> | null,
+  tPolygon?: ArrayLike<number> | null,
 ): CurveEval => {
   out.kind = kind;
 
@@ -255,6 +289,7 @@ export const evalCurve = (
       c1y,
       trim.srcGap,
       trim.srcSpacing,
+      sPolygon,
     );
     setBoundaryPoint(
       out,
@@ -268,6 +303,7 @@ export const evalCurve = (
       c2y,
       trim.tgtGap,
       trim.tgtSpacing,
+      tPolygon,
     );
 
     return out;
@@ -300,6 +336,7 @@ export const evalCurve = (
       c1y,
       trim.srcGap,
       trim.srcSpacing,
+      sPolygon,
     );
     setBoundaryPoint(
       out,
@@ -313,6 +350,7 @@ export const evalCurve = (
       c2y,
       trim.tgtGap,
       trim.tgtSpacing,
+      tPolygon,
     );
 
     return out;
@@ -328,8 +366,8 @@ export const evalCurve = (
   ux /= uL;
   uy /= uL;
 
-  const offS = boundaryOffset(sShape, sHalfW, sHalfH, ux, uy);
-  const offT = boundaryOffset(tShape, tHalfW, tHalfH, -ux, -uy);
+  const offS = boundaryOffset(sShape, sHalfW, sHalfH, ux, uy, sPolygon);
+  const offT = boundaryOffset(tShape, tHalfW, tHalfH, -ux, -uy, tPolygon);
   const six = sxC + ux * offS;
   const siy = syC + uy * offS;
   const tix = txC - ux * offT;
@@ -371,6 +409,7 @@ export const evalCurve = (
     cy,
     trim.srcGap,
     trim.srcSpacing,
+    sPolygon,
   );
   setBoundaryPoint(
     out,
@@ -384,6 +423,7 @@ export const evalCurve = (
     cy,
     trim.tgtGap,
     trim.tgtSpacing,
+    tPolygon,
   );
 
   // Q(0.5) — the label anchor
@@ -416,6 +456,7 @@ const setBoundaryPoint = (
   towardY: number,
   gap: number,
   spacing: number,
+  polygon?: ArrayLike<number> | null,
 ): void => {
   let dx = towardX - cx;
   let dy = towardY - cy;
@@ -429,7 +470,7 @@ const setBoundaryPoint = (
     dy /= l;
   }
 
-  const off = boundaryOffset(shape, halfW, halfH, dx, dy);
+  const off = boundaryOffset(shape, halfW, halfH, dx, dy, polygon);
   const bx = cx + dx * off;
   const by = cy + dy * off;
 

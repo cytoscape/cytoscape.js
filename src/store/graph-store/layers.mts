@@ -6,6 +6,9 @@ import {
   columnSpec,
   SHAPE_MASK,
   SHAPE_POLYGON_CUSTOM,
+  SHAPE_CONVEX_HULL,
+  SHAPE_ROUND_CONVEX_HULL,
+  SHAPE_CONCAVE_HULL,
   SHAPE_SHIFT,
   BORDER_STYLE_SHIFT,
   OUTLINE_STYLE_SHIFT,
@@ -66,8 +69,10 @@ export function setNodeLayer(
 
 /**
  * Write an edge's overlay or underlay record (round 13 A2):
- * [rgba (opacity folded), strokeWidth×256] — the stroke width is the
- * edge width + 2 × padding, derived at style-write time.
+ * [rgba (opacity folded), strokeWidth×256, source slot, target slot] —
+ * the stroke width is edge width + 2 × padding, derived at style-write
+ * time.  Cached endpoints let curved layer pipelines stay within
+ * WebGPU’s storage-binding limit after adding polygon contours.
  */
 export function setEdgeLayer(
   gs: GraphStore,
@@ -80,10 +85,18 @@ export function setEdgeLayer(
   strokeWidth: number,
 ): void {
   const arr = gs.edges.column(id) as Uint32Array;
-  const at = slot * 2;
+  const at = slot * 4;
+  const endpoints = gs.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+  const source = endpoints[slot * 2];
+  const target = endpoints[slot * 2 + 1];
   const sw = Math.max(0, Math.round(strokeWidth * 256));
 
-  if (arr[at] === rgba && arr[at + 1] === sw) {
+  if (
+    arr[at] === rgba &&
+    arr[at + 1] === sw &&
+    arr[at + 2] === source &&
+    arr[at + 3] === target
+  ) {
     return;
   }
 
@@ -104,7 +117,33 @@ export function setEdgeLayer(
 
   arr[at] = rgba;
   arr[at + 1] = sw;
+  arr[at + 2] = source;
+  arr[at + 3] = target;
   gs.dirty.mark(id, slot);
+}
+
+/** Refresh the cached edge endpoints in all draw-layer records. */
+export function updateEdgeLayerEndpoints(gs: GraphStore, slot: number): void {
+  const endpoints = gs.edges.column(COL.EDGE_ENDPOINTS) as Uint32Array;
+  const source = endpoints[slot * 2];
+  const target = endpoints[slot * 2 + 1];
+
+  for (const id of [
+    COL.EDGE_CASING,
+    COL.EDGE_OVERLAY,
+    COL.EDGE_UNDERLAY,
+  ] as const) {
+    const arr = gs.edges.column(id) as Uint32Array;
+    const at = slot * 4 + 2;
+
+    if (arr[at] === source && arr[at + 1] === target) {
+      continue;
+    }
+
+    arr[at] = source;
+    arr[at + 1] = target;
+    gs.dirty.mark(id, slot);
+  }
 }
 
 /** setColor wrapper for the mid-arrow columns that keeps the count. */
@@ -154,13 +193,17 @@ export function setBorderGeom(
   borderStyle: number = 0,
   outlineStyle: number = 0,
 ): void {
+  gs.hierarchy.setHullRadius(slot, cornerRadius);
   const arr = gs.nodes.column(COL.NODE_BORDER_GEOM) as Uint32Array;
   const at = slot * 4;
   // C3: custom polygons carry their point-record ref (from
   // setPolygonPoints) in the radius word — the corner radius is
   // meaningless for polygons
   const rad =
-    shapeId === SHAPE_POLYGON_CUSTOM
+    shapeId === SHAPE_POLYGON_CUSTOM ||
+    shapeId === SHAPE_CONVEX_HULL ||
+    shapeId === SHAPE_ROUND_CONVEX_HULL ||
+    shapeId === SHAPE_CONCAVE_HULL
       ? polyRef >>> 0
       : cornerRadius < 0
         ? 0xffffffff
@@ -177,6 +220,21 @@ export function setBorderGeom(
   // binding went to the gradient column); 27.1 widened the field from
   // a nibble to a byte.  Round 38 packs the two stroke-style enums
   // into bits 8..11 (see the contract's stroke style constants).
+  const hasPoly =
+    shapeId === SHAPE_POLYGON_CUSTOM ||
+    shapeId === SHAPE_CONVEX_HULL ||
+    shapeId === SHAPE_ROUND_CONVEX_HULL ||
+    shapeId === SHAPE_CONCAVE_HULL;
+  const fused = gs.nodes.column(COL.NODE_OUTER_GEOM) as Float32Array;
+  const fusedBits = new Uint32Array(fused.buffer, fused.byteOffset);
+  const fusedAt = slot * 4 + 3;
+  const nextRef = hasPoly ? polyRef >>> 0 : 0;
+
+  if (fusedBits[fusedAt] !== nextRef) {
+    fusedBits[fusedAt] = nextRef;
+    gs.dirty.mark(COL.NODE_OUTER_GEOM, slot);
+  }
+
   const posShape =
     (borderPos |
       (borderStyle << BORDER_STYLE_SHIFT) |
@@ -212,6 +270,7 @@ export function setBorderGeom(
   arr[at + 3] = packedWO;
   gs.geoEpoch++;
   gs.dirty.mark(COL.NODE_BORDER_GEOM, slot);
+  gs.hierarchy.markGeo(slot);
 }
 
 /**

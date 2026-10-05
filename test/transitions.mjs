@@ -529,7 +529,7 @@ describe('gpu/style: transitions (round 24.1)', function () {
       });
       const s = cy.$id('ab')._first().slot;
       const aw = () => cy._store.column('edge.arrowWidths')[s * 2];
-      const casing = () => cy._store.column('edge.casing')[s * 2 + 1] / 256;
+      const casing = () => cy._store.column('edge.casing')[s * 4 + 1] / 256;
 
       cy.style({
         edges: {

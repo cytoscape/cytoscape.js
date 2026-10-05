@@ -513,8 +513,10 @@ export class GraphStore implements ModelView {
           }
         }
       },
-      materialize: (slot, x, y, w, h) =>
-        compoundImpl.materializeParentGeom(this, slot, x, y, w, h),
+      shape: (slot) => (this.nodes.column(COL.NODE_SHAPE) as Uint32Array)[slot],
+      outline: (slot) => compoundImpl.nodeOutline(this, slot),
+      materialize: (slot, x, y, w, h, hull) =>
+        compoundImpl.materializeParentGeom(this, slot, x, y, w, h, hull),
     });
 
     // a blob compaction moves records: rewrite the header offset (a

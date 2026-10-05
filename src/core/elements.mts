@@ -309,7 +309,9 @@ export function _addColumnar(
   return { nodeSlots, edgeSlots };
 }
 
-function _validateMiniatureColumns(nodes: ColumnarElements['nodes']): void {
+function _validateMiniatureColumns(
+  nodes: ColumnarElements[typeof GROUP_NODES],
+): void {
   if (
     nodes == null ||
     (nodes.collapsed == null && nodes.appliedCollapseScale == null)

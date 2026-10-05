@@ -3,7 +3,7 @@ Public option/type surface of the GPU prototype entry point.
 */
 
 import type { Position } from './types.mjs';
-import type { GroupName } from './contract.mjs';
+import type { GroupName, GROUP_NODES, GROUP_EDGES } from './contract.mjs';
 import type {
   DataKey,
   DefaultEdgeData,
@@ -369,7 +369,7 @@ export type StylePropValue<Data = Untyped> = string | number | MapperSpec<Data>;
 export type StyleProps<Data = Untyped> = Record<string, StylePropValue<Data>>;
 
 /** A group named by an authored stylesheet definition. */
-export type LegendGroup = 'nodes' | 'parents' | 'edges';
+export type LegendGroup = typeof GROUP_NODES | 'parents' | typeof GROUP_EDGES;
 
 /** A bounded summary of style bypasses affecting one shared legend entry. */
 export interface LegendException {
@@ -395,7 +395,7 @@ export interface LegendEntry {
   resolvedDomain?: number[] | null;
   /** Separate resolved stops when one definition styles nodes and parents. */
   resolvedDomains?: Partial<
-    Record<'nodes' | 'parents' | 'edges', number[] | null>
+    Record<typeof GROUP_NODES | 'parents' | typeof GROUP_EDGES, number[] | null>
   >;
   range?: string | (string | number)[];
   interpolate?: 'oklab' | 'srgb';
@@ -409,7 +409,7 @@ export interface LegendEntry {
     | 'conditional'
     | 'exception-only';
   /** Effective groups styled by a nodes definition. */
-  appliesTo?: Array<'nodes' | 'parents' | 'edges'>;
+  appliesTo?: Array<typeof GROUP_NODES | 'parents' | typeof GROUP_EDGES>;
   /** Chart configuration, excluding per-element chart payloads and ids. */
   chart?: Record<string, unknown>;
   exceptions?: LegendException[];

@@ -5,6 +5,8 @@ import {
   CHART_NONE,
   CHART_PIE,
   CHART_STRIPES,
+  GROUP_NODES,
+  GROUP_EDGES,
 } from '../contract.mjs';
 import type { Core } from '../core.mjs';
 import type { LegendEntry, LegendGroup, Legend } from '../public-types.mjs';
@@ -14,7 +16,7 @@ import { CHART_PROPS } from '../style/tables.mjs';
 import { normalizeProp } from '../style/normalize.mjs';
 import { PROP } from '../style-props.mjs';
 
-const GROUPS: readonly LegendGroup[] = ['nodes', 'edges', 'parents'];
+const GROUPS: readonly LegendGroup[] = [GROUP_NODES, GROUP_EDGES, 'parents'];
 const CHART_KEYS = new Set<string>([
   PROP.CHART,
   PROP.CHART_VALUES,
@@ -42,9 +44,11 @@ const effectiveGroups = (
   group: LegendGroup,
   prop: string,
   blocks: Record<LegendGroup, Record<string, unknown>>,
-): Array<'nodes' | 'parents' | 'edges'> => {
-  if (group === 'nodes') {
-    return hasAuthored(blocks.parents, prop) ? ['nodes'] : ['nodes', 'parents'];
+): Array<LegendGroup> => {
+  if (group === GROUP_NODES) {
+    return hasAuthored(blocks.parents, prop)
+      ? [GROUP_NODES]
+      : [GROUP_NODES, 'parents'];
   }
 
   return [group];
@@ -87,9 +91,7 @@ const mappingEntry = (
   const isPassthrough = program.kind === 'passthrough';
   const scaled = program.kind === 'continuous' || program.kind === 'discrete';
   const appliesTo = effectiveGroups(group, prop, blocks);
-  const resolvedDomains: Partial<
-    Record<'nodes' | 'parents' | 'edges', number[] | null>
-  > = {};
+  const resolvedDomains: Partial<Record<LegendGroup, number[] | null>> = {};
 
   for (const effective of appliesTo) {
     resolvedDomains[effective] = stopsFor(mapperFor(core, effective, prop));
@@ -228,7 +230,7 @@ const chartEntry = (
 };
 
 const effectiveOrigin = (
-  actual: 'nodes' | 'parents' | 'edges',
+  actual: LegendGroup,
   prop: string,
   blocks: Record<LegendGroup, Record<string, unknown>>,
 ): LegendGroup => {
@@ -236,7 +238,7 @@ const effectiveOrigin = (
     return hasAuthored(blocks.parents, prop)
       ? 'parents'
       : hasAuthored(blocks.nodes, prop)
-        ? 'nodes'
+        ? GROUP_NODES
         : 'parents';
   }
   return actual;
@@ -252,12 +254,12 @@ const exceptionCounts = (
     const ref = core._store.lookup(id);
     if (ref == null) continue;
 
-    const actual: 'nodes' | 'parents' | 'edges' =
-      ref.group === 'edges'
-        ? 'edges'
+    const actual: LegendGroup =
+      ref.group === GROUP_EDGES
+        ? GROUP_EDGES
         : core._styleEngine.defFor(ref) === core._styleEngine.defs.parents
           ? 'parents'
-          : 'nodes';
+          : GROUP_NODES;
 
     for (const prop of Object.keys(props)) {
       const norm = normalizeProp(prop);

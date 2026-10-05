@@ -23,7 +23,7 @@ A round can land with an item held open; the round file says which.
 
 ## The sections
 
-191 sections.
+190 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -215,6 +215,5 @@ A round can land with an item held open; the round file says which.
 | 186 | 145 | 2026-09-29 | landed | [The record ref overflow guard: charts and images past 2^24 floats](rounds/2026-09-29-13-rnd0145-landed-the-record-ref-overflow-guard-charts-and-images-past-2-24-floats.md) |
 | 187 | — | 2026-10-03 | note | [Alpha design interview: charts, hulls and miniature compounds](rounds/2026-10-03-01-rnd0000-note-alpha-design-interview.md) |
 | 188 | 146 | 2026-10-03 | plan | [Arrow vocabulary and hollow compound heads](rounds/2026-10-03-02-rnd0146-plan-arrow-vocabulary-and-hollow-compounds.md) |
-| 189 | 147 | 2026-10-03 | plan | [Partial scale domains and legend JSON](rounds/2026-10-03-03-rnd0147-plan-partial-scale-domains-and-legend-json.md) |
+| 189 | 147 | 2026-10-03 | landed | [Partial scale domains and legend JSON](rounds/2026-10-03-03-rnd0147-landed-partial-scale-domains-and-legend-json.md) |
 | 190 | 148 | 2026-10-03 | plan | [Miniature compounds: actual positions, reversible size scaling](rounds/2026-10-03-04-rnd0148-plan-miniature-compounds.md) |
-| 191 | 147 | 2026-10-05 | landed | [Partial scale domains and legend JSON](rounds/2026-10-05-01-rnd0147-landed-partial-scale-domains-and-legend-json.md) |

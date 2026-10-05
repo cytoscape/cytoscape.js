@@ -1,9 +1,5 @@
 import { wgsl } from '../../gpu/wgsl.mjs';
-import {
-  STROKE_SOLID,
-  STROKE_DOTTED,
-  STROKE_DOUBLE,
-} from '../../contract.mjs';
+import { STROKE_SOLID, STROKE_DOTTED, STROKE_DOUBLE } from '../../contract.mjs';
 import { COMMON, DASH_WGSL, GLYPH_STRUCT, BOUNDARY_WGSL } from './common.mjs';
 import { CURVE_WGSL, ROUTE_WGSL } from './curve.mjs';
 import { ARROW_GAP_WGSL } from './sdf.mjs';

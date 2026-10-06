@@ -292,6 +292,39 @@ These later answers refine or supersede earlier alternatives above.
   requires reconciling that behavior and testing multi-object dispatch. Exact
   remaining drag-family names and compatibility treatment remain to specify.
 
+### Drag dispatch and label editing refinements
+
+- **grab, free and dragfree use initiating-object dispatch**, bubbling once to
+  cy with all affected objects in the payload. Remove grabon, freeon and
+  dragfreeon for alpha; do not retain aliases.
+- **Drag lifecycle:** beforedrag, dragstart, drag, beforedragfree, dragfree and
+  dragcancel. grab/free retain acquisition/release roles. Start only after the
+  drag threshold is crossed; beforedrag may veto movement then. A tap has no
+  drag lifecycle, and vetoing beforedrag leaves tap eligibility governed by
+  the normal tap thresholds.
+- **Cancelled drag:** roll back gesture-owned changes, emit dragcancel, then
+  free to balance grab; no dragfree. Successful release validates and commits
+  before free, followed by dragfree; both observe final state. Keep the earlier
+  pointer-release ordering and compound-drop commit requirements.
+- **Programmatic changes do not emit the interaction lifecycle.** position()
+  and resize(bb) emit their normal change events.
+- **Reconnect lifecycle:** beforereconnect, reconnectstart, reconnect,
+  beforereconnectend, reconnectend and reconnectcancel.
+- **Route lifecycle:** beforeroute, routestart, route, beforerouteend, routeend
+  and routecancel for bend/control-point edits. As with resize, the two before
+  stages are cancellable.
+- **Label lifecycle:** beforelabel, labelstart, labelinput, beforelabelend,
+  labelend and labelcancel. labelinput reports text updates. The user accepted
+  the full lifecycle after the proposed clearer labelinput update name.
+- **Label editing is enabled per element or annotation, default disabled.**
+  Enabling permits editing without automatically starting it on tap. Apps
+  choose the trigger and call editLabel(). Enter or clicking outside attempts
+  to commit; Escape cancels.
+- **Pointer and tap events expose hitPart and labelRole**, enabling apps to
+  distinguish a label hit and main/source/target label roles. Preserve the
+  owning element/annotation as the event target. Exact hit-part enum and
+  editLabel() arguments remain to specify.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

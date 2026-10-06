@@ -61,6 +61,11 @@ Automatic viewport snapping, obstacle-avoiding hulls and a public concavity
 control remain future maintainer decisions. The implementation sections below
 describe the current code.
 
+The ongoing [6 October alpha contract interview](../plan/rounds/2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
+records agreed readback, gesture, annotation and editing contracts. Those
+changes are planned, not implemented; current behavior remains documented
+in the implementation sections below.
+
 ## What landed, round by round
 
 Round 13 (2026-07-31) swept

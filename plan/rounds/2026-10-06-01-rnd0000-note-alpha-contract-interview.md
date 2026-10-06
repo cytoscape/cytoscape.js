@@ -264,6 +264,34 @@ These later answers refine or supersede earlier alternatives above.
   non-pannable. Apps can enable panning from an annotation when it cannot be
   dragged, subject to the core panning toggles.
 
+### Annotation removal and editing event decisions
+
+- **Annotation removal is terminal**, matching v4 elements: remove()/removed()
+  do not imply restore(). Re-adding saved definitions creates new objects with
+  new listeners. This supersedes the interview answer about retaining listeners
+  across restoration, which was based on an incorrect claim about v4 elements.
+  Clones do not copy listeners.
+- **One gesture has one edit transaction**, with all affected objects and their
+  starting and proposed final states. Before-commit events carry both states for
+  app validation and undo. Cancellation rolls back only changes still owned by
+  the gesture, preserving subsequent app changes.
+- **The lifecycle applies to ordinary node/annotation dragging, resizing,
+  edge-route editing, reconnection and label editing**, while retaining existing
+  gesture events. Notify before start, on start, during updates, before commit,
+  after commit or on cancellation. A veto before commit cancels and rolls back;
+  it does not leave a preview waiting for explicit app completion.
+- **Use separate event families with plain names**, such as drag and resize;
+  no shared edit event with a kind field and no appended '-edit' naming.
+- **Resize events:** beforeresize, resizestart, resize, beforeresizeend,
+  resizeend and resizecancel. The two before events are cancellable; resizeend
+  means committed. Resize handles emit resize events only, not ordinary drag.
+- **Dispatch each stage on the initiating object, bubbling once to cy**, with
+  all affected objects in the payload. Apply this dispatch rule consistently to
+  drag as well. Current v4 grab/drag/free dispatch iterates the drag set, while
+  grabon/freeon target the directly pressed object; implementing this decision
+  requires reconciling that behavior and testing multi-object dispatch. Exact
+  remaining drag-family names and compatibility treatment remain to specify.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

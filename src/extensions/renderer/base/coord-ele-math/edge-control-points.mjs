@@ -348,6 +348,18 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
   const dx = subDWH(pdx, dw);
   const dy = subDWH(pdy, dh);
 
+  // the middle of the gap between the facing sides of the nodes on one axis,
+  // or the middle between the centres if the nodes overlap on that axis
+  const midBetween = ( c1, c2, size1, size2 ) => {
+    if( !dIncludesNodeBody ){ return (c1 + c2)/2; }
+
+    const sgn = math.signum(c2 - c1);
+    const side1 = c1 + sgn * size1/2;
+    const side2 = c2 - sgn * size2/2;
+
+    return sgn * (side2 - side1) > 0 ? (side1 + side2)/2 : (c1 + c2)/2;
+  };
+
   let isExplicitDir = false;
 
   if( rawTaxiDir === AUTO ){
@@ -404,7 +416,7 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
       const lShapeInsideTgt = Math.abs(pdx) <= tgtW/2;
 
       if( lShapeInsideSrc ){ // horizontal Z-shape (direction not respected)
-        let x = (posPts.x1 + posPts.x2)/2;
+        let x = midBetween(posPts.x1, posPts.x2, srcW, tgtW);
         let { y1, y2 } = posPts;
 
         rs.segpts = [
@@ -412,7 +424,7 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
           x, y2
         ];
       } else if( lShapeInsideTgt ){ // vertical Z-shape (distance not respected)
-        let y = (posPts.y1 + posPts.y2)/2;
+        let y = midBetween(posPts.y1, posPts.y2, srcH, tgtH);
         let { x1, x2 } = posPts;
 
         rs.segpts = [
@@ -430,7 +442,7 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
       const lShapeInsideTgt = Math.abs(pdy) <= tgtH/2;
 
       if( lShapeInsideSrc ){ // vertical Z-shape (direction not respected)
-        let y = (posPts.y1 + posPts.y2)/2;
+        let y = midBetween(posPts.y1, posPts.y2, srcH, tgtH);
         let { x1, x2 } = posPts;
 
         rs.segpts = [
@@ -438,7 +450,7 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
           x2, y
         ];
       } else if( lShapeInsideTgt ){ // horizontal Z-shape (turn distance not respected)
-        let x = (posPts.x1 + posPts.x2)/2;
+        let x = midBetween(posPts.x1, posPts.x2, srcW, tgtW);
         let { y1, y2 } = posPts;
 
         rs.segpts = [

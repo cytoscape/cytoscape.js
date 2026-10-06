@@ -88,7 +88,8 @@ It routes the next batch to 146, 147, 80, 82 and 148. Implemented status is
 unchanged; deferred aggregate persistence/direction remain maintainer calls.
 
 **Ongoing alpha contract interview (2026-10-06):** decisions on undo,
-table access, worker hosts, style readbacks, gestures and annotation editing
+table access, worker hosts, style readbacks, gestures, annotation editing,
+attachments, bundling and layout options
 are recorded in [the interview](plan/rounds/2026-10-06-01-rnd0000-note-alpha-contract-interview.md).
 Its explicit answers supersede older alternatives; remaining questions stay
 open and no implementation status changes are claimed.

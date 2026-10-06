@@ -134,6 +134,94 @@ round 81's first implementation.
   do not move independently. Ancestor/descendant deduplication and per-kind
   annotation translation must be specified before implementation.
 
+### Geometry, attachment and editing refinements
+
+These later answers refine or supersede earlier alternatives above.
+
+- **Line/arrow resize:** scale endpoints and bends into the requested box,
+  preserve relative shape, stroke thickness and arrowhead size. Public line
+  bounds include stroke thickness: a horizontal visible line does not have a
+  zero-height public box just because its centerline does.
+- **Minimum dimensions:** clamp requests as far as possible rather than throw
+  or accidentally hide the object. Initially at least 1 model px in each
+  dimension, with a larger minimum where unchanged strokes/arrowheads require
+  it. A requested 0-by-100 box can resolve to 1-by-100 for a 1px stroke.
+  This supersedes the brief rejection alternative. Configurable/style minima
+  are future considerations. Interactive node resizing also has a minimum.
+- **Clamping resize(bb) preserves the requested center**, expanding symmetrically
+  to meet minimum bounds; interactive handle anchoring remains to specify.
+- **Node resize:** write width/height bypasses; leaf nodes only. Compound
+  parents stay sized from children/padding. Free resizing is the default;
+  Shift preserves the starting aspect ratio. Image annotations use the same
+  free-resize default and Shift behavior.
+- **Edge editing:** editing an automatic route creates an independent per-edge
+  route through style bypasses, without changing its neighbors. The handle-toggle
+  function accepts a route-kind option: segments or Bezier; for a straight edge,
+  segments is the default. Existing editable routes retain appropriate semantics.
+  Endpoint reconnection handles are optional, independently enabled.
+- **Cancelled handle edits restore starting state**, including geometry,
+  endpoint identity, bypasses and attachments. Escape, pointercancel and invalid
+  endpoint drops cancel. Apps can veto before an edit starts or commits through
+  cancellable lifecycle events; exact event names/payloads remain to specify.
+- **Lock consistency:** existing node locking prevents movement, not all
+  mutation. Annotation locks block interactive geometry edits and programmatic
+  position changes; allow programmatic width/height changes about the fixed
+  center, data and appearance. A locked annotation's resize(bb) or shift cannot
+  apply; this supersedes the earlier partial size application for resize(bb).
+  Programmatic width/height setters are the explicit way to change its size.
+- **Handle visibility is transient view state:** not serialized; clones begin
+  with handles hidden. No app/view editing mode is imposed.
+- **Following clones follow authored annotations**: additions/removals, geometry,
+  content and appearance; selection and handle visibility stay independent.
+- **In-place node/edge label edits create label bypasses by default**; apps may
+  update their own data and remove the bypass through edit events. Annotation
+  label edits directly change annotation text.
+- **Imported GroupAnnotation for alpha:** render independent members and retain
+  group metadata for export. Revisit native grouping later, jointly with node
+  grouping because the concepts are analogous.
+- **Live endpoint attachments:** design before alpha, implement later. Default
+  anchor is the target geometry boundary, toward the next bend/opposite endpoint,
+  excluding label overflow. Target removal detaches at the last resolved point;
+  replacement with the same id does not automatically reattach.
+- **Moving a free endpoint keeps its other attachment.** With one attached
+  endpoint, width/height resizing keeps that anchor and adjusts the free side.
+  With both attached, detach both and resize about the center. A position()
+  translation detaches attachments.
+- **Explicit resize(bb) honors the requested box subject to minima and locks.**
+  Retain an existing attachment only when compatible with the resulting endpoint,
+  using a reasonable screen-space threshold comparable to tap thresholds. Add
+  a maintainer manual review of that threshold; the value is not settled here.
+  Locks take precedence; the width/height setter rule preserves the fixed center.
+
+### Bundling decisions
+
+- **Explicit async cy.bundleEdges(options)**, not automatically maintained
+  bundled style. The existing promise-plus-stats decision stands.
+- **Routes deform with endpoint movement**; apps rerun to tighten the bundle.
+- **A style enum controls bundle arrowheads**, normal per-edge or suppressed;
+  **suppressed is the default**. A more elaborate simplification mode is not
+  committed. Public property name and enum spelling remain to specify.
+- **Routing-style writes do not discard bundled routes**: bundle ownership stays
+  until explicit unbundleEdges(), revisitable later. This supersedes round 83's
+  style-wins rule. Explicit handle editing still clears the edited edge's bundle,
+  as the independent-route decision requires; unrelated edges stay bundled.
+- Persistence still follows the earlier measurement gate: compare app-held
+  presets and a wire-format section before choosing; no answer here selects one.
+
+### Layout constraint and option decisions
+
+- **constrainWithinBounds: true** makes boundingBox binding; its default role
+  remains a hint. Contradictory constraints produce the best effort plus
+  a violation report, not an all-or-nothing refusal.
+- **await layout.promise() returns the completion report** with constraint
+  satisfaction/violations. run() continues returning the layout handle. The
+  suggested result() accessor and layoutstop payload were not separately
+  approved; their need and exact shapes remain to specify.
+- **nodeSpacing** is the canonical common minimum node-box gap; componentSpacing
+  and overall spacingFactor stay distinct. Alpha uses one spelling with no
+  deprecated gap aliases. Map old options by actual semantics, not a blanket
+  textual rename; preserve distinct rank/edge concepts.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

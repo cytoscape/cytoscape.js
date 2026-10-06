@@ -62,7 +62,8 @@ control remain future maintainer decisions. The implementation sections below
 describe the current code.
 
 The ongoing [6 October alpha contract interview](../plan/rounds/2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
-records agreed readback, gesture, annotation and editing contracts. Those
+records agreed readback, gesture, annotation, attachment, editing, bundling
+and layout-option contracts. Those
 changes are planned, not implemented; current behavior remains documented
 in the implementation sections below.
 

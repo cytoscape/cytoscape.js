@@ -222,6 +222,48 @@ These later answers refine or supersede earlier alternatives above.
   deprecated gap aliases. Map old options by actual semantics, not a blanket
   textual rename; preserve distinct rank/edge concepts.
 
+### Further layout, CJK and alpha acceptance decisions
+
+- **Compact layout placement is the default**, using node dimensions and
+  nodeSpacing rather than expanding to fill the box. Use the common condense
+  option where applicable. Component packing targets the bounding-box or
+  viewport aspect ratio, with a square fallback when dimensions are unavailable.
+- **CJK wrapping defaults to punctuation-aware legal breaks**, without requiring
+  spaces. An anywhere mode may relax that rule. Glyph atlases grow within a
+  budget, then reclaim and re-rasterize on demand; benchmark pan/zoom churn and
+  make exhaustion explicit. These answers do not change the recorded timing:
+  design before alpha, implementation during alpha.
+- **Fonts are supplied by the app**, with a configurable instance fallback chain
+  and registration for page, worker and export contexts. Tests use pinned local
+  copies of Noto Sans Japanese, Noto Sans Korean and Noto Sans Simplified Chinese
+  so they do not depend on system fonts or network availability.
+- **Platform gates before alpha:** recorded macOS/Metal, Windows/D3D12 and real
+  Android touch checks, plus browser CI and WebGL2 parity. A skipped check is
+  recorded explicitly and does not count as a pass.
+- **Representative app integration tests gate alpha and live in this repo.**
+  Use public contracts, independent fixtures and a repository-owned harness.
+  Scenarios may be informed by Cytoscape Web without depending on its
+  implementation: loading, virtual tables, styling, selection, layouts and
+  export. This is a bounded integration suite, not a full app migration gate.
+
+### Further editing and annotation interaction decisions
+
+- **Handle API:** handles() reads visibility; handles(true, options) enables
+  handles; handles(false) disables them. Setters return the receiver.
+- **Hiding handles or locking during a handle edit cancels it**, restoring the
+  starting state before the lock takes effect.
+- **Figure exports exclude editing handles**, even when visible in the view.
+- **Interactive resize anchors the opposite corner or side**, including when
+  enforcing the minimum dimensions. Programmatic resize(bb) retains its
+  previously specified requested-center clamping rule.
+- **Core autolock, autoungrabify and autounselectify also apply to annotations.**
+- **Group dragging moves each object once.** Account for movement inherited
+  from compound parents or endpoint attachments so selected descendants and
+  attached annotations do not receive the drag delta twice.
+- **Annotations support pannable(), panify() and unpanify()**, defaulting to
+  non-pannable. Apps can enable panning from an annotation when it cannot be
+  dragged, subject to the core panning toggles.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

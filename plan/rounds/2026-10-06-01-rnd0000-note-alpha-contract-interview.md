@@ -325,6 +325,38 @@ These later answers refine or supersede earlier alternatives above.
   owning element/annotation as the event target. Exact hit-part enum and
   editLabel() arguments remain to specify.
 
+### Label editor session decisions
+
+- **One active label editor per cy instance.** Opening another first attempts
+  to commit the current session. A validation veto keeps the current editor
+  and draft active. For labels this supersedes the generic rollback-on-veto
+  rule: default to keeping the draft open and restoring focus, while allowing
+  the app to cancel explicitly, including from its validation handler.
+- **Keyboard/completion:** Enter attempts commit; Shift+Enter inserts a newline;
+  Escape cancels. Clicking outside attempts commit. Veto leaves the session
+  open unless the app explicitly cancels.
+- **editLabel() returns a session** with commit(), cancel() and promise(). The
+  promise resolves for committed and cancelled outcomes with status, original
+  text, final text and cancellation reason where applicable. Veto keeps it
+  pending. Exact result field spelling remains to specify.
+- **editLabel({ labelRole })** accepts main/source/target, defaulting to main.
+  Removing the edited node, edge or annotation cancels the session and closes
+  the editor; editing does not block removal.
+- **App changes to the edited label synchronize into the visible draft and
+  eventual commit value**, supporting automatic cleanup such as stripping
+  disallowed characters. Other label roles do not change the draft. Preserve
+  the previously specified ownership-aware cancellation behavior.
+- **Built-in editor only for now**; revisit an app-supplied editor hook later.
+- **Locked objects may still have labels edited** when enabled, because locks
+  restrict geometry. Disabling label editing during a session cancels it,
+  closes the editor and rolls back only session-owned changes.
+- **editLabel() respects the per-object editing toggle.** Disabled editing
+  returns null without opening a session, rather than throwing.
+- **labelEditable(true/false) without a role applies to all applicable roles.**
+  Passing { labelRole } changes only that role. labelEditable() without a role
+  reports whether all applicable roles are enabled; a role-specific query
+  reports that role. editLabel() still defaults to the main label.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

@@ -472,6 +472,31 @@ These later answers refine or supersede earlier alternatives above.
   Add renderedBundlePoints() for rendered coordinates. The remaining getter
   behavior while a bundle is active remains to specify.
 
+### Active bundled geometry and layout reporting
+
+- **Active bundles make segmentPoints()/controlPoints() return undefined**;
+  bundlePoints() describes the active route. Midpoint, endpoint getters, bounds
+  and picking also follow the active bundle.
+- **SVG and image exports preserve active bundled routes**, with current width,
+  color, opacity, dashes and bundle-arrowhead policy. Do not freeze appearance
+  at computation start.
+- **layoutstop carries the same completion report as layout.promise().** No
+  synchronous layout.result() accessor for alpha. These answers settle the
+  previously open accessor/event-payload alternatives.
+- **Layout completion reports distinguish completed and stopped**, retaining
+  CancelledError rejection for cancellation.
+- **Each constraint violation identifies its type, affected element collection
+  and measured discrepancy**, rather than only aggregate counts.
+- **Reuse solver assessments where valid for applied positions**, recomputing
+  only when necessary, such as an interrupted finisher animation leaving
+  different positions. Do not impose a redundant final assessment unconditionally.
+- **Violations cover surviving elements**; list removed layout-scope elements
+  in a separate skipped collection.
+- **App movement after the solver assessment is reported separately as
+  externally changed**, rather than attributed to the layout as a violation.
+  Exact report field spelling and interaction with reassessment remain to
+  specify in the implementation contract.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

@@ -1,15 +1,40 @@
-/* global Float32Array */
+/*! Bezier curve function generator. Copyright 2014-2026 Gaetan Renaudeau. MIT License: http://en.wikipedia.org/wiki/MIT_License
+ * https://github.com/gre/bezier-easing */
 
-/*! Bezier curve function generator. Copyright Gaetan Renaudeau. MIT License: http://en.wikipedia.org/wiki/MIT_License */
+// Fallback for environments without Math.cbrt
+let cbrt = Math.cbrt || function(x) {
+  return x < 0 ? -Math.pow(-x, 1 / 3) : Math.pow(x, 1 / 3);
+};
+
+// Solves x(t) = ((2a * t + 3b) * t + 3c) * t = x for t, with x in (0, 1):
+// u = 1/t is the largest real root of x*u^3 - 3c*u^2 - 3b*u - 2a = 0
+function solveTForX(x, a, b, c) {
+  let j = 1 / Math.max(c, Math.sqrt(x)),
+    k = x * j,
+    l = k * j,
+    s = c * j,
+    q = b * l,
+    m = s * s + q,
+    h = -s * (s * s + 1.5 * q) - a * k * l,
+    D = h * h - m * m * m,
+    v;
+
+  if (m === 0 || D > 1e-12 * h * h) {
+    // one real root (Cardano)
+    let U = -cbrt(h < 0 ? h - Math.sqrt(D) : h + Math.sqrt(D));
+
+    v = (U + m / U) || 0;
+  } else {
+    // three real roots, take the largest
+    let r = Math.sqrt(m);
+
+    v = 2 * r * Math.cos(Math.acos(Math.max(-1, Math.min(1, -h / (m * r)))) / 3);
+  }
+
+  return Math.min(1, k / (v + s));
+}
+
 function generateCubicBezier(mX1, mY1, mX2, mY2) {
-  let NEWTON_ITERATIONS = 4,
-    NEWTON_MIN_SLOPE = 0.001,
-    SUBDIVISION_PRECISION = 0.0000001,
-    SUBDIVISION_MAX_ITERATIONS = 10,
-    kSplineTableSize = 11,
-    kSampleStepSize = 1.0 / (kSplineTableSize - 1.0),
-    float32ArraySupported = typeof Float32Array !== 'undefined';
-
   /* Must contain four arguments. */
   if (arguments.length !== 4) {
     return false;
@@ -28,113 +53,30 @@ function generateCubicBezier(mX1, mY1, mX2, mY2) {
   mX1 = Math.max(mX1, 0);
   mX2 = Math.max(mX2, 0);
 
-  let mSampleValues = float32ArraySupported ? new Float32Array(kSplineTableSize) : new Array(kSplineTableSize);
-
-  function A(aA1, aA2) {
-    return 1.0 - 3.0 * aA2 + 3.0 * aA1;
-  }
-
-  function B(aA1, aA2) {
-    return 3.0 * aA2 - 6.0 * aA1;
-  }
-
-  function C(aA1) {
-    return 3.0 * aA1;
-  }
-
-  function calcBezier(aT, aA1, aA2) {
-    return ((A(aA1, aA2) * aT + B(aA1, aA2)) * aT + C(aA1)) * aT;
-  }
-
-  function getSlope(aT, aA1, aA2) {
-    return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B(aA1, aA2) * aT + C(aA1);
-  }
-
-  function newtonRaphsonIterate(aX, aGuessT) {
-    for (let i = 0; i < NEWTON_ITERATIONS; ++i) {
-      let currentSlope = getSlope(aGuessT, mX1, mX2);
-
-      if (currentSlope === 0.0) {
-        return aGuessT;
-      }
-
-      let currentX = calcBezier(aGuessT, mX1, mX2) - aX;
-      aGuessT -= currentX / currentSlope;
-    }
-
-    return aGuessT;
-  }
-
-  function calcSampleValues() {
-    for (let i = 0; i < kSplineTableSize; ++i) {
-      mSampleValues[i] = calcBezier(i * kSampleStepSize, mX1, mX2);
-    }
-  }
-
-  function binarySubdivide(aX, aA, aB) {
-    let currentX, currentT, i = 0;
-
-    do {
-      currentT = aA + (aB - aA) / 2.0;
-      currentX = calcBezier(currentT, mX1, mX2) - aX;
-      if (currentX > 0.0) {
-        aB = currentT;
-      } else {
-        aA = currentT;
-      }
-    } while (Math.abs(currentX) > SUBDIVISION_PRECISION && ++i < SUBDIVISION_MAX_ITERATIONS);
-
-    return currentT;
-  }
-
-  function getTForX(aX) {
-    let intervalStart = 0.0,
-      currentSample = 1,
-      lastSample = kSplineTableSize - 1;
-
-    for (; currentSample !== lastSample && mSampleValues[currentSample] <= aX; ++currentSample) {
-      intervalStart += kSampleStepSize;
-    }
-
-    --currentSample;
-
-    let dist = (aX - mSampleValues[currentSample]) / (mSampleValues[currentSample + 1] - mSampleValues[currentSample]),
-      guessForT = intervalStart + dist * kSampleStepSize,
-      initialSlope = getSlope(guessForT, mX1, mX2);
-
-    if (initialSlope >= NEWTON_MIN_SLOPE) {
-      return newtonRaphsonIterate(aX, guessForT);
-    } else if (initialSlope === 0.0) {
-      return guessForT;
-    } else {
-      return binarySubdivide(aX, intervalStart, intervalStart + kSampleStepSize);
-    }
-  }
-
-  let _precomputed = false;
-
-  function precompute() {
-    _precomputed = true;
-    if (mX1 !== mY1 || mX2 !== mY2) {
-      calcSampleValues();
-    }
-  }
+  // x(t) = ((2a * t + 3b) * t + 3c) * t, y(t) = ((ay * t + by) * t + cy) * t
+  let isLinear = mX1 === mY1 && mX2 === mY2,
+    a = (3 * mX1 - 3 * mX2 + 1) / 2,
+    b = mX2 - 2 * mX1,
+    c = mX1,
+    ay = 3 * mY1 - 3 * mY2 + 1,
+    by = 3 * (mY2 - 2 * mY1),
+    cy = 3 * mY1;
 
   let f = function(aX) {
-    if (!_precomputed) {
-      precompute();
-    }
-    if (mX1 === mY1 && mX2 === mY2) {
+    if (isLinear) {
       return aX;
     }
-    if (aX === 0) {
+    // aX outside (0, 1) saturates to 0 / 1
+    if (aX <= 0) {
       return 0;
     }
-    if (aX === 1) {
+    if (aX >= 1) {
       return 1;
     }
 
-    return calcBezier(getTForX(aX), mY1, mY2);
+    let t = solveTForX(aX, a, b, c);
+
+    return ((ay * t + by) * t + cy) * t;
   };
 
   f.getControlPoints = function() {

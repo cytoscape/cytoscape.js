@@ -101,8 +101,7 @@ CRp.bufferCanvasImage = function( options ){
       buffCxt.globalCompositeOperation = 'destination-over';
 
       buffCxt.fillStyle = options.bg;
-      buffCxt.rect( 0, 0, width, height );
-      buffCxt.fill();
+      buffCxt.fillRect( 0, 0, width, height );
     }
   }
 

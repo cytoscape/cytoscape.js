@@ -88,6 +88,59 @@ test.describe('Renderer', () => {
         expect(minimumAlpha).toBe(255);
       });
     }
+
+    for( const format of ['png', 'jpg'] ){
+      test(`fills the ${format} background under a translucent triangle-cross arrow`, async ({ page }) => {
+        const maxDifference = await page.evaluate(async format => {
+          const cy = window.cy;
+          cy.add([
+            { data: { id: 'a' }, position: { x: 450, y: 300 } },
+            { data: { id: 'b' }, position: { x: 200, y: 150 } },
+            { data: { id: 'ab', source: 'a', target: 'b' } }
+          ]);
+          // triangle-cross arrows are drawn without Path2D, so their path stays on the context
+          cy.edges().style({
+            'curve-style': 'straight',
+            'target-arrow-shape': 'triangle-cross',
+            'arrow-scale': 6,
+            width: 6,
+            opacity: 0.4
+          });
+
+          const getPixels = async src => {
+            const image = new Image();
+            image.src = src;
+            await image.decode();
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0);
+            return context.getImageData(0, 0, canvas.width, canvas.height).data;
+          };
+
+          // the transparent export over a white background is what the export with a white bg should look like
+          const transparent = await getPixels(cy.png());
+          const actual = await getPixels(cy[format]({ bg: '#ffffff', quality: 1 }));
+          let max = 0;
+
+          for( let i = 0; i < transparent.length; i += 4 ){
+            const alpha = transparent[i + 3] / 255;
+
+            for( let j = 0; j < 3; j++ ){
+              const expected = transparent[i + j] * alpha + 255 * (1 - alpha);
+              max = Math.max(max, Math.abs(actual[i + j] - expected));
+            }
+
+            max = Math.max(max, 255 - actual[i + 3]);
+          }
+
+          return max;
+        }, format);
+
+        expect(maxDifference).toBeLessThan(16);
+      });
+    }
   });
 
   test.describe('node style', () => {

@@ -391,6 +391,31 @@ These later answers refine or supersede earlier alternatives above.
   endpoint editing use handles. A pannable edge can still initiate viewport
   panning from its label under the preceding rule.
 
+### Bundling precedence and operation lifecycle refinements
+
+- **Endpoint-style updates continue during bundling.** Bundled rendering takes
+  precedence without overwriting the underlying style values. Unbundling reveals
+  the latest styles. This reinforces the earlier operation-owned route decision;
+  it does not settle node-position changes during computation or source/target
+  identity changes, which must be distinguished from endpoint style properties.
+- **No implicit node locking** during computation or while bundled. Explicit
+  app locks remain independent.
+- **bundling() and bundled() report status on edges and nodes.** Edges report
+  their own status; a node reports whether any incident edge has that status.
+  These statuses do not imply locked().
+- **Keep existing bundles visible during recomputation**, allowing both statuses
+  to be true. A successful result replaces the route. Failure or cancellation
+  clears the running status while preserving the previous bundled route.
+- **One active bundling run per cy instance.** A new call cancels and replaces
+  the running operation, even for disjoint scopes; preserve existing rendered
+  bundles until successful replacement. This supersedes the earlier overlapping
+  run precedence discussion. All graph edges are the default scope; subset
+  operations can be run sequentially for independently bundled groups.
+- **unbundleEdges() also cancels a running operation affecting its requested
+  edges**, preventing a late result from rebundling them. Cancel the whole run
+  even when its scope includes other edges. Clear existing bundles only within
+  the unbundle request; bundles outside it remain intact.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

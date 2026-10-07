@@ -445,6 +445,33 @@ These later answers refine or supersede earlier alternatives above.
 - **collection.bundle() ignores nodes and operates only on its edges**;
   do not implicitly expand to nodes' incident edges.
 
+### Bundling events and geometry refinements
+
+- **Route-handle editing does not cancel a running bundling operation.** It
+  clears the existing bundle and updates the underlying route; the pending
+  result may later take rendering precedence without overwriting that edit.
+- **Emit lifecycle events on cy:** bundlestart, bundleend, bundlecancel and
+  bundleerror, carrying the operation's scope and result/reason as applicable.
+  Install completed routes and clear running state before bundleend; resolve
+  the promise afterward. Clear the operation's running state before cancellation
+  or error events, then reject the promise; preserve existing routes.
+- **Replacement closes the old lifecycle before starting the new one:** emit
+  the previous run's bundlecancel before the replacement's bundlestart.
+- **No progress callback/events for alpha.** Apps may show an indeterminate
+  indicator until completion.
+- **unbundle event on cy:** emit once after clearing routes, with the affected
+  edge collection. Also emit when route-handle editing clears an existing
+  bundle, identifying the route-edit cause. Exact reason spelling remains to
+  specify.
+- **Begin with simple polylines**, followed by maintainer manual visual review
+  to determine whether smoothing is needed and to what degree. Do not commit
+  to smooth interpolation before that review.
+- **Dedicated bundlePoints() getter**, not bundled points through
+  segmentPoints(). Return interior points only in model coordinates, excluding
+  endpoints, consistent with current segmentPoints()/controlPoints() conventions.
+  Add renderedBundlePoints() for rendered coordinates. The remaining getter
+  behavior while a bundle is active remains to specify.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

@@ -357,6 +357,40 @@ These later answers refine or supersede earlier alternatives above.
   reports whether all applicable roles are enabled; a role-specific query
   reports that role. editLabel() still defaults to the main label.
 
+### Label interaction style decisions
+
+- **labelEditable settings are transient per-view state**, excluded from
+  serialization. editLabel() on a collection operates on its first element.
+- **Outside click commit passes through on success**, allowing the clicked
+  selection/action; on veto keep the editor active and consume the click.
+- **Label taps use normal owner selection rules**, with hitPart metadata for
+  apps. Add independent label-selection style control rather than treating
+  text-events as a selection-only property.
+- **text-events, text-selection and text-grabbable use role arrays only**:
+  main/source/target, with [] disabling all roles. Do not add all/none values.
+  Defaults enable all applicable roles. This supersedes the earlier proposed
+  yes/no forms and v4's current text-events default no. Extend text-events to
+  edge labels as well as node labels. Ignore inapplicable roles so the same
+  array can be reused across nodes and edges. Support data mappings and
+  per-element bypasses for all three properties.
+- **Box label participation requires all three permissions:** the role is
+  present in text-events and text-selection, and boxSelectionIncludesLabels
+  is true. boxSelectionMode determines containment/overlap. Node-body/edge-path
+  eligibility is independent of label-role inclusion; selectable() and core
+  autounselectify still take precedence for automatic selection.
+- **Document precedence with examples**, including a label extending outside
+  the selection box and label-only overlap. With global label inclusion true
+  but a role excluded locally, that label's geometry is ignored and the body
+  or path can still qualify. Verify both contain and overlap modes.
+- **Label dragging is independent of text-selection.** A role must be present
+  in text-events and text-grabbable, and its owner must be unlocked/grabbable.
+  When it cannot initiate object dragging, follow the owner's pannable()
+  setting and the core panning controls.
+- **Edge labels do not drag endpoint nodes for alpha**, even with the role
+  enabled in text-grabbable. Keep existing edge drag behavior; route and
+  endpoint editing use handles. A pannable edge can still initiate viewport
+  panning from its label under the preceding rule.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

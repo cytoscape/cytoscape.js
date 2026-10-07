@@ -416,6 +416,35 @@ These later answers refine or supersede earlier alternatives above.
   even when its scope includes other edges. Clear existing bundles only within
   the unbundle request; bundles outside it remain intact.
 
+### Bundling API and mutation decisions (2026-10-07)
+
+- **Node movement during computation does not interrupt bundling.** Apply
+  completed endpoint-relative routes at the latest positions; rerun to tighten
+  if needed. Source/target identity changes through edge.move() likewise let
+  computation continue and adapt results to the new endpoints. Preserve the
+  rewiring. This differs from cy.patch(), which currently replaces rewired
+  edges by removal/addition.
+- **Removed edges do not cancel the run.** Skip them at application; a new
+  edge with the same id does not inherit the old result. Capture the edge set
+  at call start; added edges participate only in later calls.
+- **Apply surviving completed routes in one batch**, preserving current routes
+  during computation rather than showing intermediate iterations.
+- **Accept an AbortSignal** for explicit cancellation. Preserve previous routes,
+  clear running status and prevent late result application.
+- **Cancellation rejects with CancelledError**, matching current layouts.
+  Successful completion resolves with the report. The earlier layout completion
+  report decision does not change its current cancellation rejection rule.
+- **Return bundled and skipped collections**, alongside iterations and elapsed
+  time. Counts come from length. skipped retains the original removed handles
+  and their cached ids, not replacements. Include retained-reference costs in
+  large-graph benchmarks.
+- **Public names:** cy.bundle(options) for the whole graph and
+  edges.bundle(options) for a subset, both returning the result promise.
+  cy.unbundle() clears all bundles; edges.unbundle() clears a subset. These
+  supersede bundleEdges/unbundleEdges names used earlier in this note.
+- **collection.bundle() ignores nodes and operates only on its edges**;
+  do not implicitly expand to nodes' incident edges.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

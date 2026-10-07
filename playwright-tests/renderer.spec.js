@@ -49,6 +49,100 @@ test.describe('Renderer', () => {
     expect(numNodes).toBe(1);
   });
 
+  test.describe('image export', () => {
+    for( const [name, options] of [
+      ['viewport', {}],
+      ['scaled viewport', { scale: 1.5 }],
+      ['full graph', { full: true, scale: 0.718394 }]
+    ] ){
+      test(`fills the entire ${name} PNG with an opaque background`, async ({ page }) => {
+        const minimumAlpha = await page.evaluate(async options => {
+          const cy = window.cy;
+          const zoom = 0.718394;
+          const pan = { x: 123456.7, y: -123456.7 };
+          cy.add([
+            { data: { id: 'a' }, position: { x: (100 - pan.x) / zoom, y: (100 - pan.y) / zoom } },
+            { data: { id: 'b' }, position: { x: (240 - pan.x) / zoom, y: (200 - pan.y) / zoom } }
+          ]);
+          cy.zoom(zoom);
+          cy.pan(pan);
+
+          const image = new Image();
+          image.src = cy.png({ ...options, bg: '#ffffff' });
+          await image.decode();
+          const canvas = document.createElement('canvas');
+          canvas.width = image.width;
+          canvas.height = image.height;
+          const context = canvas.getContext('2d');
+          context.drawImage(image, 0, 0);
+          const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+          let minimum = 255;
+
+          for( let i = 3; i < data.length; i += 4 ){
+            minimum = Math.min(minimum, data[i]);
+          }
+
+          return minimum;
+        }, options);
+
+        expect(minimumAlpha).toBe(255);
+      });
+    }
+
+    for( const format of ['png', 'jpg'] ){
+      test(`fills the ${format} background under a translucent triangle-cross arrow`, async ({ page }) => {
+        const maxDifference = await page.evaluate(async format => {
+          const cy = window.cy;
+          cy.add([
+            { data: { id: 'a' }, position: { x: 450, y: 300 } },
+            { data: { id: 'b' }, position: { x: 200, y: 150 } },
+            { data: { id: 'ab', source: 'a', target: 'b' } }
+          ]);
+          // triangle-cross arrows are drawn without Path2D, so their path stays on the context
+          cy.edges().style({
+            'curve-style': 'straight',
+            'target-arrow-shape': 'triangle-cross',
+            'arrow-scale': 6,
+            width: 6,
+            opacity: 0.4
+          });
+
+          const getPixels = async src => {
+            const image = new Image();
+            image.src = src;
+            await image.decode();
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0);
+            return context.getImageData(0, 0, canvas.width, canvas.height).data;
+          };
+
+          // the transparent export over a white background is what the export with a white bg should look like
+          const transparent = await getPixels(cy.png());
+          const actual = await getPixels(cy[format]({ bg: '#ffffff', quality: 1 }));
+          let max = 0;
+
+          for( let i = 0; i < transparent.length; i += 4 ){
+            const alpha = transparent[i + 3] / 255;
+
+            for( let j = 0; j < 3; j++ ){
+              const expected = transparent[i + j] * alpha + 255 * (1 - alpha);
+              max = Math.max(max, Math.abs(actual[i + j] - expected));
+            }
+
+            max = Math.max(max, 255 - actual[i + 3]);
+          }
+
+          return max;
+        }, format);
+
+        expect(maxDifference).toBeLessThan(16);
+      });
+    }
+  });
+
   test.describe('node style', () => {
     test.beforeEach(async ({ page }) => {
       await page.evaluate(() => {

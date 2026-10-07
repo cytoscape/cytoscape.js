@@ -497,6 +497,29 @@ These later answers refine or supersede earlier alternatives above.
   Exact report field spelling and interaction with reassessment remain to
   specify in the implementation contract.
 
+### Layout assessment completeness and export contracts
+
+- **Explicitly identify unassessed constraints** when an assessment cannot be
+  trusted, including external changes invalidating solver results. Do not imply
+  such constraints passed.
+- **Recognized but unsupported constraints are reported**, while the layout
+  continues. Unknown layout option names remain errors, distinguishing typos
+  from recognized capabilities that a particular layout does not support.
+- **SVG image embedding failure omits that image and reports a warning**, rather
+  than rejecting the whole export or silently substituting an external href.
+- **SVG, PNG and JPEG exports return { output, warnings }**, with output holding
+  the requested string, URI or blob. This supersedes the original direct-output
+  return shape; document the public API change when implementing it.
+- **Exports wait for relevant images and fonts to settle**, reporting resource
+  failures in warnings. Resource-wait limits and cancellation remain to specify.
+- **Include selected appearance by default**, with includeSelection: false to
+  evaluate styles as unselected without mutating live selection. Handles and
+  the selection-box overlay remain excluded. This supersedes round 77's broad
+  selection-styling exclusion.
+- **Capture geometry and styles together after resources settle**, when export
+  generation begins, rather than retaining a graph snapshot at the original
+  call while resources load.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

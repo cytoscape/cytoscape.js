@@ -520,6 +520,24 @@ These later answers refine or supersede earlier alternatives above.
   generation begins, rather than retaining a graph snapshot at the original
   call while resources load.
 
+### Export waiting, errors and animation limitations
+
+- **Resource waiting has a configurable timeout.** At the timeout, proceed
+  with available resources and warn about resources still pending. The default
+  timeout value remains to decide.
+- **Export functions accept an AbortSignal**, cancelling resource waiting or
+  export work and rejecting with CancelledError.
+- **Warnings are structured objects**, with stable code, readable message and
+  affected elements/resource where applicable. Invalid options and failures
+  preventing usable output reject; warnings cover recoverable omissions and
+  fallbacks, not an output:null substitute for failure.
+- **SVG uses CPU model values for alpha**, warning when active animations could
+  cause a mismatch with the display. Do not add shared-timestamp animation
+  evaluation to SVG for alpha. PNG/JPEG retain displayed-frame behavior.
+- **Empty viewport exports succeed with a blank canvas.** An empty full-graph
+  export with no bounds requires explicit dimensions rather than rejecting
+  all empty-graph exports.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

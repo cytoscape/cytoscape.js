@@ -590,6 +590,28 @@ These later answers refine or supersede earlier alternatives above.
   explicit blocks rather than mixing common properties with a nested kinds
   object. The applicability/validation rules remain to specify.
 
+### Annotation refinements and research follow-up
+
+- **Known inapplicable properties are ignored in annotations.common only.**
+  Per-kind blocks reject inapplicable properties; unknown names always throw.
+- **Use one shared font face across node/edge labels and annotations**, with the
+  shared fallback chain for script coverage. Annotation font size/color can
+  vary; retain imported per-object face/style metadata for round-trip export.
+- **Annotations support numericStyle() and renderedStyle()**, matching element
+  getter contracts, alongside resolved style().
+- **Annotation styles support transitions**, including timing, interpolation
+  and cancellation, using transition-property, transition-duration,
+  transition-delay and transition-timing-function with element-consistent
+  behavior. This supersedes the proposed transition deferral.
+- **Reconsidered questions remain open:** annotation data, graph collection
+  membership/generic lookup, anchoring across all kinds, and annotation-aware
+  placement/layout. The maintainer requires code reuse for substantially shared
+  collection operations. No new data API or hierarchy replacement is approved.
+- The maintainer's supplied use-case survey and its model implications are kept
+  separately in [the research note](2026-10-08-01-rnd0000-note-annotation-use-cases-and-overlapping-membership.md).
+  The note distinguishes checked source evidence, supplied figure descriptions
+  and proposed overlapping membership/placement designs.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

@@ -23,7 +23,7 @@ A round can land with an item held open; the round file says which.
 
 ## The sections
 
-191 sections.
+192 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -218,3 +218,4 @@ A round can land with an item held open; the round file says which.
 | 189 | 147 | 2026-10-03 | landed | [Partial scale domains and legend JSON](rounds/2026-10-03-03-rnd0147-landed-partial-scale-domains-and-legend-json.md) |
 | 190 | 148 | 2026-10-03 | landed | [Miniature compounds: actual positions, reversible size scaling](rounds/2026-10-03-04-rnd0148-landed-miniature-compounds.md) |
 | 191 | — | 2026-10-06 | note | [Alpha contract interview](rounds/2026-10-06-01-rnd0000-note-alpha-contract-interview.md) |
+| 192 | — | 2026-10-08 | note | [Annotation use cases, placement and overlapping membership](rounds/2026-10-08-01-rnd0000-note-annotation-use-cases-and-overlapping-membership.md) |

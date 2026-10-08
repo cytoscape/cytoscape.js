@@ -566,6 +566,30 @@ These later answers refine or supersede earlier alternatives above.
   paint-only restriction was not approved; supported selected properties and
   stylesheet block syntax remain to specify.
 
+### Annotation style structure, readback and identity
+
+- **State conditionals apply to every supported annotation style property**,
+  including properties affecting bounds, such as font size or shape. Refresh
+  bounds when needed. Position and authored dimensions remain geometry APIs.
+  Do not impose the previously proposed paint-only state restriction.
+- **annotation.style() reads resolved values**, applying common defaults,
+  per-kind rules, states and overrides, with the same independent color-alpha
+  and opacity contract as element style reads. It is not an overrides-only
+  getter.
+- **Annotation bypasses are ID-keyed and survive removal**, applying to a newly
+  added annotation with the same id, as element bypasses do.
+- **IDs share one namespace across nodes, edges and annotations.** Reject
+  explicit live-id collisions across kinds. Automatically generate UUIDs for
+  all three kinds. Current v4 element generation uses cy-N counters; changing
+  that generator is approved specification work, not implemented here.
+- **Use the existing stylesheet bypasses section for annotation overrides**, not
+  a separate annotationBypasses section.
+- **Annotation stylesheet structure:** annotations contains common, shape,
+  text, image, line and arrow blocks. Common appearance defaults are overlaid
+  by the applicable kind's block; individual bypasses take precedence. Use
+  explicit blocks rather than mixing common properties with a nested kinds
+  object. The applicability/validation rules remain to specify.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

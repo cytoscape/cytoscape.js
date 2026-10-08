@@ -538,6 +538,34 @@ These later answers refine or supersede earlier alternatives above.
   export with no bounds requires explicit dimensions rather than rejecting
   all empty-graph exports.
 
+### Export deadline and annotation stylesheet decisions (2026-10-08)
+
+- **Export resource timeout defaults to 10 seconds**, configurable by the app.
+  Use one shared deadline with concurrent resource loads, not sequential or
+  per-resource waits extending the total.
+- **Annotations participate in the stylesheet**, with common appearance
+  defaults plus per-kind blocks. Keep their sidecar representation and graph
+  independence; stylesheet membership does not imply a third element group.
+  This supersedes round 81's direct-properties-only/no-stylesheet proposal.
+- **Annotation style overrides beat stylesheet rules**, including selected-state
+  conditionals, matching node/edge bypass precedence. removeStyle() restores
+  stylesheet control. Imported explicit appearance becomes individual overrides
+  rather than discarding values that happen to match the current sheet.
+- **Initially support constants and state conditionals only.** No
+  annotation.data() API, data mappings or automatic scale domains are planned.
+  CPU evaluation into annotation render records remains the proposed
+  implementation approach, not a landed capability.
+- **Reuse node/edge style property names where meanings match**, such as
+  background-color, border-color, line-color and font-size, supporting only
+  applicable properties for each kind. Import/export adapters translate dialect
+  names rather than exposing separate annotation styling spellings.
+- **Selected annotation appearance is authored and serialized**, while selection
+  remains per-view state. Earlier approval of selected overrides predates this
+  stylesheet decision; represent selected appearance through state conditionals
+  rather than introducing a parallel selected-style mechanism. The proposed
+  paint-only restriction was not approved; supported selected properties and
+  stylesheet block syntax remain to specify.
+
 ### Interview still open
 
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,

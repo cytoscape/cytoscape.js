@@ -21,13 +21,16 @@ let elesfn = ({
     if (root) startVertex = is.string(root) ? this.filter(root)[0].id() : root[0].id();
     let nodes = {};
     let edges = {};
+    let subgraphEdges = eles.edges().filter(e => eles.has(e.source()) && eles.has(e.target()));
 
     if (directed) {
       eles.forEach(function(ele){
         let id = ele.id();
         if(ele.isNode()) {
-          let ind = ele.indegree(true);
-          let outd = ele.outdegree(true);
+          let incoming = ele.incomers().edges().intersection(subgraphEdges);
+          let outgoing = ele.outgoers().edges().intersection(subgraphEdges);
+          let ind = incoming.length;
+          let outd = outgoing.length;
           let d1 = ind - outd;
           let d2 = outd - ind;
           if (d1 == 1) {
@@ -40,9 +43,7 @@ let elesfn = ({
             dflag = true;
           }
           nodes[id] = [];
-          ele.outgoers().forEach(e => {
-            if (e.isEdge()) nodes[id].push(e.id());
-          });
+          outgoing.forEach(e => nodes[id].push(e.id()));
         } else {
           edges[id] = [undefined, ele.target().id()];
         }
@@ -51,14 +52,15 @@ let elesfn = ({
       eles.forEach(function(ele){
         let id = ele.id();
         if(ele.isNode()) {
-          let d = ele.degree(true);
+          let connected = ele.connectedEdges().intersection(subgraphEdges);
+          let d = connected.length + connected.filter(e => e.isLoop()).length;
           if (d%2) {
             if (!oddIn) oddIn = id;
             else if (!oddOut) oddOut = id;
             else dflag = true;
           }
           nodes[id] = [];
-          ele.connectedEdges().forEach(e => nodes[id].push(e.id()));
+          connected.forEach(e => nodes[id].push(e.id()));
         } else {
           edges[id] = [ele.source().id(), ele.target().id()];
         }

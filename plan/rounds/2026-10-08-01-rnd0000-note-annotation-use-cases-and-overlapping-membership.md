@@ -199,11 +199,97 @@ and ordinary hull drawing require separate fidelity and cost checks.
 
 ### Next interview decisions
 
-Start with whether overlapping membership is independent of compound containment
-or replaces it. Then settle the owner/reference model and terminology, anchoring
-scope and timing, annotation data, public collection membership and code reuse,
+Preserve compound containment alongside overlapping membership, as subsequently
+required by the maintainer. Then settle the owner/reference model and terminology,
+anchoring scope and timing, annotation data, public collection membership and code reuse,
 placement/layout integration, and persistence. Ask one decision at a time.
 
 Earlier explicit decisions remain in force unless superseded by an answer.
 Research recommendations do not mark these capabilities implemented or expand
 the alpha gate automatically.
+
+### Subsequent interview: compounds and numeric membership
+
+The maintainer requires support for compound nodes as a distinct, established
+model and explicitly allows a node to have one compound parent plus membership
+in multiple overlapping groups. Declaration fields (`parent`, `parents`,
+`children`, `members`), object-kind inference/conversion, and the public name
+(group, set, bag, multiset) remain open. Existing compound traversal and
+containment semantics must not silently acquire multiple parents.
+
+Numeric membership values are under consideration, not approved. Ordinary
+multisets use nonnegative integer multiplicities; signed/hybrid and real-valued
+generalizations also exist. Arbitrary metadata on the whole object or on each
+membership is a separate design question. The technical named-set construction
+relates objects to names through a relation; it is broader than a collection with
+a title. [Burgin, Sections 2 and 3.2](https://arxiv.org/pdf/math/0403186).
+
+### Literature check: negative and zero multiplicities
+
+Focused research requested on 8 October. These are concrete primary-source uses,
+not a prevalence survey. The arithmetic illustrations below are constructed
+examples of the cited models, not reproduced experimental cases.
+
+| Use | Negative values | Zero values | Primary source |
+| --- | --- | --- | --- |
+| Incremental data processing | Removal/retraction of records; differences between versions | No record contribution at that version; sparse traces retain only nonzero counts | [McSherry et al., Differential Dataflow (2013), Sections 3 and 4.3](https://www.microsoft.com/en-us/research/wp-content/uploads/2013/01/differentialdataflow.pdf) |
+| Chemical reaction hypergraphs | Net consumption of a species, with positive values for net production | No net change, which can arise from nonparticipation or cancellation | [Bailey, Gull and Oliveira, Section 2](https://arxiv.org/pdf/0902.0847) |
+| Symbolic domain decomposition | Regions to subtract/cancel when manipulating piecewise functions and symbolic block matrices | No domain membership; cancelled terms need not be evaluated | [Carette et al., Symbolic Domain Decomposition (2010), Sections 2.2, 3.4 and 6](https://arxiv.org/pdf/1004.5549) |
+| Verification of heap references | A permission to remove one predecessor occurrence, combined algebraically with positive occurrences | Empty predecessor knowledge has a distinct logical meaning under the paper's permission conditions | [Moine, Chargueraud and Pottier, Will It Fit?, Section 5.6](https://cs.nyu.edu/~am15509/publications/moine-chargueraud-pottier-24.pdf) |
+| Petri-net equivalence proofs | Signed differences/linear combinations of markings, while ordinary reachable markings remain nonnegative | Zero multiplicity means absent from the signed multiset | [van Glabbeek et al., On Characterising Distributability (2013), Definition 2.1 and Section 2](https://arxiv.org/pdf/1309.3883) |
+| Generalized combinatorics | Extend identities involving binomial coefficients and symmetric functions to negative parameters | Empty hybrid set has all multiplicities zero | [Loeb, Sets with a Negative Number of Elements](https://faculty.uml.edu/jpropp/negative.pdf) |
+
+**Concrete incremental example.** A collection holding A twice can receive a
+delta A:-1 and then contain A once. A delta A:+1 followed by A:-1 cancels to
+zero. A negative delta is not itself a claim that the resulting ordinary
+collection has negative physical contents. Differential Dataflow also uses
+signed collections internally; distinguish those from the app's current group.
+
+**Concrete biochemical example.** For the illustrative reaction 2A + B -> C,
+the product-minus-reactant multiset is A:-2, B:-1, C:+1. The cited chemical
+network paper uses exactly this product-minus-reactant construction, maps signs
+to directed hyperedge incidence and magnitudes to weights, and analyzes a MAP
+kinase cascade. Chemical complexes themselves retain nonnegative molecularities.
+This is evidence for signed hyperedge participation, not proof that a spatial
+enclosure needs signed containment.
+
+**Zero loses participation information.** In A + E -> B + E, E's net coefficient
+is zero despite appearing on both sides. This follows from the cited
+product-minus-reactant definition; the example is our illustration. Likewise,
+net zero across a pathway can hide intermediate participation. Preserve separate
+reactant/product membership or metadata if the app needs to display those roles.
+Do not infer absence from a net-change coefficient outside its chosen model.
+
+**Concrete geometric example.** Symbolic Domain Decomposition represents [0,1]
+as [-1,2] minus [-1,0) minus (1,2]. Outside [0,1], contributions cancel to zero.
+Its support is the points with nonzero multiplicity; the paper applies this to
+symbolic matrix addition and spline manipulation. This demonstrates useful
+negative region contributions, but does not establish a node-enclosure carving
+algorithm or a suitable default for v4.
+
+**Theoretical versus empirical use.** P Systems with Hybrid Sets explores a
+cell-inspired computational model with negative object multiplicities. Its
+authors explicitly do not claim a real-cell model; electrical charge is offered
+as a possible interpretation. Do not cite it as experimental biological evidence.
+[Belingheri, Porreca and Zandron](https://aeporreca.org/papers/p-systems-with-hybrid-sets.pdf).
+
+### Implications from the numeric-membership research, not decisions
+
+- Negative values have concrete uses in update algebra, reaction incidence,
+  symbolic geometry and verification. They are often cancellation, direction or
+  permission information rather than literal negative copies of a physical item.
+- In the signed/hybrid definitions inspected, zero is absent from the support;
+  negative values are present. Zero is not a special visible member category.
+  An app needing explicit zero-valued associations must retain that information
+  separately or choose a different weighted-membership contract.
+- A signed total can be zero without the multiset being empty: A:+1, B:-1 has
+  two support members. The Petri-net paper defines cardinality by the sum of
+  absolute multiplicities. Do not equate signed total, absolute total and distinct
+  member count, or imply one convention is universal across the literature.
+- Drawing bounds around all nonzero members is consistent with support-based
+  enumeration, but is our proposed visualization policy. Negative values do not
+  inherently require holes, exclusion from the hull, negative sizes or reversed
+  movement. Such behavior requires a separately specified visualization.
+- Whether numeric values are restricted to integers or allow finite fractions,
+  whether zero entries are normalized away, and which operations belong in core
+  remain open. No numeric membership API or alpha scope expansion is authorized.

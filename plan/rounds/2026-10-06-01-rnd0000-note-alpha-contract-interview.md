@@ -614,6 +614,16 @@ These later answers refine or supersede earlier alternatives above.
 
 ### Interview still open
 
+The maintainer subsequently requires compound nodes to remain supported as a
+distinct containment model and explicitly approves one compound parent plus
+membership in multiple overlapping groups. Membership declaration fields,
+terminology, kind inference/conversion and multiplicity semantics remain open.
+Numeric-only values and app-managed metadata are being considered; allowing
+negative values or retaining explicit zero-valued associations is not decided.
+The separate research note now records primary-source uses of negative and zero
+multiplicities, including reaction incidence, incremental updates and symbolic
+domain decomposition, with their limits for enclosure semantics.
+
 Finish annotation/editing method names, per-kind geometry, bounds, grouping,
 attachment, ordering, event/default/persistence/clone contracts and cancellation;
 edge-handle semantics; layout option consolidation and review; CJK design;

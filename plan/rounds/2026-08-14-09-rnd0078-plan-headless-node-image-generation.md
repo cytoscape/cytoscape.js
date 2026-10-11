@@ -1,5 +1,12 @@
 ## Headless Node image generation
 
+Later specification decisions are recorded in the
+[alpha contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
+and supersede conflicting alternatives below. Remaining questions and review
+requirements are consolidated in the
+[11 October register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md).
+These pointers do not change this round's implementation status.
+
 The cytosnap replacement (#2561, #954): cytosnap spawns a whole
 Chrome to screenshot v3; the ask is figures out of plain Node.
 Round 77 makes the cheap route real — SVG is a string, and the

@@ -3,7 +3,10 @@
 Maintainer decisions from the ongoing interview on 6 October. These are
 specification decisions, not implemented capabilities. Explicit decisions
 here supersede earlier alternatives in the round plans and PLAN.md ledger.
-Unanswered questions remain open; recommendations are not approvals.
+Unanswered questions remain open; recommendations are not approvals. Follow-up
+discussions through 11 October are recorded here and in the linked research
+note. [The open-question register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md)
+consolidates remaining decisions, review points and benchmark gates.
 
 ### Benchmarks before public decisions
 
@@ -73,7 +76,8 @@ Unanswered questions remain open; recommendations are not approvals.
 - **Keep release-before-tap ordering** (item 88). Normal completion targets
   pointerup/tapend at the captured source, then releases the grab, then runs
   tap/selection only if the gesture qualifies as a tap. Completed drags have
-  no tap. The exact order within the free/freeon pairs remains to specify.
+  no tap. The later drag refinement removes the -on variants and settles
+  free before dragfree on successful completion.
 - **Compound drop refinement:** resolve/validate the drop and commit accepted
   hierarchy changes before free/dragfree. Release listeners observe the final
   hierarchy. Pointerup/tapend precede that commit. Compound drag-and-drop
@@ -107,7 +111,8 @@ round 81's first implementation.
   cy.elements(), node/edge selectors, adjacency, layouts and algorithms.
 - **Element-like geometry API:** position() is the center of the geometry
   box, excluding border/text overflow. width()/height() have getters/setters;
-  resizing preserves the center. Text-box resizing changes wrapping, not font
+  resizing normally preserves the center, subject to the later attachment
+  rules. Text-box resizing changes wrapping, not font
   size. resize(bb) sets position and dimensions from a bounding box. Exact
   box formats and per-kind geometry semantics remain to specify.
 - **Apps toggle handle visibility per element or annotation.** No required
@@ -118,8 +123,8 @@ round 81's first implementation.
 - **Annotations support grabbable()/grabify()/ungrabify(), default grabbable.**
   This supersedes the old imported-annotation default-inert plan.
 - **Annotations support locked()/lock()/unlock().** Locking blocks interactive
-  movement and resizing; handles may remain visible. Programmatic lock behavior
-  and lock effects on other edit operations remain to specify.
+  movement and resizing; handles may remain visible. The later lock refinement
+  specifies position/shift/resize(bb) restrictions and fixed-center size writes.
 - **Annotations support selected()/select()/unselect(), selectable(),
   selectify()/unselectify(), and tap/box selection.** Selection defaults and
   serialization still need specification.
@@ -131,8 +136,8 @@ round 81's first implementation.
   can select both. Handle visibility remains independent.
 - **Shared drag group:** dragging a selected object moves selected, unlocked,
   grabbable nodes and annotations by the same displacement. Selected edges
-  do not move independently. Ancestor/descendant deduplication and per-kind
-  annotation translation must be specified before implementation.
+  do not move independently. The later group-drag refinement deduplicates
+  inherited movement; exact per-kind translation remains implementation work.
 
 ### Geometry, attachment and editing refinements
 
@@ -149,7 +154,8 @@ These later answers refine or supersede earlier alternatives above.
   This supersedes the brief rejection alternative. Configurable/style minima
   are future considerations. Interactive node resizing also has a minimum.
 - **Clamping resize(bb) preserves the requested center**, expanding symmetrically
-  to meet minimum bounds; interactive handle anchoring remains to specify.
+  to meet minimum bounds; the later resize refinement anchors interactive
+  resizes at the opposite corner or side.
 - **Node resize:** write width/height bypasses; leaf nodes only. Compound
   parents stay sized from children/padding. Free resizing is the default;
   Shift preserves the starting aspect ratio. Image annotations use the same
@@ -162,7 +168,8 @@ These later answers refine or supersede earlier alternatives above.
 - **Cancelled handle edits restore starting state**, including geometry,
   endpoint identity, bypasses and attachments. Escape, pointercancel and invalid
   endpoint drops cancel. Apps can veto before an edit starts or commits through
-  cancellable lifecycle events; exact event names/payloads remain to specify.
+  cancellable lifecycle events. Names are settled in the later event-family
+  refinements; exact payload field shapes remain to specify.
 - **Lock consistency:** existing node locking prevents movement, not all
   mutation. Annotation locks block interactive geometry edits and programmatic
   position changes; allow programmatic width/height changes about the fixed
@@ -215,8 +222,8 @@ These later answers refine or supersede earlier alternatives above.
   a violation report, not an all-or-nothing refusal.
 - **await layout.promise() returns the completion report** with constraint
   satisfaction/violations. run() continues returning the layout handle. The
-  suggested result() accessor and layoutstop payload were not separately
-  approved; their need and exact shapes remain to specify.
+  later answers settle layoutstop carrying that report and no result() accessor
+  for alpha; exact report field shapes remain to specify.
 - **nodeSpacing** is the canonical common minimum node-box gap; componentSpacing
   and overall spacingFactor stay distinct. Alpha uses one spelling with no
   deprecated gap aliases. Map old options by actual semantics, not a blanket
@@ -287,10 +294,11 @@ These later answers refine or supersede earlier alternatives above.
   means committed. Resize handles emit resize events only, not ordinary drag.
 - **Dispatch each stage on the initiating object, bubbling once to cy**, with
   all affected objects in the payload. Apply this dispatch rule consistently to
-  drag as well. Current v4 grab/drag/free dispatch iterates the drag set, while
-  grabon/freeon target the directly pressed object; implementing this decision
-  requires reconciling that behavior and testing multi-object dispatch. Exact
-  remaining drag-family names and compatibility treatment remain to specify.
+  drag as well. At the time of the interview, v4 grab/drag/free dispatch iterated
+  the drag set, while grabon/freeon targeted the directly pressed object.
+  Implementing this decision requires reconciling that behavior and testing
+  multi-object dispatch. The
+  following section settles the drag family and removal of the -on aliases.
 
 ### Drag dispatch and label editing refinements
 
@@ -322,8 +330,8 @@ These later answers refine or supersede earlier alternatives above.
   to commit; Escape cancels.
 - **Pointer and tap events expose hitPart and labelRole**, enabling apps to
   distinguish a label hit and main/source/target label roles. Preserve the
-  owning element/annotation as the event target. Exact hit-part enum and
-  editLabel() arguments remain to specify.
+  owning element/annotation as the event target. The following session section
+  settles editLabel({ labelRole }); the exact hit-part enum remains open.
 
 ### Label editor session decisions
 
@@ -396,8 +404,8 @@ These later answers refine or supersede earlier alternatives above.
 - **Endpoint-style updates continue during bundling.** Bundled rendering takes
   precedence without overwriting the underlying style values. Unbundling reveals
   the latest styles. This reinforces the earlier operation-owned route decision;
-  it does not settle node-position changes during computation or source/target
-  identity changes, which must be distinguished from endpoint style properties.
+  the subsequent mutation decisions also allow node-position and source/target
+  identity changes, adapting results without cancelling the run.
 - **No implicit node locking** during computation or while bundled. Explicit
   app locks remain independent.
 - **bundling() and bundled() report status on edges and nodes.** Edges report
@@ -469,8 +477,8 @@ These later answers refine or supersede earlier alternatives above.
 - **Dedicated bundlePoints() getter**, not bundled points through
   segmentPoints(). Return interior points only in model coordinates, excluding
   endpoints, consistent with current segmentPoints()/controlPoints() conventions.
-  Add renderedBundlePoints() for rendered coordinates. The remaining getter
-  behavior while a bundle is active remains to specify.
+  Add renderedBundlePoints() for rendered coordinates. The following section
+  settles other geometry getter behavior while a bundle is active.
 
 ### Active bundled geometry and layout reporting
 
@@ -511,7 +519,8 @@ These later answers refine or supersede earlier alternatives above.
   the requested string, URI or blob. This supersedes the original direct-output
   return shape; document the public API change when implementing it.
 - **Exports wait for relevant images and fonts to settle**, reporting resource
-  failures in warnings. Resource-wait limits and cancellation remain to specify.
+  failures in warnings. Later answers specify a shared 10-second configurable
+  deadline and AbortSignal cancellation.
 - **Include selected appearance by default**, with includeSelection: false to
   evaluate styles as unselected without mutating live selection. Handles and
   the selection-box overlay remain excluded. This supersedes round 77's broad
@@ -524,7 +533,7 @@ These later answers refine or supersede earlier alternatives above.
 
 - **Resource waiting has a configurable timeout.** At the timeout, proceed
   with available resources and warn about resources still pending. The default
-  timeout value remains to decide.
+  timeout is settled as 10 seconds in the following section.
 - **Export functions accept an AbortSignal**, cancelling resource waiting or
   export work and rejecting with CancelledError.
 - **Warnings are structured objects**, with stable code, readable message and
@@ -563,8 +572,8 @@ These later answers refine or supersede earlier alternatives above.
   remains per-view state. Earlier approval of selected overrides predates this
   stylesheet decision; represent selected appearance through state conditionals
   rather than introducing a parallel selected-style mechanism. The proposed
-  paint-only restriction was not approved; supported selected properties and
-  stylesheet block syntax remain to specify.
+  paint-only restriction was not approved; the following sections settle
+  conditionals for all supported properties and the explicit block structure.
 
 ### Annotation style structure, readback and identity
 
@@ -588,7 +597,7 @@ These later answers refine or supersede earlier alternatives above.
   text, image, line and arrow blocks. Common appearance defaults are overlaid
   by the applicable kind's block; individual bypasses take precedence. Use
   explicit blocks rather than mixing common properties with a nested kinds
-  object. The applicability/validation rules remain to specify.
+  object. The following refinement settles common-versus-kind validation.
 
 ### Annotation refinements and research follow-up
 
@@ -618,15 +627,109 @@ The maintainer subsequently requires compound nodes to remain supported as a
 distinct containment model and explicitly approves one compound parent plus
 membership in multiple overlapping groups. Membership declaration fields,
 terminology, kind inference/conversion and multiplicity semantics remain open.
-Numeric-only values and app-managed metadata are being considered; allowing
-negative values or retaining explicit zero-valued associations is not decided.
+Numeric-only values and app-managed metadata are being considered. On 11 October
+the maintainer provisionally accepts nonzero member enumeration, preserving
+sign/magnitude, separate participation where cancellation loses information,
+and distinct member-count/signed-total/absolute-total concepts, subject to more
+review. Exact numeric domains, zero-entry retention and core operations remain
+open; see the research note's provisional direction.
 The separate research note now records primary-source uses of negative and zero
 multiplicities, including reaction incidence, incremental updates and symbolic
 domain decomposition, with their limits for enclosure semantics.
 
-Finish annotation/editing method names, per-kind geometry, bounds, grouping,
-attachment, ordering, event/default/persistence/clone contracts and cancellation;
-edge-handle semantics; layout option consolidation and review; CJK design;
-bundling API/freshness/persistence; exporter/headless contracts; portable-style
-and persistence closure audits; platform/release acceptance specifications.
-The original recorded deferrals remain unless explicitly changed above.
+Use [the follow-up register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md)
+for the remaining questions. It distinguishes open API/model decisions,
+provisional review, benchmark gates, implementation details and release work;
+it does not reopen the names, cancellation, defaults or clone contracts already
+settled above. Original deferrals remain unless explicitly changed.
+
+### Export and headless decisions carried forward
+
+The discussion also reaffirmed the existing round 77/78 decisions:
+
+- SVG works headless. Embed images as data URIs by default, with an option to
+  pass external hrefs through. Embedding failure uses the warning/omission rule
+  above; it does not silently opt into external references.
+- PDF is an SVG-to-PDF recipe, not a core exporter. Mid arrows remain filled.
+- Headless PNG continues to throw with guidance to SVG plus resvg. resvg is a
+  documented recipe, with no core or optional dependency.
+- Build the injected advanceOf text-metrics option regardless of whether the
+  default estimator proves adequate. Use app-supplied fonts consistently.
+- Run the Dawn/WebGPU-in-Node go/no-go investigation before alpha, using
+  round 78's recorded criteria. This is an investigation gate, not approval
+  to ship another renderer or runtime dependency.
+
+These are planned contracts, not claims that the exporters are implemented.
+
+### Rationale and alternatives retained from the discussion
+
+- **App-owned undo:** one undo operation may include cy state and unrelated app
+  state. A core history stack would not own that whole transaction. Snapshot
+  history is simple but pays for unchanged state; inverse logs are cheaper per
+  small edit but require complete inverse coverage. Separate benchmark modules
+  can simulate both alternatives without committing either to the core API.
+- **Visible-window table reads:** the motivating UI is an Excel-like viewport,
+  not a full-table export. Column reads can improve ranges but introduce snapshot
+  construction, staleness/change tracking and allocation costs. The benchmark
+  must include scrolling and edits, not just ideal whole-column throughput.
+- **Worker hosting:** an app might choose a worker for large model computations
+  and UI responsiveness, but that choice adds messaging/transfer, lifecycle and
+  unavailable-DOM concerns. Cytoscape Web need not move its network into a worker
+  to justify verifying nested-worker execution. Dedicated worker support is the
+  initial scope, not a promise that every worker host supports every renderer.
+- **Independent opacity properties:** retain familiar independent mapping and
+  animation controls even when a color accepts alpha. Removing them simplifies
+  the property surface but requires apps to recompute alpha-bearing colors and
+  combines otherwise independent controls. Document their multiplication in
+  rendering while keeping readbacks separate, including zero opacity.
+- **No public folded style representation:** packed/folded renderer values can
+  reduce rendering/transfer work, but exposing them would couple consumers to an
+  optimization and make style read/set round trips surprising. Renderer records
+  need not use the public ele.style() getter. Internal folding and consumer
+  readback semantics are separate contracts; fractional lengths do not by
+  themselves require a different renderer transfer format.
+- **numericStyle():** style() already returns numeric values where applicable,
+  so a separate helper may be redundant for some callers. Keep it for alpha to
+  avoid premature surface simplification, then review actual use before removal.
+- **Release/drop semantics:** compare analogous browser capture/drop behavior,
+  then preserve the agreed v4 refinement: source release before accepted compound
+  hierarchy commit, with free/dragfree observing the committed hierarchy. A drop
+  is not a tap; cancellation uses tapcancel rather than a misleading tapend.
+- **Adaptive wheel handling:** v3's device/browser adaptation addresses mouse
+  combinations with poor deltas. Consistency with v3 alone was not the reason
+  to choose it; real device behavior needs verification.
+- **App-controlled handles:** all-at-once, selected-only, one-at-a-time and hover
+  visibility are all valid app policies. A mandatory core editing mode or
+  automatic selection dependency would prevent some of them.
+- **Resize minima:** accidental zero-size hiding is poor interactive behavior.
+  Clamp as closely as possible to the requested size, with at least 1px and
+  unchanged-stroke/head constraints. A line's stroke supplies visible thickness
+  even when its centerline has zero height. Future configurable minima remain
+  separate from this initial contract.
+- **Label editing flexibility:** app-triggered label editing supports click-label
+  workflows without imposing one gesture on every app. App writes synchronizing
+  into the draft support cleanup/validation. A veto can preserve the draft or
+  the app can explicitly cancel; removal always wins and closes the session.
+- **Label selection permissions:** event eligibility, selection and grabbability
+  serve different app policies. Per-role arrays express main/source/target
+  combinations without special all/none keywords. Global box-label inclusion
+  does not override local role exclusions; docs need concrete examples.
+- **Bundling precedence:** keep endpoint/style edits and bundling independently
+  meaningful. The bundle overrides rendering without overwriting underlying
+  edits. Implicit locks would simplify some invalidation but couple status to
+  movement restrictions, so they were declined. One run per graph reduces
+  concurrency ownership complexity and covers the primary whole-graph use case.
+- **Bundle paths:** polylines provide a simple initial route; smoothing adds
+  geometric/fidelity decisions best judged from an actual result. Dedicated
+  bundlePoints() avoids changing the meaning of existing segment/control getters.
+- **Export timing:** export during animation is unusual. CPU-model SVG is simpler
+  for alpha than evaluating every animation at a common render timestamp; warn
+  about display differences. Image exports retain displayed-frame behavior.
+  Selection styling is use-case dependent, hence an explicit exclusion option.
+- **Annotation stylesheet:** per-object appearance is simple, but shared rules
+  reduce duplicated styles across many annotations. Core/cy already participates
+  in styling despite not being a node or edge; annotations' multiplicity makes
+  shared defaults particularly useful. Reuse matching names and bypass/state
+  semantics while retaining per-kind applicability and separate graph semantics.
+
+These are reasons for the recorded choices, not new implementation approvals.

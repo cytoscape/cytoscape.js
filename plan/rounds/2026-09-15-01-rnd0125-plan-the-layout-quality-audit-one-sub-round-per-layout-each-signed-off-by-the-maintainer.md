@@ -1,5 +1,12 @@
 ## The layout quality audit: one sub-round per layout, each signed off by the maintainer
 
+Later specification decisions are recorded in the
+[alpha contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
+and supersede conflicting alternatives below. Remaining questions and review
+requirements are consolidated in the
+[11 October register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md).
+These pointers do not change this round's implementation status.
+
 Raised by the maintainer on 2026-09-14 (`docs/features.csv`, "Layout
 quality audit & iteration", **Partial / WIP**) and planned on
 2026-09-15.  Round 122 closed the *portfolio* audit — which use cases

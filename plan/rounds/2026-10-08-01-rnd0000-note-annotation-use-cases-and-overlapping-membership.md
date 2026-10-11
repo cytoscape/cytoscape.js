@@ -293,3 +293,88 @@ as a possible interpretation. Do not cite it as experimental biological evidence
 - Whether numeric values are restricted to integers or allow finite fractions,
   whether zero entries are normalized away, and which operations belong in core
   remain open. No numeric membership API or alpha scope expansion is authorized.
+
+### Declaration, terminology and API alternatives discussed
+
+These alternatives were discussed during the interview. They remain design
+input unless explicitly approved below; preserve compounds and permit a single
+compound parent alongside multiple overlapping memberships.
+
+| Declaration | Benefits | Costs/questions |
+| --- | --- | --- |
+| Child-owned `parent` | Compatibility with compounds; simple single-parent tree | Cannot express multiple overlapping memberships alone |
+| Child-owned `parents` | Lists multiple owners on the member | Risks confusing memberships with structural ancestors; existing `parents()` traverses all compound ancestors |
+| Owner-owned `children` | Convenient creation/import of a group and its contents | Name suggests compound containment; overlaps still need an explicit many-to-many model |
+| Owner-owned `members` | Separates overlapping membership from compound containment | Needs reverse lookup, validation and rules for removed or unresolved references |
+| Accept multiple declaration forms | Convenient adapters and compatibility | Must normalize into one canonical relation and define contradictory declarations; never maintain independent mutable copies |
+
+Declaration location does not determine multiplicity. A `children` array can
+still describe a strict tree; arbitrary overlaps require a many-to-many
+relation. Import convenience does not require exposing every declaration as an
+independently writable public API.
+
+**Kinds and inference.** Discussed a compound-node plus set/group/multiset-node
+model. Presence of `members`, including an empty array, could infer the latter;
+compounds could retain inference from child `parent` references. Explicit kind
+declaration is another option. Whether an object can be both kinds, be nested
+inside a compound, or convert between kinds remains undecided. A proposed ban
+on compound/group conversion must not accidentally ban the existing ordinary
+node becoming or ceasing to be a compound parent. The comparison with directed
+and undirected edges motivates flexibility, but settles no inference rule.
+
+**Naming.** `set` overlaps with the public collection's Set-like behavior;
+`group` aligns with desktop terminology but must not overload existing
+`group()` meanings (nodes/edges). `bag` and `multiset` communicate multiplicity,
+which is useful for stoichiometry but creates expectations about arithmetic.
+All sets already have cardinality; bags add repeated occurrences. `members()`
+and `isSet()`/`isGroup()` were illustrative names, not agreed API spellings.
+
+**Member identity and drawing.** A multiplicity of two need not create two
+independent drawn copies of the same graph node. Discussed returning a distinct
+member collection with numeric values queried separately. Repeated entries,
+value defaults, update semantics and aggregation still need a contract. Drawing
+the same conceptual set more than once may require separating set identity
+from its visual representations, with an optional convenience combined object.
+
+**Enclosures versus graph objects.** A membership object and an enclosure can
+share member tracking, bounds and geometry. They do not thereby share topology,
+collapse, movement inheritance or algorithm participation. Compounds retain
+their tree semantics. Overlapping ownership makes automatic move/collapse
+policies ambiguous, so shared implementation does not imply shared behavior.
+The maintainer requires code reuse where annotation and collection APIs overlap;
+the suggested 90% similarity has not been measured.
+
+**Metadata.** A whole-object `multiset.data()` could hold a label, provenance or
+an ID-keyed map of per-member roles. For example, an app could associate A with
+`catalyst` and B with `substrate`, independently of numeric multiplicities.
+This app-managed map must follow membership changes and removals. A dedicated
+per-membership data API would reduce that bookkeeping but expands the core
+surface. Whole-object data, per-membership data and numeric membership values
+are separate choices, and no exact data API is approved here.
+
+### Provisional multiset direction (11 October)
+
+The maintainer provisionally accepts the recommendation from the literature
+review, explicitly requiring more review:
+
+- Enumerate distinct members with nonzero numeric values.
+- Preserve sign and magnitude for app interpretation and explicit visual
+  mappings; no implicit negative geometry, reversed movement or repeated copies.
+- Preserve participation separately when net cancellation would lose it, for
+  example separate reaction-side membership or app metadata for a catalyst.
+- Distinguish distinct member count, signed total and absolute total.
+
+This is a provisional direction, not final sign-off on a public API, naming,
+numeric validation, mathematical operations, storage, rendering or release
+timing. Negative values are part of the candidate model; the exact numeric
+domain (integers/fractions, finiteness and precision) needs review. Zero is
+outside the enumerated support; retention/normalization of explicitly supplied
+zero entries and their metadata still needs a decision. Numeric-only values
+with app-managed arbitrary data are the candidate approach, not a completed
+data contract.
+
+Review against reaction/hyperedge and overlapping-enclosure fixtures, check
+membership mutation/removal/serialization behavior, and benchmark the chosen
+storage and reverse lookups. No implementation round closes or alpha scope
+changes through this provisional answer. The remaining questions are listed in
+[the interview follow-up register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md).

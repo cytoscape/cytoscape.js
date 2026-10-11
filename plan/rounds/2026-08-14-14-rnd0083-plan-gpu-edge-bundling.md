@@ -1,5 +1,12 @@
 ## GPU edge bundling
 
+Later specification decisions are recorded in the
+[alpha contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
+and supersede conflicting alternatives below. Remaining questions and review
+requirements are consolidated in the
+[11 October register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md).
+These pointers do not change this round's implementation status.
+
 Issue #2332 asked for edge bundling in 2019 and was closed
 unfixed; desktop has it; it is the headline large-graph visual the
 v4 architecture exists to make cheap (#3486's rendering thesis).

@@ -67,6 +67,12 @@ and layout-option contracts. Those
 changes are planned, not implemented; current behavior remains documented
 in the implementation sections below.
 
+The [11 October follow-up register](../plan/rounds/2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md)
+lists remaining questions and evidence/review gates. The
+[annotation/membership research](../plan/rounds/2026-10-08-01-rnd0000-note-annotation-use-cases-and-overlapping-membership.md)
+records the provisional multiset direction, requiring further review while
+preserving compound containment. This is design input, not an implemented API.
+
 ## What landed, round by round
 
 Round 13 (2026-07-31) swept

@@ -2068,17 +2068,25 @@ Earlier, round 145 (29 September) was a correctness fix:
 
 | | |
 |---|---|
-| Gradient stops from data | Whether gradient stop lists take per-element `{ data }` — left for further consideration |
-| Built-in editing affordances | Handles on annotations, nodes and edges, and in-place label editing: designed before alpha, built after |
-| Layouts as a capability | Every build carries every layout (~118 KB minified); whether a headless build registers only the layouts it names, as it does the GPU executors |
-| Workers inside workers | A graph model hosted in a browser worker gets no worker pool (it asks for a page); whether to open the pool to worker hosts or state the limit |
-| Firefox in CI | Firefox runs the model tier (measured 29 Sep) but has no CI project; whether to add one for the model-tier specs now or wait for the WebGL2 renderer |
-| Label box differences from v3 | v4 draws no label border without a background, keeps its own round-box radius, and does not round a label's measured width up as v3 does; which to match — PLAN.md item 87 |
-| Gesture events against v3 | The traces measured where v4's gesture events differ from v3's: the release order (v3 taps before it frees), v3's any-target double tap, a shift press that grabs in v3, `tapend` at the release point in v3, a drag from a locked node (v4 pans), v3's device-adaptive wheel rate, and the touch fingers a pinch consumes; which to match — PLAN.md item 88 |
-| An edge press's first events | An edge press starts on the core in v4 (`tapstart` there; the edge takes the release and the tap once the GPU pick answers), and a right press never takes an edge; v3 targets the edge from the press.  A synchronous edge hit test for the press, or a deferred `tapstart` — PLAN.md item 89 |
-| Label read-backs | A labelled element's label-box colours read back with their opacity folded in, an unlabelled one's without; an edge with only end labels reads its text style from the sheet, not the element; chart colours and gradient stop positions read the values their neighbours imply.  Declared or resolved values, and a fix for the end labels — PLAN.md item 90 |
-| A core undo stack | Apps can snapshot at `batchstart` and undo with `cy.patch()` (27 ms and 3 MB per transaction at 100k, 18–31 ms to undo); whether core ships a stack — none, an inverse-operation log (µs per change, but every mutation must record its inverse), or snapshots (which core could take faster but not restore faster) — PLAN.md item 84 |
-| Attribute-table column view | A grid reads the visible cells through `data( k )` in 40 µs a frame at 100k rows; a column snapshot is 5–10× faster for whole-table reads (a full pull 5.5 ms against 28–38 ms, a filter 0.6–1.5 against 5–6 ms), and the `data` events already track changes by row.  Whether core ships a column view — none, with the query filters sped up internally (3.4–4.6×, recommended), one `eles.dataColumn( key )`, or the planned surface — PLAN.md item 91 |
+| Membership/enclosure model | Compound containment stays; a node can belong to multiple overlapping groups. Nonzero numeric membership with retained signs/magnitudes is provisional and needs further review; naming, operations, data and topology remain open. |
+| Annotation placement/data | Whole-object and membership data, anchoring beyond line ends, shared collection APIs and annotation-aware placement/layout remain to specify. |
+| Editing contract detail | Handles, event families/dispatch, label sessions and role permissions are decided; payloads, hit-part enums, per-kind geometry and attachment thresholds remain. Editing controls are built after alpha; body-drag staging needs reconciliation. |
+| An edge press's first events | Synchronous CPU targeting versus deferred GPU targeting remains benchmark-gated, including right presses — item 89. |
+| Attribute-table column view | Internal filtering improvements first; add a minimal column API only if visible-window scrolling measurements justify it — item 91. |
+| Bundling | API/lifecycle/precedence and initial polylines are decided; persistence remains benchmark-gated, and smoothing awaits maintainer visual review. |
+| Layout/CJK/export detail | Complete per-layout visual/constraint assessment, CJK/font/atlas contracts, export option/report schemas and headless go/no-go evidence. Settled defaults are recorded in the interview. |
+| Release acceptance | Concrete platform evidence, repository-owned app scenarios, full WebGL2 parity and release workflow/bake gates remain implementation/acceptance work. |
+
+The [contract interview](plan/rounds/2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
+settles app-owned undo, independent color/opacity readbacks with no public folded
+API, retained numericStyle(), label-border/fractional-width behavior, gesture
+ordering/cancellation and adaptive wheel zoom. Dedicated nested browser workers
+are the initial target; Firefox model/rendering CI waits for WebGL2. Layout
+capability registration and data-driven gradient lists are deferred. These are
+specification decisions, not claims of implementation. The
+[follow-up register](plan/rounds/2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md)
+and [membership research](plan/rounds/2026-10-08-01-rnd0000-note-annotation-use-cases-and-overlapping-membership.md)
+hold the detailed unanswered questions and provisional review.
 
 Decided at the eleventh design sitting (28 Sep), which put every open
 call to the maintainer one by one: `arrow-scale` keeps its 1/16 step as
@@ -2096,7 +2104,7 @@ documentation site, the columnar form's schema held until 4.x and
 SchemaStore after 4.0.
 From the logged ideas, also before alpha: the device-limits round (where `cy.add()` throws past the GPU's limits)
 with a renderer soak — landed 29 Sep — typed element data — landed 29 Sep — batch events for undo plus a
-snapshot measurement — landed 29 Sep, the stack itself left open above
+snapshot measurement — landed 29 Sep, with app-owned history subsequently chosen
 — the worker host's images and fonts — landed 29 Sep — and the CJK
 label design.  During alpha: the extension ports, a devtools panel and
 a workloads benchmark profile.  After alpha: lasso and spatial queries,
@@ -2109,7 +2117,7 @@ polygon record drives the nonconvex SDF, synchronous picking and edge endpoint
 queries; it remains available for a future SVG exporter. The 500-cluster
 sparse fixture costs 44.5 ms median per moved-child flush and uses 140,264 B
 of live polygon-pool data at 262,144 B capacity for concave contours.
-Miniature collapse remains a separate planned round; labels, picking and
+Manual miniature collapse landed on 5 October; labels, picking and
 dragging remain ordinary element operations. The
 WebGL fallback is full parity at alpha — scoped on 29 Sep, where
 the tween pipelines were also decided not to be warmed at start-up (no

@@ -1,5 +1,12 @@
 ## Attribute-table and filter affordances
 
+Later specification decisions are recorded in the
+[alpha contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
+and supersede conflicting alternatives below. Remaining questions and review
+requirements are consolidated in the
+[11 October register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md).
+These pointers do not change this round's implementation status.
+
 The consumer case: Cytoscape Web built its TableModel/TableBrowser
 (glide-data-grid) and FilterModel *on top of* cytoscape.js by copying
 every element's data out into its own store, and desktop treats the

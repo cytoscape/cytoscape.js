@@ -94,6 +94,13 @@ are recorded in [the interview](plan/rounds/2026-10-06-01-rnd0000-note-alpha-con
 Its explicit answers supersede older alternatives; remaining questions stay
 open and no implementation status changes are claimed.
 
+**Interview follow-up (2026-10-11):** [unanswered questions and review gates](plan/rounds/2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md)
+are consolidated by topic. [The annotation/membership research](plan/rounds/2026-10-08-01-rnd0000-note-annotation-use-cases-and-overlapping-membership.md)
+includes declaration/naming alternatives and the provisional multiset direction,
+which requires further review. Older ledger alternatives remain historical when
+an explicit interview answer supersedes them; the register identifies what is
+actually unanswered. No new implementation or release scope is implied.
+
 ## Process (applies to all work under this plan)
 
 - **Isolated commits as you go.**  Every item lands as its own

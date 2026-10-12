@@ -592,12 +592,11 @@ Found while surveying; none changed.
   `.claude/worktrees/*` trees and seven detached Codex trees under
   `~/.codex/worktrees/`, despite the closing-sweep rule.  They are gitignored
   and npmignored, but they still hold full copies of the repo.
-- **No project-level Claude Code configuration** beyond the output style: no
-  committed `.claude/settings.json` (permission allowlist for the `npm run -s`
-  scripts, which would cut approval prompts), no hooks (e.g. running
-  `format` after edits), no slash commands or skills (e.g. a "close a round"
-  skill encoding §8's checklist, or "add a plan section" that fills the
-  filename and `Depends on:` line).
+- **No project-level Claude Code configuration, by decision.**  Round 108
+  offered a committed `.claude/settings.json` permission allowlist and the
+  maintainer declined it: harness config stays portable across Codex and
+  Claude Code (`AGENTS.md`, scripts, files on disk).  Anything agent-specific
+  (hooks, skills, slash commands) would need to clear that bar.
 - **CI's release workflows are v3's** and marked not yet adapted (round 50).
 - **`PULL_REQUEST_TEMPLATE.md` is v3-era** (mentions `index.d.ts`, `master`)
   and does not mention the v4 gates.

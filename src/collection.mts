@@ -3095,24 +3095,44 @@ export class Collection<
   // -- graph algorithms --
 
   /**
-   * Breadth-first search from one or more roots over this collection's
-   * subgraph, walking slot-native over the CSR adjacency.
+   * Breadth-first search over this collection's subgraph. Roots are visited
+   * in breadth-first order. Multiple callback roots are visited in reverse
+   * input order because the initial queue prepends each root; with no roots,
+   * the result is empty.
    *
-   * @param args — v3's option shape (`{ roots, visit, directed }`) or the
-   *   positional form; `roots` is a **collection**, since v4 has no
-   *   selector strings
-   * @returns `{ path, found }`
+   * @param args — `{ roots, visit, directed }` (or singular `root`) or the
+   *   positional form. Roots must be node collections; selector strings are
+   *   not supported. `visit` receives `(node, edge, previous, index, depth)`;
+   *   `index` counts callback calls and `depth` is the number of discovery
+   *   edges from a root. The edge and previous node are undefined at a root.
+   *   Return `true` to stop and set `found` to the current node, `false` to
+   *   stop without a match, or nothing to continue. `directed: true` follows
+   *   outgoing edges.
+   * @returns `{ path, found }`: `path` records roots in input order and
+   *   discoveries in breadth-first insertion order, with each discovery edge
+   *   before its node. It can include nodes queued but not visited when the
+   *   callback stops early. `found` is the matched node or an empty
+   *   collection when no callback returned true.
+   * @throws if a root is given as a selector string
    */
   breadthFirstSearch(...args: SearchArgs): SearchResult {
     return searchImpl(this, true, args);
   }
 
   /**
-   * Depth-first search from one or more roots.  Same options as
-   * `breadthFirstSearch`.
+   * Depth-first search over this collection's subgraph. It shares the root,
+   * callback, direction and result contract of `breadthFirstSearch`, but
+   * explores the most recently discovered branch first.
    *
-   * @param args — `{ roots, visit, directed }` or the positional form
-   * @returns `{ path, found }`
+   * @param args — `{ roots, visit, directed }` (or singular `root`) or the
+   *   positional form. The callback receives `(node, edge, previous, index,
+   *   depth)`, where `index` counts callbacks and `depth` counts discovery
+   *   edges from a root. It may return true to stop with a match, false to
+   *   stop without a match, or nothing to continue. Roots must be node
+   *   collections.
+   * @returns `{ path, found }`; `path` contains visited nodes and their
+   *   discovery edges in depth-first callback order
+   * @throws if a root is given as a selector string
    */
   depthFirstSearch(...args: SearchArgs): SearchResult {
     return searchImpl(this, false, args);
@@ -3122,33 +3142,56 @@ export class Collection<
   declare dfs: this['depthFirstSearch'];
 
   /**
-   * Dijkstra shortest paths from a root over non-negative weights.
+   * Compute single-source shortest paths from a root over this collection's
+   * subgraph using Dijkstra's algorithm. The caller is responsible for using
+   * non-negative edge weights; v4 does not validate the weight function's
+   * mathematical properties.
    *
-   * @param args — `{ root, weight, directed }`; `weight` is a plain
-   *   function `( edge ) => number`
-   * @returns `{ distanceTo, pathTo }`
+   * @param args — `{ root, weight, directed }` or the positional form. The
+   *   root must be a node in this collection. `weight(edge)` returns a number
+   *   and defaults to 1; `directed: true` follows outgoing edges only.
+   * @returns `{ distanceTo, pathTo }`; an unreachable node has infinite
+   *   distance and its `pathTo()` collection contains that node alone. A
+   *   node outside this subgraph has undefined distance and an empty path.
+   * @throws if root is missing or is not a node in this collection
    */
   dijkstra(...args: DijkstraArgs): DijkstraResult {
     return dijkstraImpl(this, args);
   }
 
   /**
-   * A* shortest path between two nodes.
+   * Find an A* path between two nodes in this collection's subgraph. The
+   * heuristic defaults to zero, reducing the search to Dijkstra's ordering.
+   * The search closes nodes without reopening them; shortest-path guarantees
+   * require non-negative costs and a consistent heuristic. v4 does not
+   * validate those mathematical properties.
    *
-   * @param options — `{ root, goal, weight, heuristic, directed }`, with
-   *   `weight` and `heuristic` as plain functions
-   * @returns `{ found, distance, path }`
+   * @param options — `{ root, goal, weight, heuristic, directed }`. Root and
+   *   goal must belong to this collection; `weight(edge)` defaults to 1,
+   *   `heuristic(node)` defaults to 0, and `directed: true` follows outgoing
+   *   edges only.
+   * @returns `{ found, distance, path, steps }`; when no path exists,
+   *   `found` is false and `distance` and `path` are undefined
+   * @throws if root or goal is missing or outside this collection
    */
   aStar(options?: AStarOptions): AStarResult {
     return aStarImpl(this, options);
   }
 
   /**
-   * Bellman–Ford shortest paths, which unlike Dijkstra tolerates
-   * negative weights and reports negative cycles.
+   * Compute single-source shortest paths with Bellman–Ford. Unlike
+   * `dijkstra()`, this algorithm supports negative edge weights and reports
+   * reachable negative-weight cycles.
    *
-   * @param options — `{ root, weight, directed }`
-   * @returns `{ distanceTo, pathTo, hasNegativeWeightCycle, negativeWeightCycles }`
+   * @param options — `{ root, weight, directed, findNegativeWeightCycles }`.
+   *   The root must belong to this collection; `weight(edge)` defaults to 1
+   *   and `directed: true` follows outgoing edges only. Set
+   *   `findNegativeWeightCycles: false` to stop after detecting a cycle
+   *   without constructing cycle collections.
+   * @returns distance and path accessors, `hasNegativeWeightCycle`, and
+   *   `negativeWeightCycles` (collections describing detected cycles);
+   *   unreachable nodes have infinite distance and an empty path
+   * @throws if root is missing or does not contain a node
    */
   bellmanFord(options?: BellmanFordOptions): BellmanFordResult {
     return bellmanFordImpl(this, options);
@@ -3173,20 +3216,26 @@ export class Collection<
   }
 
   /**
-   * Kruskal's minimum spanning tree/forest.
+   * Build a minimum spanning forest of this collection, treating its edges as
+   * undirected. Equal-weight edges retain collection order. Disconnected
+   * input produces one tree per connected component.
    *
-   * @param weight — `( edge ) => number`; defaults to unit weights
-   * @returns the spanning forest's nodes and edges
+   * @param weight — `(edge) => number`; defaults to unit weights
+   * @returns a collection containing all input nodes and the accepted forest
+   *   edges, in acceptance order
    */
   kruskal(weight?: WeightFn): Collection<NodeData, EdgeData> {
     return kruskalImpl(this, weight);
   }
 
   /**
-   * Tarjan's strongly connected components.  Implemented iteratively, so
-   * deep graphs cannot overflow the JS stack.
+   * Partition this collection's directed subgraph into strongly connected
+   * components. Traversal follows edge direction; self-loops do not join
+   * otherwise separate nodes. The implementation is iterative, so deep
+   * graphs do not consume the JavaScript call stack.
    *
-   * @returns `{ components, cut }`
+   * @returns `{ components, cut }`: each component collection contains its
+   *   nodes and internal edges; `cut` contains edges between components
    */
   tarjanStronglyConnected(): TarjanStronglyConnectedResult {
     return tarjanImpl(this);
@@ -3197,9 +3246,15 @@ export class Collection<
   declare tarjanStronglyConnectedComponents: this['tarjanStronglyConnected'];
 
   /**
-   * Hopcroft–Tarjan biconnected components and articulation points.
+   * Find undirected biconnected components and articulation points in this
+   * collection's subgraph. The component partition follows the v4 port's
+   * parent-edge rule: all edges back to the DFS parent are skipped, including
+   * parallel edges.
    *
-   * @returns `{ components, cut }`
+   * @returns `{ components, cut }`: each component is a collection of its
+   *   nodes and edges, and `cut` contains articulation-point nodes. Each
+   *   component also absorbs subgraph edges incident to its non-cut nodes,
+   *   as this implementation defines its component sets.
    */
   hopcroftTarjanBiconnected(): HopcroftTarjanBiconnectedResult {
     return hopcroftTarjanImpl(this);
@@ -3210,20 +3265,30 @@ export class Collection<
   declare hopcroftTarjanBiconnectedComponents: this['hopcroftTarjanBiconnected'];
 
   /**
-   * Hierholzer's Eulerian path/circuit.
+   * Find an Eulerian trail or circuit over this collection's edges. The
+   * directed mode checks directed degree balance; the default treats edges as
+   * undirected. A requested root must be a valid starting node for the trail.
    *
-   * @param args — `{ root }` or the positional form
-   * @returns `{ found, trail }`
+   * @param args — `{ root, directed }` or the positional form
+   * @returns `{ found, trail }`; `trail` is undefined when no trail exists.
+   *   Collections are sets, so a node visited more than once appears only
+   *   once in the trail collection.
+   * @throws if a supplied root is a selector string
    */
   hierholzer(...args: HierholzerArgs): HierholzerResult {
     return hierholzerImpl(this, args);
   }
 
   /**
-   * Karger–Stein randomized minimum cut.  Randomized, so repeated runs
-   * may differ.
+   * Estimate an undirected global minimum cut with the randomized
+   * Karger–Stein contraction algorithm. Connected input is required for its
+   * guarantee. Random choices mean repeated runs may produce different
+   * partitions; the minimum-cut result is probabilistic.
    *
-   * @returns `{ cut, components, partition1, partition2 }`
+   * @returns `{ cut, components, partition1, partition2 }`; `cut` contains
+   *   crossing edges and the two partitions contain the corresponding nodes
+   * @throws if fewer than two nodes are present or a contraction reaches a
+   *   graph with no edges
    */
   kargerStein(): KargerSteinResult {
     return kargerSteinImpl(this);
@@ -3247,10 +3312,16 @@ export class Collection<
   }
 
   /**
-   * Degree centrality of one node relative to the collection.
+   * Compute Opsahl's generalized degree for one node in this collection.
+   * `alpha` interpolates between counting edges (0) and summing their
+   * weights (1); intermediate values combine both. Directed results separate
+   * incoming and outgoing degree.
    *
-   * @param options — `{ root, weight, alpha, directed }`
+   * @param options — `{ root, weight, alpha, directed }`; `root` is required,
+   *   `weight(edge)` defaults to 1, `alpha` defaults to 0, and `directed`
+   *   defaults to false
    * @returns `{ degree }`, or `{ indegree, outdegree }` when directed
+   * @throws if root is missing or does not contain a node
    */
   degreeCentrality(options?: DegreeCentralityOptions): DegreeCentralityResult {
     return degreeCentralityImpl(this, options);
@@ -3259,11 +3330,19 @@ export class Collection<
   declare dc: this['degreeCentrality'];
 
   /**
-   * Degree centrality for every node, normalized to [0, 1].
+   * Compute each node's Opsahl generalized degree and normalize against the
+   * maximum in this collection. Directed in- and out-degree are normalized
+   * independently. Nodes outside the collection's captured subgraph read as
+   * zero.
    *
-   * @param options — `{ weight, alpha, directed }`
-   * @returns a `degree` accessor, or `indegree`/`outdegree` when
-   *   directed
+   * @param options — `{ weight, alpha, directed }`; the shared option type
+   *   also allows `root`, which this all-node method ignores. `weight(edge)`
+   *   defaults to 1, `alpha` defaults to 0, and `directed` defaults to false
+   * @returns a `degree(node)` accessor, or `indegree(node)` and
+   *   `outdegree(node)` accessors when directed. Each divides by its
+   *   corresponding maximum; results are in [0, 1] when weights and alpha
+   *   produce nonnegative finite degrees. These numeric constraints are not
+   *   validated.
    */
   degreeCentralityNormalized(
     options?: DegreeCentralityOptions,

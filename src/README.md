@@ -719,6 +719,14 @@ data" below.
 
 ## API scope (pass 1)
 
+The [12 October algorithm documentation audit](../plan/rounds/2026-10-12-02-rnd0000-note-graph-algorithm-documentation-contracts.md)
+expanded twelve method comments to describe implemented traversal order,
+stopping rules, path shapes and edge cases. Shortest-path guarantees state
+their cost and heuristic assumptions; returned paths and numeric limits
+follow the current implementation. The comments ship in the full and
+headless declarations. Token comparisons confirm no runtime or API surface
+change; the broader prose/site pass and final integration checks remain open.
+
 v3's method **aliases** are kept throughout (`each`/`forEach`,
 `centre`/`center`, `bc`/`betweennessCentrality`, the set-op spellings,
 …): 84 of them across the core and collection (83 through round 29;

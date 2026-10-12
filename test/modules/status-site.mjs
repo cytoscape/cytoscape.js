@@ -391,6 +391,22 @@ describe('status site: what the runtime asks for', function () {
     );
   });
 
+  it('round-document links reach headings in the assembled record', function () {
+    const record = plan.ops.find((op) => op.to === 'plan.html').text;
+    const anchors = new Set(
+      [...record.matchAll(/<h[1-6] id="([^"]+)"/g)].map((match) => match[1]),
+    );
+    const links = plan.ops
+      .filter((op) => op.kind === 'write' && op.to.endsWith('.html'))
+      .flatMap((op) => markupRefs(op.text))
+      .filter(({ url }) => /^\/?plan\.html#/.test(url));
+
+    expect(links.length, 'no round links were exercised').to.be.greaterThan(0);
+    for (const { url } of links) {
+      expect(anchors.has(url.split('#')[1]), url).to.equal(true);
+    }
+  });
+
   it('lists every off-site url rather than letting one be added silently', function () {
     // An external reference is legitimate here, but each host must be a
     // decision rather than an accident.  Three classes are on this list:

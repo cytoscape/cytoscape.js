@@ -40,6 +40,7 @@ import { generate } from './docs-generate.mjs';
 import { loadPublished } from './benchmark-publish.mjs';
 import { page, NAV } from './status/shell.mjs';
 import { renderMarkdown, tocHtml } from './status/markdown.mjs';
+import { documentLinks } from './status/document-links.mjs';
 import { repoState } from './status/repo-state.mjs';
 import { planDebug, write, copy, PAGES_MAX_BYTES } from './status/plan.mjs';
 import { encodeFixture } from './status/wire-fixtures.mjs';
@@ -170,8 +171,6 @@ export const DOCUMENTS = [
   },
 ];
 
-const DOC_PAGE_BY_FILE = new Map(DOCUMENTS.map((d) => [d.file, d.to]));
-
 /** Read `debug/networks.js`, which is a plain script declaring `var networks`. */
 export function readNetworks(root) {
   const src = readFileSync(join(root, 'debug', 'networks.js'), 'utf8');
@@ -199,10 +198,11 @@ export function buildPlan({
   const parts = [];
   const state = repoState(root, { now, gzip });
   const sha = state.commit.pushed ? state.commit.sha : null;
+  const pageFor = documentLinks(root, DOCUMENTS);
   const mdCtx = {
     root,
     sha,
-    pageFor: (href) => DOC_PAGE_BY_FILE.get(href) ?? null,
+    pageFor,
   };
 
   // A malformed inventory must stop publication, not become an unavailable
@@ -245,7 +245,10 @@ export function buildPlan({
       }
 
       const md = doc.assemble ? doc.assemble(root) : readFileSync(path, 'utf8');
-      const { html, toc, paths } = renderMarkdown(md, mdCtx);
+      const { html, toc, paths } = renderMarkdown(md, {
+        ...mdCtx,
+        pageFor: (href) => pageFor(href, doc.file),
+      });
       // a spelling in `HISTORICAL_PATHS` is quoted rather than pointed at
       // and can never resolve, and one in `PLANNED_PATHS` is a planned
       // round naming its files ahead of landing — warning about either on

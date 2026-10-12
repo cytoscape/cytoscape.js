@@ -1,6 +1,11 @@
 import { expect } from 'chai';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { documentLinks } from '../../scripts/status/document-links.mjs';
+import { enumerateRefs } from '../../scripts/status/refs.mjs';
 
 import {
   renderMarkdown,
@@ -244,6 +249,71 @@ describe('status markdown: documented paths', () => {
 });
 
 describe('status markdown: links and structure', () => {
+  it('resolves referenced files without fragments while retaining navigation URLs', () => {
+    const refs = enumerateRefs([
+      {
+        kind: 'write',
+        to: 'nested/summary.html',
+        text: '<a href="../plan.html#round">relative</a><a href="/plan.html#round">absolute</a>',
+      },
+    ]);
+
+    expect(refs.map((ref) => ref.resolved)).to.eql(['plan.html', 'plan.html']);
+    expect(refs.map((ref) => ref.url)).to.eql([
+      '../plan.html#round',
+      '/plan.html#round',
+    ]);
+  });
+
+  it('routes round links to deduplicated record anchors from each source directory', () => {
+    const root = mkdtempSync(join(tmpdir(), 'status-links-'));
+    const first = '2026-10-12-01-rnd0000-note-first.md';
+    const second = '2026-10-12-02-rnd0000-note-second.md';
+    const head = '# Record\n\n## Shared title\n\n### Later title\n';
+    const one = '## Shared title\n\nRound one.\n';
+    const two = '## Later title\n\nRound two.\n';
+
+    try {
+      mkdirSync(join(root, 'plan/rounds'), { recursive: true });
+      writeFileSync(join(root, 'PLAN.md'), head);
+      writeFileSync(join(root, 'plan/rounds', first), one);
+      writeFileSync(join(root, 'plan/rounds', second), two);
+      const links = documentLinks(root, [
+        { file: 'PLAN.md', to: 'plan.html' },
+        { file: 'docs/feature-direction.md', to: 'direction.html' },
+      ]);
+      const { html } = renderMarkdown(head + one + two, { root });
+
+      for (const [href, source, anchor] of [
+        [`plan/rounds/${first}`, 'EXECUTIVE_SUMMARY.md', 'shared-title-1'],
+        [`../plan/rounds/${first}`, 'src/README.md', 'shared-title-1'],
+        [second, 'PLAN.md', 'later-title-1'],
+        [first, `plan/rounds/${second}`, 'shared-title-1'],
+      ]) {
+        const target = links(href, source);
+        expect(target).to.equal(`plan.html#${anchor}`);
+        expect(html).to.include(`id="${target.split('#')[1]}"`);
+        const rendered = renderMarkdown(`[round](${href})`, {
+          root,
+          pageFor: (href) => links(href, source),
+        });
+        expect(rendered.html).to.include(`href="${target}"`);
+      }
+
+      expect(links('../../docs/feature-direction.md', 'PLAN.md')).to.equal(
+        'direction.html',
+      );
+      expect(links('docs/feature-direction.md#figures')).to.equal(
+        'direction.html#figures',
+      );
+      expect(links('missing.md', 'PLAN.md')).to.equal(null);
+      expect(links(`https://example.com/plan/rounds/${first}`)).to.equal(null);
+      expect(links('#local')).to.equal(null);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("rewrites a relative .md link to this site's page", () => {
     const { html } = renderMarkdown(FIXTURE, ctx());
 

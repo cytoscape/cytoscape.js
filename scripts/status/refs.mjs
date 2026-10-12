@@ -86,7 +86,7 @@ export function networkRefs(networksSource, wireManifestSource = null) {
  *
  * @param plan — the ops from `buildPlan()`
  * @returns `[ { page, url, resolved, external } ]` where `resolved` is the
- *   site-relative path a local reference points at
+ *   site-relative file path, without the navigation fragment
  */
 export function enumerateRefs(ops) {
   const refs = [];
@@ -96,6 +96,7 @@ export function enumerateRefs(ops) {
 
   const add = (from, url, source, kind = 'resource') => {
     const external = /^[a-z]+:/i.test(url) || url.startsWith('//');
+    const path = url.split('#')[0];
 
     refs.push({
       page: from,
@@ -107,9 +108,9 @@ export function enumerateRefs(ops) {
       // directory of the page that wrote it
       resolved: external
         ? null
-        : url.startsWith('/')
-          ? url.slice(1)
-          : posix.normalize(posix.join(posix.dirname(from), url)),
+        : path.startsWith('/')
+          ? path.slice(1)
+          : posix.normalize(posix.join(posix.dirname(from), path)),
     });
   };
 

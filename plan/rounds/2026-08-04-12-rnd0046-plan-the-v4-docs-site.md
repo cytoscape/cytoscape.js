@@ -59,6 +59,12 @@ maintainer questions. No v3 name is unclassified. The source census records
 ten built-in layouts, and 115 direct fields across twelve public layout option
 interfaces. The v3 tree remained read-only.
 
+Review reconciliation: `docs/features.csv` now marks `cy.delay`,
+`cy.delayAnimation`, `eles.removeAllListeners`, `eles.numericStyleUnits` and
+`ani.completed` as `Undecided`. Timer/promise sequencing, numeric/style reads
+and named-event removal are possible workarounds, not recorded equivalence or
+removal decisions.
+
 Focused validation passed: `npm run -s docs:api` plus
 `node documentation/build-api-inventory.mjs` generated all 352 entries;
 headless getting-started/style examples and catalog probes passed; the

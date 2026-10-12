@@ -1,5 +1,7 @@
 ## WGSL minification
 
+**Depends on:** none
+
 **Where it belongs in the sequence**: it is numbered after 51 only because it
 was scoped last.  It is behaviour-neutral and touches no API, so it can land
 any time — but it should land **before round 50 cuts `4.0.0-alpha.1`**, since

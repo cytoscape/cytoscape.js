@@ -1,5 +1,7 @@
 ## The docs generator
 
+**Depends on:** 17, 26, 31, 32, 36, 37, 2026-08-04-02
+
 Round 26's deliberately deferred half, now due: the release docs are
 *generated* from the JSDoc the gates have kept complete.  Nineteen rounds
 of gating paid for itself here — the generator needed no content written,

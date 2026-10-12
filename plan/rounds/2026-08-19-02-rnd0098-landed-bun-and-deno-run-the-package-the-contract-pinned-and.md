@@ -1,5 +1,7 @@
 ## Bun and Deno run the package: the contract pinned and smoked
 
+**Depends on:** 53, 2026-08-19-01
+
 ### 98.1 — the runtime-clean invariant, pinned
 
 `test/modules/import-graph.mjs` gains the assertion its header

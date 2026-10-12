@@ -1,5 +1,7 @@
 ## Ledger item 51: the worker host's images and fonts
 
+**Depends on:** 75, 86, 2026-09-28-01
+
 Ledger item 51 (round 86's worker-host deferrals), taken as a round.
 There was no plan file: the spec is the item's text in `PLAN.md`
 (through its "Call taken" line) and its line in the eleventh sitting's

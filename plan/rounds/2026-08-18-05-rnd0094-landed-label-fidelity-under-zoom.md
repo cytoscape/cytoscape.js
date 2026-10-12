@@ -1,5 +1,7 @@
 ## Label fidelity under zoom
 
+**Depends on:** 10, 15, 91, 2026-08-18-01
+
 The maintainer: labels break down in quality when zoomed in a fair
 bit.  Reproduced: at zoom 4 (font-size 14 → 56 displayed px) v4's
 glyphs go soft, corners round off, and a 'g' descender deforms,

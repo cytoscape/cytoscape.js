@@ -1,5 +1,7 @@
 ## The benchmark suite's wall clock
 
+**Depends on:** 65
+
 The publish run had grown to about an hour, and the maintainer's
 observation was the whole diagnosis: **it uses one core of eight**.
 `report.mjs` spawned one job, waited, spawned the next.  Measured on the

@@ -31,7 +31,9 @@ Two things make the split safe rather than merely tidy:
 
 1. **Nothing was added to the section text.**  A round file is its `##`
    section — no front matter, no wrapper — and only the heading line has
-   ever been rewritten.  That is what let the split be verified the only way
+   ever been rewritten.  (2026-10-12: every file has since gained one
+   `**Depends on:**` line under the heading — see the dependency graph
+   below; the split's byte-for-byte check predates it.)  That is what let the split be verified the only way
    a restructure can be: `PLAN.md` plus every round file, in order,
    reproduced the pre-split file **byte for byte** (1,524,666 bytes, 146
    files) — round 42's rule applied to a document.
@@ -385,4 +387,162 @@ export function formatRuns(rounds) {
   }
 
   return runs.map(([a, b]) => (a === b ? `${a}` : `${a}–${b}`)).join(', ');
+}
+
+/*
+The dependency graph: which sections had to happen before which.
+
+Every section file carries one line under its heading,
+`**Depends on:** 30, 41, 2026-08-06-02` (or `none`), naming the record
+nodes it builds on.  A node is a round, with its sub-rounds and notes
+folded in — 12a, 12b and 12c are all round 12 — or, for a section about no
+single round (`rnd0000`, or a span such as `rnd0091_0097`), the section
+itself, named by its date and counter.  Only earlier nodes may be named,
+so the graph is acyclic by construction at the section level.
+
+The graph is generated into `debug/network-plan.json` beside the index
+(`npm run plan:index`), and the debug harness draws it as the
+`plan-deps` scene.
+*/
+
+/** Where the generated dependency graph lives, relative to the repo root. */
+export const GRAPH_FILE = join('debug', 'network-plan.json');
+
+/** The dependency line's pattern: the line after the heading's blank line. */
+const DEPENDS_PATTERN = /^\*\*Depends on:\*\* (.+)$/;
+
+/**
+ * The record node a section belongs to.
+ *
+ * @param file — the section's basename.
+ * @returns the base round (`'12'` for `rnd0012a`), or the section's
+ *   `YYYY-MM-DD-NN` when it is about no single round.
+ */
+export function nodeId(file) {
+  const name = parseName(file);
+  const rounds = baseRounds(name.roundKey);
+
+  return rounds.length === 1 && !name.roundKey.includes('_')
+    ? String(rounds[0])
+    : `${name.date}-${String(name.index).padStart(2, '0')}`;
+}
+
+/**
+ * The nodes a section says it depends on.
+ *
+ * @param text — the section's markdown.
+ * @returns the node ids in the order written (empty for `none`), or `null`
+ *   when the section has no dependency line in its place.
+ */
+export function dependsOn(text) {
+  const line = text.split('\n', 3)[2] ?? '';
+  const m = DEPENDS_PATTERN.exec(line);
+
+  if (m == null) {
+    return null;
+  }
+
+  return m[1].trim() === 'none' ? [] : m[1].split(/,\s*/).map((v) => v.trim());
+}
+
+/**
+ * The dependency graph as elements JSON: one node per record node, one
+ * edge per prerequisite -> dependent pair (so the flow runs from the first
+ * section down to the latest).
+ *
+ * A round's label is its number and title; the title is its own file's
+ * heading (round 12's plan, not 12a's landed record; round 10's landed
+ * record, not its note), falling back to its first sub-round.  A note's label is its date key and heading.  Each edge
+ * carries `family`, its dependent's whole prerequisite set — the key
+ * `taxi-track: family` bundles on, so one trunk feeds each dependent.
+ *
+ * @param root — the repo root.
+ * @returns `{ elements: { nodes, edges } }`.
+ */
+export function planGraph(root) {
+  const dir = join(root, ROUNDS_DIR);
+  const nodes = new Map();
+  const deps = new Map();
+
+  for (const s of readSections(root)) {
+    const id = nodeId(s.file);
+    const name = parseName(s.file);
+    // the round's own file (rnd0012, not rnd0012a) names it, its landed
+    // record before its plan before its notes
+    const own = /^rnd\d{4}$/.test(name.roundKey) || /^\d{4}-/.test(id);
+    const rank = own ? 1 + ['note', 'plan', 'landed'].indexOf(s.kind) : 0;
+    const node = nodes.get(id);
+
+    if (node == null || rank > node.rank) {
+      nodes.set(id, {
+        id,
+        title: s.title,
+        rank,
+        seq: node?.seq ?? s.seq,
+        kind: node?.kind ?? null,
+      });
+    }
+
+    const entry = nodes.get(id);
+
+    // a round is landed once any of its sections is; a note stays a note
+    entry.kind = /^\d{4}-/.test(id)
+      ? 'note'
+      : entry.kind === 'landed' || s.kind === 'landed'
+        ? 'landed'
+        : 'planned';
+
+    const text = readFileSync(join(dir, s.file), 'utf8');
+
+    for (const d of dependsOn(text) ?? []) {
+      if (d !== id) {
+        deps.set(id, new Set([...(deps.get(id) ?? []), d]));
+      }
+    }
+  }
+
+  const edges = [];
+
+  for (const [target, sources] of deps) {
+    const family = [...sources].sort().join(' ');
+
+    for (const source of [...sources].sort()) {
+      edges.push({
+        data: { id: `${source}->${target}`, source, target, family },
+      });
+    }
+  }
+
+  return {
+    elements: {
+      nodes: [...nodes.values()].map((n) => ({
+        data: {
+          id: n.id,
+          label: `${n.id} ${n.title}`,
+          kind: n.kind,
+          seq: n.seq,
+        },
+      })),
+      edges,
+    },
+  };
+}
+
+/**
+ * The generated graph file's text: one element per line, so a new round is
+ * a small diff.
+ *
+ * @param graph — the result of {@link planGraph}.
+ * @returns the full text of `debug/network-plan.json`.
+ */
+export function renderGraph(graph) {
+  const list = (els) => els.map((e) => '  ' + JSON.stringify(e)).join(',\n');
+
+  return (
+    '{"elements":{"nodes":[\n' +
+    list(graph.elements.nodes) +
+    '\n],"edges":[\n' +
+    list(graph.elements.edges) +
+    '\n]}}\n'
+  );
 }

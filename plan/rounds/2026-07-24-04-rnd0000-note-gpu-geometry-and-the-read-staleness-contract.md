@@ -1,5 +1,7 @@
 ## GPU geometry and the read-staleness contract
 
+**Depends on:** 7, 8, 9
+
 Direction set in discussion after round 9, ahead of building the paint/size
 GPU tween extension.  No code yet; these are the locked calls that scope that
 work and the expensive-geometry cases (multiline labels, bundled bezier) that

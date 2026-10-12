@@ -1,5 +1,7 @@
 ## The render half, implemented as planned, plus labels
 
+**Depends on:** 2026-07-22-01, 2026-07-22-03
+
 - **Init/ready/device-lost**: as specced (sync throw without `navigator.gpu`; `.ready` rejects on null adapter; premultiplied canvas; dead instance + `error` event on loss).
 - **Frame uniform**: 48-byte struct at pass 1 — viewportPx, panPx, zoomDpr, edgeWidthFloor, nodeLodPx, hidePx, edgeDim, labelFadePx. Not a mat3x3, as planned.  (Since grown to 17 fields / 72 bytes: labelMinPx, the curve/haystack/outline slack bounds, arrowScaleMax, imageMinPx, and the round-20.2 pickMode.)
 - **Node/edge pipelines**: pure vertex pulling from the mirrored columns; colors bound as `array<u32>` + `unpack4x8unorm` (byte-identical uploads); border band + selected accent ring (#0169d9) + hover/grab brighten in the node FS; edges extrude in screen space and fetch endpoints from the node position buffer (drags follow on-GPU).

@@ -1,5 +1,7 @@
 ## Quiet verification: the scripts agents run print only failures
 
+**Depends on:** none
+
 The ask: quiet variants of the verification scripts —
 `npm run test:quiet` and friends — that agents run instead of the
 loud ones, so a green suite does not spend thousands of lines of

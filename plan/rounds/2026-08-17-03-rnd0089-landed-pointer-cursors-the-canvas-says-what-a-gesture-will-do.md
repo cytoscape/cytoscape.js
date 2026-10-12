@@ -1,5 +1,7 @@
 ## Pointer cursors: the canvas says what a gesture will do
 
+**Depends on:** 20
+
 The maintainer's ask: the pointer should carry the standard
 affordances — a grab/grabbing pair around panning, something over a
 hoverable element — instead of staying the browser default through

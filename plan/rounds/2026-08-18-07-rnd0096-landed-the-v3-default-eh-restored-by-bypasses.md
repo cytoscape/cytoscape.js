@@ -1,5 +1,7 @@
 ## The v3-default `eh`, restored by bypasses
 
+**Depends on:** 63, 2026-08-18-01
+
 The maintainer: on `?network=v3-default`, edge `eh` "seems not quite
 right".  Investigated, and the renderer is exonerated:
 

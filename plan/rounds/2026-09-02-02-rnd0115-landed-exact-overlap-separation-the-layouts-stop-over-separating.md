@@ -1,5 +1,7 @@
 ## Exact overlap separation: the layouts stop over-separating
 
+**Depends on:** 114
+
 Raised by the maintainer on 2026-09-02, the day round 114 closed: its
 overlap avoidance "seems to avoid overlap, but at the expense of
 over-separating the network".  Every layout on the debug page came out

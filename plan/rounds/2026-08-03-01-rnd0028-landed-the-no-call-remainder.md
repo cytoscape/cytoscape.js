@@ -1,5 +1,7 @@
 ## The no-call remainder
 
+**Depends on:** 27, 2026-07-28-03
+
 Round 27 is complete apart from 27.8, which is held for a scope call
 on which shapes `border-style`/`outline-style` covers.  This round is
 the opposite kind of work: the items left in the ledger that need no

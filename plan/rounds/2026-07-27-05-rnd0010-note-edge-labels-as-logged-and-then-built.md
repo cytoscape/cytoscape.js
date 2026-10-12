@@ -1,5 +1,7 @@
 ## Edge labels, as logged and then built
 
+**Depends on:** 9, 2026-07-22-04
+
 Needed regardless (discussion, 2026-07-27).  A generalization, not new
 architecture: a **second glyph stream** parallel to the node one (own
 instance buffer + cull group + draw); edge glyphs anchor at the edge

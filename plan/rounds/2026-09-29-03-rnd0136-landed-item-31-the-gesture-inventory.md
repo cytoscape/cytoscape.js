@@ -1,5 +1,7 @@
 ## Ledger item 31, the inventory: every gesture, its events and the specs that hold it
 
+**Depends on:** 2026-09-28-01
+
 Ledger item 31, its first measurement taken as a round.  There was no
 plan file: the spec is the item's text in `PLAN.md` and its line in the
 eleventh sitting's note

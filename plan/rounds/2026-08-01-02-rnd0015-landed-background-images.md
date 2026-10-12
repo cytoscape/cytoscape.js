@@ -1,5 +1,7 @@
 ## Background images
 
+**Depends on:** 9, 11, 13, 14, 2026-08-01-01
+
 The 16-prop `background-image` family — the "sleeper third" pillar of
 the 2026-07-29 sweep (near-universal in production apps).  All calls
 below signed off in the 2026-08-01 sitting.

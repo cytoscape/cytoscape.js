@@ -1,5 +1,7 @@
 ## Packaging and publish hardening
 
+**Depends on:** 42, 2026-08-04-02
+
 The gaps the 2026-08-04 infrastructure pass found, closed for the v4
 entries.
 

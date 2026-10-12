@@ -1,5 +1,7 @@
 ## The compound fit, from conservative to exact
 
+**Depends on:** 54, 2026-08-18-01
+
 The maintainer: the compound fixture does not fit to screen
 properly.  Reproduced on the page (930×900 viewport, the fixture's
 own `cy.fit(undefined, 30)`), and the residual is round 54's own

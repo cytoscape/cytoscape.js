@@ -1,5 +1,7 @@
 ## The layout portfolio audit: the use cases, the flagships and what is missing
 
+**Depends on:** 112, 114, 121
+
 Item 49, raised by the maintainer on 2026-08-19: v4 should ship a
 *better* set of built-ins than v3 — one really good layout per main
 use case — and the audit was to enumerate the use cases, name the

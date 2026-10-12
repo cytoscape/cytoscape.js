@@ -1,5 +1,7 @@
 ## Style transitions and animation controls
 
+**Depends on:** 21, 2026-08-01-14
+
 **Signed-off design calls**: the fourth-sitting record above —
 trigger taxonomy with instant-on-add, uniform latest-wins eviction,
 all-props-accepted with tiered executors (paint tweens now, discrete

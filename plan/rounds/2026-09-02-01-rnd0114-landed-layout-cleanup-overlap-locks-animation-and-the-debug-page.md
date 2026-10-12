@@ -1,5 +1,7 @@
 ## Layout cleanup: overlap, locks, animation and the debug page
 
+**Depends on:** 59, 85, 87, 112
+
 Raised by the maintainer on 2026-09-02 as a cleanup round over the
 whole layout portfolio (open call 49's "one excellent layout per use
 case" needs the ones that exist to be *correct* first).  The ask, in

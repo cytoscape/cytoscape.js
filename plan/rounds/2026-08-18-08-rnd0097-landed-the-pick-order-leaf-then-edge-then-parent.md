@@ -1,5 +1,7 @@
 ## The pick order: leaf, then edge, then parent
 
+**Depends on:** 14, 86, 2026-08-18-01
+
 The maintainer: on the clustered enrichment-map network, a click on
 an edge inside a compound parent selects the parent.  Reproduced
 (`cy.pick` at an edge midpoint inside a parent answers the parent)

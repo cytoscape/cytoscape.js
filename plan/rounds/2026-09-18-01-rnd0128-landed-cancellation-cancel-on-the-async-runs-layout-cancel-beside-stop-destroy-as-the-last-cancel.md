@@ -1,5 +1,7 @@
 ## Cancellation: `.cancel()` on the async algorithm runs, `layout.cancel()` beside `stop()`, and destroy as the last cancel
 
+**Depends on:** 65, 74
+
 Raised by the maintainer on 2026-09-18, while sequencing rounds 72, 74
 and 110: the execution model those rounds settle (CPU, GPU and worker
 executors; async completion; the error contract) has no cancellation

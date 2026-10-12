@@ -1,5 +1,7 @@
 ## Node charts: explicit scales, heat, bars and 255 values
 
+**Depends on:** 7, 23, 2026-08-14-02
+
 Revised by the 3 October alpha interview. This replaces the old cap-64,
 implicit heat-scale and packed-count proposals. Depends on round 147's
 partial domains and legend contract. The shipped charts still have their

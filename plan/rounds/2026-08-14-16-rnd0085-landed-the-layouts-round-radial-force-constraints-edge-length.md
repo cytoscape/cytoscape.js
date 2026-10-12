@@ -1,5 +1,7 @@
 ## The layouts round: radial, force constraints, edge length, per-side padding
 
+**Depends on:** 14, 17, 59, 2026-08-14-02
+
 Four demands with issue numbers attached, gathered.  What the code
 does today, verified:
 

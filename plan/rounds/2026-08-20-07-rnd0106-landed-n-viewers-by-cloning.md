@@ -1,5 +1,7 @@
 ## N viewers, by cloning
 
+**Depends on:** 46, 2026-08-20-02
+
 **Replanned 2026-08-27 with the maintainer.**  This round was first
 expanded as "N viewers, one store": consumer cursors in the
 `DirtyTracker`, a view-state inventory, and a `GraphView` spike —

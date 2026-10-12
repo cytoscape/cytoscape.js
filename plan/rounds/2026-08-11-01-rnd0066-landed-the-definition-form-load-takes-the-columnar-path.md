@@ -1,5 +1,7 @@
 ## The definition-form load takes the columnar path
 
+**Depends on:** 57
+
 The question that started it was about the debug harness: *why aren't
 "Columnar load" and "Binary wire round trip" checked by default, and
 would they speed up first load?*  The answer to the first half is that

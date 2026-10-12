@@ -1,5 +1,7 @@
 ## Component packing on the discrete layouts, the pack layout, and breadthfirst's trees as blocks
 
+**Depends on:** 120, 121, 122
+
 Item 58, the one gap round 122's audit found: the packing machinery
 of rounds 120–121 — the shelf pack, the shapes, the orientation, the
 grouping and the order — was reachable only through `force`'s settle

@@ -1,5 +1,7 @@
 ## The tenth design sitting — the idea backlog swept into a shortlist
 
+**Depends on:** 2026-07-28-03
+
 Three research sweeps ran before this sitting: the repo's own record
 (this file's ledger and follow-up notes, `src/README.md`'s hooks),
 the GitHub tracker (open **and** closed — the tracker is aggressively

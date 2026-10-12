@@ -22,7 +22,8 @@ the filename rather than parsing them back out of prose.  This file keeps
 only the parts that are *maintained* rather than appended to, which is
 what makes it readable in one sitting; the record itself had reached
 1.5 MB, past what any reader — and any coding agent — can open.  A new
-round is a new file in `plan/rounds/`, then `npm run plan:index`.  The
+round is a new file in `plan/rounds/`, opening with its heading and its
+`**Depends on:**` line, then `npm run plan:index`.  The
 status site still publishes the whole thing as one page, assembled from
 this file plus every section in order.
 
@@ -131,6 +132,18 @@ actually unanswered. No new implementation or release scope is implied.
   round is **landed** once a section names it so, its own or one of its
   sub-rounds'.  A round may land with an item held for a call; its file
   says which, and the round is still landed.
+- **Every section says what it depends on** (rule added 2026-10-12).
+  The line after a section's heading is `**Depends on:** 30, 112,
+  2026-08-06-02` — or `**Depends on:** none` — naming the earlier record
+  nodes the section builds on: the work or decisions that had to exist
+  first, not every round it mentions.  A node is a base round (12a, 12b
+  and 9.4 are written `12` and `9`) or, for a section about no single
+  round (`rnd0000` or a span), that section's `YYYY-MM-DD-NN`.  Write the
+  line when you add a section, revise it when a section's premise
+  changes, and correct an old section's line when you find it wrong.
+  `test/modules/plan-record.mjs` requires the line on every file and
+  every name to be an earlier node; `npm run plan:index` regenerates
+  `debug/network-plan.json`, drawn as the harness's `plan-deps` scene.
 - **The closing sweep checks `git worktree list`** (rule added 2026-08-24,
   round 108.4).  An agent worktree left behind after a round is not
   harmless: one abandoned tree under `.claude/worktrees/` put 141 of 278

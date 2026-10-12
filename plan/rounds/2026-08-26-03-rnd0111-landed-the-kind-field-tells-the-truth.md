@@ -1,5 +1,7 @@
 ## The kind field tells the truth
 
+**Depends on:** 108
+
 The maintainer asked a question the record could not answer: *how can you
 tell which rounds are completed?  Round 10 is logged as a plan, but it's
 probably already completed.*  It was — on 2026-07-27, seventeen items,

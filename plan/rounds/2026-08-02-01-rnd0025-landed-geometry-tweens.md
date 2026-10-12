@@ -1,5 +1,7 @@
 ## Geometry tweens
 
+**Depends on:** 16, 24
+
 The follow-up round 24.4 logged: the geometry numerics —
 node `width`/`height`, edge `width`, `font-size`, parent `padding` —
 become animatable and transition-tweenable, with the per-tick

@@ -1,5 +1,7 @@
 ## The pick-ring look
 
+**Depends on:** 2026-08-01-06
+
 The hardware pass flagged its pick numbers — 4–5 of 25
 hover-while-panning requests returning null, attributed to
 staging-ring exhaustion — for a look.  The look found the attribution

@@ -1,5 +1,7 @@
 ## Partial scale domains and legend JSON
 
+**Depends on:** 80, 139, 2026-10-03-01
+
 Shared foundation for scalar visual mappers and round 80's charts, decided
 in the alpha interview. Keep the existing serializable mapper DSL and its
 CPU-evaluable compiled representation. This round does not add style

@@ -1,5 +1,7 @@
 ## Attribute-table and filter affordances
 
+**Depends on:** 2026-08-14-02
+
 Later specification decisions are recorded in the
 [alpha contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
 and supersede conflicting alternatives below. Remaining questions and review

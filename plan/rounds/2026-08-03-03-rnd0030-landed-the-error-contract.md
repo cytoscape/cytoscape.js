@@ -1,5 +1,7 @@
 ## The error contract
 
+**Depends on:** 29
+
 Round 29 asked what is *unpinned* rather than what is unbuilt, and
 worked four answers (the alias surface, four unmentioned methods, the
 decided drops, the curve premium).  This round continues that axis on

@@ -1,5 +1,7 @@
 ## The v4 Event and emitter
 
+**Depends on:** 26, 37, 2026-08-04-02
+
 Prerequisite for round 42: v4's one remaining shared-module dependency
 on v3 is `src/emitter.mts` (and the shared `Event` object with it).
 

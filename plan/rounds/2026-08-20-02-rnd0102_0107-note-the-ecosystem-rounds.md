@@ -1,5 +1,7 @@
 ## The ecosystem rounds
 
+**Depends on:** 2026-08-14-02
+
 A sweep for new rounds serving performance and the flagship apps
 (Cytoscape Web, GeneMANIA, EnrichmentMap web), checked against
 rounds 71–101 and ledger items 30–50 so nothing here duplicates

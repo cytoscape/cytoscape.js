@@ -1,5 +1,7 @@
 ## Resize without distortion
 
+**Depends on:** 86, 2026-08-18-01
+
 The maintainer, resizing the debug page: the network view stretches
 or squishes with the window.  What the code does today, verified:
 

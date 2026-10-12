@@ -1,5 +1,7 @@
 ## The model half, implemented as planned
 
+**Depends on:** 2026-07-22-01
+
 Columns, flag bits and shape ids are exactly as originally specced; `contract.mts` is the co-signed source of truth and was implemented first. Key decisions that held up:
 
 - **Stable slots**: free-list + tombstones (cleared flags) + per-slot generation counters; renderer draws `highWater` instances, dead ones collapse to degenerate quads in the VS. No compaction in pass 1 (since landed: the slot-stable tier round 11, slot-moving round 19).

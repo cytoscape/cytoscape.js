@@ -1,5 +1,7 @@
 ## Progressive ingest: a first frame before the last byte
 
+**Depends on:** 67, 2026-08-20-02
+
 Rounds 66/67 took monolithic init from 2899 ms to 1756 ms and
 then to 622 ms headless (1.92× in one A/B), but the pipeline
 shape is unchanged: fetch → parse → init → first frame, strictly

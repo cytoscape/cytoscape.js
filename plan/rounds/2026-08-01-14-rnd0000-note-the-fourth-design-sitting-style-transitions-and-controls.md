@@ -1,5 +1,7 @@
 ## The fourth design sitting — style transitions and animation controls
 
+**Depends on:** 9, 21, 2026-08-01-10
+
 The open half of gap item 9, scoped with the user as **round 24**.
 Calls taken:
 

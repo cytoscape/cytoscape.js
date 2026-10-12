@@ -1,5 +1,7 @@
 ## Ledger item 31, the trace tier: the gestures replayed, compared as numbers
 
+**Depends on:** 136, 2026-09-28-01
+
 Ledger item 31's second half, taken as a round.  There was no plan file:
 the spec is the item's text in `PLAN.md`, its line in the eleventh
 sitting's note

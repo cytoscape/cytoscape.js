@@ -1,5 +1,7 @@
 ## Per-element bypasses
 
+**Depends on:** 24, 61, 2026-07-28-03
+
 The maintainer reopened ledger item 25 — "bypasses are worth a
 discussion" — and the sitting took its calls with one requirement set
 above the others, verbatim: **the proposed implementation must be

@@ -1,5 +1,7 @@
 ## Item 56: the sim half of `avoidOverlap` becomes opt-in
 
+**Depends on:** 116
+
 Raised by the maintainer on 2026-09-04, the morning after round 116
 closed with item 56 open: "let's consider the followups", and then "go
 ahead with all of what you proposed".  What was proposed, in order: take

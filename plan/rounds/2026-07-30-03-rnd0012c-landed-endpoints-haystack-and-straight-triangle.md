@@ -1,5 +1,7 @@
 ## Endpoints, haystack and straight-triangle
 
+**Depends on:** none
+
 Pass 12c of the round-12 plan above, under the round-10 process rules.
 Items landed CPU-first; each entry below was written in the commit that
 landed it.  **Round 12c is complete**: props, derivation, accessors,

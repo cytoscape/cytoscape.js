@@ -1,5 +1,7 @@
 ## Conditionals and `fn` removal
 
+**Depends on:** 7
+
 Direction set in discussion: maximize GPU offload / minimize CPU resolve
 by making the analyzable mapper IR the *only* way to style, and removing
 the one construct that can never be offloaded — the opaque style

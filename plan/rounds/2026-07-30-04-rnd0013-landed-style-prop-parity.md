@@ -1,5 +1,7 @@
 ## Style-prop parity
 
+**Depends on:** 9, 10, 11, 12, 2026-07-28-03
+
 A prop-level sweep of the v3 style registry
 (`v3/src/style/properties.mts`: 280 registered props + 11 aliases)
 against the v4 engine, asking one question per prop: is it

@@ -1,5 +1,7 @@
 ## The large files split: ten files, ten sub-rounds
 
+**Depends on:** 57
+
 Raised by the maintainer on 2026-09-20: `src/` has 18 files at or over
 1,000 lines, and the target is files under ~1,000 lines, under 2,000 in
 any case.  The round takes the ten largest — `core.mts` and

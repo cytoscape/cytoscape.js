@@ -1,5 +1,7 @@
 ## Design sitting — z-index dropped, rounds 15–18 scoped
 
+**Depends on:** 10, 14, 2026-07-28-03
+
 Decided with the user in one sitting.  Every round below runs under
 the round-10 process rules plus the round-14 amendments, now standing
 policy: **docs land first** (each round's 0-item commits its plan

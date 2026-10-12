@@ -1,5 +1,7 @@
 ## Edge layer strokes: the caps, the corners and the arrow reach
 
+**Depends on:** 13, 56, 58
+
 The maintainer, driving the page: v4's edge overlays are visibly not
 v3's in three ways.  The stroke ends **square** where v3's are round;
 a **segments** edge can double its translucent stroke over itself at

@@ -1,5 +1,7 @@
 ## The layout quality audit: one sub-round per layout, each signed off by the maintainer
 
+**Depends on:** 42, 85, 112, 114, 120, 122, 123, 124
+
 Later specification decisions are recorded in the
 [alpha contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
 and supersede conflicting alternatives below. Remaining questions and review

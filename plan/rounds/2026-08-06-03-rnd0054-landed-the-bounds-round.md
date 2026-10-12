@@ -1,5 +1,7 @@
 ## The bounds round
 
+**Depends on:** 39, 43, 2026-08-06-02
+
 Item 16's follow-up, promoted from logged to scheduled at the sixth
 sitting.  The conservative whole-graph fit scan still over-frames the
 compound fixture at ~1.8× its exact box after 43.13, and the residual is

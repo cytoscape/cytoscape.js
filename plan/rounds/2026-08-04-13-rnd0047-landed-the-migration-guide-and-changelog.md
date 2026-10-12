@@ -1,5 +1,7 @@
 ## The migration guide and CHANGELOG
 
+**Depends on:** 44
+
 The guide is the payoff for a discipline this file has kept for forty
 rounds: the decided-design ledger, the deviations lists and the recorded
 "why" behind each removal were written down *as they were decided*, so

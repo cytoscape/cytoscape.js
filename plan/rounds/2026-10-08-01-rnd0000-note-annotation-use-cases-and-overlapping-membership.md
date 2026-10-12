@@ -1,5 +1,7 @@
 ## Annotation use cases, placement and overlapping membership
 
+**Depends on:** 82, 2026-10-06-01
+
 Research supplied by the maintainer on 8 October during the
 [alpha contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md).
 This is a qualitative survey and design input, not a frequency estimate or

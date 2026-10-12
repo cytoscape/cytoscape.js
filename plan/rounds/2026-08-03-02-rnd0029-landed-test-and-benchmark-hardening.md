@@ -1,5 +1,7 @@
 ## Test and benchmark hardening
 
+**Depends on:** 12, 27, 2026-07-28-03
+
 Round 28 closed the ledger's no-call remainder.  This round comes from
 a different question — *not* "what is unbuilt" but "what is unpinned":
 a survey of `src` (49k lines; 121 Node spec files and 14 benchmark

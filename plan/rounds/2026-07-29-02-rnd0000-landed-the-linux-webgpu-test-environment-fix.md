@@ -1,5 +1,7 @@
 ## The Linux WebGPU test environment fix
 
+**Depends on:** 9, 11
+
 Root-caused and fixed the "adapter acquires but renders blank" failure
 that kept the `webgpu`/`visual` Playwright projects from
 validating on Linux (round 11's open verification debt).  Probing the

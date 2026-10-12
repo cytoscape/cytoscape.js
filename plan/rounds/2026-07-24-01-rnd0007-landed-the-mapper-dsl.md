@@ -1,5 +1,7 @@
 ## The mapper DSL
 
+**Depends on:** 2026-07-22-08, 2026-07-22-10
+
 Ten isolated commits (after a `{ nodes, edges }` sheet-key rename to
 match the group names): OKLab + scheme tables → mapper compile/IR →
 engine integration → data-write plumbing → program packing → GPU eval

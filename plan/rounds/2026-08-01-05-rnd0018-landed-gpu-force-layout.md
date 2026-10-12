@@ -1,5 +1,7 @@
 ## GPU force layout
 
+**Depends on:** 9, 14, 17, 2026-08-01-01
+
 The last queue pillar: the round-9 "GPU layouts: logged for later"
 design, built.  Signed off 2026-08-01.
 

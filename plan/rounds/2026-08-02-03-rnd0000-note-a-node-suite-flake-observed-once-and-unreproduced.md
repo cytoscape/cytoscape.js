@@ -1,5 +1,7 @@
 ## A Node-suite flake, observed once and unreproduced
 
+**Depends on:** none
+
 Logged so the breadcrumb is not lost, not because it is understood.
 
 During the round-27 docs verification a single `npm run test:js` run

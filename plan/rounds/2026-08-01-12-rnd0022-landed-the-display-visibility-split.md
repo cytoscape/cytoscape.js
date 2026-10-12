@@ -1,5 +1,7 @@
 ## The display/visibility split
 
+**Depends on:** 12, 20, 2026-08-01-10
+
 **Signed-off design calls:**
 
 1. **`show()`/`hide()` stay the display tier** (structural, element

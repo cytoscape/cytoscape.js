@@ -1,5 +1,7 @@
 ## The algorithm perf follow-ups, gathered
 
+**Depends on:** 65, 69, 70, 2026-08-14-02
+
 Rounds 65.8, 69.6 and 70.4 each closed leaving logged follow-ups;
 this round gathers them.  Planning re-read the sources rather than
 the logged sentences, which mattered twice: one item is mostly

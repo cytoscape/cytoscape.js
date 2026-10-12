@@ -1,5 +1,7 @@
 ## Ledger items 34–36: device limits, the degradation order and the renderer soak
 
+**Depends on:** 16, 65, 2026-09-28-01
+
 Ledger items 34 (a renderer soak tier), 35 (the scale ceiling) and 36
 (the VRAM budget, and failing gracefully), built together as one round.
 There was no plan file: the spec is the three items' text in `PLAN.md`

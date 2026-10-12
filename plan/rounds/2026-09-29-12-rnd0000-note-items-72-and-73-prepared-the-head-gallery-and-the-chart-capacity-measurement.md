@@ -1,5 +1,7 @@
 ## Items 72 and 73 prepared — the head gallery and the chart capacity measurement
 
+**Depends on:** 23, 80, 2026-09-28-01
+
 **Decisions taken 2026-10-03:** the alpha interview and plans 146/80
 supersede the alternatives and recommendations below. This file remains the
 measurement record, not an unresolved sitting agenda. Triangle-cross is

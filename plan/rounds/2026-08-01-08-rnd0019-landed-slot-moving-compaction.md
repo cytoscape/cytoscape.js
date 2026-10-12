@@ -1,5 +1,7 @@
 ## Slot-moving compaction
 
+**Depends on:** 11, 18
+
 The last open architectural item ("Logged — compaction" above): move
 live element slots so `highWater`, column capacity and pass-iteration
 widths shrink after big removals (the shrink profile) and sustained

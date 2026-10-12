@@ -1,5 +1,7 @@
 ## Unbundled bezier, segments and taxi
 
+**Depends on:** 11
+
 Pass 12b of the round-12 plan above, under the round-10 process rules.
 Items landed CPU-first; each entry below was written in the commit that
 landed it.  **Round 12b is complete**: props, blob storage, per-edge

@@ -1,5 +1,7 @@
 ## The small style wins bundle
 
+**Depends on:** 13, 38, 73, 2026-08-14-02
+
 Four items gathered from the demand log.  Planning re-read the
 sources rather than the demand's sentences, which mattered twice:
 the gradients item is **already landed** — round 13 C2 shipped the

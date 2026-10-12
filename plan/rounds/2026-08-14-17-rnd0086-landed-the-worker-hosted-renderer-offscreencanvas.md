@@ -1,5 +1,7 @@
 ## The worker-hosted renderer (OffscreenCanvas)
 
+**Depends on:** 73, 2026-08-14-02
+
 The oldest renderer demand on the tracker (#1350, #2799): move
 rendering off the main thread entirely.  WebGPU works in workers
 (Chrome; other engines to-verify — round 73's reach table carries the

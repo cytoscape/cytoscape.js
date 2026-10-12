@@ -1,5 +1,7 @@
 ## Arrow vocabulary and hollow compound heads
 
+**Depends on:** 2026-09-29-12, 2026-10-03-01
+
 Implements item 72's decisions from the alpha interview, before round 77
 and the WebGL2 port. Input evidence is the prepared 29 September gallery
 and usage census; do not repeat that investigation without new evidence.

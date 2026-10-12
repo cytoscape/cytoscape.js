@@ -1,5 +1,7 @@
 ## Patch: id-keyed reconcile of a fresh payload
 
+**Depends on:** 66, 106, 2026-08-20-02
+
 Verified premise: `cy.json()` is export-only **by decided
 design** — the import form throws
 (`src/core.mts:2802-2817`), and the record says restoring from

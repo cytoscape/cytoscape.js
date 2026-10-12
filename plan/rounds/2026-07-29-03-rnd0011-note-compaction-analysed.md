@@ -1,5 +1,7 @@
 ## Compaction, analysed
 
+**Depends on:** 10, 2026-07-22-03
+
 Discussed 2026-07-27 while planning round 10 and **deliberately left
 out of that sprint**: the analysis below is settled.  The
 **slot-stable tier landed in round 11** (above) with auto thresholds —

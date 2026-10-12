@@ -1,5 +1,7 @@
 ## Bundled bezier and self-loops
 
+**Depends on:** 10, 2026-07-28-01, 2026-07-29-02, 2026-07-29-05
+
 Ran under the round-10 process rules (isolated commits, docs
 in-commit, full verify per item, escalation on real API calls).  Items
 landed in CPU-first order; each entry below was written in the commit

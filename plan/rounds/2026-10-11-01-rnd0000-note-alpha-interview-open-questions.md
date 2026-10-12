@@ -1,5 +1,7 @@
 ## Alpha interview follow-up questions and review gates
 
+**Depends on:** 2026-10-06-01, 2026-10-08-01
+
 Consolidated on 11 October from the ongoing
 [contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md) and
 [annotation/membership research](2026-10-08-01-rnd0000-note-annotation-use-cases-and-overlapping-membership.md).

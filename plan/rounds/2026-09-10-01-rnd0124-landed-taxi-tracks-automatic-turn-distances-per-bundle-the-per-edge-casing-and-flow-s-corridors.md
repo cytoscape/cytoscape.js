@@ -1,5 +1,7 @@
 ## Taxi tracks: automatic turn distances per bundle, the per-edge casing, and flow's corridors
 
+**Depends on:** 13, 112
+
 Raised by the maintainer on 2026-09-10.  Flow's one open legibility
 problem is *which edge goes to which node*: with `curve-style: taxi`
 every edge out of a rank turns at the same distance, so the horizontal

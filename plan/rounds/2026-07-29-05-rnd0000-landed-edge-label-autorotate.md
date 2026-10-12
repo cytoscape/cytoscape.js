@@ -1,5 +1,7 @@
 ## Edge-label autorotate
 
+**Depends on:** 10
+
 The last item on the autonomous shelf, cleared while planning round 12:
 `text-rotation: autorotate` for edge labels, one isolated commit.
 

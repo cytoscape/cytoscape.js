@@ -1,5 +1,7 @@
 ## Interaction options and touch parity
 
+**Depends on:** 16, 17, 2026-07-28-03
+
 With the architecture queue closed (round 19), round 20 takes the
 largest remaining "needs a call" cluster: gap item 8 — the
 interaction tuning options and the touch gestures v4 still lacks.

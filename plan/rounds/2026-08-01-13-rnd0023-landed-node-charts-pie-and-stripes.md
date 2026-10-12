@@ -1,5 +1,7 @@
 ## Node charts: pie and stripes
 
+**Depends on:** 7, 11, 2026-08-01-10
+
 v3's 51 + 50 numbered props (`pie-1-background-color` ...
 `stripe-16-background-size`) return as a **lean, list-valued chart
 family** designed to grow more kinds later — the user's call

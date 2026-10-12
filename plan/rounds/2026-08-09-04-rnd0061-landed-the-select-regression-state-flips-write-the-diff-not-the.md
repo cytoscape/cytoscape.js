@@ -1,5 +1,7 @@
 ## The select regression: state flips write the diff, not the element
 
+**Depends on:** 57, 60
+
 The fix round for what 60.4 measured, taking exactly the headroom that
 record logged: a state flip routes through `refreshMapped` — the
 general per-slot mapped-refresh path, whose `write()` rewrites **every**

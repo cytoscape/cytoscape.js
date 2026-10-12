@@ -1,5 +1,7 @@
 ## The force layout, made sound and made good
 
+**Depends on:** 18
+
 The maintainer's ask, verbatim in scope: the round-18 force layout "is a
 good start, but it gives bad results for large networks at least" — it
 "drifts apart too much on large networks making everything super zoomed

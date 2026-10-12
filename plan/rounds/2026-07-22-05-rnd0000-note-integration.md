@@ -1,5 +1,7 @@
 ## Integration
 
+**Depends on:** 2026-07-22-03, 2026-07-22-04
+
 - devDep `@webgpu/types`; tsconfig `"types": ["@webgpu/types"]`.
 - rolldown: `build/cytoscape.umd.js` (global `cytoscape`) + `build/cytoscape.esm.mjs`; the `FILE=umd` watch filter picks the gpu UMD up automatically (verified).
 - package.json: `exports["./gpu"]`, gpu bundles in `dist:copy`, `debug` in `watch:sync`.

@@ -1,5 +1,7 @@
 ## The performance review: the full suite against the 13 Aug baseline
 
+**Depends on:** 62, 65, 112
+
 The maintainer's directive, 2026-09-01: **run the full benchmark suite,
 fix the straightforward regressions, log the complex ones.**  The last
 published runs were the post-merge baseline at `0d3561de` (13 Aug: the

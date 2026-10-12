@@ -1,5 +1,7 @@
 ## Alpha design interview: charts, hulls and miniature compounds
 
+**Depends on:** 80, 82, 2026-09-29-12
+
 Maintainer decisions from the 3 October interview. These are plans, not
 implemented capabilities. Later answers supersede earlier alternatives in
 the interview and the older round plans. Rounds 80 and 82 are rewritten to

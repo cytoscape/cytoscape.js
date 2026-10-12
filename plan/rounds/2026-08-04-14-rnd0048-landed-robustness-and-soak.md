@@ -1,5 +1,7 @@
 ## Robustness and soak
 
+**Depends on:** 10, 11, 29
+
 The tier of testing a release needs and feature rounds never owed.  It
 ran as `npm run test:soak` — its own script because the leak specs need
 `--expose-gc`, and a leak spec that cannot force a collection is a flake

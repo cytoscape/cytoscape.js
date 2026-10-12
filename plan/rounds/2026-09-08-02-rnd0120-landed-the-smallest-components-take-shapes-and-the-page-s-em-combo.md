@@ -1,5 +1,7 @@
 ## The smallest components take shapes, and the page's EM combo
 
+**Depends on:** 119
+
 Raised by the maintainer on 2026-09-08, after round 119: the force
 layout's packing can be more orderly.  Components of one to four
 nodes should take canonical shapes — a pair as a vertical barbell,

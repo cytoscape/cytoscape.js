@@ -1,5 +1,7 @@
 ## The UI thread kept free: one worker for the in-thread algorithms, `startForce` across the worker host, the CPU sim on a worker
 
+**Depends on:** 65, 74, 86, 128
+
 Raised by the maintainer on 2026-09-18, reading round 74's close and
 item 51's measurement together: "for algorithms on the CPU, it would
 make sense to at least use N=1 worker for algorithms that can't

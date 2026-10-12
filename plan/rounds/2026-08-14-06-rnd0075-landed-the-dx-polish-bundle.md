@@ -1,5 +1,7 @@
 ## The DX polish bundle
 
+**Depends on:** 10, 41, 2026-08-14-02
+
 Six small items from the backlog's DX bundle, each re-verified
 against the source before planning — which mattered immediately:
 two of the six are further along than their backlog sentences say.

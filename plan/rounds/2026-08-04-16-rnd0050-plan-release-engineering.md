@@ -1,5 +1,7 @@
 ## Release engineering
 
+**Depends on:** 42, 44
+
 - The release workflows adapted for the 4.x line: version scripts
   (the prerelease spelling settled here), `pre_release_test.sh`
   updated for the v4 artifacts + v4 docs deploy, npm publish (+

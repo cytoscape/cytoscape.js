@@ -1,5 +1,7 @@
 ## Parallel edges at GeneMANIA width, and a GeneMANIA fixture
 
+**Depends on:** 73, 2026-08-20-02
+
 GeneMANIA's signature look is tens of parallel edges per gene
 pair, one per interaction network, coloured by network type.
 Verified: v4's bundling is v3's verbatim (`src/store/curve-index.mts`

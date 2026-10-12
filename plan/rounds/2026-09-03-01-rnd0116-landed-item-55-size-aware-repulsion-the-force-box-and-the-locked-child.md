@@ -1,5 +1,7 @@
 ## Item 55: size-aware repulsion, the force box and the locked child
 
+**Depends on:** 18, 112, 114, 115
+
 Raised by the maintainer on 2026-09-03: open call 55 carries the three
 follow-ups round 114 declined for the round rather than the library, and
 all three are taken here.  Two calls were put to the maintainer before a

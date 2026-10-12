@@ -1,5 +1,7 @@
 ## Label decluttering: priority and collision at scale
 
+**Depends on:** 102, 2026-08-20-02
+
 Verified: label LOD is zoom-fade only — `labelFadePx` /
 `labelMinPx` (`src/public-types.mts:537-545`) — and nothing in
 `src/render/` knows whether two labels overlap.  At fit zoom on

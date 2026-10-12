@@ -1,5 +1,7 @@
 ## The error policy and `cytoscape.warnings()`
 
+**Depends on:** 37, 2026-08-04-02
+
 The one question the fifth sitting deliberately kept open.  v4 fails
 loudly by decided design — 191 throw sites are public contract, gated
 since round 37 — while v3 mostly avoided throwing because an exception

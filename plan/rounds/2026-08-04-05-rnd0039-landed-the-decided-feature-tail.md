@@ -1,5 +1,7 @@
 ## The decided feature tail
 
+**Depends on:** 2026-08-04-02
+
 Three independent small builds, all decided at the fifth sitting.
 
 - [x] **39.1 Overlap box selection** (2026-08-04) — landed, at the

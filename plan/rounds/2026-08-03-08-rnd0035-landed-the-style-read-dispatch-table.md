@@ -1,5 +1,7 @@
 ## The style-read dispatch table
 
+**Depends on:** 34
+
 Round 34 left the style getters at 2.3× v3 with "no obvious cause — it
 is the 145-case switch and the guard lookups that precede it", and
 logged that as appetite rather than a decision.  The maintainer's

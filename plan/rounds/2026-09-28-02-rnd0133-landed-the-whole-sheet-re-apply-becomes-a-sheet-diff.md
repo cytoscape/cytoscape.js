@@ -1,5 +1,7 @@
 ## The whole-sheet re-apply becomes a sheet diff
 
+**Depends on:** 61, 66, 110, 2026-09-28-01
+
 Ledger item 67, taken as a round.  There was no plan file: the spec is
 the item's text in `PLAN.md` and its line in the eleventh sitting's
 note

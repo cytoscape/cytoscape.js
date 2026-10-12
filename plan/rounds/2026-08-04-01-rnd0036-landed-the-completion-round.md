@@ -1,5 +1,7 @@
 ## The completion round
 
+**Depends on:** 26, 30, 32, 33, 35
+
 Round 35 closed the last item anyone had logged as *worth doing and not
 done*.  What is left in this file divides cleanly in two: the twelve
 entries of "Open calls for the maintainer", which are decisions and stay

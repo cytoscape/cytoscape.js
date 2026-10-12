@@ -1,5 +1,7 @@
 ## Hardware validation pass — AMD RX 580
 
+**Depends on:** 18, 2026-07-28-01
+
 The first full benchmark run of the prototype on real hardware:
 Radeon RX 580 (RADV, `amd gcn-4`) on an i9-9900K under Linux,
 headless Chromium with the repo's platform-gated ANGLE-on-Vulkan

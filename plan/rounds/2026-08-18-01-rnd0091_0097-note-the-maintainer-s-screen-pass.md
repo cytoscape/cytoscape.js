@@ -1,5 +1,7 @@
 ## The maintainer's screen pass
 
+**Depends on:** none
+
 Seven defects from driving the debug harness, one round each.  Every
 mechanism below was **verified before planning** — reproduced in a
 served page against the built UMD bundle (the round-27.9 rule: probe

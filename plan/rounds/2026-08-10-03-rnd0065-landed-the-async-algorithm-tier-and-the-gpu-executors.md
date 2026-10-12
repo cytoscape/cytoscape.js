@@ -1,5 +1,7 @@
 ## The async algorithm tier and the GPU executors
 
+**Depends on:** 43, 46, 62
+
 The design question arrived as "which algorithms could the GPU speed
 up?", and the answer split the algorithm surface in two.  The
 traversal tier (bfs/dfs, dijkstra, aStar, bellmanFord, kruskal,

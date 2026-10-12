@@ -1,5 +1,7 @@
 ## The documented contract
 
+**Depends on:** 26, 29, 30
+
 Round 30 made v4's throws *fire* in the suite.  This round asks the
 next question about the same surface: when they fire, do they say the
 right thing — and does the shipped documentation admit they exist at

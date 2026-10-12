@@ -1,5 +1,7 @@
 ## The benchmark sweep
 
+**Depends on:** 29, 30, 2026-07-28-02
+
 Rounds 29–32 worked one axis in four passes: what exists and is
 asserted by nothing (29), what throws and is *run* by nothing (30),
 what those throws say when they fire (31), and what the shipped

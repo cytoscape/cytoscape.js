@@ -1,5 +1,7 @@
 ## Agent ergonomics: what the two agents load, search and trip over
 
+**Depends on:** 44, 101
+
 The ask: review the repo for coding-agent performance, keep it
 working with **both Codex and Claude Code**, and propose the lowest
 hanging fruit with the biggest impact.  The constraint that shapes

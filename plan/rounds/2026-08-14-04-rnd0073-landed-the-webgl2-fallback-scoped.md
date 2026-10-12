@@ -1,5 +1,7 @@
 ## The WebGL2 fallback, scoped
 
+**Depends on:** 2026-08-06-02, 2026-08-14-02
+
 **Sequencing note (maintainer, 2026-08-19):** the *implementation*
 round — if this scoping record says go — starts late: after most or
 all other rounds, or at minimum once the rendering design decisions

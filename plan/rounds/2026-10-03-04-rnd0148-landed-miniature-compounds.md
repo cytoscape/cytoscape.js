@@ -1,5 +1,7 @@
 ## Miniature compounds: actual positions, reversible size scaling
 
+**Depends on:** 82, 106, 2026-10-03-01
+
 The alpha interview replaces hidden-child/proxy collapse with miniatures.
 Depends on 82's shared compound geometry; chart/label/image geometry must
 also honour the factor before this round closes. No aggregates are required.

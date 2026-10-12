@@ -1,5 +1,7 @@
 ## The benchmark HTML report
 
+**Depends on:** 2026-07-22-09
+
 `npm run benchmark:report` runs the Mitata suites and renders one
 self-contained HTML page (plus a timestamped results JSON) into the
 gitignored `benchmark/results/`.

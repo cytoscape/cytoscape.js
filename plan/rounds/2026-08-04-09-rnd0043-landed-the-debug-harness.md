@@ -1,5 +1,7 @@
 ## The debug harness
 
+**Depends on:** 42
+
 Inserted ahead of the release sequence at the maintainer's request, which is
 why rounds 43–50 renumbered to 44–51.  `debug/` is v4's only manual harness —
 the page `npm run watch` opens, and what anyone forms a first impression from —

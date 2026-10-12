@@ -1,5 +1,7 @@
 ## Compound hull shapes: convex first, then concave
 
+**Depends on:** 14, 2026-08-14-02
+
 Revised by the 3 October alpha interview. Both convex and organic/concave
 geometry are in this round, as successive subtasks. Collapse is now the
 separate miniature-compound round 148; the old hidden-child/proxy-edge

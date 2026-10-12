@@ -1,5 +1,7 @@
 ## Multiline labels and label bounding boxes
 
+**Depends on:** 10, 13, 2026-08-01-01
+
 The multiline/label-bb round the parity triage kept deferring to —
 `text-wrap` and friends, plus the labels-in-bb call.  All calls
 signed off 2026-08-01.

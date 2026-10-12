@@ -1,5 +1,7 @@
 ## The collection guard and the query aliases
 
+**Depends on:** 60, 2026-07-22-10
+
 Three maintainer calls taken in one sitting and landed the same day —
 small, decided, and all on the query/building surface:
 

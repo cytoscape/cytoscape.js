@@ -1,5 +1,7 @@
 ## Ledger item 41, the alpha part: the transaction events and the snapshot price
 
+**Depends on:** 107, 133, 2026-09-28-01
+
 Ledger item 41 (undo, on the columnar store), its alpha part taken as a
 round.  There was no plan file: the spec is the item's text in
 `PLAN.md`, its line in the eleventh sitting's note

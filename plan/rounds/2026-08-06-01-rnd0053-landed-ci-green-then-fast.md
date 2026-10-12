@@ -1,5 +1,7 @@
 ## CI, green then fast
 
+**Depends on:** 42, 46
+
 CI had been red on **every push since round 42** on one job and **since round
 46.5** on the other, and nobody had read a log: the Actions log API answers 403
 without repository admin, so the failures were diagnosed by reproducing both

@@ -1,5 +1,7 @@
 ## Animation queue removal
 
+**Depends on:** 9, 2026-08-01-10
+
 **Signed-off design calls:**
 
 - **No queue, concurrency by channel.**  The manager keeps a set of

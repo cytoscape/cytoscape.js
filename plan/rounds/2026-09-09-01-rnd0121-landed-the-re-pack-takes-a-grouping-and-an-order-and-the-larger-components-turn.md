@@ -1,5 +1,7 @@
 ## The re-pack takes a grouping and an order, and the larger components turn
 
+**Depends on:** 119, 120
+
 Raised by the maintainer on 2026-09-09, from the round-120 follow-up
 list: the page's EM combo should be the library's — one force call,
 not harness code — with the mixed component's placement settled; the

@@ -1,5 +1,7 @@
 ## Cross-platform validation
 
+**Depends on:** 20
+
 - The matrix, run and recorded: macOS/Metal (the goldens'
   cross-platform claim re-verified), Windows/D3D12, WebKit and
   Firefox WebGPU status with a soft-skip audit (a skip is recorded,

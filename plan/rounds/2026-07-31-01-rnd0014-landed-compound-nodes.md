@@ -1,5 +1,7 @@
 ## Compound nodes
 
+**Depends on:** 9, 10, 12, 13, 2026-07-28-03
+
 The head of the design queue: parent/child hierarchy, auto-sized
 parent nodes, compound draw order, ancestor-gated visibility/opacity,
 event bubbling, compound loop edges, and the compound

@@ -1,5 +1,7 @@
 ## Edge routing and arrow parity, measured
 
+**Depends on:** 27, 46
+
 Inserted ahead of round 38 at the maintainer's request, and for a reason
 that makes it a prerequisite rather than a queue-jump: **38's verification
 plan is per-tier live parity diffs, and this round is what makes such a

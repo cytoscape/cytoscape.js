@@ -1,5 +1,7 @@
 ## Alpha contract interview
 
+**Depends on:** 77, 78, 81, 83, 84, 139, 142, 143
+
 Maintainer decisions from the ongoing interview on 6 October. These are
 specification decisions, not implemented capabilities. Explicit decisions
 here supersede earlier alternatives in the round plans and PLAN.md ledger.

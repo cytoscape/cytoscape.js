@@ -1,5 +1,7 @@
 ## cyext: the extension toolchain
 
+**Depends on:** 17, 44
+
 v4's extension story is round 17's contract — `cy.layout({ impl })`,
 no registry, no `cytoscape.use()` — and it is complete as an API but
 naked as a workflow: v3's documentation sent extension authors to

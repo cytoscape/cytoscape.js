@@ -1,5 +1,7 @@
 ## Renderer benchmarks
 
+**Depends on:** 2026-07-22-06
+
 The renderer's recorded numbers (fps tables, pan ms/frame, pick latency,
 init/export costs) were manual debug-harness measurements; this makes
 them a repeatable command.

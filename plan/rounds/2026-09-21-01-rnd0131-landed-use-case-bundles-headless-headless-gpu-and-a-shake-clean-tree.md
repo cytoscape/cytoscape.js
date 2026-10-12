@@ -1,5 +1,7 @@
 ## Use-case bundles: `cytoscape/headless`, `cytoscape/headless-gpu`, and a shake-clean tree
 
+**Depends on:** 65, 99, 100, 129
+
 The maintainer's ask (2026-09-21): bundles for particular use cases,
 slimmer than the one entry the package ships.  The main one is
 headless, CPU-only — CI, and edge isolates such as Cloudflare Workers,

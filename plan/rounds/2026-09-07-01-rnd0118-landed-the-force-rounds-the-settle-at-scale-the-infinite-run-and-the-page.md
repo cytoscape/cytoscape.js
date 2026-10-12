@@ -1,5 +1,7 @@
 ## The force rounds: the settle at scale, the infinite run, and the page
 
+**Depends on:** 115, 116, 117
+
 Raised by the maintainer on 2026-09-07, reading round 117's report.
 The first question was whether the in-sim overlap term was simply
 expensive against the post-sim separation; the answer was that it is

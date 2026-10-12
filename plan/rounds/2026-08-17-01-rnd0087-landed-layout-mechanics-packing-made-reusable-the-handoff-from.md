@@ -1,5 +1,7 @@
 ## Layout mechanics: packing made reusable, the handoff decoupled from animate, and the animate gaps
 
+**Depends on:** 17, 18, 59
+
 Three maintainer ideas — reusable packing, the debug page's animate
 toggle reaching the discrete layouts, and the force layout handing off
 to the GPU regardless of `animate` — investigated before planning.

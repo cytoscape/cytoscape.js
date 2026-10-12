@@ -1,5 +1,7 @@
 ## The authoring surface: JSDoc and shipped types
 
+**Depends on:** none
+
 **Direction taken 2026-08-02 (user).**  The v3 code *and* the v3
 documentation stay untouched until v4 actually ships, so every v3
 asset remains available for comparison benchmarks and parity work.

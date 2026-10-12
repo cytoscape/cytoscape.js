@@ -1,5 +1,7 @@
 ## v3 → v4 parity gap analysis
 
+**Depends on:** 2026-07-22-09, 2026-07-22-10
+
 A systematic sweep of the **entire v3 public surface**, diffed against
 v4.  Sources: the v3 style registry (`v3/src/style/properties.mts` — 280
 registered properties + 11 aliases across 21 groups), the docmaker API

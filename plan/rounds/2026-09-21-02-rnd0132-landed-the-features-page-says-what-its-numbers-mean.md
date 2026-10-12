@@ -1,5 +1,7 @@
 ## The Features page says what its numbers mean
 
+**Depends on:** none
+
 The maintainer's ask (2026-09-21): the status site's Features page is
 not clear about its numbers.  "925 of 925 features" — done?  total?
 And the headline total is not meaningful anyway: most rows are single

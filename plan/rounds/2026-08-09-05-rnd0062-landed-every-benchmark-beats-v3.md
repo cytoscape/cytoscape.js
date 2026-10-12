@@ -1,5 +1,7 @@
 ## Every benchmark beats v3
 
+**Depends on:** 34, 61
+
 The maintainer's directive, verbatim: **"Every benchmark for v4 should
 beat v3."**  The survey that preceded it (recorded in the 61.5 record
 and the conversation that followed) found the quick profile at 106

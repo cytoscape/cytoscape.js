@@ -1,5 +1,7 @@
 ## The arrow trim reaches the anchors and the layer strokes
 
+**Depends on:** 56
+
 Scheduled at the seventh sitting, after the maintainer asked what it
 would cost (answer: negligible — see item 24's ledger entry).  Round 56
 landed the trim where the *ink* is drawn and left three consumers

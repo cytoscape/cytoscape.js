@@ -1,5 +1,7 @@
 ## The outline goes under the ink
 
+**Depends on:** 2026-08-18-01
+
 The maintainer: label outlines overlap the previous characters of a
 word, cutting white notches into the letters.  Reproduced at zoom 1
 (the notches are visible in 'Wavelength' at 14 px) and worse zoomed.

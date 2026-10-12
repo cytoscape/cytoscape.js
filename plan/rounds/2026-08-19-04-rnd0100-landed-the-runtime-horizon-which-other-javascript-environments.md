@@ -1,5 +1,7 @@
 ## The runtime horizon: which other JavaScript environments are worth supporting
 
+**Depends on:** 73, 98, 2026-08-19-01
+
 An investigation round with a written record — the WebGL-scoping
 shape.  No `src/` changes except where a one-line capability
 guard buys a whole environment (the `animation.mts`

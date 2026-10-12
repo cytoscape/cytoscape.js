@@ -1,5 +1,7 @@
 ## Transient emphasis: hover highlight without touching the sheet
 
+**Depends on:** 61, 2026-08-20-02
+
 The gesture every flagship app implements: hover or select a
 node, emphasize its neighbourhood, dim everything else, restore
 on leave — re-evaluated on every mousemove.  What v4 gives them

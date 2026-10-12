@@ -38,7 +38,12 @@ import {
   baseRounds,
   roundStates,
   formatRuns,
+  nodeId,
+  dependsOn,
+  planGraph,
+  renderGraph,
   FILE_PATTERN,
+  GRAPH_FILE,
   ROUNDS_DIR,
   INDEX_FILE,
 } from '../../scripts/plan-record.mjs';
@@ -365,5 +370,70 @@ describe('the development record', () => {
         `${key} is not parsed back`,
       ).to.equal(key);
     }
+  });
+
+  it('says under every heading which earlier nodes the section depends on', () => {
+    // The dependency graph's only source.  A section added without the
+    // line, or naming a node that does not exist yet, would draw a graph
+    // that silently disagrees with the record — so the line is required
+    // on every file, old and new, and each name must be an earlier node.
+    const first = new Map();
+
+    for (const s of sections) {
+      const id = nodeId(s.file);
+
+      if (!first.has(id)) {
+        first.set(id, s.seq);
+      }
+    }
+
+    for (const s of sections) {
+      const deps = dependsOn(readFileSync(join(dir, s.file), 'utf8'));
+      const self = nodeId(s.file);
+
+      expect(
+        deps,
+        `${s.file} has no \`**Depends on:**\` line after its heading`,
+      ).to.not.equal(null);
+
+      for (const d of deps) {
+        expect(first.has(d), `${s.file} depends on unknown node ${d}`).to.equal(
+          true,
+        );
+        expect(d, `${s.file} depends on its own node`).to.not.equal(self);
+        expect(
+          first.get(d),
+          `${s.file} depends on ${d}, which comes later`,
+        ).to.be.lessThan(s.seq);
+      }
+    }
+  });
+
+  it('reads the dependency line and the node a section belongs to', () => {
+    // The control for the gate above: a parser that returned [] for
+    // everything would pass it.
+    expect(
+      dependsOn('## T\n\n**Depends on:** 30, 2026-08-06-02\n'),
+    ).to.deep.equal(['30', '2026-08-06-02']);
+    expect(dependsOn('## T\n\n**Depends on:** none\n')).to.deep.equal([]);
+    expect(dependsOn('## T\n\nProse.\n')).to.equal(null);
+    expect(nodeId('2026-07-30-01-rnd0012a-landed-bundled.md')).to.equal('12');
+    expect(nodeId('2026-07-27-01-rnd0009.4-landed-tweens.md')).to.equal('9');
+    expect(nodeId('2026-07-22-01-rnd0000-note-context.md')).to.equal(
+      '2026-07-22-01',
+    );
+    expect(nodeId('2026-08-18-01-rnd0091_0097-note-screen.md')).to.equal(
+      '2026-08-18-01',
+    );
+  });
+
+  it('keeps debug/network-plan.json in step with the dependency lines', () => {
+    const graph = planGraph(ROOT);
+
+    expect(graph.elements.edges.length).to.be.greaterThan(100);
+    expect(
+      readFileSync(join(ROOT, GRAPH_FILE), 'utf8'),
+      'run `npm run plan:index`',
+    ).to.equal(renderGraph(graph));
   });
 });

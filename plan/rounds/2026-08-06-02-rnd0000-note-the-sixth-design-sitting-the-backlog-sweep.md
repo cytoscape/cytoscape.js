@@ -1,5 +1,7 @@
 ## The sixth design sitting — the backlog sweep
 
+**Depends on:** 38, 40, 41, 43, 45, 48, 52, 53
+
 Prompted by a full read of this file: the ledger's numbered items were all
 closed, but decisions had accumulated in round records against the standing
 rule that every open question surfaces in "Open calls for the maintainer" —

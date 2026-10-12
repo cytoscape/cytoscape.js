@@ -1,5 +1,7 @@
 ## The spectral-seed spec fails without the setup preload
 
+**Depends on:** 59, 86, 108
+
 Found incidentally by round 86, which ran `test/force-layout.mjs` by
 itself while chasing an unrelated red and got a deterministic failure
 the full tier never shows.  Everything below was verified on

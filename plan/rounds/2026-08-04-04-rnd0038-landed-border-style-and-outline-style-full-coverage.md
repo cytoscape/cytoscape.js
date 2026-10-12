@@ -1,5 +1,7 @@
 ## `border-style` and `outline-style`, full coverage
 
+**Depends on:** 27, 2026-08-04-02
+
 The last unported v3 style pair, at the scope the sitting chose:
 **every shape**.  The technique has been settled since 27.8; this
 round builds all three tiers.

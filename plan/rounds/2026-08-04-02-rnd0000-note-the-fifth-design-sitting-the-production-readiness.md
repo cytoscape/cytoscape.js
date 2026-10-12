@@ -1,5 +1,7 @@
 ## The fifth design sitting — the production-readiness roadmap
 
+**Depends on:** 27, 30, 36, 2026-07-28-03
+
 Every open call in the ledger, taken with the maintainer in one
 sitting; the per-item decisions are recorded in "Open calls for the
 maintainer" near the top of this file, and the rounds below execute

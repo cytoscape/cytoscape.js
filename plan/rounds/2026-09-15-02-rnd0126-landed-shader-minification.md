@@ -1,5 +1,7 @@
 ## Shader minification
 
+**Depends on:** 52
+
 **Status: landed 2026-09-29; round 126.** Originally drafted as provisional round
 999 on `feature/shader-minification`. Renumbered to 126 when integrated
 into `v4`, after round 125; the filename, subsection numbers and generated

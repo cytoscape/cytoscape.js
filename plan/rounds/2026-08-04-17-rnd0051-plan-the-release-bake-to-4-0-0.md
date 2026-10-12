@@ -1,5 +1,7 @@
 ## The release bake → 4.0.0
 
+**Depends on:** 47, 50
+
 - The alpha/beta cycle: external-consumer smoke (a framework-wrapped
   app, an external layout through the round-17 contract, a real graph
   app ported using round 47's guide — the guide is *tested* by the

@@ -1,5 +1,7 @@
 ## The great restructure
 
+**Depends on:** 41, 2026-08-04-02
+
 The packaging decision, executed: **v4 becomes the package**.
 
 - **`v3/` is created as a self-contained subproject**: v3's `src/`,

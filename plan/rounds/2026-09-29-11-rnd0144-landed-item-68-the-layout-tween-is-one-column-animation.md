@@ -1,5 +1,7 @@
 ## Ledger item 68: the layout tween is one column animation
 
+**Depends on:** 86, 87, 142, 2026-09-28-01
+
 Ledger item 68, taken as a round.  There was no plan file: the spec is
 the item's text in `PLAN.md` and its line in the eleventh sitting's note
 (`2026-09-28-01-rnd0000-note-the-eleventh-design-sitting-the-open-calls-one-by-one.md`).

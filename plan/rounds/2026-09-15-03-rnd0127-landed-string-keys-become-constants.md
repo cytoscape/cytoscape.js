@@ -1,5 +1,7 @@
 ## String keys become constants
 
+**Depends on:** none
+
 The maintainer's directive, 2026-09-15: **clean up hard-coded string
 use.**  Style property keys and store column keys should be reused
 constants instead of hard-coded and repeated strings, and probably the

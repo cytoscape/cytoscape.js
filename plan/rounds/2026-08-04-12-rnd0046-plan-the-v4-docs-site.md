@@ -1,5 +1,7 @@
 ## The v4 docs site
 
+**Depends on:** 45, 2026-08-04-02
+
 - Prose sections written by hand (the generator covers members, not
   narrative): introduction, getting started, loading (columnar + the
   wire format), styling with mappers and the sheet, events + the

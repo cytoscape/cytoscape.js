@@ -1,5 +1,7 @@
 ## API review and cleanup: the parity pass audited
 
+**Depends on:** 26, 45
+
 The early rounds went aggressively for v3 parity as a first pass, and
 that was the right call then — the foundation needed to exist before
 it could be judged.  The bill for it is that v4's public tier now

@@ -1,5 +1,7 @@
 ## Ledger item 30, tier 2: the degrade control — what the goldens set and do not see
 
+**Depends on:** 135, 2026-09-28-01
+
 Ledger item 30's second tier, taken as a round.  There was no plan file:
 the spec is the item's text in `PLAN.md`, its line in the eleventh
 sitting's note

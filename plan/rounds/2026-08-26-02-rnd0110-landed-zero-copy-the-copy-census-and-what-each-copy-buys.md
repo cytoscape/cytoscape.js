@@ -1,5 +1,7 @@
 ## Zero-copy: the copy census, and what each copy buys
 
+**Depends on:** 86
+
 Raised by the maintainer on 2026-08-26, off the back of round 86's
 SharedArrayBuffer head-to-head: performance is a top-priority goal for
 v4 — along the lines of SAB, can copying be removed *generally*, not

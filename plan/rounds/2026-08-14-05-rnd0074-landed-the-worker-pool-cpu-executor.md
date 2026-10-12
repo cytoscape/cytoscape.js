@@ -1,5 +1,7 @@
 ## The worker-pool CPU executor
 
+**Depends on:** 65, 70, 72, 2026-08-14-02
+
 The seed is ledger item 29 (raised at 65.10): the per-source-parallel
 algorithms behind a pool of plain workers — Node `worker_threads`,
 browser `Worker`, transferable typed arrays, no SharedArrayBuffer and

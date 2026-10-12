@@ -1,5 +1,7 @@
 ## Selector removal and stylesheet reshape
 
+**Depends on:** 2026-07-22-09
+
 Decided in design discussion (2026-07-24) and implemented in one pass;
 `src/README.md` ("Design decisions") is the maintained record.  The
 decisions, explicitly:

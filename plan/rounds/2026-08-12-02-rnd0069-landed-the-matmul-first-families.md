@@ -1,5 +1,7 @@
 ## The matmul-first families
 
+**Depends on:** 65
+
 The round-65 benchmark's own headline said where the next wins were: MCL
 leads at up to 647× because its inner loop is a dense matrix product —
 compute-bound, the one regime where the GPU's advantage is ~100× rather

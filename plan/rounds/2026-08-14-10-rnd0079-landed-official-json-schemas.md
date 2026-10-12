@@ -1,5 +1,7 @@
 ## Official JSON schemas
 
+**Depends on:** 8, 2026-08-14-02
+
 Issue #3487, the maintainer's own: JSON Schema documents for the
 formats consumers hand this library.  v4 is unusually well-placed
 for this because of a round-8 decision the schemas inherit: **no

@@ -1,5 +1,7 @@
 ## Governance close-out
 
+**Depends on:** 30, 36, 2026-08-04-02
+
 Small and first, because the gates protect every round after it.  All
 calls already taken (fifth sitting); nothing here needs design.
 

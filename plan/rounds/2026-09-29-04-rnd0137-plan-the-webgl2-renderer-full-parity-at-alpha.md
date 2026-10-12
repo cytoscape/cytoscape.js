@@ -1,5 +1,7 @@
 ## The WebGL2 renderer, full parity at alpha
 
+**Depends on:** 73, 76, 77, 80, 81, 82, 83, 86, 105, 126, 135, 136, 2026-09-28-01
+
 Later specification decisions are recorded in the
 [alpha contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
 and supersede conflicting alternatives below. Remaining questions and review

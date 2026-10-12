@@ -1,5 +1,7 @@
 ## Directory layout, as built
 
+**Depends on:** 2026-07-22-01
+
 ```
 src/
   index.mts              # default factory cytoscape(options); hard-error gate; wires model↔renderer↔pointer

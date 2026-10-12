@@ -1,5 +1,7 @@
 ## The autonomous parity sprint
 
+**Depends on:** 8, 9, 2026-07-22-08, 2026-07-22-09, 2026-07-22-10
+
 Scope criteria set with the user: this round is composed **only of items
 whose design is already decided** (or is a mechanical v3 port) **and
 that are easily verifiable in the existing harnesses** — Node

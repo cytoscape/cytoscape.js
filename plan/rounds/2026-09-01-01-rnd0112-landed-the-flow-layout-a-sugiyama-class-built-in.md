@@ -1,5 +1,7 @@
 ## The flow layout: a Sugiyama-class built-in
 
+**Depends on:** 17, 87
+
 Raised by the maintainer on 2026-09-01, taking up open call 49's
 layered/hierarchical half: v4 gets a built-in layered layout, named
 **`flow`**, comparable to dagre, ELK layered and Graphviz dot — and the

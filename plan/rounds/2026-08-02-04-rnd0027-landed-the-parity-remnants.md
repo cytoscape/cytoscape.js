@@ -1,5 +1,7 @@
 ## The parity remnants
 
+**Depends on:** 13, 2026-07-28-03
+
 The tail the README's follow-up hooks have carried since round 13:
 compound arrow shapes, per-element numeric `text-rotation`, the
 unported shape keywords, `border-style`/`outline-style`, and v3's

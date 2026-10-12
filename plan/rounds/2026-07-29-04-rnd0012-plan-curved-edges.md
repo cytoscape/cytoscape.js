@@ -1,5 +1,7 @@
 ## Curved edges
 
+**Depends on:** 10, 2026-07-24-04, 2026-07-28-03
+
 The head of the design queue: v4 renders `curve-style: straight` only,
 and the curve families are the single biggest visual gap — bundled
 bezier is v3's *default* look, and a self-loop currently degenerates

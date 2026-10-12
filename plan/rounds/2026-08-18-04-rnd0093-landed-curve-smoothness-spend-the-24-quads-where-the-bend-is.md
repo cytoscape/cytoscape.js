@@ -1,5 +1,7 @@
 ## Curve smoothness: spend the 24 quads where the bend is
 
+**Depends on:** 12, 2026-08-18-01
+
 The maintainer: some curved edges render as visible chord chains
 while bundled beziers are smooth.  Reproduced and mechanism pinned:
 

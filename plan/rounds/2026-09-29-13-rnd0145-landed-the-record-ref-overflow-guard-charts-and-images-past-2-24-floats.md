@@ -1,5 +1,7 @@
 ## The record ref overflow guard: charts and images past 2^24 floats
 
+**Depends on:** 138, 2026-09-29-12
+
 A correctness fix, taken as a round.  There was no plan file: the spec
 is the latent defect item 73's capacity measurement recorded
 (`2026-09-29-12-rnd0000-note-items-72-and-73-prepared-the-head-gallery-and-the-chart-capacity-measurement.md`,

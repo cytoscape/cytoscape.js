@@ -1,5 +1,7 @@
 ## Known deviations, accepted
 
+**Depends on:** 2026-07-22-03, 2026-07-22-04
+
 - Element/core listener firing order is registration order *within a bubbling phase* (compound bubbling landed round 14.5 with v3's cross-phase order).
 - No z-index; compound parent bodies (round 14.9, depth order) under edges under leaf nodes under labels; within a stream, slot order (reused slots draw at the recycled position).
 - Float32 position precision (~7 significant digits).

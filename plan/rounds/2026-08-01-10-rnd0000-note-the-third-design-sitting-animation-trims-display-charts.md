@@ -1,5 +1,7 @@
 ## The third design sitting — animation trims, display/visibility, charts
 
+**Depends on:** 2026-07-28-03
+
 Three calls taken with the user (quick answers, follow-up expected on
 the finer points), scoping rounds 21–23:
 

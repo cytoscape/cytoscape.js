@@ -1,5 +1,7 @@
 ## Animation
 
+**Depends on:** 2026-07-22-03, 2026-07-22-04
+
 Direction (discussion): animation is a v4 priority and should scale.  API
 first, on the CPU-canonical path (complete + correct + Node-testable); a
 GPU tween fast path is the planned optimization underneath, transparent to

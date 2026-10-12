@@ -1,5 +1,7 @@
 ## `@param` completeness
 
+**Depends on:** 26, 31
+
 Round 31 closed the `@throws` half of round 26's contract sentence
 ("what it takes, what it returns, what it throws").  This round closes
 **what it takes**, and stops there deliberately.

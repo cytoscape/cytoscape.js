@@ -1,5 +1,7 @@
 ## API gaps vs v3
 
+**Depends on:** 2026-07-22-03, 2026-07-22-04
+
 Pass-1 scope held, but a lot of the familiar v3 core/collection surface
 was missing.  The **LHF** (buildable on the existing columnar/flag/
 adjacency model with no new architecture) and **small-touch** (one

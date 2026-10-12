@@ -1,5 +1,7 @@
 ## Slot-stable compaction
 
+**Depends on:** 7, 2026-07-22-08
+
 The buildable tier from the compaction analysis (next section): the
 append-only structures that leak under churn now meter their waste and
 reclaim it automatically on a threshold, extending the policy the

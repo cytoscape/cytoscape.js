@@ -1,5 +1,7 @@
 ## Bun and Deno, first-class: the native runners measured, Deno's adapter, the install story
 
+**Depends on:** 65, 98, 2026-08-19-01
+
 ### 99.1 — the full suite under the native runners, measured
 
 Can Bun and Deno run the real Node tier — `node:test` + chai +

@@ -1,5 +1,7 @@
 ## Follow-ups informed by the benchmark
 
+**Depends on:** 2026-07-22-03, 2026-07-22-04, 2026-07-22-06
+
 1. ~~Compute-shader culling + `drawIndirect`~~ — done (see the culling/LOD
    section above).
 2. ~~Batch the one-time glyph build~~ — **dead on re-measurement**: 100k

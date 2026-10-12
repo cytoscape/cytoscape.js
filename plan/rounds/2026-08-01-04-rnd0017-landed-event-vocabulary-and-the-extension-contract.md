@@ -1,5 +1,7 @@
 ## Event vocabulary and the extension contract
 
+**Depends on:** 14, 2026-08-01-01
+
 Two permanent-API calls made in one sitting: the v4 event names, and
 how extensions plug in.  Both are cheap to build once decided; both
 gate ecosystem work.

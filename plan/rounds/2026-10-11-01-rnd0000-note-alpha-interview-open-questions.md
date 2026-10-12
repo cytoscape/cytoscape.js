@@ -9,6 +9,15 @@ Explicit interview answers take precedence over older round alternatives.
 This register records unanswered questions; it does not approve proposed APIs,
 mark planned work implemented, close a round or change release timing.
 
+**12 October scoped-work follow-up:** the
+[Bun/docs/table interview](2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md)
+settles complete Deno withdrawal, full Node-tier coverage under Bun (shared
+runner-neutral adaptation allowed) and npm-only alpha publication, with JSR
+reconsidered post-alpha. It also scopes a prose/API parity pass for 46 and a
+benchmark-only pass for 84. B2's API decision still follows the measurements;
+R5's older native-runner acceptance alternatives are superseded for round 99.
+No work or review is claimed complete by these decisions.
+
 Ask the maintainer one decision at a time. Keep settled choices settled. A
 benchmark gate requires evidence before choosing; a manual review requires the
 maintainer to inspect the result. Ordinary implementation detail can be resolved

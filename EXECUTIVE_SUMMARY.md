@@ -5,7 +5,14 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-10-12 for SVG interview decisions and WebGL2 sequencing review; latest implementation remains rounds 80, 82, 146, 147 and 148.
+- **Last updated**: 2026-10-12 for SVG/WebGL2 planning and the Bun/docs/table interview; latest implementation remains rounds 80, 82, 146, 147 and 148.
+
+The [12 October interview](plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md) scopes three next work streams:
+complete Bun verification with Deno support removed and JSR reconsidered after
+alpha; a v3-comparable Markdown prose/API documentation pass without demos,
+with TODO_PROVISIONAL notes for specified provisional behavior and holes; and
+visible-window/whole-table benchmarks at 10k, 100k and 1m rows without adding
+public API. These are planning decisions; implementation status is unchanged.
 
 Round 148 adds manual miniature compounds. Collapse scales current descendant
 positions and effective sizes while leaving original nodes and edges live;

@@ -174,7 +174,8 @@
   {"data":{"id":"148","label":"148 Miniature compounds: actual positions, reversible size scaling","kind":"landed","seq":190}},
   {"data":{"id":"2026-10-06-01","label":"2026-10-06-01 Alpha contract interview","kind":"note","seq":191}},
   {"data":{"id":"2026-10-08-01","label":"2026-10-08-01 Annotation use cases, placement and overlapping membership","kind":"note","seq":192}},
-  {"data":{"id":"2026-10-11-01","label":"2026-10-11-01 Alpha interview follow-up questions and review gates","kind":"note","seq":193}}
+  {"data":{"id":"2026-10-11-01","label":"2026-10-11-01 Alpha interview follow-up questions and review gates","kind":"note","seq":193}},
+  {"data":{"id":"2026-10-12-01","label":"2026-10-12-01 Bun, documentation and table benchmark interview","kind":"note","seq":194}}
 ],"edges":[
   {"data":{"id":"2026-07-22-01->2026-07-22-02","source":"2026-07-22-01","target":"2026-07-22-02","family":"2026-07-22-01"}},
   {"data":{"id":"2026-07-22-01->2026-07-22-03","source":"2026-07-22-01","target":"2026-07-22-03","family":"2026-07-22-01"}},
@@ -618,5 +619,9 @@
   {"data":{"id":"2026-10-06-01->2026-10-08-01","source":"2026-10-06-01","target":"2026-10-08-01","family":"2026-10-06-01 82"}},
   {"data":{"id":"82->2026-10-08-01","source":"82","target":"2026-10-08-01","family":"2026-10-06-01 82"}},
   {"data":{"id":"2026-10-06-01->2026-10-11-01","source":"2026-10-06-01","target":"2026-10-11-01","family":"2026-10-06-01 2026-10-08-01"}},
-  {"data":{"id":"2026-10-08-01->2026-10-11-01","source":"2026-10-08-01","target":"2026-10-11-01","family":"2026-10-06-01 2026-10-08-01"}}
+  {"data":{"id":"2026-10-08-01->2026-10-11-01","source":"2026-10-08-01","target":"2026-10-11-01","family":"2026-10-06-01 2026-10-08-01"}},
+  {"data":{"id":"2026-10-11-01->2026-10-12-01","source":"2026-10-11-01","target":"2026-10-12-01","family":"2026-10-11-01 46 84 99"}},
+  {"data":{"id":"46->2026-10-12-01","source":"46","target":"2026-10-12-01","family":"2026-10-11-01 46 84 99"}},
+  {"data":{"id":"84->2026-10-12-01","source":"84","target":"2026-10-12-01","family":"2026-10-11-01 46 84 99"}},
+  {"data":{"id":"99->2026-10-12-01","source":"99","target":"2026-10-12-01","family":"2026-10-11-01 46 84 99"}}
 ]}}

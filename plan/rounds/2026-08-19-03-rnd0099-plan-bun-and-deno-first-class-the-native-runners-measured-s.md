@@ -2,6 +2,15 @@
 
 **Depends on:** 65, 98, 2026-08-19-01
 
+**12 October scope replacement:** drop Deno completely, including existing
+runtime/GPU tests, CI and support claims; keep Bun. Require the complete Node
+verification tier under Bun (public specs, modules/packaging, soak and throws),
+with test-count parity and preserved Node coverage. Shared runner-neutral
+refactoring is allowed; smoke-only fallback no longer closes this round.
+Browser tests remain Playwright. Alpha publication is npm-only; reconsider JSR
+post-alpha. Revise the pass plan to this contract before implementation. The
+[interview](2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md) supersedes the historical Deno, test:js-only and JSR plans below.
+
 ### 99.1 — the full suite under the native runners, measured
 
 Can Bun and Deno run the real Node tier — `node:test` + chai +

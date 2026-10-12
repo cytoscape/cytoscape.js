@@ -36,6 +36,13 @@ the scope it names.  None of them is a statement about the distance to
 4.0, and "Follow-up hooks" at the end is the closest thing here to an
 honest inventory — an inventory, not an estimate.
 
+**12 October planning update:** the [scoped-work interview](../plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md)
+requires full-tier Bun coverage and complete Deno withdrawal in round 99, with
+JSR reconsidered post-alpha; scopes round 46 to a v3-comparable prose/API pass
+with TODO_PROVISIONAL notes; and scopes round 84 to table benchmarks at 10k,
+100k and 1m rows. These changes are planned, not implemented runtime or docs
+coverage changes.
+
 ## Alpha decisions and implementation status (3 October)
 
 The alpha interview in the plan record scoped this batch. Rounds 80, 82,

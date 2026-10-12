@@ -102,6 +102,12 @@ which requires further review. Older ledger alternatives remain historical when
 an explicit interview answer supersedes them; the register identifies what is
 actually unanswered. No new implementation or release scope is implied.
 
+**12 October scoped-work interview:** [Bun, documentation and table benchmarks](plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md)
+replaces round 99's Deno/native-runner scope with complete Bun-tier coverage and
+Deno withdrawal, defers JSR until post-alpha reconsideration, and scopes partial
+passes for 46 (v3-comparable prose/API docs, no demos) and 84 (benchmarks only).
+These are decisions, not implementation or round closure.
+
 ## Process (applies to all work under this plan)
 
 - **Isolated commits as you go.**  Every item lands as its own

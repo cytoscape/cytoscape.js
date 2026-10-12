@@ -2,6 +2,14 @@
 
 **Depends on:** 2026-08-14-02
 
+**12 October scoped pass:** benchmark visible rectangular reads, scrolling,
+distant jumps, dirty updates, snapshot construction and allocations against
+benchmark-only column prototypes, with whole-table sort/filter/facet context.
+Use 10k, 100k and 1m rows, mixed/sparse data and sparse/bulk updates. Deliver
+measurements and a recommendation without new public API or a new performance
+pass/fail budget. Internal filtering changes are separate from this pass.
+The [interview](2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md) scopes this work; API decisions and round closure remain follow-up.
+
 Later specification decisions are recorded in the
 [alpha contract interview](2026-10-06-01-rnd0000-note-alpha-contract-interview.md)
 and supersede conflicting alternatives below. Remaining questions and review

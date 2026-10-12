@@ -2,6 +2,14 @@
 
 **Depends on:** 45, 2026-08-04-02
 
+**12 October scoped pass:** audit v3 Markdown prose and API coverage, write
+comparable v4 prose/API documentation and a detailed follow-up plan. Cover at
+least the same content; demos are excluded from this pass. Document only
+implemented or already specified provisional behavior, marking provisional
+claims and specification holes with TODO_PROVISIONAL plus source references.
+Flag missing v3 APIs without a clear migration/removal decision. This pass does
+not close round 46. The [interview](2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md) is authoritative over the older full-site scope below.
+
 - Prose sections written by hand (the generator covers members, not
   narrative): introduction, getting started, loading (columnar + the
   wire format), styling with mappers and the sheet, events + the

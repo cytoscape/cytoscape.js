@@ -23,7 +23,7 @@ A round can land with an item held open; the round file says which.
 
 ## The sections
 
-193 sections.
+194 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -220,3 +220,4 @@ A round can land with an item held open; the round file says which.
 | 191 | — | 2026-10-06 | note | [Alpha contract interview](rounds/2026-10-06-01-rnd0000-note-alpha-contract-interview.md) |
 | 192 | — | 2026-10-08 | note | [Annotation use cases, placement and overlapping membership](rounds/2026-10-08-01-rnd0000-note-annotation-use-cases-and-overlapping-membership.md) |
 | 193 | — | 2026-10-11 | note | [Alpha interview follow-up questions and review gates](rounds/2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md) |
+| 194 | — | 2026-10-12 | note | [Bun, documentation and table benchmark interview](rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md) |

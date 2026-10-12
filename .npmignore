@@ -35,6 +35,7 @@ tsconfig.types-test.json
 *.tsbuildinfo
 
 # repo docs that are not the package's
+/documentation
 PLAN.md
 plan
 docs

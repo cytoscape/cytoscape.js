@@ -24,6 +24,12 @@ that compile and then behave differently.
 
 ### Added
 
+- **v4 documentation sources** (round 46 scoped pass): all twelve non-demo
+  v3 prose sections have v4 equivalents, with loading, raster-export and
+  provisional-contract pages plus style/layout catalogs. The API audit
+  accounts for every v3 function name and flags five unresolved dispositions.
+  Site integration, demos and publication remain follow-up work.
+
 - **A price for the gradient path** (round 76.1).  `background-fill` and
   `line-fill` gradients landed in round 13 C2 as v3's own props (#2091,
   #3407 and #2207 are answered by them — v3 has had both since

@@ -27,7 +27,8 @@ The documentation agent ran verify and test:throws:quiet successfully, then
 regenerated the public declarations with build:types. docs:api and the
 round-46 inventory regeneration succeeded: 352 documented entries in 48
 sections and seven namespaces. Representative headless prose examples were
-also executed and corrected to use the supported data(label) string mapping.
+also executed, including the supported data(label) string mapping. The bare
+{ data: key } label passthrough remains supported as well.
 
 The full Node gate is **not recorded green here**. Its module tier exposed
 in-progress Deno/Bun script and documentation-link integration failures, plus

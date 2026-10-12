@@ -217,6 +217,18 @@ var networks = {
     layout: { name: 'flow' },
     note: "Reactome's human Immune System pathway hierarchy (R-HSA-168256, CC0): 227 pathways over 245 hasEvent relations — a true DAG with 10 multi-parent joins. Band colour is hierarchy depth, so colour rows restate what the ranks claim. Taxi edges.",
   },
+  'plan-deps': {
+    // the development record's dependency graph — one node per round
+    // (sub-rounds folded in) or unnumbered note, an edge per
+    // `**Depends on:**` line (regenerate: npm run plan:index)
+    desc: 'Plan dependencies (flow, taxi tracks)',
+    nodes: 176,
+    edges: 443,
+    url: 'network-plan.json',
+    labelKey: 'label',
+    layout: { name: 'flow', nodeDimensionsIncludeLabels: true },
+    note: "This repo's own development record as a dependency DAG: a node per round (sub-rounds folded in) or unnumbered note, an edge from each prerequisite to the section that built on it, read off every section's `**Depends on:**` line. Greek-gods styling turned downward — `taxi-track: family` gives each dependent one trunk from its prerequisite set, dark2 colours the trunks. Dark nodes landed, hollow ones are planned, diamonds are notes.",
+  },
   'workflow-dag': {
     // round 112: the flow layout's manual verification scene
     desc: 'Workflow DAG (flow layout)',

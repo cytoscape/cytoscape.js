@@ -761,6 +761,40 @@ var styles = (function () {
     };
   }
 
+  // The plan-deps scene: the Greek-gods picture turned downward.  One
+  // trunk per dependent (an edge's `family` is its target's whole
+  // prerequisite set), dark2 per family, the background casing at the
+  // crossings; the node says the round's state — landed filled, planned
+  // hollow, a note a diamond — and the label hangs right, wrapped, so the
+  // flow's label-aware extents keep it off the neighbouring column.
+  function planDeps(elements, def) {
+    var sheet = greekGods(elements, def);
+
+    return Object.assign({}, sheet, {
+      nodes: Object.assign({}, sheet.nodes, {
+        shape: {
+          case: [{ when: { data: 'kind', eq: 'note' }, then: 'diamond' }],
+          else: 'ellipse',
+        },
+        'background-color': withSelected({
+          case: [{ when: { data: 'kind', eq: 'planned' }, then: '#ffffff' }],
+          else: '#4a5568',
+        }),
+        'border-width': 2,
+        'border-color': selectable('#4a5568'),
+        label: { data: 'label' },
+        'text-wrap': 'wrap',
+        'text-max-width': 160,
+      }),
+      edges: Object.assign({}, sheet.edges, {
+        'taxi-direction': 'downward',
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': sheet.edges['line-color'],
+        'arrow-scale': 0.8,
+      }),
+    });
+  }
+
   // The v3 debug fixture: ten nodes, deliberately awkward.  Styled so the
   // awkward parts are visible — nesting depth by parent tint, the long label
   // wrapped rather than overflowing.
@@ -1217,6 +1251,7 @@ var styles = (function () {
     'workflow-dag': workflowDag,
     'workflow-dag-clustered': workflowDag,
     'greek-gods': greekGods,
+    'plan-deps': planDeps,
     'npm-deps': workflowDag,
     reactome: workflowDag,
     'genemania-default': genemania,

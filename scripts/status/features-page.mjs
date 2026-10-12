@@ -142,11 +142,15 @@ export function featuresPage(rows, { sha = null, pageFor = () => null } = {}) {
   const reference = (row) => {
     const [file, line] = row.Reference.split(':');
     const local = pageFor(file);
+    const external =
+      local != null && /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(local);
     const href =
-      local != null
-        ? `/${local}`
-        : `https://github.com/cytoscape/cytoscape.js/blob/${sha ?? 'v4'}/${file}${line ? `#L${line}` : ''}`;
-    return `<a href="${esc(href)}" title="${esc(row.Reference)}">${local != null ? 'Record' : 'Source'}</a>`;
+      local == null
+        ? `https://github.com/cytoscape/cytoscape.js/blob/${sha ?? 'v4'}/${file}${line ? `#L${line}` : ''}`
+        : external
+          ? `${local}${line ? `#L${line}` : ''}`
+          : `/${local}`;
+    return `<a href="${esc(href)}" title="${esc(row.Reference)}">${local != null && !external ? 'Record' : 'Source'}</a>`;
   };
   return `<h1>V4 feature status</h1>
   <p class="lede">Public APIs, style properties, layouts and capabilities, including v3 gaps and replacements. <strong>V4 is unreleased.</strong> Implemented means available in this prototype, not release-ready.</p>

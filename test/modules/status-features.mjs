@@ -123,6 +123,15 @@ describe('feature status page', () => {
     expect(html).to.include('aria-current="page"');
     expect(html).to.include('/design.html');
     expect(html).to.include('src/core.mts#L');
+    expect(html).to.include(
+      'href="https://github.com/cytoscape/cytoscape.js/blob/v4/documentation/api-coverage.md#L142" title="documentation/api-coverage.md:142">Source</a>',
+    );
+    expect(html).not.to.include(
+      'href="/https://github.com/cytoscape/cytoscape.js/blob/v4/documentation/api-coverage.md',
+    );
+    expect(html).to.include(
+      'href="/migrating.html" title="MIGRATING.md">Record</a>',
+    );
     expect(text('index.html')).to.include('href="/features.html"');
     expect(text('summary.html')).to.include('href="/features.html"');
   });

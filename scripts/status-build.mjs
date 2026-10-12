@@ -198,7 +198,7 @@ export function buildPlan({
   const parts = [];
   const state = repoState(root, { now, gzip });
   const sha = state.commit.pushed ? state.commit.sha : null;
-  const pageFor = documentLinks(root, DOCUMENTS);
+  const pageFor = documentLinks(root, DOCUMENTS, sha);
   const mdCtx = {
     root,
     sha,

@@ -69,9 +69,11 @@ broken source-path control failed as expected. Status-site passed 54/54 with
 the spec reporter and isolation disabled. `npm run -s status` built 149 files
 (57.0 MiB); the generated status index opened in headless Chromium and its
 title, heading and navigation were verified. The existing server on port
-3335 pointed to an older preview, so the generated file URL was used. The
-preview reports a stale bundle because runtime bundles were not rebuilt in
-this docs pass.
+3335 pointed to an older preview, so the generated site was served only on
+loopback port 3336 and opened in headless Chromium. The index, Summary and
+Record pages loaded, and the Record page's documentation and table-view links
+resolved to their expected v4 repository-source URLs. The preview reports a
+stale bundle because runtime bundles were not rebuilt in this docs pass.
 
 This is a source-content milestone, not round closure. Template integration,
 demo work, complete site publication, Bun full-tier validation, final

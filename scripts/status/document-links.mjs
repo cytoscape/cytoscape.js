@@ -6,7 +6,7 @@ import { Marked } from 'marked';
 import { readSections, ROUNDS_DIR } from '../plan-record.mjs';
 import { slugify } from './markdown.mjs';
 
-export function documentLinks(root, documents) {
+export function documentLinks(root, documents, sha = null) {
   const pages = new Map(documents.map((doc) => [doc.file, doc.to]));
   const rounds = ROUNDS_DIR.replaceAll('\\', '/');
   const seen = new Map();
@@ -53,6 +53,34 @@ export function documentLinks(root, documents) {
     for (const candidate of candidates) {
       const page = pages.get(candidate);
       if (page != null) return fragment ? page.split('#')[0] + fragment : page;
+
+      const documentationSource =
+        candidate.startsWith('documentation/') && candidate.endsWith('.md');
+      const publishedTableSource =
+        candidate.startsWith('benchmark/published/table-view/') &&
+        /\.(md|json)$/.test(candidate);
+
+      if (
+        (documentationSource || publishedTableSource) &&
+        existsSync(join(root, candidate))
+      ) {
+        // The status preview does not publish the full documentation tree.
+        // Keep links from the development record useful by pointing at the
+        // corresponding repository source, pinned to the built commit when
+        // it is known and otherwise using the v4 development branch.
+        const ref = sha ?? 'v4';
+        const path = candidate
+          .split('/')
+          .map((part) => encodeURIComponent(part))
+          .join('/');
+        const source = [
+          'https://github.com/cytoscape/cytoscape.js/blob',
+          ref,
+          path,
+        ].join('/');
+
+        return fragment ? source + fragment : source;
+      }
     }
 
     return null;

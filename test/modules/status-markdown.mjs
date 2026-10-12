@@ -314,6 +314,70 @@ describe('status markdown: links and structure', () => {
     }
   });
 
+  it('links documentation sources to the built repository revision', () => {
+    const documents = [{ file: 'PLAN.md', to: 'plan.html' }];
+    const links = documentLinks(ROOT, documents, 'abc123');
+    const href = '../../documentation/api-coverage.md#prose-coverage-matrix';
+    const expected = [
+      'https://github.com/cytoscape/cytoscape.js/blob/abc123',
+      'documentation/api-coverage.md#prose-coverage-matrix',
+    ].join('/');
+
+    expect(links(href, 'PLAN.md')).to.equal(expected);
+
+    const { html } = renderMarkdown(`[coverage](${href})`, {
+      root: ROOT,
+      pageFor: (path) => links(path, 'PLAN.md'),
+    });
+
+    expect(html).to.include(`href="${expected}" rel="noreferrer"`);
+
+    const fallback = documentLinks(ROOT, documents);
+    expect(fallback(href, 'PLAN.md')).to.equal(
+      expected.replace('/blob/abc123/', '/blob/v4/'),
+    );
+    const missing = '../../documentation/not-a-page.md';
+
+    expect(fallback(missing, 'PLAN.md')).to.equal(null);
+
+    const { html: missingHtml } = renderMarkdown(`[missing](${missing})`, {
+      root: ROOT,
+      pageFor: (path) => fallback(path, 'PLAN.md'),
+    });
+
+    expect(missingHtml).to.include(`href="${missing}"`);
+
+    const publishedDocuments = [
+      ...documents,
+      { file: 'documentation/api-coverage.md', to: 'coverage.html' },
+    ];
+    const published = documentLinks(ROOT, publishedDocuments, 'abc123');
+
+    expect(published(href, 'PLAN.md')).to.equal(
+      'coverage.html#prose-coverage-matrix',
+    );
+
+    const tableReadme =
+      '../../benchmark/published/table-view/README.md#measurements';
+    const tableJson =
+      '../../benchmark/published/table-view/round84-10k-run1.json';
+
+    expect(links(tableReadme, 'PLAN.md')).to.equal(
+      'https://github.com/cytoscape/cytoscape.js/blob/abc123/' +
+        'benchmark/published/table-view/README.md#measurements',
+    );
+    expect(links(tableJson, 'PLAN.md')).to.equal(
+      'https://github.com/cytoscape/cytoscape.js/blob/abc123/' +
+        'benchmark/published/table-view/round84-10k-run1.json',
+    );
+    expect(
+      links(
+        '../../benchmark/published/table-view/not-published.json',
+        'PLAN.md',
+      ),
+    ).to.equal(null);
+  });
+
   it("rewrites a relative .md link to this site's page", () => {
     const { html } = renderMarkdown(FIXTURE, ctx());
 

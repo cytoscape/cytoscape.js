@@ -382,3 +382,184 @@ the range bound has a number behind it.
 The plan's open questions — the surface's naming, the event payload,
 the counter, `adjacentTo` nodes-only — wait on item 91; the counter
 question is answered (on demand) whichever way it goes.
+
+### 12 October scoped pass: rectangular reads and dirty refresh
+
+**The scoped benchmark pass is complete; round 84 remains planned.** This
+measurement adds visible-window scrolling and jumps, dirty updates, snapshot
+construction/refresh and allocation evidence at 10k, 100k and 1m rows. It
+does not implement a column API or internal filtering changes, and it sets no
+performance pass/fail threshold.
+
+#### Method and controls
+
+Each fixture has N nodes and N edges. The seven data fields are the same as
+the earlier run: unique `label`, numeric `score` and `rank`, 20-value `group`,
+5-value `region`, mixed boolean `active`, and `note` present on every tenth
+row. The visible rectangle is 60 rows × 8 columns, including `id`. Each
+scrolling pattern has 32 viewports: sequential starts advance one row at a
+time; seeded jumps are at least one viewport apart. The final row stays out
+of those traces so the separate epoch-invalidation fixture can use it.
+
+The public paths are `data( k )` reads per cell and `data()` once per row.
+The benchmark-only prototypes read the private store columns and compare a
+cached whole-table snapshot, a 60-row snapshot that copies the full string
+dictionaries, and a 60-row snapshot that constructs local dictionaries from
+only the window's strings. The cached snapshot is measured separately from
+building it. Dirty-update paths write the same unique `score` rows in a
+batch, collect the same `data` events, return row/value arrays to a consumer,
+and compare public `data( score )` reads against refreshing only those rows
+in the prototype snapshot.
+
+Controls run outside the timed operations. Every snapshot variant is checked
+cell by cell against public `data( k )` on all 64 scroll viewports; an altered
+string dictionary must fail that check. A sparse-column probe keeps a missing
+value as `undefined` and distinguishes it from `NaN` in a mixed column.
+Every sort compares all sorted values, allowing only tie identity to differ.
+Filter spellings compare their exact ordered row identities. Dirty updates
+check before and after values, event counts, returned rows and values, and
+whether the whole-table snapshot epoch is stale or refreshed. All nine
+reportable processes passed these controls.
+
+The commands were `mise exec -- npm run -s build` (Rolldown 1.1.5), then
+three independent serial Node processes at each size, for example:
+
+```sh
+mise exec -- node --expose-gc benchmark/table-view.mjs \
+  --nodes 10000 --repeat 5 \
+  --json benchmark/published/table-view/round84-10k-run1.json
+```
+
+The same command was run with `--nodes 100000` and `--nodes 1000000`, and
+with `run1`, `run2`, and `run3` output paths for each size. Each operation has
+one warm-up and five measured samples; the tables below report the median of
+the five samples in each process, then the median and range across the three
+independent process medians. A trace records its total and each viewport
+separately. Per-window p50, p95 and range pool 480 viewports (32 × 5 × 3).
+Each JSON retains every raw timing sample and all 160 window samples per
+trace per process.
+
+Machine: Intel Core i9-9900K @ 3.60 GHz, 16 logical CPUs, Linux x64
+(`7.1.10-100.fc43.x86_64`), 63 GiB RAM, Node v24.18.0 (V8
+13.6.233.17-node.50). The benchmark used the built headless bundle. All runs
+used the same harness, source and bundle fingerprints; the fingerprints and
+exact process command are in each raw JSON. Node could not spawn `git` in
+this sandbox, so `gitHead: null` is preserved as captured. After the serial
+run set, the shell verified head
+`736b99302ca45822746dfb278dc6a8fe4b9258fa`; `externallyVerifiedGitHead` and
+its provenance record that root confirmed no commits during the timing
+window. The harness remained uncommitted, and its SHA-256 plus source/bundle
+hashes identify the measured instrument and subject.
+
+The nine raw artifacts are [10k run 1](../../benchmark/published/table-view/round84-10k-run1.json),
+[10k run 2](../../benchmark/published/table-view/round84-10k-run2.json),
+[10k run 3](../../benchmark/published/table-view/round84-10k-run3.json),
+[100k run 1](../../benchmark/published/table-view/round84-100k-run1.json),
+[100k run 2](../../benchmark/published/table-view/round84-100k-run2.json),
+[100k run 3](../../benchmark/published/table-view/round84-100k-run3.json),
+[1m run 1](../../benchmark/published/table-view/round84-1m-run1.json),
+[1m run 2](../../benchmark/published/table-view/round84-1m-run2.json), and
+[1m run 3](../../benchmark/published/table-view/round84-1m-run3.json). The
+[artifact README](../../benchmark/published/table-view/README.md) explains
+their standalone raw-data format. They are not added to the standard
+published benchmark index or report schema.
+
+#### Grid and snapshot costs
+
+Times below are in milliseconds except the final viewport column. Each cell
+is `median [range]` across the three process medians.
+
+| Rows | Cold full `data()` pull | Warm full `data()` pull | Eight `data( k )` arrays | Eight-column snapshot | Snapshot refresh after epoch change | One 60 × 8 view: per-cell / cold row-object |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10k | 7.06 [7.02–7.12] | 0.289 [0.286–0.292] | 1.98 [1.98–2.15] | 1.49 [1.45–1.50] | 0.584 [0.569–0.595] | 104 / 34.5 µs |
+| 100k | 64.8 [63.9–67.2] | 2.93 [2.73–3.16] | 26.3 [25.9–26.6] | 5.72 [5.56–5.88] | 5.43 [5.38–5.45] | 106 / 33.9 µs |
+| 1m | 655 [646–665] | 96.1 [91.8–114] | 923 [915–955] | 73.8 [63.8–89.3] | 82.8 [65.5–83.3] | 114 / 33.4 µs |
+
+The full snapshot's retained materialization grows with the table. At 1m it
+contains 32,000,000 typed bytes, 2,000,000 JavaScript array slots and
+1,000,062 string-dictionary entries; the post-GC retained estimate is about
+53.4 MiB. A 60-row full-dictionary snapshot still copies 1,000,062
+dictionary entries at 1m and takes 3.21 ms [3.17–3.37] per window, with
+about 7.63 MiB retained. The compact 60-row snapshot has 91 local dictionary
+entries and 1,920 typed bytes; it takes 43.3 µs [35.8–43.4] and retains
+about 0.01 MiB. Retained bytes are post-GC estimates with the result held;
+the `heapUsed + arrayBuffers` delta before GC is noisy live-memory growth,
+not total allocation. The raw files preserve both estimates and the typed
+payload, array-slot and dictionary counts so short-lived allocation is not
+mistaken for zero churn.
+
+#### Scrolling and distant jumps
+
+Each table cell shows total time for a 32-viewport trace, the range across
+three process medians, then pooled per-viewport p50/p95 and min–max. The
+traces read 15,360 cells each. Values are milliseconds for total traces and
+microseconds for viewports unless shown otherwise.
+
+| Sequential (+1 row) | 10k | 100k | 1m |
+| --- | --- | --- | --- |
+| Public `data( k )` per cell | 0.840 [0.839–0.889]; 24.8/37.8; 13.0–53.6 | 0.656 [0.642–0.671]; 19.7/22.2; 14.6–44.5 | 0.671 [0.665–0.676]; 19.9/23.0; 14.7–51.1 |
+| Public cached `data()` row objects | 0.319 [0.318–0.330]; 9.4/11.4; 8.7–48.6 | 0.290 [0.290–0.292]; 8.8/9.1; 8.7–19.6 | 0.290 [0.290–0.294]; 8.9/9.4; 8.7–20.3 |
+| Cached full-table snapshot | 0.722 [0.722–0.738]; 22.2/25.6; 9.2–99.2 | 0.497 [0.493–0.504]; 14.9/20.7; 14.6–32.2 | 0.486 [0.485–0.487]; 14.8/15.7; 14.5–33.7 |
+| Build full-dictionary window, then read | 0.763 [0.743–0.765]; 19.3/45.3; 17.6–369 µs | 9.56 [9.49–9.60]; 294/322; 275 µs–4.03 ms | 104 [104–107]; 2.93/7.41 ms; 2.74–23.3 ms |
+| Build compact-dictionary window, then read | 0.725 [0.723–0.730]; 21.8/25.4; 20.9–38.8 | 0.721 [0.718–0.731]; 22.0/23.4; 20.9–73.0 | 0.749 [0.748–0.775]; 22.2/33.2; 20.8–74.4 |
+
+| Seeded distant jumps | 10k | 100k | 1m |
+| --- | --- | --- | --- |
+| Public `data( k )` per cell | 0.442 [0.433–0.475]; 13.5/14.6; 13.0–64.6 | 0.491 [0.490–0.512]; 15.1/16.1; 14.7–72.5 | 0.531 [0.517–0.582]; 16.3/26.5; 15.2–52.4 |
+| Public cached `data()` row objects | 0.275 [0.273–0.280]; 8.3/11.6; 8.1–17.2 | 0.297 [0.293–0.299]; 8.9/13.1; 8.7–19.1 | 0.313 [0.303–0.318]; 9.6/14.8; 8.8–20.8 |
+| Cached full-table snapshot | 0.304 [0.303–0.306]; 9.3/10.6; 9.2–18.8 | 0.305 [0.303–0.308]; 9.4/9.5; 9.2–17.6 | 0.307 [0.298–0.309]; 9.3/10.6; 9.0–18.0 |
+| Build full-dictionary window, then read | 0.592 [0.586–0.624]; 18.1/28.3; 16.9–40.0 | 9.59 [9.59–11.5]; 295/368; 278 µs–4.31 ms | 108 [106–108]; 2.97/7.78 ms; 2.75–8.49 ms |
+| Build compact-dictionary window, then read | 0.714 [0.712–0.722]; 22.1/26.9; 21.2–430 µs | 0.719 [0.709–0.735]; 22.0/26.3; 21.1–39.0 | 0.747 [0.736–0.758]; 22.5/28.5; 21.0–49.1 |
+
+The full-dictionary window path exposes the dictionary-copy cost: its 32-view
+trace rises from 0.76 ms at 10k to 9.6 ms at 100k and 104–108 ms at 1m.
+The compact local-dictionary variant removes that O(N) copy and stays near
+0.72–0.75 ms per trace, but is slightly slower than public per-cell reads
+and slower than warm public row-object reads. A cached full snapshot is
+faster than per-cell reads by only about 0.16–0.22 ms per 32-window trace at
+100k–1m, after paying a 5.4–82.8 ms refresh on a store write. The complete
+pooled ranges, including occasional outlier windows, remain in the raw files.
+
+#### Dirty updates and whole-table context
+
+The dirty workload has the same batch writes, event collection and consumer
+result arrays for both paths. Times are `public path / prototype dirty-cell
+refresh`, each as median [range] across three processes.
+
+| Changed rows | 10k table | 100k table | 1m table |
+| ---: | ---: | ---: | ---: |
+| 1 | 128 [127–131] / 83.6 [82.6–98.5] µs | 131 [129–166] / 74.7 [73.9–79.9] µs | 156 [146–205] / 86.3 [84.8–88.4] µs |
+| N/1000 | 10: 215 [205–292] / 200 [199–206] µs | 100: 1.50 [1.49–1.72] / 0.836 [0.821–0.901] ms | 1,000: 10.7 [8.30–11.4] / 8.02 [7.91–8.65] ms |
+| N/100 | 100: 0.848 [0.826–0.933] / 0.763 [0.751–0.800] ms | 1,000: 6.56 [6.46–6.69] / 3.28 [3.22–3.52] ms | 10,000: 60.7 [60.1–64.4] / 59.3 [59.2–59.7] ms |
+| N/10 | 1,000: 6.20 [6.12–6.47] / 3.83 [3.74–4.00] ms | 10,000: 50.4 [49.6–52.2] / 47.1 [44.9–49.8] ms | 100,000: 588 [587–606] / 591 [583–595] ms |
+
+Whole-table operations are context, not an internal-filtering proposal. At
+1m, score sorting took 3.51 s through a comparator, 541 ms after extracting
+the column, and 353 ms for a one-column snapshot plus index sort. The
+high-cardinality label snapshot sort was slower than extracted sorting
+(2.07 s vs 1.94 s); a group facet was 136 ms through a `Map` vs 8.64 ms as a
+dict-index histogram, while the label facet was 461 ms vs 280 ms. The public
+whole-table `group = g3` predicate took 127 ms, compared with 5.89 ms for
+prototype row indices and 17.3 ms including the internal collection build.
+Numeric range and degree controls are also captured at all three sizes in
+the raw files. Filter implementations remain separate future work.
+
+#### Recommendation
+
+**Do not add a public column-view API for the measured scrolling use case.**
+The public 60×8 read is about 0.03–0.11 ms for one view, and a 32-view trace
+is 0.27–0.84 ms through current APIs across these sizes. A window-local
+dictionary avoids copying the full string dictionary but does not beat the
+public paths in this fixture. A cached whole-table snapshot buys a small
+per-trace improvement over per-cell reads, but every store write forces a
+5–83 ms rebuild and its retained footprint reaches about 53 MiB at 1m. A
+full-dictionary per-window snapshot is especially unsuitable for scrolling
+because each small view copies the table-wide dictionary.
+
+This does not rule out a consumer with a measured, repeated whole-table
+workload and a specific memory budget. The sort/facet/filter context shows
+that some one-shot operations can be costly at 1m, while high-cardinality
+string paths do not uniformly benefit from dictionary operations. Such a
+case should be measured end to end before choosing a public snapshot shape or
+an internal optimization. This scoped pass leaves the earlier API questions,
+round status and separate internal filtering work open.

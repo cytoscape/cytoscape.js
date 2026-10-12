@@ -14,6 +14,9 @@ jobs:
     - name: Install dependencies
       run: npm ci
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      # playwright.config.js only defines a chromium project, so skip
+      # downloading firefox/webkit and their system packages.
+      # Keep this in sync if more projects are enabled there.
+      run: npx playwright install --with-deps chromium
     - name: Run tests
       run: npm test

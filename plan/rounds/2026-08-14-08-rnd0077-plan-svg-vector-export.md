@@ -9,6 +9,14 @@ requirements are consolidated in the
 [11 October register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md).
 These pointers do not change this round's implementation status.
 
+**12 October follow-up:** the alpha interview's "SVG interview decisions
+and font considerations" section records option names, result modes, empty
+exports and the model-pixel callback. A good default estimate is required;
+baked-in ASCII metrics, font stacks, kerning and SVG text-spacing fidelity
+remain considerations. Application-owned font-parser adapters are planned
+without a core dependency. SVG implementation is parked while WebGL2 is
+considered; do not treat the older alternatives below as newer decisions.
+
 **Alpha interview update (2026-10-03):** consume round 146's canonical tee
 geometry and hollow compounds; round 80's new charts and resolved scales;
 round 82's shared convex/concave parent contours and label-sizing policy;

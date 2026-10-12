@@ -202,7 +202,7 @@ Category,Feature,Status,Comments,Reference
 "API","cy.stop","Implemented","Stop every running viewport animation (round 21: no queue — the v3 clearQueue argument is gone).","src/core.mts:1340"
 "API","cy.style","Partial","Get or replace the grouped declarative stylesheet. Selector blocks, CSS strings and functions are excluded; replacing the sheet also replaces bypasses. A replace re-writes only what the new sheet changed (round 133).","src/core.mts:410"
 "API","cy.styleEnabled","Implemented","Always true: v4 has no style-disabled mode, since the columnar model derives geometry from stored style channels rather than treating style as an optional layer. Kept so v3 code that checks it works.","src/core.mts:2096"
-"API","cy.svg","Planned","Promise-based vector export is scoped in round 77; no current public method.","plan/rounds/2026-08-14-08-rnd0077-plan-svg-vector-export.md"
+"API","cy.svg","Planned","Promise-based vector export is scoped in round 77; no current public method. The 12 October interview settles imageMode/resourceTimeout, string/base64uri/base64/blob output, viewport default, warning envelope and model-pixel text metrics. Default estimates and kerning fidelity remain to resolve; implementation parked while WebGL2 is considered.","plan/rounds/2026-08-14-08-rnd0077-plan-svg-vector-export.md"
 "API","cy.tapholdDuration","Implemented","Unmoved-press duration before 'taphold' fires, ms (default 500 — v3's constant, configurable in v4).","src/core.mts:2031"
 "API","cy.touchTapThreshold","Implemented","Css px a touch press may move and still count as a tap (v3 parity; default 8).","src/core.mts:2007"
 "API","cy.trigger","Implemented","Alias of cy.emit. Emit an event on the core.","src/core.mts:1180"

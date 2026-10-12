@@ -188,15 +188,20 @@ must not be confused with an empty support.
   and fallback API, atlas budget/reclamation/exhaustion limits, and stress fixtures.
   Pinned local Noto test families, shared font face and implementation timing
   (design pre-alpha, build during alpha) are already decided.
-- **L4 — Export option/report schema.** Exact image href toggle, timeout option,
-  warning codes/fields and output-mode typings, headless advanceOf callback
-  contract and empty full-export dimension requirements. Decisions already fix
-  default embedding, 10-second shared wait, AbortSignal, { output, warnings },
-  includeSelection, animation limitations and recoverable-resource behavior.
+- **L4 — Export option/report schema.** The 12 October interview settles
+  imageMode, resourceTimeout, the warning envelope, SVG output modes/default,
+  viewport default, non-rejecting empty full exports and a model-pixel
+  advanceOf callback. Exact warning codes/resource type, output overloads,
+  zero-sized dimension handling and mounted callback behavior remain open.
+  Define a good default estimate; ASCII metrics/reference font, font stack,
+  kerning or richer metrics and approximation warnings remain considerations.
+  Application-owned Fontkit/opentype.js adapters add no core dependency.
 - **L5 — Export coverage/review.** Specify golden/fidelity tolerances for drawn
   features, CJK fonts, annotations and active bundles; verify recoverable omissions
-  and cancellation/resource cleanup. Headless SVG and external resvg/PDF recipes
-  do not imply headless core PNG or an added runtime dependency.
+  and cancellation/resource cleanup. Decide SVG kerning/ligature spacing policy
+  relative to current per-code-point labels. SVG implementation is parked while
+  WebGL2 is considered. Headless SVG and external resvg/PDF recipes do not imply
+  headless core PNG or an added runtime dependency.
 - **L6 — Dawn go/no-go (round 78).** Execute the approved pre-alpha investigation
   against its existing criteria; record the result before any adoption decision.
 
@@ -216,7 +221,9 @@ inventory of known work, not a claim that nothing else is needed for 4.0.
 - **R2 — WebGL2/Firefox gate (137).** Complete the backend and live parity matrix,
   fallbacks/substitutes and capability selection before adding the agreed
   combined Firefox model/rendering coverage. Define acceptance for remaining
-  drawn features; full parity at alpha remains the requirement.
+  drawn features; full parity at alpha remains the requirement. The 12 October
+  sequencing review considers starting 137.1/137.2 ahead of SVG; reconcile
+  the old blanket prerequisites without making font investigations a port gate.
 - **R3 — Repository-owned app scenarios.** Specify representative loading,
   virtual table, style, selection, layout and export fixtures/assertions, including
   cancellation/disposal. CyWeb informs workloads but is not an implementation

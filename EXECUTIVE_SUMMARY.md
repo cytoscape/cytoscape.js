@@ -5,7 +5,7 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-10-05 after rounds 80, 82, 146, 147 and 148 landed.
+- **Last updated**: 2026-10-12 for SVG interview decisions and WebGL2 sequencing review; latest implementation remains rounds 80, 82, 146, 147 and 148.
 
 Round 148 adds manual miniature compounds. Collapse scales current descendant
 positions and effective sizes while leaving original nodes and edges live;
@@ -2074,7 +2074,7 @@ Earlier, round 145 (29 September) was a correctness fix:
 | An edge press's first events | Synchronous CPU targeting versus deferred GPU targeting remains benchmark-gated, including right presses — item 89. |
 | Attribute-table column view | Internal filtering improvements first; add a minimal column API only if visible-window scrolling measurements justify it — item 91. |
 | Bundling | API/lifecycle/precedence and initial polylines are decided; persistence remains benchmark-gated, and smoothing awaits maintainer visual review. |
-| Layout/CJK/export detail | Complete per-layout visual/constraint assessment, CJK/font/atlas contracts, export option/report schemas and headless go/no-go evidence. Settled defaults are recorded in the interview. |
+| Layout/CJK/export detail | Export option names, SVG modes/defaults and model-pixel metrics callback settled on 12 October. Warning codes, default font estimates, kerning/text fidelity, CJK contracts and headless evidence remain open. SVG is parked while an earlier WebGL2 start is considered; no font-stack change approved. |
 | Release acceptance | Concrete platform evidence, repository-owned app scenarios, full WebGL2 parity and release workflow/bake gates remain implementation/acceptance work. |
 
 The [contract interview](plan/rounds/2026-10-06-01-rnd0000-note-alpha-contract-interview.md)

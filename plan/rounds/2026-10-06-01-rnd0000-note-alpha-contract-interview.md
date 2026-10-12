@@ -6,7 +6,7 @@ Maintainer decisions from the ongoing interview on 6 October. These are
 specification decisions, not implemented capabilities. Explicit decisions
 here supersede earlier alternatives in the round plans and PLAN.md ledger.
 Unanswered questions remain open; recommendations are not approvals. Follow-up
-discussions through 11 October are recorded here and in the linked research
+discussions through 12 October are recorded here and in the linked research
 note. [The open-question register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md)
 consolidates remaining decisions, review points and benchmark gates.
 
@@ -735,3 +735,93 @@ These are planned contracts, not claims that the exporters are implemented.
   semantics while retaining per-kind applicability and separate graph semantics.
 
 These are reasons for the recorded choices, not new implementation approvals.
+
+
+### SVG interview decisions and font considerations (2026-10-12)
+
+These are planned contracts, not implemented APIs. SVG implementation is
+parked while the maintainer considers starting WebGL2 instead.
+
+**Decided in this interview:**
+
+- `imageMode: 'embed' | 'href'`, default `'embed'`. Failed embedding omits
+  the image and reports a warning; it never silently changes to an href.
+- `resourceTimeout`, in milliseconds, defaults to `10000`; `0` means use
+  ready resources immediately. Preserve the shared deadline and `signal`
+  cancellation decisions above.
+- Warnings use `{ code, message, elementIds?, resource? }`, with documented
+  stable codes and an image URL or font identifier where applicable. Exact
+  codes and the resource field's detailed type remain to specify.
+- SVG output modes are `'string'` (default), `'base64uri'`, `'base64'` and
+  `'blob'`. The return remains `{ output, warnings }`, with output-mode
+  typing. PNG/JPEG keep their existing mode names/defaults when adopting
+  the shared result envelope.
+- `full` defaults to `false`, matching PNG/JPEG. Headless viewport exports
+  use the instance's `headlessWidth`/`headlessHeight`.
+- Empty full-graph export succeeds using viewport dimensions or the maximum
+  dimensions; do not require a new width/height pair. Proposed resolution:
+  use viewport dimensions as the blank figure's base and apply maxWidth /
+  maxHeight as fit limits preserving aspect ratio. The maintainer allowed
+  either viewport or maximum dimensions; this exact resolution is a proposed
+  implementation detail. Zero-sized input handling remains to specify.
+- `advanceOf(character, font)` returns advances synchronously in model
+  pixels, with family, size, style and weight supplied in `font`. Provide a
+  good default estimate as well as this injection option; the current flat
+  estimate is insufficient for ordinary proportional ASCII text.
+- Document application-owned Fontkit / opentype.js callback adapters using
+  custom fonts, including WOFF/WOFF2. Core gains no font dependency. Fontkit
+  supports WOFF2 directly; opentype.js's documented recipe decompresses it
+  before parsing. Both can read ordinary TTF/OTF bytes; resolving an installed
+  font family to a file is application work, not provided by these parsers.
+
+**Considerations, not decisions:**
+
+- Current default is `sans-serif` (`src/style/defaults.mts`), not Helvetica.
+  A baked-in printable-ASCII table from a documented reference face could
+  replace the flat 0.54-em non-space / 0.28-em space estimate in
+  `src/label-wrap.mts`. Consider regular/bold tables, other-character fallback,
+  and shared use for headless bounds and SVG wrapping. Reference font,
+  provenance, coverage, error bounds and warning policy remain open.
+- A Helvetica / Helvetica Neue-like proportional estimate is an option.
+  A good-looking monospace default stack would simplify estimation but waste
+  width on narrow characters such as l/i and change browser appearance.
+  No default font-stack change is approved; generic stacks still vary by host.
+- Current v4 labels measure/rasterize code points individually and sum their
+  advances (`src/render/glyph-atlas.mts`, `src/label-wrap.mts`,
+  `src/render/label-layout.mts`). They have no pair kerning or automatic
+  ligature substitution. Explicit ligature code points may render, but this
+  is not contextual text shaping.
+- Consider kerning even without ligatures: retain atlas glyphs but adjust
+  pair positions, consistently across wrapping, bounds and alignment.
+  `advanceOf` alone cannot express pair adjustments. Compare pair metrics
+  or a richer text-run interface before fixing any extension to the callback.
+  Measure representative labels, troublesome pairs and layout cost; no
+  kerning implementation or investigation prerequisite is approved here.
+- SVG real text may introduce viewer kerning/ligatures absent from the GPU
+  labels. Consider disabling those features versus explicit glyph positions
+  versus adopting kerning in shared label layout. Preserve editable text and
+  verify viewer behavior; no fidelity policy is settled by this discussion.
+- Font-file metrics and application-owned native canvas/browser measurement
+  are alternatives to baked-in tables. Full-run shaping can account for
+  context that independent character measurements cannot. A measured font
+  does not guarantee the SVG viewer resolves to the same face.
+- Mounted callback override/rejection, approximation warning policy, exact
+  warning codes, output overloads and per-feature parity tolerances remain
+  unanswered. Existing fidelity/control requirements continue to apply.
+
+References for the adapter notes: [Fontkit](https://github.com/foliojs/fontkit)
+and [opentype.js](https://github.com/opentypejs/opentype.js).
+
+### WebGL2 sequencing reconsideration (2026-10-12)
+
+The maintainer asked to log the SVG/font discussion and consider WebGL2 as
+an implementation starting point with less investigation. This authorizes
+planning review, not a completed fallback or a reduced alpha parity promise.
+Round 73 already measured the high-risk substitutes; round 137 supplies the
+implementation sequence. Starting selection/lifecycle, texture mirrors and
+parity infrastructure ahead of SVG is the proposed next step. Reconcile
+round 137's old prerequisites before treating unfinished SVG, annotations
+or bundles as required for those initial sub-rounds. Full parity at alpha
+and item 81's line/casing fix before the affected shader ports remain in
+force. Kerning/font-stack exploration is not a new WebGL2 prerequisite;
+shared current label layout is the initial port target.

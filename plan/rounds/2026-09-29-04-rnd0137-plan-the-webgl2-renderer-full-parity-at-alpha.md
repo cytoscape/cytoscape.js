@@ -28,7 +28,24 @@ SVG 77 must consume the same effective geometry. Chart blobs now require
 integer textures to preserve packed colour bits; the R32F statement below
 continues to describe other float-only blobs, not the new chart records.
 
-### When it starts
+### Sequencing review requested on 12 October
+
+The maintainer is considering WebGL2 before SVG to start with the measured
+porting plan rather than resolve the remaining font/export investigations.
+Round 73's substitute measurements are already recorded; they need not be
+repeated as an unbounded feasibility study. Initial candidates are 137.1
+(selection/lifecycle) and 137.2 (texture mirror/parity infrastructure).
+
+The original start rule below is retained as history, but its blanket SVG /
+unfinished-drawn-feature prerequisites need reconciliation for this staged
+start. Full parity at alpha remains required: port the current supported
+surface, and add later features under the same parity gate. Do not make the
+new kerning/font-stack considerations prerequisites for porting current
+shared label layout. Item 81's approved line/casing fix remains required
+before porting that affected family. The alpha interview records this
+planning direction; backend implementation has not started.
+
+### When it starts (original sequencing, under review)
 
 The maintainer's sequencing note on round 73 stands: a fallback written
 against a moving render contract re-pays its port on every contract

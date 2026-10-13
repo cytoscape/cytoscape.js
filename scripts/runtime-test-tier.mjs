@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { availableParallelism } from 'node:os';

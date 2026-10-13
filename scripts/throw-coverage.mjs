@@ -38,6 +38,7 @@
 //   node scripts/throw-coverage.mjs --runtime=bun         # Bun suite
 //   node scripts/throw-coverage.mjs --verbose             # list dead/unknown
 //   node scripts/throw-coverage.mjs --lcov cov.lcov       # reuse a report
+import { Buffer } from 'node:buffer';
 import { execFileSync } from 'node:child_process';
 import {
   existsSync,

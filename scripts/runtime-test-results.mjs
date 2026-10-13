@@ -800,7 +800,7 @@ export const compareTestResults = (
 
   for (const suiteSkip of nodeSkipSuites) {
     const descendants = remainingBun.filter(
-      ({ file, suitePath, status }) =>
+      ({ file, suitePath }) =>
         file === suiteSkip.file &&
         suitePath.length >= suiteSkip.suitePath.length &&
         suiteSkip.suitePath.every(

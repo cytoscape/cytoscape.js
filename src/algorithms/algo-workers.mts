@@ -405,7 +405,7 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
       const slots: PoolSlot[] = [];
       let nextId = 1;
       /** the whole-pool runs' queue: a worker holds one snapshot at a time */
-      let queue: Promise<unknown> = Promise.resolve();
+      let queue: Promise<void> = Promise.resolve();
       /** growth is serialized so two callers never over-spawn */
       let growing: Promise<void> = Promise.resolve();
       let failure: Error | null = null;
@@ -693,31 +693,39 @@ export const acquireAlgoWorkers = (): Promise<AlgoWorkers> => {
           // whole-pool runs are serialized: a worker holds one snapshot
           // at a time — and each holds every worker for the run's span,
           // so an offload run in flight is waited for, never displaced
-          const turn = queue.then(async () => {
-            await ensure(size);
-
-            const workers = slots.slice();
-            const releases: (() => void)[] = [];
-
-            for (const slot of workers) {
-              releases.push(await lock(slot));
-              slot.w.ref();
-            }
-
-            try {
-              return await runOnce(workers, snapshot, n, token);
-            } finally {
-              for (const slot of workers) {
-                slot.w.unref();
-              }
-
-              for (const release of releases) {
-                release();
-              }
-            }
+          const previous = queue;
+          let release!: () => void;
+          queue = new Promise<void>((resolve) => {
+            release = resolve;
           });
 
-          queue = turn.catch(() => undefined);
+          const turn = previous.then(async () => {
+            try {
+              await ensure(size);
+
+              const workers = slots.slice();
+              const releases: (() => void)[] = [];
+
+              try {
+                for (const slot of workers) {
+                  releases.push(await lock(slot));
+                  slot.w.ref();
+                }
+
+                return await runOnce(workers, snapshot, n, token);
+              } finally {
+                for (const slot of workers) {
+                  slot.w.unref();
+                }
+
+                for (const release of releases) {
+                  release();
+                }
+              }
+            } finally {
+              release();
+            }
+          });
 
           return turn;
         },

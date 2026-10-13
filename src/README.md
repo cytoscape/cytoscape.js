@@ -16,7 +16,9 @@ design-decisions record for v4 — what it does, what it deliberately does
 API is documented in JSDoc on the source (and shipped in
 `dist/cytoscape.d.ts`), and the development record with its per-round
 measurements is `PLAN.md`.  If you are looking for what to port and what
-to change, read `MIGRATING.md` first.
+to change, read `MIGRATING.md` first. The authored v4 prose and coverage audit
+are in [documentation/](../documentation/README.md); the published site
+integration remains round 46 follow-up work.
 
 The three sections a reader usually wants are **"Design decisions"**
 (the calls that make v4 different from v3, each with its reason),
@@ -40,8 +42,9 @@ honest inventory — an inventory, not an estimate.
 requires full-tier Bun coverage and complete Deno withdrawal in round 99, with
 JSR reconsidered post-alpha; scopes round 46 to a v3-comparable prose/API pass
 with TODO_PROVISIONAL notes; and scopes round 84 to table benchmarks at 10k,
-100k and 1m rows. These changes are planned, not implemented runtime or docs
-coverage changes.
+100k and 1m rows. The prose/API source pass and benchmark measurements are
+complete within those scopes; Bun full-tier validation is in progress. The
+full docs site and table API decisions remain open.
 
 ## Alpha decisions and implementation status (3 October)
 
@@ -536,8 +539,9 @@ code as the contract, asserting values and ordering — never "it didn't
 throw"; and `ci-bun`/`ci-deno` gate merges at latest stable plus a
 pinned floor (Bun 1.4.0, Deno 2.9.6).  The smoke found zero defects on
 its first run — the headless path already spoke web-platform — so the
-round's fix budget went unspent.  Details in the "Runtimes" section
-below.
+round's fix budget went unspent. This is historical evidence: round 99
+withdraws Deno support and its smoke/CI jobs. Current support is in the
+"Runtimes" section below.
 
 Round 94 (2026-08-28, the screen pass's label-fidelity round) made
 zoomed-in labels stop going soft.  The atlas header claimed "crisp at
@@ -725,7 +729,11 @@ stopping rules, path shapes and edge cases. Shortest-path guarantees state
 their cost and heuristic assumptions; returned paths and numeric limits
 follow the current implementation. The comments ship in the full and
 headless declarations. Token comparisons confirm no runtime or API surface
-change; the broader prose/site pass and final integration checks remain open.
+change. The scoped prose source pass covers all twelve non-demo v3 sections,
+with additional v4 loading, export and provisional-contract pages and
+style/layout catalogs. Its coverage audit accounts for all 238 v3 API names:
+215 mappings, 18 decided removals and five explicit maintainer questions.
+Site integration, demos, final integration checks and round closure remain open.
 
 v3's method **aliases** are kept throughout (`each`/`forEach`,
 `centre`/`center`, `bc`/`betweennessCentrality`, the set-op spellings,
@@ -6537,13 +6545,10 @@ WinterTC-shaped `node:vm` isolate (no `Worker`, `document`, `window`,
 checks there, and `'auto'` shown to have run on the calling thread.
 `npm run test:runtimes:workerd`: the same checks on Cloudflare's own
 runtime (`workerd`, a devDependency), in CI's `ci-workerd` job.
-`npm run test:runtimes:deno:gpu`: `cytoscape/headless-gpu` on Deno's
-native WebGPU — wgpu, not Dawn — naming the adapter, `pageRank` GPU
-against CPU within the parity bounds, an explicit `'gpu'` force run
-settling; green at landing on Deno 2.9.6 with an RX 580 (RADV), a
-`continue-on-error` step in `ci-deno`.  Deno's binding panics on a
-zero-byte `writeBuffer`, which the spec makes a no-op, so the algorithm
-uploads and the integrator never issue one.
+Round 131 also measured native Deno WebGPU at landing. That historical
+measurement remains in the round record; the runtime probe, CI job and
+support claim have been withdrawn by round 99. Zero-byte GPU uploads remain
+no-ops across supported environments.
 
 ## Packaging (round 44)
 
@@ -6760,44 +6765,38 @@ wire format is binary; no JSON Schema applies).  SchemaStore submission
 waits for 4.0, once the schemas are stable; until then they version with
 the package.
 
-## Runtimes: Bun and Deno run the package (round 98)
+## Runtimes: Node and Bun
 
-**Supported runtimes: Node >= 24 (`engines`), Bun >= 1.4 and Deno >= 2.9
-run the built bundles** — `engines` cannot express Bun or Deno, so their
-floors live in this sentence and in `ci-bun`/`ci-deno`'s version matrix
-(latest stable plus the pinned floor), and a runtime bump that breaks CI
-moves the pin after reading the failure, never the assertion.  The claim
-rests on two gates, not on fortune:
+**Supported runtimes: Node >= 24 (`engines`) and Bun >= 1.4 run the built
+bundles.** The Bun floor is recorded in the CI version matrix because
+`engines` only expresses Node. Round 99 is validating the complete public,
+module, soak and throw-coverage tiers under Bun, preserving Node's tests
+and comparing test identities and outcomes. Browser tests remain Playwright.
 
-- **The runtime-clean invariant** (98.1): the set of non-relative import
-  specifiers under `src/` is empty — no `node:*`, no `bun:*`, no
-  `deno:*`, no bare package — asserted by
-  `test/modules/import-graph.mjs` over comment-stripped sources.
-  Everything the headless path needs (`TextEncoder`/`TextDecoder`,
-  `queueMicrotask`, `performance.now()`, typed arrays) is in the
-  WinterTC minimum-common-API baseline every standards-shaped runtime
-  ships.
-- **The cross-runtime smoke** (98.2): `test/runtimes/smoke.mjs`, one
-  framework-free file run as `node`/`bun`/`deno run --allow-read`, loads
-  the ESM, minified-ESM and CJS bundles and asserts values and ordering
-  — headless init, the wire round-trip with every dictionary column
-  checked value-for-value, style constants + a scale mapper + a bypass,
-  grid + CPU-force ticks, one sync and one async algorithm with
-  `executor: 'cpu'`, events, `json()` and the bypasses export.  Deno's
-  require-compat held when measured (2.9.6), so the CJS bundle is
-  contract on all three runtimes.  `npm run test:runtimes:node` /
-  `:bun` / `:deno` each build first; the smoke found **zero defects**
-  at landing (98.3's budget went unspent), which is what item 2 of the
-  runtime-rounds note predicted — the headless path already spoke
-  web-platform, and now both halves are gated rather than fortunate.
+The worker retention cleanup keeps completed betweenness results independent
+of their source instance. Result accessors retain a numeric slot index, and
+the worker await retains the prepared CSR arrays rather than the graph view
+or caller options. Settled lifecycle records clear their instance/run fields;
+the pool serializes runs with a void gate that cannot retain their results.
+Weight evaluation, routing, cancellation and numeric results keep their prior
+contracts. Soak tests keep both a completed result and a settled AlgoRun alive
+while requiring the destroyed source instance to be collected.
 
-The renderer proper stays browser-bound (canvas + container).  Deno's
-native WebGPU driving the GPU *algorithm* executors and the force
-integrator is round 131's `test:runtimes:deno:gpu` on
-`cytoscape/headless-gpu` (discharging 99.2); edge isolates are round
-131's `cytoscape/headless`, gated in a `node:vm` isolate every run and on
-`workerd` — see "Builds" above.  Every other environment, and what each
-one gets, is the matrix below.
+The runtime-clean invariant from round 98 remains: no non-relative import
+specifiers under `src/`, including `node:*`, `bun:*`, `deno:*` or bare
+packages. `test/modules/import-graph.mjs` enforces it. The headless path uses
+web-platform primitives such as typed arrays, TextEncoder/TextDecoder,
+queueMicrotask and performance.now().
+
+`test/runtimes/smoke.mjs` loads the built ESM, minified ESM and CJS bundles
+and checks headless initialization, wire round trips, style, layouts, CPU
+algorithms, events and JSON. The Node and Bun smoke commands build first.
+Round 98 originally measured Deno too; round 99 removes its runner, probes,
+CI jobs and support claims. Historical measurements remain in the record.
+
+The renderer stays browser-bound. Edge isolates use `cytoscape/headless`,
+gated in a node:vm isolate and on workerd. npm is the alpha distribution
+channel; JSR may be reconsidered after alpha.
 
 ## Supported environments (round 100)
 
@@ -6815,7 +6814,7 @@ environment is judged against requirements:
 | Tier | What it is | What it needs |
 | --- | --- | --- |
 | **T0** headless core | store, wire, style, collections, every layout, the CPU algorithms, events, `json()` | ES2022 (classes with private fields, `async`), typed arrays, `TextEncoder` with `encodeInto`, `TextDecoder`, `queueMicrotask` — the WinterTC baseline.  `TextDecoder`/`TextEncoder` are constructed **at module evaluation** (`store/id-map.mts`, every id goes through them), so an engine without them cannot even load the bundle.  The smoke needs no timers: QuickJS-ng and GraalJS have no `setTimeout` and pass. |
-| **T1** + workers | the algorithm pool (`executor: 'workers'`, and `'auto'`'s lane) and the force sim worker | Node's `worker_threads` (Node, Bun, Deno), or a browser **page** with `Worker`, `Blob` and `URL.createObjectURL` |
+| **T1** + workers | the algorithm pool (`executor: 'workers'`, and `'auto'`'s lane) and the force sim worker | Node's `worker_threads` (Node and Bun), or a browser **page** with `Worker`, `Blob` and `URL.createObjectURL` |
 | **T2** + WebGPU compute | the GPU algorithm lanes and the headless force integrator (`cytoscape/headless-gpu`, or the full entry) | `navigator.gpu` and an adapter; no canvas, no DOM |
 | **T3** + rendering | the renderer, pointer, image export | a browser (or browser shell) page with WebGPU; WebGL2 at round 137 |
 
@@ -6833,7 +6832,6 @@ not a support claim.
 | --- | --- | --- | --- | --- | --- | --- |
 | **Node ≥ 24** | yes | yes (`worker_threads`) | no — no `navigator.gpu`; `'gpu'` rejects, `'auto'` stays on the CPU | no | `ci-node`: the whole Node tier from source, and the smoke over all nine bundles | **1** |
 | **Bun ≥ 1.4** | yes | yes — measured (1.4.2: an 8-worker pool, closeness bit-identical to `'cpu'`; the sim worker spawned) | no | no | `ci-bun` (1.4.0 floor + latest) runs the smoke: T0 gated, T1 measured only | **1** (T0), 2 (T1) |
-| **Deno ≥ 2.9** | yes | yes — measured (2.9.6, as Bun), **except the CJS bundles' sim worker** (item 76; the ESM is fine) | yes, `cytoscape/headless-gpu` — local only (2.9.6, RX 580 via wgpu/Vulkan, round 131) | no | `ci-deno` (2.9.6 floor + latest) runs the smoke; its GPU step is `continue-on-error`, a manual probe until runners show an adapter (the eleventh sitting) | **1** (T0), 2 (T1, T2) |
 | **Cloudflare Workers** (workerd) | yes, `cytoscape/headless` | no — no `Worker`; `'auto'` runs in-thread, asserted | no | no | the isolate smoke every Node-tier run; `ci-workerd` on the real runtime | **1** |
 | **Vercel Edge** and other V8-isolate edges | expected: the same WinterTC surface, no `eval`/`new Function` (the bundles contain neither) | no | no | no | not run on Vercel; the isolate smoke is its shape.  Vercel now recommends Node functions over Edge, and Next.js 16.3 drops `runtime = 'edge'` — the Node row covers that path | 2 |
 | **Chromium, WebKit** — a page | yes | yes (Blob workers) | where WebGPU exists | where WebGPU exists — round 73's reach table (`plan/rounds/2026-08-14-04-rnd0073-landed-the-webgl2-fallback-scoped.md`); WebGL2 for the rest is round 137 | `ci-browser`: `renderer` (Chromium, SwiftShader) and `renderer-webkit` — the renderer, GPU-algorithm, workers and load specs; GPU specs soft-skip without an adapter | **1** |
@@ -6872,8 +6870,8 @@ What the rows mean in practice:
 - **A model hosted in a worker gets T0 and no pool.**  The page-less
   contexts run everything on their own thread — already off the main
   thread, so the loss is parallelism, not responsiveness.  Opening the
-  pool to them is item 82 (the `document` test protects Bun and Deno,
-  which have `Worker` and `Blob` but must take the `worker_threads`
+  pool to them is item 82 (the `document` test protects Bun,
+  which has `Worker` and `Blob` but must take the `worker_threads`
   path).
 - **React Native gets the model, not a view**: T0 with one polyfill, no
   workers, no rendering.  There is no example app until a real use case
@@ -6887,10 +6885,9 @@ What the rows mean in practice:
 re-measured at release time: `node test/runtimes/engines.mjs --qjs=…
 --hermes=… --graaljs=…` for the engines, the Electron and Firefox
 checks as the round-100 record describes them.  A row changes tier by
-measurement, and the reason goes in the round that moves it.  Round 99
-(Bun and Deno first-class — the native test runners, the install story,
-JSR) has not run: its rows here are the round-98 smoke's, and it will
-raise them.
+measurement, and the reason goes in the round that moves it.  Round 99 is extending Bun from smoke coverage to the full verification
+tier. Its final execution evidence will replace the smoke-only Bun row
+once the integration checks pass; Deno support is withdrawn.
 
 ## Shipped shaders: WGSL minified at build time (round 52)
 

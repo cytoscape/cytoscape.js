@@ -70,7 +70,7 @@ const collect = async (refs = []) => {
 
     await tick();
 
-    if (i >= 2 && now === alive) break;
+    if (i >= 2 && now === alive && now === 0) break;
     alive = now;
   }
 };
@@ -128,6 +128,69 @@ describe('soak: the algorithm worker pool', () => {
 
     await collect(refs);
     expect(aliveOf(refs), 'the pool pinned a destroyed instance').to.equal(0);
+  });
+
+  it('holding a settled AlgoRun keeps its result usable without its core', async () => {
+    const makeRun = async () => {
+      let cy = cytoscape({ elements: ring(300) });
+      const run = cy
+        .elements()
+        .betweennessCentrality({ weight, executor: 'workers' });
+      const ref = new WeakRef(cy);
+
+      await run;
+      cy.destroy();
+      cy = null;
+
+      return { run, ref };
+    };
+
+    const { run, ref } = await makeRun();
+
+    expect(typeof run.cancel).to.equal('function');
+    await collect([ref]);
+    expect(
+      aliveOf([ref]),
+      'the settled AlgoRun pinned its destroyed source Core',
+    ).to.equal(0);
+
+    const result = await run;
+    const other = cytoscape({ elements: ring(300) });
+
+    try {
+      expect(typeof result.betweenness(other.nodes()[1])).to.equal('number');
+      expect(typeof result.betweennessNormalized(other.nodes()[1])).to.equal(
+        'number',
+      );
+    } finally {
+      other.destroy();
+    }
+  });
+
+  it('holding a completed result does not keep its destroyed core alive', async () => {
+    const makeResult = async () => {
+      let cy = cytoscape({ elements: ring(300) });
+      const result = await cy
+        .elements()
+        .betweennessCentrality({ weight, executor: 'workers' });
+      const ref = new WeakRef(cy);
+
+      cy.destroy();
+      cy = null;
+
+      return { result, ref };
+    };
+
+    const { result, ref } = await makeResult();
+
+    await collect([ref]);
+    expect(
+      aliveOf([ref]),
+      'the held result pinned its destroyed core',
+    ).to.equal(0);
+    expect(result.betweenness(undefined)).to.equal(undefined);
+    expect(result.betweennessNormalized(undefined)).to.equal(0);
+    expect(result.betweennessNormalised(undefined)).to.equal(0);
   });
 
   it('a reset drops the pool, and the next run spawns afresh', async () => {

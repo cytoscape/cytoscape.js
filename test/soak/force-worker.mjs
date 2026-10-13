@@ -53,7 +53,7 @@ const collect = async (refs = []) => {
 
     await tick();
 
-    if (i >= 2 && now === alive) break;
+    if (i >= 2 && now === alive && now === 0) break;
     alive = now;
   }
 };

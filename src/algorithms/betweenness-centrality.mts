@@ -1,5 +1,10 @@
 import type { Collection } from '../collection.mjs';
-import { subgraph, firstNodeSlot, weightAt, NodeHeap } from './algo-shared.mjs';
+import {
+  subgraph,
+  firstNodeSlotArg,
+  weightAt,
+  NodeHeap,
+} from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo, WORKERS_MIN_N } from './executor.mjs';
 import type { AlgoExecutor } from './executor.mjs';
@@ -48,6 +53,9 @@ export const betweennessCentralityAsync = (
   const executor = resolveExecutor(options.executor);
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
+  // A completed route can retain its lane callback; consume its Core-bearing
+  // inputs as soon as the worker lane starts.
+  let workerInput: BetweennessWorkerInput | null = { view, options };
 
   return runAlgo(
     executor,
@@ -66,7 +74,13 @@ export const betweennessCentralityAsync = (
         options.weight != null
           ? BETWEENNESS_WEIGHTED_WORKERS_MIN_N
           : BETWEENNESS_WORKERS_MIN_N,
-      run: (pool) => betweennessCentralityWorkers(pool, view, options),
+      run: (pool) => {
+        const input = workerInput!;
+
+        workerInput = null;
+
+        return betweennessCentralityWorkers(pool, input);
+      },
     },
   );
 };
@@ -154,26 +168,49 @@ export const brandesCsr = (
   return { rowPtr, colIdx, w };
 };
 
+interface BetweennessWorkerInput {
+  view: ReturnType<typeof subgraph>;
+  options: BetweennessCentralityOptions;
+}
+
 /**
  * The workers lane: one Brandes sweep per source range over the CSR
- * snapshot, the partial `C` vectors summed in range order.
+ * snapshot, the partial `C` vectors summed in range order.  The view and
+ * options build the snapshot synchronously; only its numeric arrays and the
+ * dense node index cross the worker await.
  *
  * @param pool — the acquired worker pool
- * @param view — the subgraph view
- * @param options — the caller's options
+ * @param input — the source view and options used to build the snapshot
  * @returns the betweenness accessors
  */
-export const betweennessCentralityWorkers = async (
+export const betweennessCentralityWorkers = (
   pool: AlgoWorkers,
-  view: ReturnType<typeof subgraph>,
-  options: BetweennessCentralityOptions,
+  input: BetweennessWorkerInput,
 ): Promise<BetweennessCentralityResult> => {
-  const n = view.nodeSlots.length;
-  const { rowPtr, colIdx, w } = brandesCsr(
-    view,
-    options.directed === true,
-    options.weight ?? undefined,
-  );
+  try {
+    const n = input.view.nodeSlots.length;
+    const index = input.view.index;
+    const { rowPtr, colIdx, w } = brandesCsr(
+      input.view,
+      input.options.directed === true,
+      input.options.weight ?? undefined,
+    );
+
+    return runBetweennessWorkerSnapshot(pool, index, n, rowPtr, colIdx, w);
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+/** Cross the worker await with only the detached numeric snapshot and index. */
+const runBetweennessWorkerSnapshot = async (
+  pool: AlgoWorkers,
+  index: Map<number, number>,
+  n: number,
+  rowPtr: Int32Array,
+  colIdx: Int32Array,
+  w: Float64Array | null,
+): Promise<BetweennessCentralityResult> => {
   const parts = await pool.run({ kind: 'brandes', n, rowPtr, colIdx, w }, n);
   const C = new Float64Array(n);
   let max = 0;
@@ -190,7 +227,7 @@ export const betweennessCentralityWorkers = async (
     }
   }
 
-  return bcResultFrom(view, C, max);
+  return bcResultFromIndex(index, C, max);
 };
 
 /**
@@ -281,11 +318,17 @@ export const bcResultFrom = (
   view: ReturnType<typeof subgraph>,
   C: ArrayLike<number>,
   max: number,
+): BetweennessCentralityResult => bcResultFromIndex(view.index, C, max);
+
+const bcResultFromIndex = (
+  index: Map<number, number>,
+  C: ArrayLike<number>,
+  max: number,
 ): BetweennessCentralityResult => {
   const denseOf = (node: Collection): number | undefined => {
-    const slot = firstNodeSlot(view, node, 'node');
+    const slot = firstNodeSlotArg(node, 'node');
 
-    return slot == null ? undefined : view.index.get(slot);
+    return slot == null ? undefined : index.get(slot);
   };
 
   const ret: BetweennessCentralityResult = {

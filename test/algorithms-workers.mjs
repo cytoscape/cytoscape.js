@@ -520,6 +520,56 @@ describe('algorithms: the workers executor (round 74)', function () {
         expect(err.message).to.match(/rejected its snapshot: clone refused/);
       });
 
+      it('queued errors and cancels release later turns in order', async function () {
+        const events = [];
+        let snapshots = 0;
+
+        stubPlatform((msg) => {
+          if (msg.type === 'ping') {
+            return { type: 'pong', id: msg.id };
+          }
+
+          if (msg.type === 'snapshot') {
+            snapshots++;
+            events.push(`snapshot-${snapshots}`);
+
+            if (snapshots === 1) {
+              return { type: 'error', id: msg.id, message: 'first failed' };
+            }
+
+            return { type: 'ready', id: msg.id };
+          }
+
+          if (msg.type === 'job') {
+            events.push(`job-${snapshots}`);
+
+            return {
+              type: 'done',
+              id: msg.id,
+              out: new Float64Array(1),
+            };
+          }
+
+          return null;
+        });
+
+        const pool = await acquireAlgoWorkers();
+        const failed = pool.run({}, 1);
+        const queuedToken = { cancelled: false, done: false };
+        const cancelled = pool.run({}, 1, queuedToken);
+        queuedToken.cancelled = true;
+        const next = pool.run({}, 1);
+
+        const failure = await rejection(failed);
+        const cancellation = await rejection(cancelled);
+        const parts = await next;
+
+        expect(failure.message).to.match(/rejected its snapshot: first failed/);
+        expect(cancellation.name).to.equal('CancelledError');
+        expect(parts).to.have.length(1);
+        expect(events).to.deep.equal(['snapshot-1', 'snapshot-2', 'job-2']);
+      });
+
       it("a job the worker fails propagates — under 'auto' too, no silent reroute", async function () {
         stubPlatform((msg) => {
           if (msg.type === 'ping') {

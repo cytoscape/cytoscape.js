@@ -169,8 +169,7 @@ export const incidentEdgesInView = (
  * The first live node slot of an argument collection, or undefined.  v4 takes
  * collections only — a string argument throws, consistent with the matcher.
  */
-export const firstNodeSlot = (
-  view: SubgraphView,
+export const firstNodeSlotArg = (
   arg: unknown,
   name: string,
 ): number | undefined => {
@@ -194,6 +193,13 @@ export const firstNodeSlot = (
 
   return undefined;
 };
+
+/** Read a node slot while retaining the existing view-based call shape. */
+export const firstNodeSlot = (
+  _view: SubgraphView,
+  arg: unknown,
+  name: string,
+): number | undefined => firstNodeSlotArg(arg, name);
 
 /** Wrap a user weight function (handles interning per call) or default to 1. */
 export const weightAt = (

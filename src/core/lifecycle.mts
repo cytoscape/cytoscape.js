@@ -274,6 +274,23 @@ export function destroy(core: Core): Core {
   return core;
 }
 
+interface TrackedAlgoRun {
+  core: Core | null;
+  run: AlgoRun<unknown> | null;
+}
+
+/** Release a settled run without keeping the core in the reaction frame. */
+const clearTrackedAlgoRun =
+  (record: TrackedAlgoRun): (() => void) =>
+  () => {
+    if (record.core != null && record.run != null) {
+      record.core._inflight.delete(record.run);
+    }
+
+    record.core = null;
+    record.run = null;
+  };
+
 /**
  * Register an async algorithm run for `destroy()` to cancel (round
  * 128); it leaves the registry when it settles either way.
@@ -283,15 +300,14 @@ export function destroy(core: Core): Core {
  * @internal
  */
 export function _trackRun<T>(core: Core, run: AlgoRun<T>): AlgoRun<T> {
-  const done = (): void => {
-    core._inflight.delete(run);
-  };
-
+  const record: TrackedAlgoRun = { core, run };
   core._inflight.add(run);
   // observed through the handle's own settle promise, never through
   // `run.then` — a handler here would mark the caller's rejection as
   // handled, and a cancelled run nobody catches must stay theirs to see
-  whenSettled(run).then(done);
+  // The record is cleared by a separate reaction factory so a settled
+  // promise cannot keep either the instance or handle through this frame.
+  whenSettled(run).then(clearTrackedAlgoRun(record));
 
   return run;
 }

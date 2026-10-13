@@ -218,37 +218,40 @@ describe('status site: the Cloudflare Pages per-file cap', function () {
     );
   });
 
-  it('the binary encoding really does take the largest fixture under the cap, measured', function () {
-    // The load-bearing measurement of this change: `ndex-x-large` is 34.1 MiB
-    // of already-compact JSON — minifying gains nothing — and the wire form
-    // takes it to ~9.5 MiB.  That single number is why the deploy needs no
-    // off-site bucket.
-    this.timeout?.(180000);
+  it(
+    'the binary encoding really does take the largest fixture under the cap, measured',
+    { timeout: 180000 },
+    function () {
+      // The load-bearing measurement of this change: `ndex-x-large` is 34.1 MiB
+      // of already-compact JSON — minifying gains nothing — and the wire form
+      // takes it to ~9.5 MiB.  That single number is why the deploy needs no
+      // off-site bucket.
 
-    const path = join(ROOT, 'debug', 'network-ndex-x-large.json');
+      const path = join(ROOT, 'debug', 'network-ndex-x-large.json');
 
-    // A missing *fixture* is a legitimate skip (a slim checkout has nothing to
-    // measure).  A missing or stale *bundle* is not — `wireSize` throws with
-    // the `npm run build` instruction, and `npm run test:modules` builds first
-    // so the scripted path never hits it (2026-08-06).
-    if (!existsSync(path)) {
-      return;
-    }
+      // A missing *fixture* is a legitimate skip (a slim checkout has nothing to
+      // measure).  A missing or stale *bundle* is not — `wireSize` throws with
+      // the `npm run build` instruction, and `npm run test:modules` builds first
+      // so the scripted path never hits it (2026-08-06).
+      if (!existsSync(path)) {
+        return;
+      }
 
-    const onDisk = statSync(path).size;
-    const encoded = wireSize(ROOT, path);
+      const onDisk = statSync(path).size;
+      const encoded = wireSize(ROOT, path);
 
-    expect(
-      onDisk,
-      'the fixture no longer exceeds the cap; this spec has nothing to prove',
-    ).to.be.greaterThan(PAGES_MAX_BYTES);
-    expect(encoded, 'the fixture could not be encoded at all').to.be.a(
-      'number',
-    );
-    expect(encoded).to.be.at.most(PAGES_MAX_BYTES);
-    // and it must be a real reduction, not a rounding win
-    expect(encoded).to.be.lessThan(onDisk / 2);
-  });
+      expect(
+        onDisk,
+        'the fixture no longer exceeds the cap; this spec has nothing to prove',
+      ).to.be.greaterThan(PAGES_MAX_BYTES);
+      expect(encoded, 'the fixture could not be encoded at all').to.be.a(
+        'number',
+      );
+      expect(encoded).to.be.at.most(PAGES_MAX_BYTES);
+      // and it must be a real reduction, not a rounding win
+      expect(encoded).to.be.lessThan(onDisk / 2);
+    },
+  );
 
   // The two build-availability guards (2026-08-06).  A stale bundle used to
   // surface as `cy.toColumnarElements is not a function` swallowed by
@@ -333,35 +336,39 @@ describe('status site: the Cloudflare Pages per-file cap', function () {
     expect(minified).to.be.at.most(PAGES_MAX_BYTES);
   });
 
-  it('nothing in the plan exceeds the Pages per-file cap', function () {
-    // A forward guard, and honest about it: today no planned file is within
-    // 20% of the cap, because both oversized fixtures load from their bucket
-    // instead.  Removing `jsonmin` does *not* fail this spec — the control
-    // proved that, and the spec above is the discriminating one.  This exists
-    // so that a fixture added later, or a remote that stops being used, fails
-    // here rather than at deploy time.
-    const plan = buildPlan({ root: ROOT, gzip: false });
+  it(
+    'nothing in the plan exceeds the Pages per-file cap',
+    { timeout: 15000 },
+    function () {
+      // A forward guard, and honest about it: today no planned file is within
+      // 20% of the cap, because both oversized fixtures load from their bucket
+      // instead.  Removing `jsonmin` does *not* fail this spec — the control
+      // proved that, and the spec above is the discriminating one.  This exists
+      // so that a fixture added later, or a remote that stops being used, fails
+      // here rather than at deploy time.
+      const plan = buildPlan({ root: ROOT, gzip: false });
 
-    for (const op of plan.ops) {
-      if (op.kind === 'omit') {
-        continue;
+      for (const op of plan.ops) {
+        if (op.kind === 'omit') {
+          continue;
+        }
+
+        const bytes =
+          op.kind === 'write'
+            ? Buffer.byteLength(op.text)
+            : op.kind === 'jsonmin'
+              ? minifiedSize(op.from)
+              : op.kind === 'wire'
+                ? wireSize(ROOT, op.from)
+                : statSync(op.from).size;
+
+        expect(
+          bytes,
+          `${op.to} is ${(bytes / 1048576).toFixed(1)} MiB, over the 25 MiB cap`,
+        ).to.be.at.most(PAGES_MAX_BYTES);
       }
-
-      const bytes =
-        op.kind === 'write'
-          ? Buffer.byteLength(op.text)
-          : op.kind === 'jsonmin'
-            ? minifiedSize(op.from)
-            : op.kind === 'wire'
-              ? wireSize(ROOT, op.from)
-              : statSync(op.from).size;
-
-      expect(
-        bytes,
-        `${op.to} is ${(bytes / 1048576).toFixed(1)} MiB, over the 25 MiB cap`,
-      ).to.be.at.most(PAGES_MAX_BYTES);
-    }
-  });
+    },
+  );
 });
 
 describe('status site: what the runtime asks for', function () {

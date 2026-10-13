@@ -236,67 +236,69 @@ describe('layout: the force simulation on a worker (round 129.3)', function () {
       cy.destroy();
     });
 
-    it('an infinite run reheats through the worker: the grabbed node holds where it is put, its neighbours follow (118.3 on the worker)', async function () {
-      this.timeout?.(10000);
+    it(
+      'an infinite run reheats through the worker: the grabbed node holds where it is put, its neighbours follow (118.3 on the worker)',
+      { timeout: 10000 },
+      async function () {
+        const cy = cytoscape({ elements: RING() });
+        const layout = cy.layout({
+          name: 'force',
+          seed: 4,
+          fit: false,
+          infinite: true,
+          stepsPerFrame: 6,
+          executor: 'workers',
+        });
+        let settled = false;
 
-      const cy = cytoscape({ elements: RING() });
-      const layout = cy.layout({
-        name: 'force',
-        seed: 4,
-        fit: false,
-        infinite: true,
-        stepsPerFrame: 6,
-        executor: 'workers',
-      });
-      let settled = false;
+        layout.run();
+        layout.promise().then(() => {
+          settled = true;
+        });
 
-      layout.run();
-      layout.promise().then(() => {
-        settled = true;
-      });
+        await wait(1200);
 
-      await wait(1200);
+        const snapshot = () =>
+          Object.fromEntries(
+            cy.nodes().map((n) => [n.id(), { ...n.position() }]),
+          );
+        const before = snapshot();
+        const n0 = cy.$id('n0');
+        const target = { x: before.n0.x + 400, y: before.n0.y };
 
-      const snapshot = () =>
-        Object.fromEntries(
-          cy.nodes().map((n) => [n.id(), { ...n.position() }]),
-        );
-      const before = snapshot();
-      const n0 = cy.$id('n0');
-      const target = { x: before.n0.x + 400, y: before.n0.y };
+        n0.emit('grab');
+        n0.position({ x: before.n0.x + 200, y: before.n0.y });
+        n0.position(target);
 
-      n0.emit('grab');
-      n0.position({ x: before.n0.x + 200, y: before.n0.y });
-      n0.position(target);
+        await wait(600);
 
-      await wait(600);
+        expect(cy.$id('n0').position().x).to.be.closeTo(target.x, 0.01);
+        for (const id of ['n1', 'n11']) {
+          expect(cy.$id(id).position().x, id).to.be.greaterThan(
+            before[id].x + 50,
+          );
+        }
 
-      expect(cy.$id('n0').position().x).to.be.closeTo(target.x, 0.01);
-      for (const id of ['n1', 'n11']) {
-        expect(cy.$id(id).position().x, id).to.be.greaterThan(
-          before[id].x + 50,
-        );
-      }
+        n0.emit('free');
+        await wait(600);
 
-      n0.emit('free');
-      await wait(600);
+        const after = cy.$id('n0').position().x;
 
-      const after = cy.$id('n0').position().x;
+        expect(after).to.be.lessThan(target.x - 20);
+        expect(after).to.be.greaterThan(before.n0.x + 20);
+        expect(settled).to.equal(false);
 
-      expect(after).to.be.lessThan(target.x - 20);
-      expect(after).to.be.greaterThan(before.n0.x + 20);
-      expect(settled).to.equal(false);
-
-      // stop() ends the run: the promise resolves within a frame
-      layout.stop();
-      await Promise.race([
-        layout.promise(),
-        wait(5000).then(() => {
-          throw new Error('stop() left the worker run pending');
-        }),
-      ]);
-      cy.destroy();
-    });
+        // stop() ends the run: the promise resolves within a frame
+        layout.stop();
+        await Promise.race([
+          layout.promise(),
+          wait(5000).then(() => {
+            throw new Error('stop() left the worker run pending');
+          }),
+        ]);
+        cy.destroy();
+      },
+    );
 
     it('destroy() under a worker run closes it: promise() rejects, the worker stands', async function () {
       const cy = cytoscape({ elements: RING() });

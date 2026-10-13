@@ -43,7 +43,7 @@ const collect = async (refs = []) => {
 
     await tick();
 
-    if (i >= 2 && now === alive) break;
+    if (i >= 2 && now === alive && now === 0) break;
     alive = now;
   }
 };
@@ -75,10 +75,14 @@ describe('soak: the in-flight registry (round 128)', () => {
       headlessHeight: 600,
     });
     const refs = [];
+    const layoutKinds = [];
+    const forceStopStates = [];
 
     // one run per call: a loop body's bindings in this frame would pin
     // the last iteration's layout until the frame ends
     const runOne = async (kind, i) => {
+      const workerStatsBefore =
+        kind === 'force-stop' ? cytoscape.__forceWorkerStats__() : null;
       let layout;
 
       if (kind === 'finish') {
@@ -109,6 +113,9 @@ describe('soak: the in-flight registry (round 128)', () => {
         await tick(5);
         layout.stop();
         await layout.promise();
+        // Allow one queued promise reaction before the bounded GC sample;
+        // worker startup and shutdown remain independent lifecycle events.
+        await Promise.resolve();
       } else {
         layout = cy.layout({
           name: 'force',
@@ -127,6 +134,15 @@ describe('soak: the in-flight registry (round 128)', () => {
       }
 
       refs.push(new WeakRef(layout));
+      layoutKinds.push(kind);
+      layout = null;
+
+      if (workerStatsBefore != null) {
+        forceStopStates.push({
+          before: workerStatsBefore,
+          after: cytoscape.__forceWorkerStats__(),
+        });
+      }
     };
 
     for (let i = 0; i < 6; i++) {
@@ -150,7 +166,14 @@ describe('soak: the in-flight registry (round 128)', () => {
     expect(cy._layoutRuns.size).to.equal(0);
 
     await collect(refs);
-    expect(aliveOf(refs), 'a settled run pinned its layout').to.equal(0);
+    const retained = refs.flatMap((ref, index) =>
+      ref.deref() === undefined ? [] : [`${index}:${layoutKinds[index]}`],
+    );
+    const workerStatsAtCollection = cytoscape.__forceWorkerStats__();
+    expect(
+      aliveOf(refs),
+      `a settled run pinned layouts: ${retained.join(', ')}; force-stop worker states: ${JSON.stringify(forceStopStates)}; final worker state: ${JSON.stringify(workerStatsAtCollection)}`,
+    ).to.equal(0);
     cy.destroy();
   });
 

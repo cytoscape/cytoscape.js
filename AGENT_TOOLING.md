@@ -58,7 +58,7 @@ agent that breaks it gets a red test instead of a silent drift.
   | Benchmark | `benchmark` / `benchmark:all` | `benchmarking.md` |
   | Store / wire / lifecycle | + `test:soak:quiet` | `testing.md` |
   | Bundle / packaging | `build`, `build:types`, `test:modules:quiet`, `test:runtimes:node:quiet` | `architecture.md` |
-  | Slim entry / tier move | + `test:runtimes:workerd:quiet` (+ Deno GPU) | `architecture.md` |
+  | Slim entry / tier move | + `test:runtimes:workerd:quiet` | `architecture.md` |
   | Harness / docs / report | `status` + `status:serve` — open it | `rendering.md` |
   | `v3/` | — frozen | `v3/AGENTS.md` |
   | Unsure | `test:quiet` | — |
@@ -176,7 +176,7 @@ parity question is one targeted search, not a site crawl.
 | `test:soak` | leaks, churn, wire fuzzing, multi-instance isolation, `--expose-gc` |
 | `test:throws` | throw-site coverage gate |
 | `test:types`, `test:types:surface`, `test:types:all` | consumer compile test, `.d.ts` surface audit |
-| `test:runtimes:node` / `:bun` / `:deno` / `:deno:gpu` / `:workerd` | the built bundles under each runtime |
+| `test:runtimes:node` / `:bun` / `:workerd` | the built bundles under each runtime |
 | `test:playwright` | browser projects (renderer, renderer-webkit, visual) |
 | `test:node` | the whole Node tier (CI's `ci-node`) |
 | `test` | Node tier + Playwright |
@@ -497,9 +497,9 @@ divergences).
 
 ### 10.6 Cross-runtime smoke
 
-One import-free checks module run under Node, Bun, Deno, a WinterTC-shaped
-`node:vm` isolate, Cloudflare `workerd`, Deno WebGPU, and browser workers.
-Never soft-skips; a dict-as-array control must fail.
+One import-free checks module run under Node, Bun, a WinterTC-shaped
+`node:vm` isolate, Cloudflare `workerd`, and browser workers. Never
+soft-skips; a dict-as-array control must fail.
 
 ### 10.7 Benchmarks with provenance
 
@@ -544,7 +544,7 @@ cross-commit comparison with frozen v3 rows as a noise control.  An agent's
 | Unanchored ignore pattern swallowing `scripts/status/` | Anchored `/status`, lesson in `testing.md` |
 | Editing generated files | `build/`, `dist/`, `plan/INDEX.md`, goldens: regenerate via scripts only |
 | Over-trusting the record | "A plan's statements are claims to re-measure" |
-| Deno panics on zero-byte `writeBuffer` | Noted in `testing.md` |
+| Historical Deno GPU smoke found a panic on zero-byte `writeBuffer` | The GPU upload path skips empty writes; see the round 131 record |
 
 ---
 

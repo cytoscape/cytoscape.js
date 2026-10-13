@@ -54,7 +54,7 @@ import cytoscape from 'cytoscape';
 // Worker) — no renderer, no WebGPU code; ~525 KB minified against ~893 KB
 import cytoscape from 'cytoscape/headless';
 
-// headless with the GPU executors: Deno's native WebGPU, compute servers —
+// headless with the GPU executors: compute-only hosts with WebGPU —
 // the WGSL algorithm kernels and a device host for `executor: 'gpu'` force
 // runs, no renderer
 import cytoscape from 'cytoscape/headless-gpu';

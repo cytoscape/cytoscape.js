@@ -28,6 +28,8 @@ const ECHO_FAILURES = new Set(['subtestsFailed', 'cancelledByParent']);
 
 const nameStackByFile = new Map();
 const outputByFile = new Map();
+const renderedFailuresByFile = new Map();
+const aggregateFailuresByFile = new Map();
 
 const keyOf = (data) => data.file ?? '(unknown file)';
 
@@ -99,7 +101,22 @@ export default async function* quietReporter(source) {
         break;
       }
       case 'test:fail': {
-        if (!ECHO_FAILURES.has(data.details?.error?.failureType)) {
+        const file = keyOf(data);
+        const failureType = data.details?.error?.failureType;
+
+        if (ECHO_FAILURES.has(failureType)) {
+          // With the default per-file process isolation, Node can emit only
+          // this file-level echo and omit its nested failure events.  Defer
+          // the echo until the stream ends so it can be suppressed when a
+          // child block was rendered, or shown as the fallback otherwise.
+          if (!aggregateFailuresByFile.has(file)) {
+            aggregateFailuresByFile.set(file, data);
+          }
+        } else {
+          renderedFailuresByFile.set(
+            file,
+            (renderedFailuresByFile.get(file) ?? 0) + 1,
+          );
           yield failureBlock(data);
         }
         break;
@@ -108,6 +125,12 @@ export default async function* quietReporter(source) {
         // Suite headers, diagnostics, coverage, the tally: dropped.
         break;
       }
+    }
+  }
+
+  for (const [file, data] of aggregateFailuresByFile) {
+    if (!renderedFailuresByFile.has(file)) {
+      yield failureBlock(data);
     }
   }
 }

@@ -14,13 +14,13 @@ deleting a word of them.
 | Task | Run | Read first |
 | --- | --- | --- |
 | Anything under `src/` | `npm run -s verify` while iterating; `npm run -s test:node:quiet` before handing back | [`docs/agents/architecture.md`](docs/agents/architecture.md) |
-| Write or change a spec | `npm run -s test:js:quiet` | [`docs/agents/testing.md`](docs/agents/testing.md) — **and run its control** |
+| Write or change a spec | `npm run -s test:js:quiet` and `npm run -s test:js:bun:quiet` | [`docs/agents/testing.md`](docs/agents/testing.md) — **and run its control** |
 | Renderer, shader, gesture or anything drawn | `npm run -s verify`, then `npm run watch` and open the page; `npm run -s test:playwright:quiet` when browser behaviour changes | [`docs/agents/rendering.md`](docs/agents/rendering.md) |
 | Add or change a public API member | `npm run -s verify`, `npm run build:types`, `npm run -s test:throws:quiet` | [`docs/agents/documentation.md`](docs/agents/documentation.md) |
 | Add or interpret a benchmark | `npm run benchmark` / `npm run benchmark:all` | [`docs/agents/benchmarking.md`](docs/agents/benchmarking.md) |
 | Store, wire-format, lifecycle or multi-instance work | also `npm run -s test:soak:quiet` | [`docs/agents/testing.md`](docs/agents/testing.md) |
-| Bundle or packaging work | `npm run build`, `npm run build:types`, `npm run -s test:modules:quiet`, `npm run -s test:runtimes:node:quiet` | [`docs/agents/architecture.md`](docs/agents/architecture.md) |
-| A slim entry (`src/headless.mts`, `src/headless-gpu.mts`) or a tier move | the bundle row, plus `npm run -s test:runtimes:workerd:quiet` (and `npm run test:runtimes:deno:gpu` where Deno and a GPU exist) | [`docs/agents/architecture.md`](docs/agents/architecture.md) |
+| Bundle or packaging work | `npm run build`, `npm run build:types`, `npm run -s test:modules:quiet`, `npm run -s test:modules:bun:quiet`, `npm run -s test:runtimes:node:quiet` | [`docs/agents/architecture.md`](docs/agents/architecture.md) |
+| A slim entry (`src/headless.mts`, `src/headless-gpu.mts`) or a tier move | the bundle row, plus `npm run -s test:runtimes:workerd:quiet` | [`docs/agents/architecture.md`](docs/agents/architecture.md) |
 | Change the harness, the docs or the report | `npm run status` then `npm run status:serve` — **open it** | [`docs/agents/rendering.md`](docs/agents/rendering.md) |
 | Anything in `v3/` | see `v3/AGENTS.md` — it is frozen | — |
 | Broad, or unsure | `npm run -s test:quiet` | this file |
@@ -44,6 +44,8 @@ deleting a word of them.
   development record** — start there, not with v3's site.  The record is
   one file per section under `plan/rounds/`, indexed in
   `plan/INDEX.md`.
+- **`documentation/` holds v4-authored Markdown prose and API-parity audit
+  sources.** It is separate from frozen `v3/documentation/`.
 - Searches exclude `v3/` by default (the root `.ignore`), because it was
   ~57% of every hit.  To search it deliberately:
   `rg --no-ignore -g 'v3/**' <pattern>` — which is also how to read the v3
@@ -62,10 +64,10 @@ deleting a word of them.
   `src/index.mts`; do not "fix" one into the other.
 - **Linting is oxlint, not ESLint; formatting is oxfmt, not Prettier**
   (`npm run lint`, `npm run format`).
-- **Tests run on the `node:test` runner**, not Mocha: specs use chai's
-  `expect` and a small `describe`/`it`/`beforeEach` shim in
-  `test/node-test-setup.mjs`, which is why they look like Mocha suites.
-  Browser coverage is Playwright.
+- **Specs use the `node:test` API**, not Mocha: they use chai's `expect` and
+  a small `describe`/`it`/`beforeEach` shim in `test/node-test-setup.mjs`.
+  The Node tier runs them under Node; the Bun parity tier executes the same
+  public, module and soak specs under Bun. Browser coverage is Playwright.
 - **Bundles are produced with rolldown** (`rolldown -c`, not Rollup) from
   three entries (round 131): `./src/index.mjs` into UMD, minified UMD,
   CJS, ESM and minified ESM; `./src/headless.mjs` and
@@ -104,6 +106,7 @@ drift.
 | `npm run -s verify` | ~9 s | typecheck + lint + `test:js` — **the inner loop** |
 | `npm run -s test:js:one -- test/<f>.mjs` | — | one spec file, with the shim preloaded |
 | `npm run -s test:node:quiet` | ~90 s | the gate before handing work back |
+| `npm run -s test:bun:quiet` | — | public, module/packaging and soak parity under Bun, plus Bun throws coverage |
 | `npm run -s test:quiet` | minutes | the Node tier plus Playwright (the quiet `npm test`) |
 | `npm run build` | ~1 s | all bundles; only needed when changing the build |
 | `npm run watch` | — | the dev harness at http://localhost:3333/ |
@@ -112,8 +115,8 @@ drift.
 | `npm run plan:index` | — | regenerate `plan/INDEX.md` after adding a round |
 
 First run in a fresh checkout: `npm install` at the root, and `cd v3 && npm
-ci` **only** for the full browser suite — the Node tier (`test:js`,
-`test:modules`, `test:soak`, `test:throws`) needs no v3 install.  Browser
+ci` **only** for the full browser suite — the Node and Bun test tiers
+(`test:js`, `test:modules`, `test:soak`, `test:throws`) need no v3 install. Browser
 coverage also needs `npx playwright install --with-deps`.  The v3-vs-v4
 parity diffs need v3's UMD bundle, which `npm run test:playwright` now
 builds itself.

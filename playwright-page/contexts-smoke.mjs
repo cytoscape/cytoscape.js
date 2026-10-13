@@ -12,7 +12,7 @@ started", measured 2026-09-29), while the same import in a dedicated
 worker, and the minified or the source-map-free UMD in a service worker,
 all load.  (`algorithms-workers.spec.js` already reads the minified UMD;
 CI's browser job builds every bundle.)  Then it runs the cross-runtime smoke's checks
-(`test/runtimes/smoke-checks.mjs` — the same assertions Node, Bun, Deno,
+(`test/runtimes/smoke-checks.mjs` — the same assertions Node, Bun,
 the isolate and workerd run), then the one property a page-less context
 adds today: `executor: 'auto'` answers with the reference's values.
 The worker pool is not asserted either way — it refuses a host with no

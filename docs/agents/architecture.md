@@ -37,7 +37,11 @@ routes, these files explain.
 
 ## `test/`
 
-- `test/`: `node:test` suites (Mocha-shaped, see above). Add regression coverage here for API and logic changes; `test/modules/` holds internal-only and tooling coverage; `test/soak/` holds the round-48 robustness tier (leaks, churn, wire fuzzing, multi-instance isolation), run by `npm run test:soak` under `--expose-gc`.  `test/runtimes/` holds the round-98 cross-runtime smoke — one framework-free file the `test:runtimes:node`/`test:runtimes:bun`/`test:runtimes:deno` scripts run over the built bundles; see `docs/agents/testing.md`.
+- `test/`: `node:test` suites (Mocha-shaped, see above). Add regression coverage here for API and logic changes; `test/modules/` holds internal-only and tooling coverage; `test/soak/` holds the round-48 robustness tier (leaks, churn, wire fuzzing, multi-instance isolation), run by `npm run test:soak` under Node `--expose-gc` or Bun's real `Bun.gc()`. `test/lib/` holds test preloads that are not themselves discovered as specs. `test/runtimes/` holds the round-98 Node/Bun bundle smoke plus the isolate and workerd checks; see `docs/agents/testing.md`.
+
+## `documentation/` — v4-authored prose
+
+- `documentation/`: Markdown prose written for v4 and API-parity audit sources. This is separate from frozen `v3/documentation/`; the status site links to repository sources, and `.npmignore` keeps the tree out of the runtime package.
 
 ## `typescript/`
 
@@ -45,7 +49,7 @@ routes, these files explain.
 
 ## `scripts/` — the repo tooling
 
-- `scripts/`: Repo tooling run by hand or by a spec — the v4 audits (`jsdoc-coverage.mjs`, `throw-coverage.mjs`, `bench-coverage.mjs`, and round 135's `golden-coverage.mjs` — which style properties no visual golden sets, counted from the records under `playwright-tests/golden-coverage/` and gated by `test/modules/golden-coverage.mjs`; it imports `src/`, so run it with `node --import tsx`), the docs generator (`docs-generate.mjs`, round 45: `npm run docs:api`, gated by `test/docs-generate.mjs` against the shipped declaration), and round 46.5's status site.  `oxlint src scripts` covers this directory since 46.5; it did not before.
+- `scripts/`: Repo tooling run by hand or by a spec — the v4 audits (`jsdoc-coverage.mjs`, `throw-coverage.mjs`, `bench-coverage.mjs`, and round 135's `golden-coverage.mjs` — which style properties no visual golden sets, counted from the records under `playwright-tests/golden-coverage/` and gated by `test/modules/golden-coverage.mjs`; it imports `src/`, so run it with `node --import tsx`), the Node/Bun test-tier adapter (`runtime-test-tier.mjs`, with event and JUnit normalization in `runtime-test-results.mjs`), the docs generator (`docs-generate.mjs`, round 45: `npm run docs:api`, gated by `test/docs-generate.mjs` against the shipped declaration), and round 46.5's status site. `oxlint src scripts` covers this directory since 46.5; it did not before.
   - `scripts/status-build.mjs` + `scripts/status/`: **`npm run status`** builds the gitignored `status/` — a deployable preview of the branch (the debug harness, the benchmark archive, the API reference, the repo documents, the golden gallery).  Split into a pure `buildPlan()` and a writing `executePlan()` so `test/modules/status-site.mjs` can check the intended output without copying 30 MiB of fixtures.  Serve it with `npm run status:serve` (port **3335** — 3333 is v4's harness, 3334 is v3's).
   - `scripts/machine-info.mjs`: `npm run machine` — CPU/cores/clock, RAM, OS, and a GPU *inventory* with VRAM, for benchmark provenance.  Parsers are pure and exported; probes are separate and never throw.
   - `scripts/gpu-info.mjs`: `npm run gpu` — whether the harness-flagged Chromium reaches a real WebGPU adapter, with a one-line HARDWARE / SOFTWARE-ONLY / UNKNOWN verdict.  The card being present and the browser reaching it are different facts; twice a session has read SwiftShader and wrongly concluded "no GPU".  A failed probe reports UNKNOWN (exit 1), never "no GPU".

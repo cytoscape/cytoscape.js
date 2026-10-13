@@ -1,7 +1,7 @@
 /*
 Round 131: the cross-runtime smoke's checks, split from the loader
-(`smoke.mjs`) so that every host runs the same assertions — Node, Bun and
-Deno through `smoke.mjs`, a WinterTC-shaped `node:vm` isolate through
+(`smoke.mjs`) so that every host runs the same assertions — Node and Bun
+through `smoke.mjs`, a WinterTC-shaped `node:vm` isolate through
 `isolate.mjs`, and Cloudflare's own runtime through `workerd-main.mjs`.
 **No imports at all**: this module is loaded as-is inside an isolate and
 inside workerd, where there is no `node:` anything to import

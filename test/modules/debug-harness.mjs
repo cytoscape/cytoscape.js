@@ -99,8 +99,7 @@ describe('debug harness (round 43)', function () {
 
   describe('every sheet compiles against its own fixture', function () {
     for (const [id, def] of entries) {
-      it(id, function () {
-        this.timeout?.(120000);
+      it(id, { timeout: 120000 }, function () {
 
         const elements = elementsFor(id, def);
 
@@ -167,8 +166,7 @@ describe('debug harness (round 43)', function () {
         continue;
       }
 
-      it(`${id}: a sheet for long labels wraps them`, function () {
-        this.timeout?.(120000);
+      it(`${id}: a sheet for long labels wraps them`, { timeout: 120000 }, function () {
 
         const elements = elementsFor(id, def);
         const key = def.labelKey || 'id';
@@ -260,8 +258,7 @@ describe('debug harness (round 43)', function () {
         continue;
       }
 
-      it(`${id}: every data column survives`, function () {
-        this.timeout?.(180000);
+      it(`${id}: every data column survives`, { timeout: 180000 }, function () {
 
         const before = elementsFor(id, def);
         const after = roundTrip(before);
@@ -633,8 +630,7 @@ describe('debug harness (round 43)', function () {
       // selected clause sits ahead of every data clause, and data mappers
       // fall to their fallbacks without affecting it.
       for (const [id, def] of entries) {
-        it(id, function () {
-          this.timeout?.(120000);
+        it(id, { timeout: 120000 }, function () {
 
           // real elements, because the demo sheets derive their case-clause
           // lists from the fixture's data — the *instance* below stays tiny
@@ -1073,8 +1069,7 @@ describe('debug harness (round 43)', function () {
       },
     };
 
-    it("eh/ed/bc/ab route with v3's arrays, not the family defaults", function () {
-      this.timeout?.(120000);
+    it("eh/ed/bc/ab route with v3's arrays, not the family defaults", { timeout: 120000 }, function () {
 
       const def = networks['v3-default'];
       const elements = elementsFor('v3-default', def);

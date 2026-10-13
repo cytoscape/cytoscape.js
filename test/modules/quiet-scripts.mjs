@@ -21,6 +21,7 @@ stray twin nobody registered is itself a failure.
 const WRAPPER_PREFIX = 'node scripts/quiet-run.mjs ';
 const NODE_REPORTER = ' --test-reporter=./test/quiet-reporter.mjs';
 const PLAYWRIGHT_REPORTER = ' --reporter=./playwright-tests/quiet-reporter.mjs';
+const RUNTIME_TIER_QUIET = ' --quiet';
 
 const { scripts } = JSON.parse(
   readFileSync(
@@ -45,6 +46,10 @@ const normalise = (quietCommand) => {
 
   if (command.includes(PLAYWRIGHT_REPORTER)) {
     return command.replace(PLAYWRIGHT_REPORTER, '');
+  }
+
+  if (command.includes(RUNTIME_TIER_QUIET)) {
+    return command.replace(RUNTIME_TIER_QUIET, '');
   }
 
   if (command.startsWith('run-s ')) {
@@ -79,11 +84,12 @@ const EXPECTED_TWINS = [
   'test:runtimes:node:run:quiet',
   'test:runtimes:bun:quiet',
   'test:runtimes:bun:run:quiet',
-  'test:runtimes:deno:quiet',
-  'test:runtimes:deno:run:quiet',
-  // round 131: the Deno GPU smoke and the workerd runtime
-  'test:runtimes:deno:gpu:quiet',
-  'test:runtimes:deno:gpu:run:quiet',
+  'test:js:bun:quiet',
+  'test:modules:run:bun:quiet',
+  'test:modules:bun:quiet',
+  'test:soak:bun:quiet',
+  'test:throws:bun:quiet',
+  'test:bun:quiet',
   'test:runtimes:workerd:quiet',
   'test:runtimes:workerd:run:quiet',
   'test:node:quiet',

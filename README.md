@@ -66,8 +66,8 @@ const cy = cytoscape( {
 
 Two slimmer builds carry the same core without the renderer:
 `cytoscape/headless` (CPU-only — CI, Node services, edge isolates) and
-`cytoscape/headless-gpu` (the WebGPU compute executors, no DOM — Deno's
-native WebGPU).  The pre-release alias `cytoscape/gpu` was removed before
+`cytoscape/headless-gpu` (the WebGPU compute executors, no DOM).  The
+pre-release alias `cytoscape/gpu` was removed before
 alpha; import `cytoscape`.
 
 The public type names carry no prefix: `Core`, `Collection`, `Event`,

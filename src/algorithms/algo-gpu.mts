@@ -169,9 +169,9 @@ const MAP_READ_MODE = MAP_MODE.READ;
 /**
  * Write `data` at offset 0 — or nothing for an empty array.  A zero-byte
  * `writeBuffer` is a no-op by the spec (the buffer is zero-initialised),
- * and Deno 2.9.6's wgpu binding panics on one (`ext/webgpu/queue.rs`,
- * measured 2026-09-28 by round 131's Deno GPU smoke: an empty edge list
- * uploads an empty array), so it is never issued.
+ * Round 131's Deno 2.9.6 GPU smoke measured a wgpu panic on a zero-byte
+ * write (`ext/webgpu/queue.rs`, 2026-09-28, for an empty edge list).
+ * The historical compatibility guard remains: empty arrays need no upload.
  */
 const writeData = (
   ctx: AlgoGpu,

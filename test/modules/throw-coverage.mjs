@@ -1,12 +1,20 @@
 import {
   audit,
   BROWSER_ONLY,
+  bunRunFailureDetails,
   gateFailures,
   MISATTRIBUTED,
+  parseLcov,
   UNREACHABLE,
 } from '../../scripts/throw-coverage.mjs';
+import {
+  instrumentThrowSource,
+  parseThrowProbeLog,
+} from '../../scripts/throw-site-probe.mjs';
 import { expect } from 'chai';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 /*
 Round 30.4: the error-contract measurement tool, checked against a
@@ -64,18 +72,91 @@ const EMPTY_EXPORT_GUARD = throwLine(
   'Cannot export a full-graph image',
 );
 const BIG_ENDIAN_GUARD = throwLine('src/wire.mts', 'little-endian');
+const MULTILINE_GUARD = throwLine(
+  'src/style/engine-sheet.mts',
+  'if (!SHEET_KEYS.has(key))',
+);
+const UNTRIGGERED_MULTILINE_GUARD = throwLine(
+  'src/style/engine-sheet.mts',
+  "if (typeof (sheet as Record<string, unknown>)[key] === 'function')",
+);
 
-const lcov = ({ covered = [], dead = [], file = PARSE }) =>
-  [
-    'TN:',
-    `SF:${file}`,
+const lcov = ({ covered = [], dead = [], file = PARSE }) => {
+  const rows = [
     ...covered.map((ln) => `DA:${ln},7`),
     ...dead.map((ln) => `DA:${ln},0`),
+  ];
+
+  return [
+    'TN:',
+    `SF:${file}`,
+    ...rows,
+    `LF:${rows.length}`,
+    `LH:${covered.length}`,
     'end_of_record',
     '',
   ].join('\n');
+};
+
+const allSites = audit(lcov({})).sites;
+const completeReport = (deadSites = []) => {
+  const dead = new Set(deadSites);
+  const byFile = new Map();
+
+  for (const site of allSites) {
+    const lines = byFile.get(site.file) ?? [];
+    lines.push(
+      `DA:${site.line},${dead.has(`${site.file}:${site.line}`) ? 0 : 1}`,
+    );
+    byFile.set(site.file, lines);
+  }
+
+  return [...byFile]
+    .map(([file, lines]) => {
+      const hits = lines.filter((line) => !line.endsWith(',0')).length;
+      return `TN:\nSF:${file}\n${lines.join('\n')}\nLF:${lines.length}\nLH:${hits}\nend_of_record\n`;
+    })
+    .join('');
+};
+
+const fullAudit = (deadSites = []) => audit(completeReport(deadSites));
 
 describe('scripts/throw-coverage', function () {
+  it('keeps bounded JUnit and process details when a Bun pass fails', function () {
+    const dir = mkdtempSync(join(tmpdir(), 'throw-failure-control-'));
+    const report = join(dir, 'failed.xml');
+
+    try {
+      writeFileSync(
+        report,
+        '<testsuites tests="1" failures="1"><testsuite>' +
+          '<testcase name="bad control" classname="control">' +
+          '<failure message="Expected 2, got 1">Error: stack frame</failure>' +
+          '</testcase></testsuite></testsuites>',
+      );
+      const details = bunRunFailureDetails(
+        'Bun exact probe',
+        {
+          status: 1,
+          stdout: `discarded prefix\n${'x'.repeat(8_000)} stdout tail`,
+          stderr: 'stderr detail',
+        },
+        report,
+      );
+
+      expect(details).to.contain('Bun exact probe failed (exit 1)');
+      expect(details).to.contain('control > bad control');
+      expect(details).to.contain('Expected 2, got 1');
+      expect(details).to.contain('Error: stack frame');
+      expect(details).to.contain('stdout tail:');
+      expect(details).to.contain('stderr detail');
+      expect(details).to.not.contain('discarded prefix');
+      expect(details.length).to.be.lessThan(10_000);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('reads a source-mapped lcov report and classifies each throw', function () {
     const result = audit(
       lcov({ covered: [KEYWORD_GUARD], dead: [PERCENT_GUARD] }),
@@ -88,6 +169,168 @@ describe('scripts/throw-coverage', function () {
 
     // and a throw the report says nothing about is unknown, not covered
     expect(at(PARSE, IMAGE_ENUM_GUARD).covered).to.equal(null);
+  });
+
+  it('maps multiline .mts guards by their original LCOV line, including an untouched neighbor', function () {
+    const file = 'src/style/engine-sheet.mts';
+    const report = [
+      lcov({ covered: [MULTILINE_GUARD, MULTILINE_GUARD + 1], file }),
+      lcov({ dead: [UNTRIGGERED_MULTILINE_GUARD], file }),
+    ].join('');
+    const result = audit(report, 'Bun');
+    const find = (line) =>
+      result.sites.find((site) => site.file === file && site.line === line);
+
+    expect(find(MULTILINE_GUARD).covered).to.equal(true);
+    expect(find(UNTRIGGERED_MULTILINE_GUARD).covered).to.equal(false);
+    expect(result.runtime).to.equal('Bun');
+  });
+
+  it('instruments multiline throw sites without changing their source lines or text', function () {
+    const file = 'src/style/engine-sheet.mts';
+    const source = readFileSync(
+      new URL(`../../${file}`, import.meta.url),
+      'utf8',
+    );
+    const lines = source.split('\n');
+    const expectedSites = lines.flatMap((line, index) =>
+      line.includes('throw new') ? [`${file}:${index + 1}`] : [],
+    );
+    const transformed = instrumentThrowSource(file, source, expectedSites);
+
+    expect(transformed.contents.split('\n').length).to.equal(lines.length);
+    expect(transformed.sites).to.include(`${file}:${MULTILINE_GUARD}`);
+    expect(transformed.sites).to.include(
+      `${file}:${UNTRIGGERED_MULTILINE_GUARD}`,
+    );
+    expect(transformed.contents.split('\n')[MULTILINE_GUARD - 1]).to.contain(
+      'throw new Error(',
+    );
+    expect(transformed.contents).to.contain(
+      "Unknown stylesheet key '${key}'; supported keys: nodes, edges, parents, core, bypasses",
+    );
+  });
+
+  it('wraps an unbraced throw without changing its control flow', function () {
+    const file = 'src/control-probe.mts';
+    const original =
+      'function run(flag) {\nlet reached = false;\nif (flag) throw new Error("guard");\nreached = true;\nreturn reached;\n}\n';
+    const transformed = instrumentThrowSource(file, original, [`${file}:3`]);
+    const observed = [];
+    const previous = globalThis.__cyThrowProbe;
+
+    globalThis.__cyThrowProbe = (site) => observed.push(site);
+
+    try {
+      const execute = new Function(`${transformed.contents}\nreturn run;`)();
+
+      expect(execute(false)).to.equal(true);
+      expect(observed).to.deep.equal([]);
+      expect(() => execute(true)).to.throw('guard');
+      expect(observed).to.deep.equal([`${file}:3`]);
+    } finally {
+      if (previous === undefined) {
+        delete globalThis.__cyThrowProbe;
+      } else {
+        globalThis.__cyThrowProbe = previous;
+      }
+    }
+  });
+
+  it('uses exact Bun site hits and fails closed for missing, malformed or stale records', function () {
+    const file = 'src/style/engine-sheet.mts';
+    const triggered = `${file}:${MULTILINE_GUARD}`;
+    const untouched = `${file}:${UNTRIGGERED_MULTILINE_GUARD}`;
+    const expected = [triggered, untouched];
+    const record = (kind, site, realm = 'main') =>
+      JSON.stringify({ kind, site, realm });
+    const parsed = parseThrowProbeLog(
+      [
+        record('instrumented', triggered),
+        record('instrumented', untouched),
+        record('instrumented', triggered, 'worker'),
+        record('hit', triggered),
+        record('hit', triggered, 'worker'),
+      ].join('\n'),
+      expected,
+    );
+    const result = audit(
+      lcov({ covered: [MULTILINE_GUARD, UNTRIGGERED_MULTILINE_GUARD], file }),
+      'Bun',
+      parsed,
+    );
+    const siteAt = (line) =>
+      result.sites.find((site) => site.file === file && site.line === line);
+
+    expect(siteAt(MULTILINE_GUARD).covered).to.equal(true);
+    expect(parsed.hitRealms.get(triggered)).to.deep.equal(
+      new Set(['main', 'worker']),
+    );
+    expect(parsed.instrumentedRealms.get(triggered)).to.deep.equal(
+      new Set(['main', 'worker']),
+    );
+    expect(siteAt(MULTILINE_GUARD).nativeCovered).to.equal(true);
+    expect(siteAt(UNTRIGGERED_MULTILINE_GUARD).covered).to.equal(false);
+    expect(siteAt(UNTRIGGERED_MULTILINE_GUARD).nativeCovered).to.equal(true);
+    expect(result.dead).to.include(siteAt(UNTRIGGERED_MULTILINE_GUARD));
+
+    expect(() => parseThrowProbeLog('{bad json', expected)).to.throw(
+      'malformed throw-probe record',
+    );
+    expect(() =>
+      parseThrowProbeLog(
+        JSON.stringify({ kind: 'hit', site: triggered, realm: 'unknown' }),
+        expected,
+      ),
+    ).to.throw('invalid throw-probe record');
+    expect(() =>
+      parseThrowProbeLog(record('hit', triggered), expected),
+    ).to.throw('no instrumentation record');
+    expect(() =>
+      parseThrowProbeLog(record('instrumented', `${file}:999999`), expected),
+    ).to.throw('unknown or stale site');
+
+    const missing = parseThrowProbeLog(
+      record('instrumented', triggered),
+      expected,
+    );
+    const missingResult = audit(
+      lcov({ covered: [MULTILINE_GUARD], file }),
+      'Bun',
+      missing,
+    );
+    const missingSite = missingResult.sites.find(
+      (site) => site.file === file && site.line === UNTRIGGERED_MULTILINE_GUARD,
+    );
+
+    expect(missingSite.covered).to.equal(null);
+    expect(missingResult.unknown).to.include(missingSite);
+    expect(
+      gateFailures(missingResult).some((failure) =>
+        failure.includes('coverage unknown'),
+      ),
+    ).to.equal(true);
+  });
+
+  it('rejects malformed, escaped or truncated LCOV source records', function () {
+    expect(() => parseLcov('DA:1,1')).to.throw('before a source path');
+    expect(() =>
+      parseLcov('SF:../outside.mts\nDA:1,1\nend_of_record'),
+    ).to.throw('escapes the repository');
+    expect(() => parseLcov('SF:src/style/parse.mts\nDA:1,1')).to.throw(
+      'missing end_of_record',
+    );
+    expect(() =>
+      parseLcov('SF:src/style/parse.mts\nDA:nope\nend_of_record'),
+    ).to.throw('malformed lcov line');
+    expect(() =>
+      parseLcov('SF:src/style/parse.mts\nDA:1,1\nLF:2\nLH:1\nend_of_record'),
+    ).to.throw('declares 2 lines');
+    expect(() =>
+      parseLcov(
+        'SF:/tmp/generated-wrapper.mjs\nDA:1,1\nLF:1\nLH:1\nend_of_record',
+      ),
+    ).to.not.throw();
   });
 
   it('counts only Node-reachable sites as dead', function () {
@@ -139,7 +382,9 @@ describe('scripts/throw-coverage', function () {
       ...unrun.filter((s) => s.unreachable != null),
     ]);
 
-    expect(result.browser + result.unreachable).to.equal(distinct.size);
+    expect(result.browser + result.unreachable + result.misattributed).to.equal(
+      distinct.size,
+    );
 
     // and --verbose labels them the same way the tally counts them
     for (const at of both) {
@@ -164,6 +409,7 @@ describe('scripts/throw-coverage', function () {
 
     expect(result.sites.every((s) => s.covered !== true)).to.equal(true);
     expect(result.dead.length).to.equal(0);
+    expect(result.unknown.length).to.be.greaterThan(0);
   });
 
   it('overrides the known-misattributed site rather than counting it covered', function () {
@@ -175,9 +421,10 @@ describe('scripts/throw-coverage', function () {
       (s) => s.file === file && s.line === Number(line),
     );
 
-    expect(site.covered).to.equal(false);
+    expect(site.covered).to.equal(null);
     expect(site.misattributed).to.be.a('string');
     expect(result.dead).to.not.include(site); // still browser, not a gap
+    expect(result.unknown).to.not.include(site); // explicit maintained classification
   });
 
   it('finds a throw in every audited file it claims to scan', function () {
@@ -213,9 +460,9 @@ describe('scripts/throw-coverage', function () {
   live anyway.
   */
   describe('the gate (round 37.1)', function () {
-    it('fails when a Node-reachable throw has no spec', function () {
+    it('fails when a reachable throw has no spec', function () {
       // "a spec deleted", staged on the shared keyword-enum guard
-      const failures = gateFailures(audit(lcov({ dead: [KEYWORD_GUARD] })));
+      const failures = gateFailures(fullAudit([`${PARSE}:${KEYWORD_GUARD}`]));
 
       expect(failures).to.have.lengthOf(1);
       expect(failures[0]).to.contain(`${PARSE}:${KEYWORD_GUARD}`);
@@ -223,9 +470,22 @@ describe('scripts/throw-coverage', function () {
     });
 
     it('passes when the same site has one', function () {
-      expect(
-        gateFailures(audit(lcov({ covered: [KEYWORD_GUARD] }))),
-      ).to.deep.equal([]);
+      expect(gateFailures(fullAudit())).to.deep.equal([]);
+    });
+
+    it('fails closed when a reachable throw has unknown coverage', function () {
+      const baseline = fullAudit();
+      const target = baseline.sites.find(
+        (site) => site.file === PARSE && site.line === IMAGE_ENUM_GUARD,
+      );
+      const failures = gateFailures({
+        ...baseline,
+        unknown: [{ ...target, covered: null }],
+      });
+
+      expect(failures).to.have.lengthOf(1);
+      expect(failures[0]).to.contain(`${PARSE}:${IMAGE_ENUM_GUARD}`);
+      expect(failures[0]).to.contain('coverage unknown');
     });
 
     it('fails when an allowlist entry no longer names a throw site', function () {
@@ -233,7 +493,7 @@ describe('scripts/throw-coverage', function () {
       // above an exempted site moves it, and the entry silently re-points at
       // whatever line landed there.  Under a zero-tolerance gate that is an
       // exemption granted to the wrong throw.
-      const failures = gateFailures(audit(lcov({})), [
+      const failures = gateFailures(fullAudit(), [
         ['UNREACHABLE', { 'src/style.mts:2': 'a line with no throw on it' }],
       ]);
 
@@ -244,7 +504,7 @@ describe('scripts/throw-coverage', function () {
 
     it('fails when an allowlist entry carries no reason', function () {
       const at = Object.keys(UNREACHABLE)[0];
-      const failures = gateFailures(audit(lcov({})), [
+      const failures = gateFailures(fullAudit(), [
         ['UNREACHABLE', { [at]: '  ' }],
       ]);
 
@@ -253,11 +513,9 @@ describe('scripts/throw-coverage', function () {
     });
 
     it('holds the real allowlists against the real sources', function () {
-      // the ratchet that runs in the fast suite: an empty report makes every
-      // site unknown rather than dead, so the only thing left to fail is the
-      // allowlist validation — which is exactly the half that goes stale
-      // without anyone touching it.
-      expect(gateFailures(audit(lcov({})))).to.deep.equal([]);
+      // The fast suite uses a complete synthetic report to isolate stale
+      // allowlist validation from engine coverage collection.
+      expect(gateFailures(fullAudit())).to.deep.equal([]);
 
       // and it is checking something: both lists are non-empty
       expect(

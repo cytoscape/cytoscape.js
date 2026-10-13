@@ -1,19 +1,18 @@
 /*
-Round 98.2: the cross-runtime smoke — one file, three runtimes, over the
+Round 98.2: the cross-runtime smoke — one file, two runtimes, over the
 built bundles.
 
     node test/runtimes/smoke.mjs
     bun test/runtimes/smoke.mjs
-    deno run --allow-read test/runtimes/smoke.mjs
 
 Plain asserts, zero test framework, and zero imports beyond what loading
 the bundles requires (`node:module` and `node:url` for the
-CJS require; all three runtimes provide both) and its own checks, which
+CJS require; Node and Bun provide both) and its own checks, which
 live in `smoke-checks.mjs` since round 131 so the isolate and workerd
 hosts run them too — anything more and this file silently becomes a
 fourth test tier with its own compat needs.  `test/modules/runtime-smoke.mjs`
 lints exactly that, enumerates the npm scripts that wrap this file
-(`test:runtimes:node` / `:bun` / `:deno`, each `run-s build …` so a stale
+(`test:runtimes:node` / `:bun`, each `run-s build …` so a stale
 bundle cannot pass for a fresh one), and runs the Node controls.
 
 The exit code is the contract: every assertion is on *values and
@@ -27,8 +26,7 @@ soft-skips.
 
 What runs, per bundle (ESM, minified ESM — what CDN users run — and CJS,
 of the full entry and, since round 131, of `cytoscape/headless` and
-`cytoscape/headless-gpu`, on all three runtimes; Deno's require-compat held when measured, so CJS
-is asserted there too, not skipped): factory + headless init with
+`cytoscape/headless-gpu`, on both runtimes): factory + headless init with
 `headlessWidth`/`headlessHeight` set (a smoke inheriting 800×600 by luck
 tests a different graph); the definition-form load and the wire
 round-trip with every dictionary column checked value-for-value; a sheet
@@ -66,8 +64,8 @@ const bundleUrl = (file) =>
       );
 
 const esm = (url) => import(url.href);
-// `createRequire` exists on all three runtimes (Deno's require-compat
-// held when measured — 2.9.6), so the CJS bundle is contract, not bonus
+// `createRequire` is part of the Node-compatible surface tested by Node
+// and Bun, so the CJS bundle is contract, not bonus
 const cjs = (url) => ({
   default: createRequire(import.meta.url)(fileURLToPath(url)),
 });
@@ -90,8 +88,7 @@ const BUNDLES = [
   { file: 'cytoscape-headless-gpu.cjs.js', kind: 'headless-gpu', load: cjs },
 ];
 
-const runtime =
-  globalThis.navigator?.userAgent ?? `unknown (${typeof globalThis.Deno})`;
+const runtime = globalThis.navigator?.userAgent ?? 'unknown runtime';
 
 for (const { file, kind, load } of BUNDLES) {
   const url = bundleUrl(file);

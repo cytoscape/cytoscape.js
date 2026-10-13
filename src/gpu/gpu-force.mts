@@ -727,9 +727,9 @@ export class GpuForceRuntime implements ForceRuntimeLike {
         usage,
       });
 
-      // a zero-byte write is a spec no-op, and panics Deno 2.9.6's wgpu
-      // binding (131.4, see algo-gpu.mts's writeData): an edgeless run
-      // has an empty edge table
+      // a zero-byte write is a spec no-op.  Round 131.4 measured a Deno
+      // 2.9.6 wgpu panic on one (see algo-gpu.mts's writeData); an
+      // edgeless run has an empty edge table.
       if (data != null && data.byteLength > 0) {
         device.queue.writeBuffer(
           buffer,

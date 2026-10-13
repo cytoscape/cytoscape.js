@@ -1,8 +1,8 @@
 /*
 The headless GPU force host (round 131.4): the device integrator
 (`gpu-force.mts`) driven with no renderer — `cytoscape/headless-gpu`'s
-host for an explicit force `executor: 'gpu'` (Deno's native WebGPU, a
-compute-only server), and the full build's for an unmounted instance.
+host for an explicit force `executor: 'gpu'` on a compute-only host, and
+the full build's for an unmounted instance.
 
 The renderer drives `GpuForceRuntime` from its frame loop: poll, encode
 ahead of the cull pass, submit, and let vsync pace the batches.  Here

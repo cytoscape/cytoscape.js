@@ -3,8 +3,7 @@
 ladder — everything `cytoscape/headless` carries, plus the GPU algorithm
 lanes (`algorithms/gpu-lanes.mts`, registered below) and a headless GPU
 force host (`gpu/headless-force-host.mts`).  No renderer and no pointer
-handler: the build for a GPU with no DOM — Deno's native WebGPU, a
-compute-only server.
+handler: the build for a GPU compute host with no DOM.
 
 A `container` (or `cy.mount()`) throws `this build has no renderer —
 import 'cytoscape'`.  An explicit force `executor: 'gpu'` runs on the

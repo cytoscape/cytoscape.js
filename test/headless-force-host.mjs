@@ -12,7 +12,8 @@ import { defaultForceParams } from '../src/layout/force-sim.mjs';
 // racing a continuation reads zero, and zero reads as converged — the
 // round-118/119 class of defect); nothing encoded after finishForce(),
 // even with a continuation pending; an idle infinite run parked until a
-// wake.  The real device is the Deno GPU smoke's (test/runtimes).
+// wake.  A real-device smoke was measured in round 131 and is retained in
+// the round record.
 
 /**
  * A fake GPUDevice: buffers are byte arrays, copies run at submit, and

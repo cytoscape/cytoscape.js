@@ -94,6 +94,51 @@ const until = async (test, limit = 5000) => {
   }
 };
 
+const manualFrames = (opts = {}) => {
+  const frames = [];
+  const previous = globalThis.requestAnimationFrame;
+
+  globalThis.requestAnimationFrame = (callback) => {
+    frames.push(callback);
+    return frames.length;
+  };
+
+  let cy;
+  try {
+    cy = mk(opts);
+  } catch (error) {
+    if (previous == null) {
+      delete globalThis.requestAnimationFrame;
+    } else {
+      globalThis.requestAnimationFrame = previous;
+    }
+    throw error;
+  }
+
+  let restored = false;
+
+  return {
+    cy,
+    frame(time) {
+      const callback = frames.shift();
+
+      expect(callback, 'expected one scheduled animation frame').to.be.a(
+        'function',
+      );
+      callback(time);
+    },
+    restore() {
+      if (restored) return;
+      restored = true;
+      if (previous == null) {
+        delete globalThis.requestAnimationFrame;
+      } else {
+        globalThis.requestAnimationFrame = previous;
+      }
+    },
+  };
+};
+
 const eventLog = (cy) => {
   const log = [];
 
@@ -127,14 +172,15 @@ describe('layouts: cancel() (round 128)', function () {
       it(`${name}: a cancel mid-tween restores the snapshot, drops the tween and closes once with cancelled: true`, async function () {
         // pack re-packs components where they stand: one ring would
         // not move, so it gets two chains
-        const cy =
+        const { cy, frame, restore } = manualFrames(
           name === 'pack'
-            ? mk({
+            ? {
                 elements: RING().filter(
                   (e) => e.data.id !== 'e5' && e.data.id !== 'e11',
                 ),
-              })
-            : mk();
+              }
+            : {},
+        );
         const before = positionsOf(cy);
         const log = eventLog(cy);
         let stopCb = 0;
@@ -157,33 +203,39 @@ describe('layouts: cancel() (round 128)', function () {
 
         const layout = cy.layout(options);
 
-        layout.run();
-        // headless frames are 16 ms timeouts and a tween's first frame only
-        // stamps its start, so the first movement is the second frame; a
-        // fixed 40 ms wait lost that race under the full suite's load
-        await until(() => anyMoved(before, positionsOf(cy)));
+        try {
+          layout.run();
+          // Drive the headless animation clock directly so a stalled timer
+          // cannot let the 200 ms tween finish before this mid-run cancel.
+          await Promise.resolve();
+          const startedAt = performance.now();
 
-        // mid-tween: something has moved off the snapshot
-        moved(before, positionsOf(cy));
+          frame(startedAt);
+          frame(startedAt + 100);
 
-        layout.cancel();
+          // mid-tween: something has moved off the snapshot
+          moved(before, positionsOf(cy));
 
-        same(before, positionsOf(cy));
-        expect(log).to.deep.equal([
-          'layoutstart',
-          'layoutready',
-          'layoutstop:cancelled',
-        ]);
-        expect(stopCb).to.equal(1);
+          layout.cancel();
 
-        // the dropped tween's completion fires nothing more, and the
-        // positions stay put
-        await tick(260);
-        same(before, positionsOf(cy));
-        expect(log.length).to.equal(3);
-        expect(stopCb).to.equal(1);
-        expect(cy._inflight.size).to.equal(0);
-        expect(cy._layoutRuns.size).to.equal(0);
+          same(before, positionsOf(cy));
+          expect(log).to.deep.equal([
+            'layoutstart',
+            'layoutready',
+            'layoutstop:cancelled',
+          ]);
+          expect(stopCb).to.equal(1);
+
+          // A queued frame after cancel fires no completion or write.
+          frame(startedAt + 220);
+          same(before, positionsOf(cy));
+          expect(log.length).to.equal(3);
+          expect(stopCb).to.equal(1);
+          expect(cy._inflight.size).to.equal(0);
+          expect(cy._layoutRuns.size).to.equal(0);
+        } finally {
+          restore();
+        }
       });
     }
 

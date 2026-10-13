@@ -19,6 +19,9 @@ const REPORTER = fileURLToPath(
   new URL('../quiet-reporter.mjs', import.meta.url),
 );
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
+// This control is specifically about Node's reporter API.  The parent spec
+// also runs under Bun, whose `process.execPath` would re-enter Bun's runner.
+const NODE_BINARY = process.env.NODE_BINARY || 'node';
 
 const fixture = (name) =>
   fileURLToPath(new URL(`./fixtures/quiet/${name}`, import.meta.url));
@@ -31,11 +34,11 @@ const env = { ...process.env };
 
 delete env.NODE_TEST_CONTEXT;
 
-const runReporter = (fixtureName) => {
+const runReporter = (...fixtureNames) => {
   try {
     const stdout = execFileSync(
-      process.execPath,
-      ['--test', `--test-reporter=${REPORTER}`, fixture(fixtureName)],
+      NODE_BINARY,
+      ['--test', `--test-reporter=${REPORTER}`, ...fixtureNames.map(fixture)],
       { cwd: ROOT, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
 
@@ -74,7 +77,9 @@ describe('quiet-reporter', () => {
     let run;
 
     before(() => {
-      run = runReporter('fail.mjs');
+      // A second file triggers Node's default per-file isolation path, where
+      // a `subtestsFailed` event may be the only emitted failure record.
+      run = runReporter('pass.mjs', 'fail.mjs');
     });
 
     it('exits nonzero', () => {
@@ -88,6 +93,11 @@ describe('quiet-reporter', () => {
 
     it('carries the assertion message', () => {
       expect(run.stdout).to.include('one is not two');
+    });
+
+    it('shows the aggregate failure when Node omits nested failure events', () => {
+      expect(run.stdout.trim()).to.not.equal('');
+      expect(run.stdout).to.match(/failing one|subtestsFailed/);
     });
 
     // Whole-file replay, not per-test: the events API cannot

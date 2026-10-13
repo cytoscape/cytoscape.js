@@ -147,7 +147,9 @@ describe('soak: the force sim worker (round 129.3)', () => {
     const script = `
       import cytoscape from '${ROOT}/src/index.mjs';
       import { _setForceWorkerLoader } from '${ROOT}/src/layout/force-remote.mjs';
-      _setForceWorkerLoader((url) => "import('tsx/esm/api').then(({ register }) => { register(); return import(" + url + "); })");
+      if (process.versions.bun == null) {
+        _setForceWorkerLoader((url) => "import('tsx/esm/api').then(({ register }) => { register(); return import(" + url + "); })");
+      }
       const els = [];
       for (let i = 0; i < 40; i++) els.push({ data: { id: 'n' + i } });
       for (let i = 0; i < 40; i++) els.push({ data: { source: 'n' + i, target: 'n' + ((i + 1) % 40) } });
@@ -158,9 +160,10 @@ describe('soak: the force sim worker (round 129.3)', () => {
       console.log('ran', cy.nodes()[1].position().x);
       // no _resetForceWorker(), no process.exit(): the worker must let go
     `;
+    const loaderArgs = process.versions.bun == null ? ['--import', 'tsx'] : [];
     const child = spawnSync(
       process.execPath,
-      ['--import', 'tsx', '--input-type=module', '-e', script],
+      [...loaderArgs, '--input-type=module', '-e', script],
       { cwd: ROOT, encoding: 'utf8', timeout: 60000 },
     );
 

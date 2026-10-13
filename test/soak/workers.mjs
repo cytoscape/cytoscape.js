@@ -246,9 +246,10 @@ describe('soak: the algorithm worker pool', () => {
       console.log('ran', r.betweenness(cy.nodes()[1]));
       // no _resetAlgoWorkers(), no process.exit(): the pool must let go
     `;
+    const loaderArgs = process.versions.bun == null ? ['--import', 'tsx'] : [];
     const child = spawnSync(
       process.execPath,
-      ['--import', 'tsx', '--input-type=module', '-e', script],
+      [...loaderArgs, '--input-type=module', '-e', script],
       { cwd: ROOT, encoding: 'utf8', timeout: 60000 },
     );
 

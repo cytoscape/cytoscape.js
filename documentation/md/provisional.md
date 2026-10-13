@@ -110,12 +110,20 @@ and [6 October alpha contract, 12 October SVG interview section](../../plan/roun
 
 ## Runtime scope
 
-**TODO_PROVISIONAL — Bun full-tier support is planned work.** The authoritative
-interview requires the complete Node verification tier under Bun, with
-executed-test counts equivalent to Node and no partial-run fallback. Browser
-tests remain in Playwright. This is the accepted scope, not a claim that the
-adapters and full tier are already complete. The interview also drops Deno
-completely from v4 and selects npm for alpha publication, with JSR reconsidered
-after alpha.
+v4 drops Deno completely. Bun verification is implemented and passed on Bun
+1.4.0 and 1.4.3. In each run, public tests matched Node at 3,310 identities
+across 174 files, module and packaging tests matched at 1,226 identities
+across 72 files, and soak tests matched at 40 identities across 7 files, with
+exact identity and outcome parity and no soft outcomes. The throw gate
+accounts for 387 source sites: 361 were hit, 19 are browser-only and 7 are
+unreachable; no site was dead, unknown or misattributed, and native Bun and
+instrumented Bun outcomes matched. The nine-variant built-bundle smoke passed
+as well.
 
-Source: [12 October interview, Bun and runtime scope](../../plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md#bun-and-runtime-scope-99).
+This verification support does not provide Bun WebGPU compute or browser
+renderer support. The existing worker-backed source path uses Node's
+`worker_threads`; no Bun-specific worker backend was added. Browser tests and
+WebGPU renderer behavior remain in Playwright. Alpha publication remains a
+planned npm release action; JSR may be reconsidered after alpha. Sources:
+[12 October interview, Bun and runtime scope](../../plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md#bun-and-runtime-scope-99)
+and [round 99 Bun implementation and verification](../../plan/rounds/2026-08-19-03-rnd0099-landed-native-bun-verification-and-deno-withdrawal.md).

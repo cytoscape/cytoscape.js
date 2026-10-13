@@ -5,14 +5,29 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-10-12 for SVG/WebGL2 planning and the Bun/docs/table interview; latest implementation remains rounds 80, 82, 146, 147 and 148.
+- **Last updated**: 2026-10-12 for the scoped documentation and table benchmark passes and completed Bun full-tier verification.
 
-The [12 October interview](plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md) scopes three next work streams:
-complete Bun verification with Deno support removed and JSR reconsidered after
-alpha; a v3-comparable Markdown prose/API documentation pass without demos,
-with TODO_PROVISIONAL notes for specified provisional behavior and holes; and
-visible-window/whole-table benchmarks at 10k, 100k and 1m rows without adding
-public API. These are planning decisions; implementation status is unchanged.
+The [12 October interview](plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md) scopes three work streams.
+Round 46 now has v3-comparable Markdown prose/API sources without demos: all
+twelve non-demo sections, style/layout catalogs and an audit accounting for
+238 v3 API names (215 mappings, 18 decided removals, five maintainer questions).
+Specified provisional contracts and holes carry TODO_PROVISIONAL markers.
+The complete site/template integration and deployment remain open.
+
+Round 84's benchmark pass records three independent processes at each of
+10k, 100k and 1m rows, with scrolling/jump windows, dirty updates, snapshots
+and memory evidence. Current reads took 0.27–0.84 ms per 32-window trace;
+snapshot refresh and memory costs do not justify a new public column-view API
+for this fixture. Broader table/filter decisions remain open.
+
+Round 99 is complete: Deno support is withdrawn and the complete Node tier
+runs natively under Bun 1.4.0 and 1.4.3, with exact Node 24.18.0 parity for
+3,310 public tests, 1,226 module tests and 40 soak tests. Native coverage and
+exact throw probes pass, as do all nine bundle smokes, workerd and focused
+Chromium/WebKit worker checks. The worker cleanup releases destroyed graphs
+even when callers retain completed results or settled handles. npm is the
+alpha channel; JSR may be reconsidered after alpha. See the
+[round 99 record](plan/rounds/2026-08-19-03-rnd0099-landed-native-bun-verification-and-deno-withdrawal.md).
 
 Round 148 adds manual miniature compounds. Collapse scales current descendant
 positions and effective sizes while leaving original nodes and edges live;
@@ -181,7 +196,7 @@ Earlier, round 145 (29 September) was a correctness fix:
   wrote the
   supported-environment matrix: per environment, what runs (the
   headless core, workers, GPU compute, rendering), how that is known
-  and what is not promised.  Node, Bun, Deno, Cloudflare's runtime and
+  and what is not promised. Node, Bun, Cloudflare's runtime and
   Chromium and WebKit — pages and, now, their dedicated, shared and
   service workers — are held by CI; Firefox, Electron and Vercel Edge
   were measured and are re-checked at release; React Native's Hermes,
@@ -273,8 +288,8 @@ Earlier, round 145 (29 September) was a correctness fix:
   minified against the full build's 872 KiB, gated under a
   1,000,000-byte edge budget, and run in a WinterTC-shaped isolate every
   run and on Cloudflare's `workerd`) and `cytoscape/headless-gpu` (the
-  GPU executors with no DOM — green on Deno's native WebGPU, the first
-  run of the kernels on a non-Dawn implementation); the pre-release
+  GPU executors with no DOM — historically measured on Deno's native
+  WebGPU, whose support is now withdrawn); the pre-release
   `cytoscape/gpu` alias is gone.  The same day the eleventh design
   sitting answered every open call.  On 21 Sep round 132 made the status site's
   Features page say what its numbers mean — `Showing all 929 rows`
@@ -371,8 +386,8 @@ Earlier, round 145 (29 September) was a correctness fix:
 | Benchmarks | 31 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points · round 82's 41-cluster EM / 500 sparse / 500 degenerate drag p50 for convex controls was 6.967 / 34.558 / 32.088 ms and for concave was 8.462 / 44.534 / 43.144 ms (Node 24.18.0, i9-9900K) |
 | Style parity | v4 accepts 162 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet; round 76 added `text-border-style` and the mid-arrow widths); the rest dropped by decision |
 | Bundle | Built 5 Oct, minified / gzipped: `cytoscape` 1,029,507 / 294,389 bytes; `cytoscape/headless` 617,371 / 190,879 bytes; `cytoscape/headless-gpu` 696,384 / 209,483 bytes. Both slim minified entries stay below the 1,000,000-byte edge budget; every slim raw/gzip pair has a measured ratchet. Import and constant-inlining gates keep the tiers separate and the tables out of minified output. |
-| Runtimes | Node ≥ 24, Bun ≥ 1.4 and Deno ≥ 2.9 run all three builds headless — gated by an import-cleanliness clause, a value-asserting smoke over ESM/ESM-min/CJS of each, and CI. Edge isolates run `cytoscape/headless` (a WinterTC-shaped isolate every run, Cloudflare's `workerd` in CI); Deno's native WebGPU runs `cytoscape/headless-gpu`'s kernels and force integrator (green locally on an RX 580; a best-effort CI step). Every other environment has a row in `src/README.md`'s support matrix — CI-gated, re-checked at release, or unsupported with the failing assertion named |
-| CI | Green as of 2026-08-06; `npm test` passes from a clean checkout; since 28 Aug the bundles are smoked under Bun and Deno per push, at latest stable plus a pinned floor |
+| Runtimes | Node ≥ 24 and Bun ≥ 1.4.0 run the headless bundles and worker paths. Bun 1.4.0/1.4.3 pass the full public/module/soak/throws tier with exact Node parity; no Bun WebGPU compute or renderer is promised. Deno support is withdrawn. Edge isolates use cytoscape/headless, gated in a WinterTC-shaped isolate and on workerd. Other environments retain their measured support-matrix rows in src/README.md. |
+| CI | Node, browser, Bun and workerd jobs gate. Bun runs full native verification and bundle smoke at 1.4.0 and latest stable; local final checks passed on 1.4.0 and 1.4.3. Deno jobs are removed. |
 
 ---
 
@@ -2136,7 +2151,7 @@ The release path:
 
 | | |
 |---|---|
-| Documentation site | Prose to be written by hand; the generated API model is ready — including install instructions for npm, pnpm, yarn, bun and Deno |
+| Documentation site | The scoped prose/API source pass is complete, including twelve non-demo v3 section equivalents, v4 additions and style/layout catalogs. Five v3 API disposition questions remain. Site/template integration, demos and deployment are still open. |
 | Cross-platform validation | macOS/Metal, Windows/D3D12, real-device touch |
 | Release engineering | The release workflows are still v3's, and are marked as not yet adapted |
 | Release bake | Alpha/beta cycle, external-consumer smoke, then **4.0.0** |
@@ -2149,7 +2164,6 @@ round, and is regenerated rather than maintained:
 | | |
 |---|---|
 | API review | The v3-parity surface audited member by member, now that the foundation exists to judge it |
-| Runtimes beyond Node | The contract landed 28 Aug: the no-runtime-built-ins gate, the cross-runtime smoke tier and `ci-bun`/`ci-deno`; edge isolates (`cytoscape/headless` on `workerd`) and Deno's native WebGPU driving the GPU executors (`cytoscape/headless-gpu`) landed 28 Sep.  The scoping pass over every other environment landed 29 Sep as the support matrix.  Still planned: the native Bun/Deno test runners measured and the install/publish story |
 | Extension toolchain | `cyext`: scaffold, build, test and publish an external extension from one tool, with a template and a real example layout package |
 | Exports & interop | SVG vector export; headless figure generation in plain Node (the cytosnap replacement).  The official JSON schemas landed 28 Sep; their `$id` base waits on the documentation site |
 | Visual features | Annotations and GPU edge bundling remain open. Charts, compound hulls and manual miniature collapse landed in rounds 80, 82 and 148; aggregate display edges remain separately deferred. |

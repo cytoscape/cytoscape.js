@@ -16,7 +16,14 @@ runner-neutral adaptation allowed) and npm-only alpha publication, with JSR
 reconsidered post-alpha. It also scopes a prose/API parity pass for 46 and a
 benchmark-only pass for 84. B2's API decision still follows the measurements;
 R5's older native-runner acceptance alternatives are superseded for round 99.
-No work or review is claimed complete by these decisions.
+The scoped prose/API source pass and table measurements are now recorded in
+their rounds. Round 46 flags five unresolved v3 API dispositions: cy.delay,
+cy.delayAnimation, eles.removeAllListeners, ele.numericStyleUnits and
+ani.completed. They require future maintainer migration/removal decisions.
+Full site work and broader table/filter choices remain open. Round 99 is
+complete: Bun 1.4.0/1.4.3 passed the full native tier with Node parity and
+Deno support is withdrawn. npm remains the alpha publication channel; JSR
+may be reconsidered after alpha.
 
 Ask the maintainer one decision at a time. Keep settled choices settled. A
 benchmark gate requires evidence before choosing; a manual review requires the
@@ -162,7 +169,10 @@ must not be confused with an empty support.
 - **B2 — Table access (round 84/item 91).** Internal filter/reader improvements
   first. Does a minimal column API improve one-screen rectangular reads and
   scrolling enough to justify it? Measure snapshots, dirty updates and allocation.
-  Round 84's range/degree/adjacency query additions also require measured scope.
+  The 12 October benchmark pass answers the scoped measurement: current
+  APIs are adequate for the tested scrolling fixture, and snapshot rebuild
+  and memory costs outweigh the small per-trace saving. Broader API choices
+  and range/degree/adjacency implementation remain separate follow-up work.
 - **B3 — Bundling persistence (round 83).** Compare app-held presets with a wire
   section before choosing persistence. Include serialized size and reconstruction
   cost rather than assuming a format is required.
@@ -216,9 +226,9 @@ must not be confused with an empty support.
 
 ### Alpha work still requiring concrete acceptance plans
 
-The unfinished inventory discussed includes rounds 49–51 (platform/release),
+The original unfinished inventory discussed included rounds 49–51 (platform/release),
 71 (extension toolchain), 77–78 (exports/headless), 81 (annotations), 83
-(bundling), 84 (tables), 99 (native Bun/Deno runners), 125 (layout quality) and
+(bundling), 84 (tables), 99 (now complete), 125 (layout quality) and
 137 (WebGL2). Some have implementation already recorded; read their own records
 and do not treat the entire inventory as absent code. The initial audit was an
 inventory of known work, not a claim that nothing else is needed for 4.0.
@@ -241,8 +251,9 @@ inventory of known work, not a claim that nothing else is needed for 4.0.
   checks, provenance, alpha cut, external-consumer smoke, issue triage and final
   benchmarks into concrete owners/gates. Publishing still requires the authorized
   release action; this planning task does not publish a prerelease.
-- **R5 — Extensions/runtimes (71/99).** Finish measured native-runner/install
-  contracts and the toolchain/example package acceptance plan; preserve recorded
+- **R5 — Extensions/toolchain (71; 99 complete).** Round 99 settles the native
+  Bun verification and npm-only alpha install contracts. Finish the
+  toolchain/example package acceptance plan; preserve recorded
   during-alpha extension-port timing. Do not imply every optional extension must
   block the first alpha.
 - **R6 — Portable style/persistence closure.** Audit all newly specified property,

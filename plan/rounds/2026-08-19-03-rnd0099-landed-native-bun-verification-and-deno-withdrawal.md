@@ -1,6 +1,6 @@
-## Bun and Deno, first-class: the native runners measured, Deno's adapter, the install story
+## Native Bun verification and Deno withdrawal
 
-**Depends on:** 65, 98, 2026-08-19-01
+**Depends on:** 65, 74, 98, 2026-08-19-01
 
 **12 October scope replacement:** drop Deno completely, including existing
 runtime/GPU tests, CI and support claims; keep Bun. Require the complete Node
@@ -50,7 +50,7 @@ remain historical evidence and are not support promises or work to preserve.
    controls for the parity gates and any remaining implementation gap. A
    smoke-only result, incomplete suite or unmeasured coverage is not closure.
 
-### Implementation record — final integration checks pending
+### Landed 12 October — complete native Bun verification
 
 The native adapter runs one isolated process per discovered file. Node uses
 its test runner with the existing TypeScript/shim preload and a structured
@@ -61,6 +61,10 @@ file/suite/test identities and outcomes, including duplicate names. Missing,
 truncated or malformed reports, omitted files, unexpected skips and count
 mismatches fail closed. Output/time limits and signal cleanup bound failures.
 The quiet composite preserves the zero-output success contract.
+The implementation uses round 101's later quiet tooling and round 128's
+settled-run lifecycle. The dependency header retains the original August
+plan's chronological prerequisites; these October integration inputs are
+recorded here rather than adding dependencies that postdate that section.
 
 Bun throws verification has two complete public-suite passes: native LCOV
 and an exact source-site probe derived from the original TypeScript AST.
@@ -92,8 +96,7 @@ collector bound. Separate regressions retain the completed result and the
 settled AlgoRun while requiring their destroyed source Core to collect. The
 held-handle control passed 10/10 candidate runs and failed 10/10 baseline runs
 on each of Bun 1.4.0 and 1.4.3; a second await and real result lookups remain
-usable. The collectors
-still allow at most ten iterations and assert zero retained instances; they
+usable. The collectors still allow at most ten iterations and assert zero retained instances; they
 now stop early only at stable zero, rather than abandoning collection at a
 stable nonzero count. Queue error/cancel/recovery ordering has a regression
 test. Earlier route-callback cleanup experiments did not withstand frozen
@@ -111,8 +114,10 @@ full `npm run -s test:node:quiet` gate. The later addition of one held-handle
 soak case was followed by a green Node soak run; production source did not
 change afterward.
 
-The complete `mise exec bun@1.4.0 -- npm run -s test:bun` composite passed.
-Each suite's exact identities and outcomes match Node 24.18.0:
+The complete `mise exec bun@1.4.0 -- npm run -s test:bun` and
+`mise exec bun@1.4.3 -- npm run -s test:bun` composites passed. Bun 1.4.0
+is the supported floor; CI also gates floating latest stable, measured here
+as 1.4.3. Each suite's exact identities and outcomes match Node 24.18.0:
 
 | Suite | Files per runtime | Passing tests per runtime | Failed / skipped / cancelled / todo |
 | --- | ---: | ---: | --- |
@@ -120,16 +125,28 @@ Each suite's exact identities and outcomes match Node 24.18.0:
 | Modules and packaging | 72 | 1,226 | 0 / 0 / 0 / 0 |
 | Soak | 7 | 40 | 0 / 0 / 0 / 0 |
 
-Bun 1.4.0 throws verification matched all 3,310 identities in 174 files
+Both Bun versions' throws verification matched all 3,310 identities in 174 files
 between native and instrumented passes. It discovered/instrumented 387
 source throw sites, hit 361 exactly, and classified the remaining 19
 browser-only and seven unreachable sites. There were zero dead, unknown or
 misattributed sites, and zero exact hits lacking native LCOV evidence. The
-probe instrumented 97 source files and recorded 60 worker contexts; native LCOV recorded
-363 positive throw lines and coverage on 286 of 291 source files. The
+probe instrumented 97 source files and recorded 60 worker contexts; native
+LCOV recorded 363 positive throw lines and coverage on 286 of 291 source files. The
 composite also passed typecheck, lint, builds and all nine runtime smoke
 variants: 49 assertions per full bundle, 51 per headless and 50 per
-headless-GPU bundle. The latest-version composite is still pending.
+headless-GPU bundle. Node smoke passed the same nine variants; workerd
+passed 56 assertions against the headless minified ESM bundle.
+`npx playwright test playwright-tests/algorithms-workers.spec.js
+--project=renderer --project=renderer-webkit` passed all six focused
+Blob-worker parity, minified-body and cancellation tests (three per browser).
+Both measured Bun versions expose workers but no `navigator.gpu`; neither
+WebGPU compute nor a Bun renderer is promised. No Bun test exclusions or
+throw allowlists were widened to make these gates pass.
+
+Round 99 is complete under the interview contract. Node/browser/workerd gates
+are preserved, Deno active support is withdrawn, and npm is the alpha channel.
+Publication itself remains a release action; JSR can be reconsidered post-alpha.
+No worktree was created for this round; existing unrelated worktrees remain.
 
 ### Historical proposal, superseded by the sequence above
 

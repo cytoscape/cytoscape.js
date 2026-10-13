@@ -20,12 +20,23 @@ bun add cytoscape@4.0.0-alpha.1
 Sources: [release engineering plan, alpha version](../../plan/rounds/2026-08-04-16-rnd0050-plan-release-engineering.md)
 and [12 October publication decision](../../plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md#bun-and-runtime-scope-99).
 
-There is no Deno installation path for v4. The interview drops Deno from the
-support scope and defers any JSR decision until after alpha. It also requires
-**TODO_PROVISIONAL —** the complete Node verification tier to run under Bun
-with equivalent executed-test counts; implementation of that full tier remains
-planned work. Browser behavior continues to use Playwright. Source: [12 October
-interview](../../plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md#bun-and-runtime-scope-99).
+v4 drops Deno from its support scope. Bun 1.4.0 and 1.4.3 pass the full
+repository verification composite, `npm run -s test:bun`. The public
+tier matched Node at 3,310 test identities across 174 files; module and
+packaging tests matched at 1,226 identities across 72 files; soak tests
+matched at 40 identities across 7 files. All had exact identity and outcome
+parity with Node, with no soft outcomes. Bun executes those test tiers; build,
+typecheck and lint remain Node-operated. Bun's throw gate accounts for 387
+source sites: 361 were hit, 19 are browser-only and 7 are unreachable. There
+were no dead, unknown or misattributed sites, and native and instrumented runs
+matched. The nine-variant built-bundle smoke also passed.
+
+These results cover Bun verification, not Bun WebGPU compute or browser
+renderer support. The existing worker-backed source path uses Node's
+`worker_threads`; this adds no Bun-specific worker backend. Browser tests and
+WebGPU renderer behavior remain in Playwright. JSR remains a post-alpha
+consideration. Sources: [12 October interview](../../plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md#bun-and-runtime-scope-99)
+and [round 99 Bun implementation and verification](../../plan/rounds/2026-08-19-03-rnd0099-landed-native-bun-verification-and-deno-withdrawal.md).
 
 Import the full entry in a browser application that can provide WebGPU:
 

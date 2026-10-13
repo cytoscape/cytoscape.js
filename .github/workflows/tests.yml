@@ -39,11 +39,12 @@ jobs:
   # `ci-node` — checkout, official
   # setup action, root `npm ci`, `npm run build` — and no v3 install (the
   # Node-tier invariant extends here).  The matrix runs **latest stable plus
-  # a pinned floor**.  Bun 1.4.0 is the proposed floor; round 99 must verify
-  # the complete suites and coverage gate at that version before calling it
-  # supported.  `engines` cannot express the Bun floor, so the measured value
-  # lives here and in the support sentence in src/README.md.  A runtime bump
-  # that breaks the job is handled like a
+  # a pinned floor**.  Bun 1.4.0 is the measured supported floor: round 99
+  # passed the complete suites and coverage gate at that version.  The local
+  # latest-stable measurement was Bun 1.4.3 on 2026-10-12; CI keeps that leg
+  # floating as `latest`.  `engines` cannot express the Bun floor, so the
+  # measured value lives here and in the support sentence in src/README.md. A
+  # runtime bump that breaks the job is handled like a
   # browser bump breaking a golden: read the failure, then move the pin —
   # never widen the assertion.
   ci-bun:

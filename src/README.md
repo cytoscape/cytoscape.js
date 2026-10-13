@@ -43,8 +43,8 @@ requires full-tier Bun coverage and complete Deno withdrawal in round 99, with
 JSR reconsidered post-alpha; scopes round 46 to a v3-comparable prose/API pass
 with TODO_PROVISIONAL notes; and scopes round 84 to table benchmarks at 10k,
 100k and 1m rows. The prose/API source pass and benchmark measurements are
-complete within those scopes; Bun full-tier validation is in progress. The
-full docs site and table API decisions remain open.
+complete within those scopes; round 99 is complete with native Bun full-tier
+verification and Deno withdrawal. The full docs site and table API decisions remain open.
 
 ## Alpha decisions and implementation status (3 October)
 
@@ -6767,11 +6767,14 @@ the package.
 
 ## Runtimes: Node and Bun
 
-**Supported runtimes: Node >= 24 (`engines`) and Bun >= 1.4 run the built
-bundles.** The Bun floor is recorded in the CI version matrix because
-`engines` only expresses Node. Round 99 is validating the complete public,
-module, soak and throw-coverage tiers under Bun, preserving Node's tests
-and comparing test identities and outcomes. Browser tests remain Playwright.
+**Supported runtimes: Node >= 24 (`engines`) and Bun >= 1.4.0.** Round 99
+verified the complete public, module/packaging, soak and throw-coverage tiers
+under Bun 1.4.0 and 1.4.3 against Node 24.18.0. Each runtime executed 3,310
+public tests, 1,226 module tests and 40 soak tests with exact identity/outcome
+parity and no skipped, failed, cancelled or todo cases. CI gates the pinned
+Bun floor and latest stable. Node operates build/typecheck/lint tooling and the
+parity controller; Bun executes its own test cases. Browser tests remain
+Playwright. See the [round 99 evidence](../plan/rounds/2026-08-19-03-rnd0099-landed-native-bun-verification-and-deno-withdrawal.md).
 
 The worker retention cleanup keeps completed betweenness results independent
 of their source instance. Result accessors retain a numeric slot index, and
@@ -6831,7 +6834,7 @@ not a support claim.
 | Environment | T0 | T1 | T2 | T3 | How it is known | Tier |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Node ≥ 24** | yes | yes (`worker_threads`) | no — no `navigator.gpu`; `'gpu'` rejects, `'auto'` stays on the CPU | no | `ci-node`: the whole Node tier from source, and the smoke over all nine bundles | **1** |
-| **Bun ≥ 1.4** | yes | yes — measured (1.4.2: an 8-worker pool, closeness bit-identical to `'cpu'`; the sim worker spawned) | no | no | `ci-bun` (1.4.0 floor + latest) runs the smoke: T0 gated, T1 measured only | **1** (T0), 2 (T1) |
+| **Bun ≥ 1.4.0** | yes | yes (`worker_threads`) | no — no `navigator.gpu` in measured 1.4.0/1.4.3 | no | `ci-bun` gates full public/module/soak/throws verification and all nine bundle smokes at the floor and latest; exact Node parity measured on 1.4.0 and 1.4.3 | **1** |
 | **Cloudflare Workers** (workerd) | yes, `cytoscape/headless` | no — no `Worker`; `'auto'` runs in-thread, asserted | no | no | the isolate smoke every Node-tier run; `ci-workerd` on the real runtime | **1** |
 | **Vercel Edge** and other V8-isolate edges | expected: the same WinterTC surface, no `eval`/`new Function` (the bundles contain neither) | no | no | no | not run on Vercel; the isolate smoke is its shape.  Vercel now recommends Node functions over Edge, and Next.js 16.3 drops `runtime = 'edge'` — the Node row covers that path | 2 |
 | **Chromium, WebKit** — a page | yes | yes (Blob workers) | where WebGPU exists | where WebGPU exists — round 73's reach table (`plan/rounds/2026-08-14-04-rnd0073-landed-the-webgl2-fallback-scoped.md`); WebGL2 for the rest is round 137 | `ci-browser`: `renderer` (Chromium, SwiftShader) and `renderer-webkit` — the renderer, GPU-algorithm, workers and load specs; GPU specs soft-skip without an adapter | **1** |
@@ -6885,9 +6888,9 @@ What the rows mean in practice:
 re-measured at release time: `node test/runtimes/engines.mjs --qjs=…
 --hermes=… --graaljs=…` for the engines, the Electron and Firefox
 checks as the round-100 record describes them.  A row changes tier by
-measurement, and the reason goes in the round that moves it.  Round 99 is extending Bun from smoke coverage to the full verification
-tier. Its final execution evidence will replace the smoke-only Bun row
-once the integration checks pass; Deno support is withdrawn.
+measurement, and the reason goes in the round that moves it. Round 99 moves
+Bun's T0 and T1 to full verification gates at the pinned floor and latest
+stable; Deno support is withdrawn.
 
 ## Shipped shaders: WGSL minified at build time (round 52)
 

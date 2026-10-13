@@ -24,6 +24,11 @@ that compile and then behave differently.
 
 ### Added
 
+- **Native Bun verification** (round 99): the complete public, module/packaging,
+  soak and throw-coverage tiers pass under Bun 1.4.0 and 1.4.3 with exact Node
+  test identity/outcome parity. CI gates the floor and latest stable; browser
+  tests remain in Playwright.
+
 - **v4 documentation sources** (round 46 scoped pass): all twelve non-demo
   v3 prose sections have v4 equivalents, with loading, raster-export and
   provisional-contract pages plus style/layout catalogs. The API audit
@@ -487,6 +492,10 @@ that compile and then behave differently.
 
 ### Changed
 
+- Completed worker betweenness runs release their source graph even when a
+  caller retains the result or settled algorithm handle. Queue recovery,
+  cancellation, weight evaluation and numeric results retain their contracts.
+
 - **Edge overlay and underlay strokes end, turn and reach as v3's**
   (round 88).  Every layer stroke ends in a round cap (they were cut
   square); on the curved and route families a translucent layer blends
@@ -740,6 +749,9 @@ that compile and then behave differently.
   a contract error naming the field.
 
 ### Removed
+
+- Deno runtime support, probes, npm test scripts and CI jobs (round 99).
+  Alpha distribution targets npm; JSR may be reconsidered after alpha.
 
 - **The `cytoscape/gpu` export** (round 131; the eleventh design
   sitting): the pre-release alias of the full entry, ambiguous beside

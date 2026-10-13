@@ -106,7 +106,9 @@ actually unanswered. No new implementation or release scope is implied.
 replaces round 99's Deno/native-runner scope with complete Bun-tier coverage and
 Deno withdrawal, defers JSR until post-alpha reconsideration, and scopes partial
 passes for 46 (v3-comparable prose/API docs, no demos) and 84 (benchmarks only).
-These are decisions, not implementation or round closure.
+The scoped documentation source pass and benchmark measurements are complete.
+Round 99 is complete with full native Bun parity and Deno withdrawal.
+Rounds 46 and 84 remain open for their broader site/API scopes.
 
 ## Process (applies to all work under this plan)
 
@@ -2268,7 +2270,10 @@ directions".*
     (`__forceWorkerStats__`) where a worker is expected.  **First
     measurement**: what `import()` of a CJS file answers on Deno (and
     Bun) — the namespace's shape — and whether `createRequire` in the
-    worker is the portable spelling.
+    worker is the portable spelling. **Closed by support withdrawal,
+    12 October (round 99):** Deno is no longer a supported v4 runtime and its
+    active probes/CI are removed. This defect was not fixed; its measurement
+    remains historical. Bun retains its own full verification and worker checks.
 
 77. **Layouts as a capability** (round 131's open call, left with the
     round by the eleventh sitting).  `core/lifecycle.mts`'s layout name
@@ -2346,9 +2351,9 @@ directions".*
     still gets "executor 'workers' requires worker threads … a browser
     page with Worker and Blob"; `'auto'` answers on the worker's own
     thread (`contexts.spec.js` asserts the values, not the lane).  The
-    check is not arbitrary: Bun and Deno also have `Worker`, `Blob` and
-    `createObjectURL`, and must take the `worker_threads` path (Deno
-    accepts module workers only), so a `WorkerGlobalScope` test has to
+    check is not arbitrary: Bun also has `Worker`, `Blob` and
+    `createObjectURL` and must take the `worker_threads` path, so a
+    `WorkerGlobalScope` test has to
     come after `nodeThreads()` in both files, with specs on each host.
     The loss is parallelism, not responsiveness — the model is already
     off the main thread.  **The call**: open the pool to worker hosts
@@ -2488,7 +2493,13 @@ directions".*
     main one is empty — the channels are shared).
 91. **The attribute table's column view: the build call on round 84's
     numbers** (logged 2026-09-29 by round 84's measurement, the eleventh
-    sitting's "measure first").  At 100k rows (i9-9900K,
+    sitting's "measure first"). **12 October benchmark follow-up:** the
+    round-84 record now includes three independent processes each at 10k,
+    100k and 1m rows, with scrolling/jumps, dirty updates and memory evidence.
+    It recommends no public column-view API for the tested scrolling fixture;
+    broader API and internal filtering decisions remain open. The earlier
+    single-size measurement and alternatives below remain historical input.
+    At 100k rows (i9-9900K,
     `benchmark/table-view.mjs`), a virtualized grid's visible window
     reads through `data( k )` in **40 µs a frame**; whole-table reads are
     5–10× faster off a column snapshot but one-shot milliseconds either

@@ -30,6 +30,13 @@ membership, anchors, graph-selector participation or scale domains.
 Data-driven annotation styling, including continuous mappings, remains a future
 consideration; the initial constants/state-conditionals style contract remains.
 
+**Identity/data review:** the maintainer provisionally favors exposing immutable
+`id` through data while keeping other built-in properties separate, but requires
+field-by-field review, including `kind`, before settling the reserved-field
+contract. Do not treat the provisional answer as approval that every non-id
+name is ordinary metadata. Kind, geometry/content and other structural fields
+remain to review; no conversion or data-write behavior is inferred.
+
 v4 contains no annotation code of any kind (`grep -ri annotation
 src/` answers zero lines), and the ecosystem demand is the tenth
 sitting's shortlist entry with "the longest paper trail": Cytoscape

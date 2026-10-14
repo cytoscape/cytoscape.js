@@ -103,6 +103,9 @@ must not be confused with an empty support.
   including continuous mappings, stays a future consideration; initial styles
   retain constants/state conditionals. No membership or anchoring semantics
   follow automatically from application data.
+  Identity/data review provisionally favors immutable id access through data,
+  with other built-in properties separate, but requires field-by-field review
+  (starting with kind). The reserved-field contract is not yet settled.
 - **A3 — Enclosures and membership.** Which containment use cases use compounds,
   membership objects or standalone annotations? Share bounds/member tracking
   where suitable, but specify topology and movement independently.

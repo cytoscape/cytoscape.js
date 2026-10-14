@@ -66,6 +66,20 @@ Metadata named `text` may exist on any kind without drawing behavior. Other
 kind/content applicability details remain to specify.
 Annotation label edits continue to change authored text directly as agreed.
 
+**Cross-kind identity reconsideration:** the annotation ID/data answer remains
+provisional. The maintainer wants consistency across nodes, edges and annotations
+and raised moving id/source/target to top-level definition fields as an
+alternative. Review definition/import/export shape separately from runtime
+data() compatibility reads, including migration and conflicting input forms.
+Compound parent treatment also needs consideration if structural fields move.
+This request authorizes comparison, not an element API/schema change; annotation
+attachments do not automatically acquire graph-edge endpoint semantics.
+The maintainer also asks whether structural fields belong in application tables
+(for example CyWeb). Consider table usefulness separately from storage/API
+placement: IDs identify rows and endpoints support edge joins and inspection.
+A table may project structural fields alongside metadata without making them
+ordinary mutable data. No new table API or whole-table snapshot is approved.
+
 **Bounded text:** retain optional authored text on `shape` annotations alongside
 standalone `text` annotations, as the original plan proposed. A labeled shape
 moves, resizes and selects as one object; authored text is therefore applicable

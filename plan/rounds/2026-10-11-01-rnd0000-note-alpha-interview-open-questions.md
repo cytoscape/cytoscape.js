@@ -106,6 +106,10 @@ must not be confused with an empty support.
   Identity/data review provisionally favors immutable id access through data,
   with other built-in properties separate, but requires field-by-field review
   (starting with kind). The reserved-field contract is not yet settled.
+  The maintainer subsequently raised top-level id/source/target across nodes,
+  edges and annotations as an alternative. Compare definition/import/export
+  shape separately from runtime data compatibility, including compound parent
+  treatment. No structural-field migration is approved yet.
   Built-in annotation kind is now immutable and outside data(), analogous to
   element group classification. Application metadata may independently use
   kind; data reads/writes/removal affect that metadata alone, never built-in

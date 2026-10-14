@@ -22,6 +22,14 @@ bulk operations across the two public collections. Audit actual method overlap
 when implementing reuse rather than assuming every operation is shared.
 This is a planned contract, not implemented annotation support.
 
+**Application data:** support annotation `data()` / `removeData()` for persistent
+application metadata, retained through save/load and cloning. This supersedes
+the original no-data scope. Exact validation, mutation-event and serialization
+contracts remain to specify. Application data does not itself establish
+membership, anchors, graph-selector participation or scale domains.
+Data-driven annotation styling, including continuous mappings, remains a future
+consideration; the initial constants/state-conditionals style contract remains.
+
 v4 contains no annotation code of any kind (`grep -ri annotation
 src/` answers zero lines), and the ecosystem demand is the tenth
 sitting's shortlist entry with "the longest paper trail": Cytoscape

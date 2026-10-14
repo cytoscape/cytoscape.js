@@ -96,10 +96,13 @@ must not be confused with an empty support.
   internally through adapters or composition. No mixed visual-object collection
   or generic ID lookup is added by this decision. Audit actual method overlap
   during implementation; shared selection/drag and globally unique IDs remain.
-- **A2 — Annotation data.** Does the research justify annotation.data() for
-  semantic categories, provenance, generated summaries, placement priority or
-  legend metadata? If so, which data-driven style mappings/scale domains follow?
-  The earlier no-data decision is reopened, not automatically reversed.
+- **A2 — Annotation data (scope settled 14 October).** Support data() /
+  removeData() for persistent application metadata through save/load and cloning,
+  superseding the no-data scope. Exact validation, mutation-event and
+  serialization contracts remain to specify. Data-driven annotation styling,
+  including continuous mappings, stays a future consideration; initial styles
+  retain constants/state conditionals. No membership or anchoring semantics
+  follow automatically from application data.
 - **A3 — Enclosures and membership.** Which containment use cases use compounds,
   membership objects or standalone annotations? Share bounds/member tracking
   where suitable, but specify topology and movement independently.

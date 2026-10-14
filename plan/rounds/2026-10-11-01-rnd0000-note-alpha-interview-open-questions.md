@@ -114,6 +114,10 @@ must not be confused with an empty support.
   Geometry fields position/x/y/width/height are likewise outside data and may
   independently be used as metadata names. Data access never changes geometry;
   dedicated geometry APIs retain the agreed lock and resize semantics.
+  Authored text/image references also remain outside data; matching metadata
+  names are allowed independently and have no drawing/resource-loading effects.
+  Built-in content is kind-specific. The exact applicability matrix, including
+  bounded text, remains open; annotation label edits change authored text.
 - **A3 — Enclosures and membership.** Which containment use cases use compounds,
   membership objects or standalone annotations? Share bounds/member tracking
   where suitable, but specify topology and movement independently.

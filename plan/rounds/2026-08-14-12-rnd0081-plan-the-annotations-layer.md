@@ -55,6 +55,17 @@ movement/resize and lock semantics. Metadata values may differ from actual
 geometry; do not reserve these names or route data patches through geometry
 setters.
 
+**Content/data separation:** authored text and image-resource references remain
+outside application data, accessed through dedicated content APIs whose exact
+spellings remain to specify. Applications may use matching names independently
+as metadata; data access never changes displayed content or triggers resource
+loading. Applications explicitly synchronize generated metadata into content.
+Built-in content fields are kind-specific: authored text applies to text-bearing
+kinds and image references to image kinds, not universally to every annotation.
+Metadata named `text` may exist on any kind without drawing behavior. The exact
+kind/content applicability matrix, including bounded text, remains to specify.
+Annotation label edits continue to change authored text directly as agreed.
+
 v4 contains no annotation code of any kind (`grep -ri annotation
 src/` answers zero lines), and the ecosystem demand is the tenth
 sitting's shortlist entry with "the longest paper trail": Cytoscape

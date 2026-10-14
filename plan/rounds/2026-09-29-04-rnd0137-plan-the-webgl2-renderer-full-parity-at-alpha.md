@@ -45,7 +45,21 @@ shared label layout. Item 81's approved line/casing fix remains required
 before porting that affected family. The alpha interview records this
 planning direction; backend implementation has not started.
 
-### When it starts (original sequencing, under review)
+### Staged start approved on 14 October
+
+The maintainer chose foundation stages **137.1–137.2 may start now**:
+backend selection/context lifecycle, texture mirrors and parity infrastructure.
+SVG (77), annotations (81) and bundling (83) are not prerequisites for these
+stages. Use the current model/render seam and implemented drawing contracts;
+the existing stage verification requirements still apply.
+
+**Shader-port timing remains a separate decision.** This answer does not
+authorize starting 137.3 onward. Full WebGL2 parity at alpha remains required,
+and later drawn features must join the same parity matrix. Item 81's approved
+line/casing fix remains a prerequisite for the affected shader family.
+No backend implementation or round completion is claimed.
+
+### When it starts (original sequencing, superseded for 137.1–137.2)
 
 The maintainer's sequencing note on round 73 stands: a fallback written
 against a moving render contract re-pays its port on every contract

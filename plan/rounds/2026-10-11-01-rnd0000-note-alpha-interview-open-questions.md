@@ -243,6 +243,10 @@ inventory of known work, not a claim that nothing else is needed for 4.0.
   drawn features; full parity at alpha remains the requirement. The 12 October
   sequencing review considers starting 137.1/137.2 ahead of SVG; reconcile
   the old blanket prerequisites without making font investigations a port gate.
+  On 14 October the maintainer approved starting foundation stages 137.1–137.2
+  before SVG, annotations and bundling. Shader-port timing is a separate open
+  decision; full parity at alpha remains required. The owning round records
+  the staged start and preserves its existing verification requirements.
 - **R3 — Repository-owned app scenarios.** Specify representative loading,
   virtual table, style, selection, layout and export fixtures/assertions, including
   cancellation/disposal. CyWeb informs workloads but is not an implementation

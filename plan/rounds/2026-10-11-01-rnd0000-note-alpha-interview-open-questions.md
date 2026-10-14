@@ -91,10 +91,11 @@ must not be confused with an empty support.
 
 ### Annotation objects, placement and shared APIs
 
-- **A1 — Object/collection model.** Keep annotations wholly separate from graph
-  collections, introduce a shared visual-object collection, or expose another
-  generic lookup? Which shared methods are reused internally through adapters
-  or composition? Measure overlap rather than assuming 90% similarity.
+- **A1 — Object/collection model (settled 14 October).** Keep separate public
+  graph-element and annotation collections; reuse substantially shared operations
+  internally through adapters or composition. No mixed visual-object collection
+  or generic ID lookup is added by this decision. Audit actual method overlap
+  during implementation; shared selection/drag and globally unique IDs remain.
 - **A2 — Annotation data.** Does the research justify annotation.data() for
   semantic categories, provenance, generated summaries, placement priority or
   legend metadata? If so, which data-driven style mappings/scale domains follow?

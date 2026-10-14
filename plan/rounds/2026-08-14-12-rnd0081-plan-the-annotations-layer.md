@@ -9,6 +9,19 @@ requirements are consolidated in the
 [11 October register](2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md).
 These pointers do not change this round's implementation status.
 
+### Implementation interview decisions (14 October)
+
+**Public collections:** keep graph-element and annotation collections separate.
+Reuse substantially shared collection operations internally through composition
+or adapters; do not add a mixed visual-object collection or generic ID lookup
+as part of this decision. `cy.annotations()` retains its own collection, while
+`cy.elements()`, graph selectors, adjacency and graph algorithms retain their
+graph-element scope. Shared selection and drag behavior, and the globally
+unique ID namespace, remain as previously decided. Applications coordinate
+bulk operations across the two public collections. Audit actual method overlap
+when implementing reuse rather than assuming every operation is shared.
+This is a planned contract, not implemented annotation support.
+
 v4 contains no annotation code of any kind (`grep -ri annotation
 src/` answers zero lines), and the ecosystem demand is the tenth
 sitting's shortlist entry with "the longest paper trail": Cytoscape

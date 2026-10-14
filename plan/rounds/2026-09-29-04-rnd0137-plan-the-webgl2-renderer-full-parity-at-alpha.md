@@ -53,10 +53,11 @@ SVG (77), annotations (81) and bundling (83) are not prerequisites for these
 stages. Use the current model/render seam and implemented drawing contracts;
 the existing stage verification requirements still apply.
 
-**Shader-port timing remains a separate decision.** This answer does not
-authorize starting 137.3 onward. Full WebGL2 parity at alpha remains required,
-and later drawn features must join the same parity matrix. Item 81's approved
-line/casing fix remains a prerequisite for the affected shader family.
+The foundation-start answer alone did not authorize 137.3 onward; the
+subsequent shader-start decision below supplies that rule. Full WebGL2 parity
+at alpha remains required, and later drawn features must join the same parity
+matrix. Item 81's approved line/casing fix remains a prerequisite for the
+affected shader family.
 No backend implementation or round completion is claimed.
 
 **Foundation acceptance (14 October):** the maintainer chose Chromium,
@@ -71,7 +72,18 @@ WebGPU is available; absence of that backend is recorded separately from
 WebGL2 foundation correctness. This matrix does not establish real
 macOS/Metal or Windows/D3D12 hardware coverage, which remains round 49's work.
 
-### When it starts (original sequencing, superseded for 137.1–137.2)
+**Shader-port start (14 October):** once 137.1–137.2 pass their foundation
+acceptance gates, port currently implemented drawing families under each
+family's own dependencies. SVG's specification or implementation, annotations
+and bundling are not blanket prerequisites. Ready families may proceed while
+unfinished features are specified; later shared-contract changes may require
+port revisions. Every family must pass the live WebGL2-versus-WebGPU parity
+checks and its deliberately broken-port control. The line/casing correction
+must precede the affected edge ports. Later drawn features join the same
+matrix, and full drawing parity remains required before alpha. This settles
+sequencing only; it does not claim implementation or family acceptance.
+
+### When it starts (original sequencing, superseded by the staged-start rules)
 
 The maintainer's sequencing note on round 73 stands: a fallback written
 against a moving render contract re-pays its port on every contract

@@ -244,8 +244,12 @@ inventory of known work, not a claim that nothing else is needed for 4.0.
   sequencing review considers starting 137.1/137.2 ahead of SVG; reconcile
   the old blanket prerequisites without making font investigations a port gate.
   On 14 October the maintainer approved starting foundation stages 137.1–137.2
-  before SVG, annotations and bundling. Shader-port timing is a separate open
-  decision; full parity at alpha remains required. The owning round records
+  before SVG, annotations and bundling. The subsequent answer allows existing
+  drawing-family ports after foundations pass, gated on each family's own
+  dependencies, parity checks and deliberately broken-port control. SVG,
+  annotations and bundling are not blanket port prerequisites; later features
+  join the same matrix, and full parity at alpha remains required. The owning
+  round records
   the staged start and preserves its existing verification requirements.
   The foundation acceptance matrix is Chromium, Firefox and WebKit;
   unavailable contexts remain explicit evidence gaps rather than passes.

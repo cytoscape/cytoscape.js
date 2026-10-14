@@ -223,6 +223,17 @@ under pinned environments, with explicit reviewed baseline updates for
 intended changes; the cross-backend tolerance does not loosen those checks.
 Do not import v3 parity's label masks into this full-parity comparison.
 
+**Drawing-family browser gates (14 October):** require Chromium, Firefox and
+WebKit checks before accepting each drawing family. Run live WebGL2-versus-
+WebGPU comparisons wherever both backends are available, plus browser-specific
+WebGL2 rendering regressions and applicable interaction checks. Record missing
+backend coverage explicitly; unavailable WebGPU does not count as a parity
+pass, and unavailable WebGL2 leaves the required browser gate unresolved.
+Do not defer Firefox/WebKit shader validation to whole-renderer acceptance.
+The existing decision to add Firefox model and rendering coverage together
+when WebGL2 is ready remains in force. Real hardware evidence and final
+performance budgets remain separate gates.
+
 **A live v4-webgl-vs-v4-webgpu diff project** on the v3-parity
 harness's shape: every golden scene and every parity scene rendered by
 both backends in one page, diffed numerically, with a tolerance

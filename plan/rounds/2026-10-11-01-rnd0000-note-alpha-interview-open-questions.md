@@ -266,6 +266,10 @@ inventory of known work, not a claim that nothing else is needed for 4.0.
   measuring a working port (frame times, interaction latency and main-thread
   work on representative graphs). Numerical budgets and workload/device scope
   remain evidence-dependent; a fixed WebGPU speed ratio is not required.
+  Each drawing family also requires Chromium, Firefox and WebKit checks before
+  acceptance: live backend parity wherever both are available, browser-specific
+  WebGL2 rendering regressions and applicable interaction checks. Missing
+  backend coverage is recorded explicitly, not counted as a parity pass.
 - **R3 — Repository-owned app scenarios.** Specify representative loading,
   virtual table, style, selection, layout and export fixtures/assertions, including
   cancellation/disposal. CyWeb informs workloads but is not an implementation

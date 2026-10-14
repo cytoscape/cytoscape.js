@@ -106,6 +106,10 @@ must not be confused with an empty support.
   Identity/data review provisionally favors immutable id access through data,
   with other built-in properties separate, but requires field-by-field review
   (starting with kind). The reserved-field contract is not yet settled.
+  Built-in annotation kind is now immutable and outside data(), analogous to
+  element group classification. Dedicated accessor/declaration spelling and
+  metadata-name collision policy remain to specify; no kind conversion through
+  data is supported.
 - **A3 — Enclosures and membership.** Which containment use cases use compounds,
   membership objects or standalone annotations? Share bounds/member tracking
   where suitable, but specify topology and movement independently.

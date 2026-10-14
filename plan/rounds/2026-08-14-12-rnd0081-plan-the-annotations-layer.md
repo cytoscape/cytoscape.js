@@ -37,6 +37,14 @@ contract. Do not treat the provisional answer as approval that every non-id
 name is ordinary metadata. Kind, geometry/content and other structural fields
 remain to review; no conversion or data-write behavior is inferred.
 
+**Kind:** the maintainer chose immutable built-in annotation kind, accessed
+outside `data()`, analogous to graph elements' group classification. Do not
+synthesize kind into the application data object or use data writes to convert
+annotation kinds. The exact dedicated accessor/declaration spelling remains
+to specify. Whether the same name may be used independently as an application
+metadata key remains to clarify; this answer establishes built-in kind's
+immutability and separation, not a metadata-name reservation policy.
+
 v4 contains no annotation code of any kind (`grep -ri annotation
 src/` answers zero lines), and the ecosystem demand is the tenth
 sitting's shortlist entry with "the longest paper trail": Cytoscape

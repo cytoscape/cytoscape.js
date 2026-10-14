@@ -59,6 +59,18 @@ and later drawn features must join the same parity matrix. Item 81's approved
 line/casing fix remains a prerequisite for the affected shader family.
 No backend implementation or round completion is claimed.
 
+**Foundation acceptance (14 October):** the maintainer chose Chromium,
+Firefox and WebKit as the required browser matrix for 137.1–137.2. Run the
+selection matrix, context-loss/recovery checks, bit-for-bit texture readbacks
+after updates/growth/compaction, and parity-harness calibration across all
+three. An unavailable context is an explicit evidence gap, never a pass;
+these stages are not accepted with a required browser gap unresolved.
+Record browser versions, actual context/adapter reach, results and skips.
+The WebGPU-versus-itself calibration must produce zero differences wherever
+WebGPU is available; absence of that backend is recorded separately from
+WebGL2 foundation correctness. This matrix does not establish real
+macOS/Metal or Windows/D3D12 hardware coverage, which remains round 49's work.
+
 ### When it starts (original sequencing, superseded for 137.1–137.2)
 
 The maintainer's sequencing note on round 73 stands: a fallback written

@@ -247,6 +247,9 @@ inventory of known work, not a claim that nothing else is needed for 4.0.
   before SVG, annotations and bundling. Shader-port timing is a separate open
   decision; full parity at alpha remains required. The owning round records
   the staged start and preserves its existing verification requirements.
+  The foundation acceptance matrix is Chromium, Firefox and WebKit;
+  unavailable contexts remain explicit evidence gaps rather than passes.
+  Real-platform hardware validation remains separate in round 49.
 - **R3 — Repository-owned app scenarios.** Specify representative loading,
   virtual table, style, selection, layout and export fixtures/assertions, including
   cancellation/disposal. CyWeb informs workloads but is not an implementation

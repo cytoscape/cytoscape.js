@@ -197,6 +197,32 @@ first, this round after.
 
 ### The gate every family lands against
 
+**Tolerance policy (14 October):** the maintainer chose one fixed visual
+parity tolerance for the entire WebGL2-versus-WebGPU suite, calibrated before
+family acceptance and not widened to admit a failing port. Use feature-focused
+scenes that compensate for small features: edge-arrow tests include larger
+arrow scales so cross-backend differences occupy enough pixels to judge.
+Apply the same principle to other small details rather than giving them
+per-feature tolerance exceptions. Keep representative normal-scale scenes
+alongside the enlarged cases. Each deliberately broken-port control must
+exceed the shared bound; revise an insensitive fixture, not the bound.
+The numerical tolerance remains to be measured during 137.2 calibration.
+Exact texture-byte checks and the zero-difference WebGPU-versus-itself
+calibration remain separate requirements.
+
+**Golden-diff approach:** follow the existing
+`playwright-tests/lib/image-diff.mjs` machinery: decode equal-sized PNGs,
+report mismatched pixel count and ratio, and attach both backend captures
+plus the diff PNG on failure. Dimension mismatch is a failure. Calibrate
+one suite-wide pair of per-pixel colour threshold and maximum mismatch ratio
+for live cross-backend comparisons; document the anti-alias treatment and
+prove enlarged-feature controls remain detectable under it. Keep inputs
+deterministic (scene, viewport, fonts, resource readiness and capture state).
+Backend-specific golden regressions retain the existing exact comparison
+under pinned environments, with explicit reviewed baseline updates for
+intended changes; the cross-backend tolerance does not loosen those checks.
+Do not import v3 parity's label masks into this full-parity comparison.
+
 **A live v4-webgl-vs-v4-webgpu diff project** on the v3-parity
 harness's shape: every golden scene and every parity scene rendered by
 both backends in one page, diffed numerically, with a tolerance

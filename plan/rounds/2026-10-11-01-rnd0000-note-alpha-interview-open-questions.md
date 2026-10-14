@@ -254,6 +254,14 @@ inventory of known work, not a claim that nothing else is needed for 4.0.
   The foundation acceptance matrix is Chromium, Firefox and WebKit;
   unavailable contexts remain explicit evidence gaps rather than passes.
   Real-platform hardware validation remains separate in round 49.
+  Visual parity uses one calibrated fixed tolerance across the suite, with
+  feature-focused scenes compensating for small details (including enlarged
+  edge-arrow scales). Broken-port controls must exceed the shared bound;
+  insensitive scenes are revised rather than assigned looser exceptions.
+  Follow the existing golden diff helpers and failure artifacts (both captures
+  and diff image, mismatch count/ratio); keep pinned per-backend goldens exact
+  and baseline updates explicit. The shared cross-backend threshold pair is
+  measured during calibration, with anti-alias treatment documented.
 - **R3 — Repository-owned app scenarios.** Specify representative loading,
   virtual table, style, selection, layout and export fixtures/assertions, including
   cancellation/disposal. CyWeb informs workloads but is not an implementation

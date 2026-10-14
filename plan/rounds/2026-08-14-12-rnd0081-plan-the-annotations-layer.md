@@ -41,9 +41,11 @@ remain to review; no conversion or data-write behavior is inferred.
 outside `data()`, analogous to graph elements' group classification. Do not
 synthesize kind into the application data object or use data writes to convert
 annotation kinds. The exact dedicated accessor/declaration spelling remains
-to specify. Whether the same name may be used independently as an application
-metadata key remains to clarify; this answer establishes built-in kind's
-immutability and separation, not a metadata-name reservation policy.
+to specify. Application metadata may independently use the key `kind`, just
+as element metadata may use `group`. Reading/writing/removing that data key
+affects metadata only and never reads or changes built-in kind. Document the
+separate access paths and potentially different values; `kind` is not a
+reserved application-data name.
 
 v4 contains no annotation code of any kind (`grep -ri annotation
 src/` answers zero lines), and the ecosystem demand is the tenth

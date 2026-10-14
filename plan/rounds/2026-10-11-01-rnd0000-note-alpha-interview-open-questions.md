@@ -262,6 +262,10 @@ inventory of known work, not a claim that nothing else is needed for 4.0.
   and diff image, mismatch count/ratio); keep pinned per-backend goldens exact
   and baseline updates explicit. The shared cross-backend threshold pair is
   measured during calibration, with anti-alias treatment documented.
+  Performance acceptance requires workload-specific budgets agreed after
+  measuring a working port (frame times, interaction latency and main-thread
+  work on representative graphs). Numerical budgets and workload/device scope
+  remain evidence-dependent; a fixed WebGPU speed ratio is not required.
 - **R3 — Repository-owned app scenarios.** Specify representative loading,
   virtual table, style, selection, layout and export fixtures/assertions, including
   cancellation/disposal. CyWeb informs workloads but is not an implementation

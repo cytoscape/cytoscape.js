@@ -321,6 +321,18 @@ unchanged against it; and degrade in the same order with the same
 
 ### 137.10 — the price, the docs and the close
 
+**Performance acceptance (14 October):** measure a working port, then agree
+workload-specific budgets with the maintainer before accepting the renderer.
+Measure frame times, interaction latency and main-thread work on representative
+graphs, beside WebGPU on the same machine. The measurements inform the budget
+decision; publication alone does not satisfy performance acceptance, and no
+fixed WebGPU speed ratio is required. Record workloads, hardware/browser/backend
+reach, measurement method and results so the later budgets are reviewable.
+Numerical budgets and their workload/device scope remain open until evidence
+exists; do not infer them from full drawing parity or declare this gate passed
+from foundation-stage measurements. The additional CI cost remains measured
+and recorded as already planned.
+
 `benchmark:renderer --backend webgl2` on the published scenes, beside
 the WebGPU rows on the same machine; the CI browser cost of the second
 project, measured and recorded; `docs/features.csv`, `src/README.md`,

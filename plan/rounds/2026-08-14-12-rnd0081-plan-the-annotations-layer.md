@@ -62,9 +62,17 @@ as metadata; data access never changes displayed content or triggers resource
 loading. Applications explicitly synchronize generated metadata into content.
 Built-in content fields are kind-specific: authored text applies to text-bearing
 kinds and image references to image kinds, not universally to every annotation.
-Metadata named `text` may exist on any kind without drawing behavior. The exact
-kind/content applicability matrix, including bounded text, remains to specify.
+Metadata named `text` may exist on any kind without drawing behavior. Other
+kind/content applicability details remain to specify.
 Annotation label edits continue to change authored text directly as agreed.
+
+**Bounded text:** retain optional authored text on `shape` annotations alongside
+standalone `text` annotations, as the original plan proposed. A labeled shape
+moves, resizes and selects as one object; authored text is therefore applicable
+to both shape and text kinds. Wrapping, alignment and geometry-versus-text
+overflow bounds remain to specify under the agreed geometry and stylesheet
+contracts. This does not introduce native grouping or make application metadata
+named text control drawing.
 
 v4 contains no annotation code of any kind (`grep -ri annotation
 src/` answers zero lines), and the ecosystem demand is the tenth

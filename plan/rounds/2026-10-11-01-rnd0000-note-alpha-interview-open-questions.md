@@ -116,8 +116,11 @@ must not be confused with an empty support.
   dedicated geometry APIs retain the agreed lock and resize semantics.
   Authored text/image references also remain outside data; matching metadata
   names are allowed independently and have no drawing/resource-loading effects.
-  Built-in content is kind-specific. The exact applicability matrix, including
-  bounded text, remains open; annotation label edits change authored text.
+  Built-in content is kind-specific: optional authored text on shape annotations
+  is retained alongside standalone text annotations. A labeled shape acts as
+  one object for movement, resize and selection. Wrapping/alignment/overflow
+  bounds and other applicability details remain open; label edits change
+  authored text.
 - **A3 — Enclosures and membership.** Which containment use cases use compounds,
   membership objects or standalone annotations? Share bounds/member tracking
   where suitable, but specify topology and movement independently.

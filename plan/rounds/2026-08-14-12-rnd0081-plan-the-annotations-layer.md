@@ -47,6 +47,14 @@ affects metadata only and never reads or changes built-in kind. Document the
 separate access paths and potentially different values; `kind` is not a
 reserved application-data name.
 
+**Geometry/data separation:** built-in `position`, `x`, `y`, `width` and
+`height` remain outside data. Applications may use those names independently
+as metadata; data reads/writes/removal affect metadata only, never authored
+geometry. Dedicated geometry APIs retain their agreed center, wrapping,
+movement/resize and lock semantics. Metadata values may differ from actual
+geometry; do not reserve these names or route data patches through geometry
+setters.
+
 v4 contains no annotation code of any kind (`grep -ri annotation
 src/` answers zero lines), and the ecosystem demand is the tenth
 sitting's shortlist entry with "the longest paper trail": Cytoscape

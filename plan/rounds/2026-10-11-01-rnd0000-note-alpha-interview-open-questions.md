@@ -111,6 +111,9 @@ must not be confused with an empty support.
   kind; data reads/writes/removal affect that metadata alone, never built-in
   kind. Dedicated accessor/declaration spelling remains to specify; no kind
   conversion through data is supported.
+  Geometry fields position/x/y/width/height are likewise outside data and may
+  independently be used as metadata names. Data access never changes geometry;
+  dedicated geometry APIs retain the agreed lock and resize semantics.
 - **A3 — Enclosures and membership.** Which containment use cases use compounds,
   membership objects or standalone annotations? Share bounds/member tracking
   where suitable, but specify topology and movement independently.

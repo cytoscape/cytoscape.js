@@ -503,8 +503,6 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
 
     let startACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
     let closeStartACp = startACpDist < minCpASrcDist;
-    let endACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
-    let closeEndACp = endACpDist < minCpATgtDist;
 
     let overlapping = false;
 
@@ -546,6 +544,10 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
         rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpASrcDist;
       }
     }
+
+    // measured after the source correction, which can push the control point towards the target
+    let endACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
+    let closeEndACp = endACpDist < minCpATgtDist;
 
     if( badEnd || badAEnd || closeEndACp ){
       overlapping = true;

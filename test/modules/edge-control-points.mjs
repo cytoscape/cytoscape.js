@@ -22,7 +22,7 @@ describe('Edge control points', function(){
 
     // a bezier between nodes 100px apart with its control point (50, -20) clear of either end
     // at the default arrow scale, but within reach of an arrow scaled to 4
-    let correctedCtrlPts = function( style ){
+    let correctedCtrlPts = function( style, ctrlpts = [ 50, -20 ] ){
       cy = cytoscape({
         styleEnabled: true,
         elements: [
@@ -38,7 +38,7 @@ describe('Edge control points', function(){
 
       Object.assign( rs, {
         edgeType: 'bezier',
-        ctrlpts: [ 50, -20 ],
+        ctrlpts: ctrlpts.slice(),
         startX: 0, startY: 0, arrowStartX: 0, arrowStartY: 0,
         endX: 100, endY: 0, arrowEndX: 100, arrowEndY: 0
       } );
@@ -81,6 +81,15 @@ describe('Edge control points', function(){
 
       expect( x ).to.be.below( 50 );
       expect( y ).to.be.below( -20 );
+    });
+
+    it('keeps the target clear when the source correction pushes the control point towards it', function(){
+      // (50, 5) starts well clear of the target, but clearing an enlarged source arrow
+      // pushes it to about (104, 10), right next to the target
+      let [ x, y ] = correctedCtrlPts( { 'source-arrow-scale': 4 }, [ 50, 5 ] );
+      let minTgtDist = 3 * renderer.getArrowWidth( 1, 1 ) * renderer.arrowShapeWidth;
+
+      expect( Math.hypot( x - 100, y ) ).to.be.at.least( minTgtDist - 1e-9 );
     });
 
   });

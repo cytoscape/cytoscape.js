@@ -77,9 +77,6 @@ CRp.bufferCanvasImage = function( options ){
       buffCxt.scale( scale, scale );
 
       this.drawElements( buffCxt, zsortedEles );
-
-      buffCxt.scale( 1/scale, 1/scale );
-      buffCxt.translate( bb.x1 * scale, bb.y1 * scale );
     } else { // draw the current view
       var pan = cy.pan();
 
@@ -94,18 +91,18 @@ CRp.bufferCanvasImage = function( options ){
       buffCxt.scale( scale, scale );
 
       this.drawElements( buffCxt, zsortedEles );
-
-      buffCxt.scale( 1/scale, 1/scale );
-      buffCxt.translate( -translation.x, -translation.y );
     }
+
+    // reset instead of inverting the transforms above, since drawing many elements
+    // leaves floating point drift that would keep the bg off the image edges
+    buffCxt.setTransform( 1, 0, 0, 1, 0, 0 );
 
     // need to fill bg at end like this in order to fill cleared transparent pixels in jpgs
     if( options.bg ){
       buffCxt.globalCompositeOperation = 'destination-over';
 
       buffCxt.fillStyle = options.bg;
-      buffCxt.rect( 0, 0, width, height );
-      buffCxt.fill();
+      buffCxt.fillRect( 0, 0, width, height );
     }
   }
 

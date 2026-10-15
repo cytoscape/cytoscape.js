@@ -2813,6 +2813,66 @@
                 }
               ],
               "md": "collection/max"
+            },
+
+            {
+              "name": "eles.withinBox",
+              "descr": "Get the elements in the collection that are within the given box, using the renderer's box-selection rules.  Only interactive elements are considered.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "box",
+                      "descr": "The box to test against, given as `{ x1, y1, x2, y2 }` or `{ x1, y1, w, h }` in [model co-ordinates](#notation/position)."
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/withinBox"
+            },
+
+            {
+              "name": "eles.hit",
+              "descr": "Get the elements in the collection that are hit by the given position, sorted topmost first by z-order.",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "pos",
+                      "descr": "The point to test, given as `{ x, y }` in [model co-ordinates](#notation/position)."
+                    },
+                    {
+                      "name": "options",
+                      "descr": "An object containing options for the function.",
+                      "optional": true,
+                      "fields": [
+                        { "name": "includeBody", "descr": "A boolean indicating whether to hit test the body of the element (default `true`)." },
+                        { "name": "includeMainLabels", "descr": "A boolean indicating whether to hit test main (node or edge) `label`s (default `true`)." },
+                        { "name": "includeSourceLabels", "descr": "A boolean indicating whether to hit test (edge) `source-label`s (default `true`)." },
+                        { "name": "includeTargetLabels", "descr": "A boolean indicating whether to hit test (edge) `target-label`s (default `true`)." },
+                        { "name": "isTouch", "descr": "A boolean indicating whether to use touch-sized hit thresholds (default `false`)." }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/hit"
+            },
+
+            {
+              "name": "eles.polygonIntersection",
+              "descr": "Get the elements in the collection whose body or main label polygonal bounds intersect the specified polygon in [model co-ordinates](#notation/position), using the [Separating Axis Theorem](https://en.wikipedia.org/wiki/Hyperplane_separation_theorem).",
+              "formats": [
+                {
+                  "args": [
+                    {
+                      "name": "polygon",
+                      "descr": "An array of `{ x, y }` points defining the polygon to test against."
+                    }
+                  ]
+                }
+              ],
+              "md": "collection/polygonIntersection"
             }
 
           ]

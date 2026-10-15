@@ -4,6 +4,7 @@ import { AtlasManager, AtlasBatchManager } from './atlas.mjs';
 import * as math from '../../../../math.mjs';
 import * as sdf from './shader-sdf.mjs';
 import {endsWith} from "../../../../util/index.mjs";
+import { getArrowScale } from '../../../../style/arrow-scale.mjs';
 
 
 /**
@@ -880,7 +881,7 @@ export class ElementDrawingWebGL {
     const lineOpacity = edge.pstyle('line-opacity').value;
     const opacity = baseOpacity * lineOpacity;
     const lineWidth = edge.pstyle('width').pfValue;
-    const scale = edge.pstyle('arrow-scale').value;
+    const scale = getArrowScale(edge, prefix);
     const size = this.r.getArrowWidth(lineWidth, scale);
 
     const instance = this.instanceCount;

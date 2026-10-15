@@ -5382,11 +5382,14 @@ declare namespace cytoscape {
 
         type ArrowFill = "filled" | "hollow";
 
+        type ArrowScale = "inherit";
+
         /**
          * Edge arrow
          *  * <pos>-arrow-color : The colour of the edge’s source arrow.
          *  * <pos>-arrow-shape : The shape of the edge’s source arrow.
          *  * <pos>-arrow-fill : The fill state of the edge’s source arrow.
+         *  * <pos>-arrow-scale : The size of the edge’s source arrow; `inherit` (the default) defers to arrow-scale.
          *
          * For each edge arrow property above, replace <pos> with one of
          *  * source : Pointing towards the source node, at the end of the edge.
@@ -5398,8 +5401,17 @@ declare namespace cytoscape {
          * http://js.cytoscape.org/#style/edge-arrow
          */
         interface EdgeArrow {
-            /** The size of the arrow. */
+            /** The size of the arrow. Applies to any arrow whose <pos>-arrow-scale is `inherit`. */
             "arrow-scale"?: PropertyValueEdge<number>;
+
+            /** The size of the edge’s source arrow; `inherit` (the default) defers to `arrow-scale`. */
+            "source-arrow-scale"?: PropertyValueEdge<number | ArrowScale>;
+            /** The size of the edge’s "mid-source" arrow; `inherit` (the default) defers to `arrow-scale`. */
+            "mid-source-arrow-scale"?: PropertyValueEdge<number | ArrowScale>;
+            /** The size of the edge’s target arrow; `inherit` (the default) defers to `arrow-scale`. */
+            "target-arrow-scale"?: PropertyValueEdge<number | ArrowScale>;
+            /** The size of the edge’s "mid-target" arrow; `inherit` (the default) defers to `arrow-scale`. */
+            "mid-target-arrow-scale"?: PropertyValueEdge<number | ArrowScale>;
 
             /** The colour of the edge’s source arrow. */
             "source-arrow-color"?: PropertyValueEdge<Colour>;

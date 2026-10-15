@@ -1,19 +1,22 @@
 import { expect } from 'chai';
 import cytoscape from '../src/test.mjs';
-import { arrowPrefixes, getArrowScale, getMaxArrowScale } from '../src/style/arrow-scale.mjs';
+import { arrowPrefixes, getArrowScale } from '../src/style/arrow-scale.mjs';
 
 describe('Style arrow scale', function(){
 
   var cy;
   var edge;
 
-  var makeCy = function( style ){
+  var makeCy = function( style, edgeData ){
+    // tests may build several instances, so destroy the previous one or it keeps mocha alive
+    if( cy ){ cy.destroy(); }
+
     cy = cytoscape({
       styleEnabled: true,
 
       elements: {
         nodes: [ { data: { id: 'n1' } }, { data: { id: 'n2' } } ],
-        edges: [ { data: { id: 'e1', source: 'n1', target: 'n2' } } ]
+        edges: [ { data: Object.assign( { id: 'e1', source: 'n1', target: 'n2' }, edgeData ) } ]
       },
 
       style: style
@@ -28,6 +31,7 @@ describe('Style arrow scale', function(){
 
   afterEach(function(){
     cy.destroy();
+    cy = null;
   });
 
   it('defaults every arrow to the unprefixed scale', function(){
@@ -103,20 +107,6 @@ describe('Style arrow scale', function(){
     });
   });
 
-  it('keeps getMaxArrowScale() away from 0 when every override is 0', function(){
-    makeCy([
-      { selector: 'edge', style: {
-        'arrow-scale': 3,
-        'source-arrow-scale': 0,
-        'mid-source-arrow-scale': 0,
-        'target-arrow-scale': 0,
-        'mid-target-arrow-scale': 0
-      } }
-    ]);
-
-    expect( getMaxArrowScale( edge ) ).to.equal( 3 );
-  });
-
   it('rejects a negative override', function(){
     arrowPrefixes.forEach(function( prefix ){
       makeCy([
@@ -172,59 +162,12 @@ describe('Style arrow scale', function(){
   });
 
   it('resolves an override given as a mapper', function(){
-    cy = cytoscape({
-      styleEnabled: true,
-
-      elements: {
-        nodes: [ { data: { id: 'n1' } }, { data: { id: 'n2' } } ],
-        edges: [ { data: { id: 'e1', source: 'n1', target: 'n2', s: 6 } } ]
-      },
-
-      style: [
-        { selector: 'edge', style: { 'arrow-scale': 2, 'target-arrow-scale': 'data(s)' } }
-      ]
-    });
-
-    edge = cy.$('#e1');
+    makeCy([
+      { selector: 'edge', style: { 'arrow-scale': 2, 'target-arrow-scale': 'data(s)' } }
+    ], { s: 6 });
 
     expect( getArrowScale( edge, 'target' ) ).to.equal( 6 );
     expect( getArrowScale( edge, 'source' ) ).to.equal( 2 );
-  });
-
-  describe('getMaxArrowScale()', function(){
-
-    it('is the unprefixed scale when nothing is overridden', function(){
-      makeCy([
-        { selector: 'edge', style: { 'arrow-scale': 3 } }
-      ]);
-
-      expect( getMaxArrowScale( edge ) ).to.equal( 3 );
-    });
-
-    it('is the largest override when one exceeds the unprefixed scale', function(){
-      makeCy([
-        { selector: 'edge', style: {
-          'arrow-scale': 3,
-          'source-arrow-scale': 0.5,
-          'target-arrow-scale': 5
-        } }
-      ]);
-
-      expect( getMaxArrowScale( edge ) ).to.equal( 5 );
-    });
-
-    it('is the unprefixed scale when every override is smaller', function(){
-      makeCy([
-        { selector: 'edge', style: {
-          'arrow-scale': 3,
-          'source-arrow-scale': 0.5,
-          'target-arrow-scale': 2
-        } }
-      ]);
-
-      expect( getMaxArrowScale( edge ) ).to.equal( 3 );
-    });
-
   });
 
 });

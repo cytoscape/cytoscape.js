@@ -6242,12 +6242,17 @@ var elesfn$k = {
     if (root) startVertex = string(root) ? this.filter(root)[0].id() : root[0].id();
     var nodes = {};
     var edges = {};
+    var subgraphEdges = eles.edges().filter(function (e) {
+      return eles.has(e.source()) && eles.has(e.target());
+    });
     if (directed) {
       eles.forEach(function (ele) {
         var id = ele.id();
         if (ele.isNode()) {
-          var ind = ele.indegree(true);
-          var outd = ele.outdegree(true);
+          var incoming = ele.incomers().edges().intersection(subgraphEdges);
+          var outgoing = ele.outgoers().edges().intersection(subgraphEdges);
+          var ind = incoming.length;
+          var outd = outgoing.length;
           var d1 = ind - outd;
           var d2 = outd - ind;
           if (d1 == 1) {
@@ -6258,8 +6263,8 @@ var elesfn$k = {
             dflag = true;
           }
           nodes[id] = [];
-          ele.outgoers().forEach(function (e) {
-            if (e.isEdge()) nodes[id].push(e.id());
+          outgoing.forEach(function (e) {
+            return nodes[id].push(e.id());
           });
         } else {
           edges[id] = [undefined, ele.target().id()];
@@ -6269,12 +6274,15 @@ var elesfn$k = {
       eles.forEach(function (ele) {
         var id = ele.id();
         if (ele.isNode()) {
-          var d = ele.degree(true);
+          var connected = ele.connectedEdges().intersection(subgraphEdges);
+          var d = connected.length + connected.filter(function (e) {
+            return e.isLoop();
+          }).length;
           if (d % 2) {
             if (!oddIn) oddIn = id;else if (!oddOut) oddOut = id;else dflag = true;
           }
           nodes[id] = [];
-          ele.connectedEdges().forEach(function (e) {
+          connected.forEach(function (e) {
             return nodes[id].push(e.id());
           });
         } else {
@@ -34893,8 +34901,6 @@ CRp$2.bufferCanvasImage = function (options) {
       buffCxt.translate(-bb.x1 * scale, -bb.y1 * scale);
       buffCxt.scale(scale, scale);
       this.drawElements(buffCxt, zsortedEles);
-      buffCxt.scale(1 / scale, 1 / scale);
-      buffCxt.translate(bb.x1 * scale, bb.y1 * scale);
     } else {
       // draw the current view
       var pan = cy.pan();
@@ -34906,16 +34912,16 @@ CRp$2.bufferCanvasImage = function (options) {
       buffCxt.translate(translation.x, translation.y);
       buffCxt.scale(scale, scale);
       this.drawElements(buffCxt, zsortedEles);
-      buffCxt.scale(1 / scale, 1 / scale);
-      buffCxt.translate(-translation.x, -translation.y);
     }
+
+    // Inverse transforms can leave rounding errors that make the background edges translucent.
+    buffCxt.setTransform(1, 0, 0, 1, 0, 0);
 
     // need to fill bg at end like this in order to fill cleared transparent pixels in jpgs
     if (options.bg) {
       buffCxt.globalCompositeOperation = 'destination-over';
       buffCxt.fillStyle = options.bg;
-      buffCxt.rect(0, 0, width, height);
-      buffCxt.fill();
+      buffCxt.fillRect(0, 0, width, height);
     }
   }
   return buffCanvas;
@@ -35667,7 +35673,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.34.3";
+var version = "3.34.4";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

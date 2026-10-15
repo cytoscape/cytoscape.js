@@ -4,7 +4,7 @@ import * as util from '../../../../util/index.mjs';
 import Map from '../../../../map.mjs';
 import {getRoundCorner} from "../../../../round.mjs";
 import {endsWith} from "../../../../util/index.mjs";
-import { getMaxArrowScale } from '../../../../style/arrow-scale.mjs';
+import { getArrowScale } from '../../../../style/arrow-scale.mjs';
 
 const AVOID_IMPOSSIBLE_BEZIER_CONSTANT = 0.01;
 const AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L = Math.sqrt(2 * AVOID_IMPOSSIBLE_BEZIER_CONSTANT);
@@ -494,15 +494,17 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
     let badAEnd = !is.number( rs.arrowEndX ) || !is.number( rs.arrowEndY );
 
     let minCpADistFactor = 3;
-    // both ends are corrected here, so size against the largest arrow on the edge
-    let arrowW = this.getArrowWidth( edge.pstyle( 'width' ).pfValue, getMaxArrowScale( edge ) )
+    let edgeWidth = edge.pstyle( 'width' ).pfValue;
+    // each end only needs to keep clear of its own arrow, so mid arrows don't factor in
+    let minCpASrcDist = minCpADistFactor * this.getArrowWidth( edgeWidth, getArrowScale( edge, 'source' ) )
       * this.arrowShapeWidth;
-    let minCpADist = minCpADistFactor * arrowW;
+    let minCpATgtDist = minCpADistFactor * this.getArrowWidth( edgeWidth, getArrowScale( edge, 'target' ) )
+      * this.arrowShapeWidth;
 
     let startACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.startX, y: rs.startY } );
-    let closeStartACp = startACpDist < minCpADist;
+    let closeStartACp = startACpDist < minCpASrcDist;
     let endACpDist = math.dist( { x: rs.ctrlpts[0], y: rs.ctrlpts[1] }, { x: rs.endX, y: rs.endY } );
-    let closeEndACp = endACpDist < minCpADist;
+    let closeEndACp = endACpDist < minCpATgtDist;
 
     let overlapping = false;
 
@@ -537,11 +539,11 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
       );
 
       if( closeStartACp ){
-        rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - startACpDist);
-        rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - startACpDist);
+        rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpASrcDist - startACpDist);
+        rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpASrcDist - startACpDist);
       } else {
-        rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpADist;
-        rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpADist;
+        rs.ctrlpts[0] = srcCtrlPtIntn[0] + cpM.x * minCpASrcDist;
+        rs.ctrlpts[1] = srcCtrlPtIntn[1] + cpM.y * minCpASrcDist;
       }
     }
 
@@ -576,11 +578,11 @@ BRp.tryToCorrectInvalidPoints = function( edge, pairInfo ){
       );
 
       if( closeEndACp ){
-        rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpADist - endACpDist);
-        rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpADist - endACpDist);
+        rs.ctrlpts[0] = rs.ctrlpts[0] + cpM.x * (minCpATgtDist - endACpDist);
+        rs.ctrlpts[1] = rs.ctrlpts[1] + cpM.y * (minCpATgtDist - endACpDist);
       } else {
-        rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpADist;
-        rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpADist;
+        rs.ctrlpts[0] = tgtCtrlPtIntn[0] + cpM.x * minCpATgtDist;
+        rs.ctrlpts[1] = tgtCtrlPtIntn[1] + cpM.y * minCpATgtDist;
       }
 
     }

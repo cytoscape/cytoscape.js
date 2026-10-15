@@ -13,15 +13,3 @@ export const getArrowScale = function( edge, prefix ){
 
   return edge.pstyle( 'arrow-scale' ).value;
 };
-
-export const getMaxArrowScale = function( edge ){
-  let max = edge.pstyle( 'arrow-scale' ).value;
-
-  for( let i = 0; i < arrowPrefixes.length; i++ ){
-    let scale = getArrowScale( edge, arrowPrefixes[ i ] );
-
-    if( scale > max ){ max = scale; }
-  }
-
-  return max;
-};

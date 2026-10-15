@@ -123,12 +123,14 @@ describe('feature status page', () => {
     expect(html).to.include('aria-current="page"');
     expect(html).to.include('/design.html');
     expect(html).to.include('src/core.mts#L');
+    // Source links pin the commit once HEAD is on a remote branch (always on
+    // CI) and fall back to the branch name before then, so the ref comes from
+    // the build's own repo state rather than from the checkout this ran in.
+    const ref = plan.state.commit.pushed ? plan.state.commit.sha : 'v4';
     expect(html).to.include(
-      'href="https://github.com/cytoscape/cytoscape.js/blob/v4/documentation/api-coverage.md#L142" title="documentation/api-coverage.md:142">Source</a>',
+      `href="https://github.com/cytoscape/cytoscape.js/blob/${ref}/documentation/api-coverage.md#L142" title="documentation/api-coverage.md:142">Source</a>`,
     );
-    expect(html).not.to.include(
-      'href="/https://github.com/cytoscape/cytoscape.js/blob/v4/documentation/api-coverage.md',
-    );
+    expect(html).not.to.include('href="/https://');
     expect(html).to.include(
       'href="/migrating.html" title="MIGRATING.md">Record</a>',
     );

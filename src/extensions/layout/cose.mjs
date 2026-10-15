@@ -113,8 +113,8 @@ function CoseLayout( options ){
   const notEdges = edges.filter((e) => {
     const sourceId = e.source().data('id');
     const targetId = e.target().data('id');
-    const hasSource = nodes.some((n) => n.data('id') === sourceId);
-    const hasTarget = nodes.some((n) => n.data('id') === targetId);
+    const hasSource = nodes.hasElementWithId(sourceId);
+    const hasTarget = nodes.hasElementWithId(targetId);
     return !hasSource || !hasTarget;
   });
   this.options.eles = this.options.eles.not(notEdges);

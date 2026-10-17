@@ -347,8 +347,11 @@ test.describe('the fit, at small limits (round 138)', () => {
     page,
   }) => {
     await makeScene(page, { nodes: 0 });
-    // 60 labels of ~8 glyphs: past the 256 glyph slots a 16 KiB binding
-    // holds
+    // Round 82 added endpoint slots: 18 words / 72 bytes per glyph.
+    // A 16 KiB binding now holds 227 glyphs, below these ~480 glyphs.
+    const glyphBytes = 72;
+    const bindingBytes = 16 * 1024;
+    const maxGlyphs = Math.floor(bindingBytes / glyphBytes);
     await page.evaluate(() => {
       const els = [];
 
@@ -372,11 +375,11 @@ test.describe('the fit, at small limits (round 138)', () => {
       label: 'cy-gpu:glyphs',
       degraded: 'labels',
     });
-    // a power-of-two stream past the 256 glyphs of 64 bytes that bind
-    expect(out.gpuerrors[0].bytes).toBeGreaterThan(256 * 64);
+    // The allocated stream exceeds the binding, so labels must degrade.
+    expect(out.gpuerrors[0].bytes).toBeGreaterThan(bindingBytes);
     expect(out.gpuerrors[0].message).toBe(
       `cy-gpu:glyphs: a ${out.gpuerrors[0].bytes}-byte glyph buffer ` +
-        `(${out.gpuerrors[0].bytes / 64} glyphs) is past the 256 one label ` +
+        `(${out.gpuerrors[0].bytes / glyphBytes} glyphs) is past the ${maxGlyphs} one label ` +
         'stream can bind and cull on this device',
     );
     expect(out.degraded).toEqual(['labels']);

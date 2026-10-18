@@ -269,6 +269,12 @@ const expectResolvedValue = (cy, row, sceneId) => {
       closeNumber(Number(actual), Number(cy.$id(row.target).style('width'))),
       message,
     ).to.equal(true);
+    if (row.resolvedValue != null) {
+      expect(
+        closeNumber(Number(actual), Number(row.resolvedValue)),
+        `${message}; explicit resolved value mismatch`,
+      ).to.equal(true);
+    }
     return;
   }
 

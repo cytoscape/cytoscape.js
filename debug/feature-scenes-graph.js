@@ -795,6 +795,7 @@
                 target: 'arrow-width-2',
                 value: 'match-line',
                 alternate: '4',
+                resolvedValue: 8,
               },
               {
                 group: 'edges',
@@ -802,6 +803,7 @@
                 target: 'arrow-width-1',
                 value: 'match-line',
                 alternate: '1',
+                resolvedValue: 4,
               },
               {
                 group: 'edges',

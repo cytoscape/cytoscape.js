@@ -1180,6 +1180,10 @@
           'neighbor-b',
           'neighbor-c',
           'neighbor-d',
+          'focus-a',
+          'focus-b',
+          'focus-c',
+          'focus-d',
         ],
       };
 

@@ -908,9 +908,28 @@ describe('round 149 visual feature scenes', function () {
         'neighbor-b',
         'neighbor-c',
         'neighbor-d',
+        'focus-a',
+        'focus-b',
+        'focus-c',
+        'focus-d',
       ],
     });
     expect(emphasized.style.core['dim-opacity']).to.equal(0.52);
+    const emphasisCy = cytoscape({
+      elements: emphasized.elements,
+      style: emphasized.style,
+    });
+    const closedNeighborhoodIds = [];
+    emphasisCy
+      .$id('focus')
+      .closedNeighborhood()
+      .forEach((element) => {
+        closedNeighborhoodIds.push(element.id());
+      });
+    expect([...emphasized.initialState.emphasize].sort()).to.deep.equal(
+      closedNeighborhoodIds.sort(),
+    );
+    emphasisCy.destroy();
   });
 
   it('mounts font, padding and emphasis controls with URL-backed reset state', function () {

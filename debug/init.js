@@ -370,6 +370,22 @@ const paramDefs = {
       },
     });
 
+    const emphasizedIds = scene?.initialState?.emphasize;
+
+    if (Array.isArray(emphasizedIds)) {
+      let emphasized = cy.collection();
+
+      for (const id of emphasizedIds) {
+        const element = cy.$id(id);
+
+        if (element.length > 0) {
+          emphasized = emphasized.union(element);
+        }
+      }
+
+      cy.emphasize(emphasized);
+    }
+
     console.timeEnd('cytoscape init');
 
     // the load's completion (or, one-shot, readiness) gates what needs
@@ -719,17 +735,43 @@ const paramDefs = {
    * a fixture, which is why the binary ones looked uniquely broken.
    */
   function start(gpuElements, scene) {
-    try {
-      loadNetwork(gpuElements, networkID, network, scene);
-    } catch (err) {
-      console.error(err);
-      showFatal(
-        describe('init', err, {
-          nodes: gpuElements.nodes.length,
-          edges: gpuElements.edges.length,
-        }),
-      );
+    const create = () => {
+      try {
+        loadNetwork(gpuElements, networkID, network, scene);
+      } catch (err) {
+        console.error(err);
+        showFatal(
+          describe('init', err, {
+            nodes: gpuElements.nodes.length,
+            edges: gpuElements.edges.length,
+          }),
+        );
+      }
+    };
+
+    if (
+      networkID === 'features' &&
+      scene?.familyId === 'labels' &&
+      scene?.viewId === 'font-keywords' &&
+      (params.fontFamily == null ||
+        params.fontFamily === '' ||
+        params.fontFamily === 'Open Sans') &&
+      document.fonts?.load
+    ) {
+      const weight = params.fontWeight || '400';
+      const style = params.fontStyle || 'normal';
+
+      document.fonts
+        .load(`${style} ${weight} 20px "Open Sans"`)
+        .then(create)
+        .catch((err) => {
+          console.error(err);
+          showFatal(`Feature font failed to load: ${err.message || err}`);
+        });
+      return;
     }
+
+    create();
   }
 
   if (network.featureScenes) {

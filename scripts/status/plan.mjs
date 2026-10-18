@@ -115,6 +115,7 @@ export function planDebug({ root, networks, wireEnabled = true }) {
 
   // -- the harness's own files --
   for (const file of readdirSync(dir)) {
+    const source = join(dir, file);
     if (file.endsWith('.json') || file.endsWith('.mjs')) {
       continue;
     } // fixtures and tooling
@@ -126,7 +127,21 @@ export function planDebug({ root, networks, wireEnabled = true }) {
       continue;
     }
 
-    ops.push(copy(join(dir, file), `debug/${file}`));
+    if (statSync(source).isFile()) {
+      ops.push(copy(source, `debug/${file}`));
+    }
+  }
+
+  // The debug stylesheet loads the pinned Open Sans faces relative to itself.
+  // Keep these nested assets at the same URL paths in the hosted mirror.
+  const fontsDir = join(dir, 'fonts');
+  if (existsSync(fontsDir)) {
+    for (const file of readdirSync(fontsDir).sort()) {
+      const source = join(fontsDir, file);
+      if (statSync(source).isFile()) {
+        ops.push(copy(source, `debug/fonts/${file}`));
+      }
+    }
   }
 
   // edit 1 of 2: livereload injects an http:// script that an https deploy

@@ -144,26 +144,28 @@ describe('debug harness (round 43)', function () {
   });
 
   describe('curated feature scene sheets (round 149)', function () {
-    for (const family of featureScenes.catalog) {
-      for (const view of family.views) {
-        it(`${family.id}/${view.id}`, { timeout: 120000 }, function () {
-          const scene = featureScenes.create(family.id, view.id);
-          const cy = cytoscape({
-            ...scene.options,
-            elements: scene.elements,
-            style: scene.style,
-          });
-
-          expect(
-            cy.nodes().length,
-            `${family.id}/${view.id}: no nodes`,
-          ).to.be.greaterThan(0);
-          expect(scene.familyId).to.equal(family.id);
-          expect(scene.viewId).to.equal(view.id);
-          expect(scene.coverage).to.be.an('object');
-          cy.destroy();
+    for (const featureCase of featureScenes.goldenCases) {
+      it(featureCase.name, { timeout: 120000 }, function () {
+        const scene = featureScenes.create(
+          featureCase.familyId,
+          featureCase.viewId,
+          featureCase.params,
+        );
+        const cy = cytoscape({
+          ...scene.options,
+          elements: scene.elements,
+          style: scene.style,
         });
-      }
+
+        expect(
+          cy.nodes().length,
+          `${featureCase.name}: no nodes`,
+        ).to.be.greaterThan(0);
+        expect(scene.familyId).to.equal(featureCase.familyId);
+        expect(scene.viewId).to.equal(featureCase.viewId);
+        expect(scene.coverage).to.be.an('object');
+        cy.destroy();
+      });
     }
   });
 

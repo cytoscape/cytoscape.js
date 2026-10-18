@@ -1,3 +1,7 @@
+@font-face { font-family: "Open Sans"; font-style: normal; font-weight: 400; src: url("./fonts/open-sans-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Open Sans"; font-style: normal; font-weight: 700; src: url("./fonts/open-sans-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Open Sans"; font-style: italic; font-weight: 400; src: url("./fonts/open-sans-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "Open Sans"; font-style: italic; font-weight: 700; src: url("./fonts/open-sans-700-italic.woff2") format("woff2"); }
 body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; margin: 0; padding: 0; height: 100%; }
 #cytoscape { position: absolute; left: 0; right: 18.75em; top: 0; bottom: 0; }
 #commands { padding: 0.25em; padding-bottom: 7em; width: 25em; z-index: 3; position: absolute; right: 0; top: 0; bottom: 0; overflow: auto; font-size: 0.75em; line-height: 1.4; background: rgba(200, 200, 200, 0.5); border-left: 1px solid #999; box-sizing: border-box; }

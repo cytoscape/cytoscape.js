@@ -22,6 +22,7 @@ import {
   networkRefs,
 } from '../../scripts/status/refs.mjs';
 import { goldenTitles } from '../../scripts/status/goldens-page.mjs';
+import featureScenes from '../../debug/feature-scenes.js';
 import {
   HISTORICAL_PATHS,
   PLANNED_PATHS,
@@ -39,6 +40,16 @@ import {
 import { tmpdir } from 'node:os';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+const goldenNameDiff = (expected, actual) => {
+  const expectedNames = new Set(expected);
+  const actualNames = new Set(actual);
+
+  return {
+    missing: [...expectedNames].filter((name) => !actualNames.has(name)).sort(),
+    stale: [...actualNames].filter((name) => !expectedNames.has(name)).sort(),
+  };
+};
 
 /*
 Round 46.5: the status site, checked as a *plan* rather than as a built tree.
@@ -531,6 +542,31 @@ describe('status site: what the runtime asks for', function () {
       relativeFrom('debug/arrow-gallery.html', '../v3/build/cytoscape.umd.js'),
     ).to.equal(v3Umd.to);
   });
+
+  it('mirrors every local font asset referenced by the debug stylesheet', function () {
+    const css = readFileSync(join(ROOT, 'debug', 'style.css'), 'utf8');
+    const urls = [...css.matchAll(/url\(\s*(['"]?)([^'")]+)\1\s*\)/g)].map(
+      (match) => match[2],
+    );
+    const copied = new Set(
+      plan.ops.filter((op) => op.kind === 'copy').map((op) => op.to),
+    );
+
+    expect(urls).to.not.be.empty;
+    for (const url of urls) {
+      const output = relativeFrom('debug/style.css', url);
+      const source = resolve(ROOT, 'debug', url);
+
+      expect(existsSync(source), `${url} is missing from debug/`).to.equal(
+        true,
+      );
+      expect(statSync(source).isFile(), `${url} is not a file`).to.equal(true);
+      expect(
+        copied.has(output),
+        `${output} is absent from the hosted plan`,
+      ).to.equal(true);
+    }
+  });
 });
 
 /** Resolve a page-relative url the way a browser would. */
@@ -904,9 +940,53 @@ describe('status site: the goldens gallery', function () {
     const titles = goldenTitles(spec);
     const plan = buildPlan({ root: ROOT, gzip: false });
     const pngs = plan.ops.filter((op) => /^goldens\/[^/]+\.png$/.test(op.to));
+    const pngNames = pngs
+      .map((op) => op.to.slice('goldens/'.length, -'.png'.length))
+      .sort();
+    const titleNames = [...titles.keys()].sort();
+    const expectedFeatureNames = featureScenes.goldenCases
+      .filter((featureCase) => !featureCase.goldenOmissionReason)
+      .map((featureCase) => featureCase.name)
+      .sort();
+    const actualFeatureNames = titleNames.filter((name) =>
+      name.startsWith('feature-'),
+    );
 
     expect(pngs.length).to.be.at.least(40);
     expect(titles.size).to.equal(pngs.length);
+    expect(goldenNameDiff(titleNames, pngNames)).to.deep.equal({
+      missing: [],
+      stale: [],
+    });
+    expect(
+      goldenNameDiff(expectedFeatureNames, actualFeatureNames),
+    ).to.deep.equal({
+      missing: [],
+      stale: [],
+    });
+  });
+
+  it('detects an omitted feature case and a stale title', function () {
+    const titles = goldenTitles('featureScenes.goldenCases', [
+      {
+        name: 'feature-control-scene',
+        familyId: 'labels',
+        viewId: 'nodes',
+        params: {},
+      },
+    ]);
+    const expected = [...titles.keys()];
+
+    expect(goldenNameDiff(expected, [])).to.deep.equal({
+      missing: ['feature-control-scene'],
+      stale: [],
+    });
+    expect(
+      goldenNameDiff(expected, [...expected, 'stale-title']),
+    ).to.deep.equal({
+      missing: [],
+      stale: ['stale-title'],
+    });
   });
 
   it('reads the enclosing test title, not the nearest string', function () {

@@ -181,46 +181,48 @@ export function* fixtureDocuments(networks = [...debugNetworks()]) {
       // The main page uses curated scene sheets directly; these authored raw
       // definitions include meaningful element flags and must not be
       // normalized through the fetched-fixture converter.
-      for (const family of featureScenes.catalog) {
-        for (const view of family.views) {
-          const scene = featureScenes.create(family.id, view.id);
-          const sceneElements = scene.elements;
-          const what = `features/${family.id}/${view.id}`;
+      for (const featureCase of featureScenes.goldenCases) {
+        const scene = featureScenes.create(
+          featureCase.familyId,
+          featureCase.viewId,
+          featureCase.params,
+        );
+        const sceneElements = scene.elements;
+        const what = `features/${featureCase.name}`;
 
-          yield {
-            file: 'elements.schema.json',
-            what: `${what}: elements`,
-            doc: sceneElements,
-          };
+        yield {
+          file: 'elements.schema.json',
+          what: `${what}: elements`,
+          doc: sceneElements,
+        };
+        yield {
+          file: 'element.schema.json',
+          what: `${what}: a node`,
+          doc: sceneElements.nodes[0],
+        };
+
+        if (sceneElements.edges.length > 0) {
           yield {
             file: 'element.schema.json',
-            what: `${what}: a node`,
-            doc: sceneElements.nodes[0],
-          };
-
-          if (sceneElements.edges.length > 0) {
-            yield {
-              file: 'element.schema.json',
-              what: `${what}: an edge`,
-              doc: sceneElements.edges[0],
-            };
-          }
-
-          yield {
-            file: 'stylesheet.schema.json',
-            what: `${what}: authored sheet`,
-            doc: scene.style,
-          };
-          yield {
-            file: 'cytoscape-options.schema.json',
-            what: `${what}: page options`,
-            doc: {
-              ...scene.options,
-              elements: sceneElements,
-              style: scene.style,
-            },
+            what: `${what}: an edge`,
+            doc: sceneElements.edges[0],
           };
         }
+
+        yield {
+          file: 'stylesheet.schema.json',
+          what: `${what}: authored sheet`,
+          doc: scene.style,
+        };
+        yield {
+          file: 'cytoscape-options.schema.json',
+          what: `${what}: page options`,
+          doc: {
+            ...scene.options,
+            elements: sceneElements,
+            style: scene.style,
+          },
+        };
       }
 
       continue;

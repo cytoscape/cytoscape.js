@@ -77,7 +77,7 @@ All main-page links below are relative to a running `/debug/` page.
 | `?network=plan-deps` | Development record dependency DAG | An additional real-shaped flow/layout exercise. |
 | `?network=gen`, `compound` | Size-configurable synthetic graphs, nested compound scale | Useful performance smoke tests; random positions/edges are unsuitable golden inputs. |
 | `/debug/compound-hulls.html` | Three hull choices, include-labels checkbox, bounds/pick/endpoint readout; drag children | Existing focused widget; not linked from the main page, small single-parent scene. |
-| `/debug/arrow-gallery.html` | v3/v4 gallery, head focus, fills, line opacity, contrast and side/overlay view | Existing richer arrow instrument; not linked from the main page; needs the v3 bundle as well. |
+| `/debug/arrow-gallery.html` | v3/v4 gallery, head focus, fills, line opacity, contrast and side/overlay view | Linked from the main page; maintainer reports it broken (18 October). Needs diagnosis and repair, and the v3 bundle as well. |
 
 ### Feature-to-manual-test coverage
 
@@ -255,8 +255,8 @@ Avoid calling a feature “untested” merely because it lacks a golden:
 
 ### Proposed implementation slices and acceptance
 
-1. **Discoverability and repeatability.** Link the existing arrow and hull
-   pages from the main harness. Group feature scenes separately from scale
+1. **Discoverability and repeatability.** Repair the existing linked arrow
+   comparison and integrate the arrow and hull demos into the main harness. Group feature scenes separately from scale
    fixtures. Each scene needs a purpose, expected visible result, reset and
    shareable URL carrying its meaningful settings. Fixed seed/positions/data
    for feature checks; retain random stress fixtures for their existing use.
@@ -316,3 +316,41 @@ cartesian-product target for every property combination.
   retry found port 3335 already in use. No existing server was stopped.
   Fresh browser acceptance remains outstanding because no connected browser
   is available in this session.
+
+### Implementation interview decisions (18 October)
+
+- **Scope:** full audit coverage, implemented in isolated slices. Address every
+  identified manual demo/widget gap and golden gap, rather than limiting the
+  round to the P0 batch or visual features.
+- **Organisation:** all feature demos live in the main debug page. Selecting a
+  feature network shows its relevant widgets; integrate the existing hull and
+  arrow galleries rather than choosing separate feature pages.
+- **Reported defect:** the v3–v4 arrow comparison linked from the debug page
+  is currently broken. Its link is present at `debug/index.html:38`; the
+  audit's original claim that it was unlinked was incorrect. Diagnose and
+  repair it within this round; the cause has not yet been established.
+
+- **Library defects:** record library bugs separately for later fixes; do not
+  fix them within this round. The broken arrow comparison remains an in-scope
+  harness repair. If diagnosis identifies a library defect, record that cause
+  and its limitation rather than expanding into a library fix.
+- **Coverage depth:** every supported property and keyword needs a visible
+  manual example and golden coverage wherever meaningful. Use behavioural
+  checks or explicit reasons for exceptions; representative family coverage
+  alone is insufficient. This does not require every combination of values.
+- **Fixture count and clarity:** keep the number of debug fixtures/networks to
+  a minimum. Group related variations into each fixture, balancing breadth
+  with clarity. Scenes must remain quick to visually scan; avoid overloaded
+  galleries. The audit's suggested networks are capabilities to accommodate,
+  not a requirement to create a separate network for each table row.
+- **Widgets:** show labelled comparisons for key variants immediately, with
+  focused controls to explore additional values. Do not hide all variation
+  behind controls or make static galleries the only way to exercise features.
+- **Review point:** implement and verify the full round before requesting the
+  maintainer's review; provide a concise review guide. Do not pause for a
+  sign-off after each feature family. Isolated implementation commits remain
+  required. Report genuine new scope/design decisions if they arise.
+
+These decisions supersede the audit's tentative scope and organisation
+alternatives. P0/P1/P2 are sequencing suggestions, not exclusions from the
+agreed full scope. The interview is complete; implementation has not started.

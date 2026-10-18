@@ -761,6 +761,110 @@ describe('round 149 visual feature scenes', function () {
     expect(warnings).to.deep.equal([]);
   });
 
+  it('makes compound label sizing and padding references visibly distinct', function () {
+    const hullBounds = {};
+
+    for (const view of ['hulls', 'hulls-exclude']) {
+      const scene = featureScenes.create('compounds', view);
+      const cy = cytoscape({
+        ...scene.options,
+        elements: scene.elements,
+        style: scene.style,
+      });
+
+      try {
+        const parent = cy.$id('hull-convex');
+        const child = cy.$id('hull-convex-a');
+        const parentBox = parent.boundingBox({ includeLabels: false });
+        const childBody = child.boundingBox({ includeLabels: false });
+        const childWithLabel = child.boundingBox({ includeLabels: true });
+
+        expect(parent.style('compound-sizing-wrt-labels')).to.equal(
+          view === 'hulls' ? 'include' : 'exclude',
+        );
+        expect(child.data('label')).to.equal('long child label beyond leaf');
+        expect(childWithLabel.w).to.be.greaterThan(childBody.w + 80);
+        hullBounds[view] = parentBox;
+      } finally {
+        cy.destroy();
+      }
+    }
+
+    expect(hullBounds.hulls.w).to.be.greaterThan(
+      hullBounds['hulls-exclude'].w + 40,
+    );
+    expect(hullBounds.hulls.x1).to.be.lessThan(
+      hullBounds['hulls-exclude'].x1 - 40,
+    );
+
+    const paddingBox = (relativeTo) => {
+      const scene = featureScenes.create(
+        'compounds',
+        'padding-width',
+        relativeTo == null
+          ? undefined
+          : new URLSearchParams([['paddingRelativeTo', relativeTo]]),
+      );
+      const cy = cytoscape({
+        ...scene.options,
+        elements: scene.elements,
+        style: scene.style,
+      });
+
+      try {
+        const parent = cy.$id('parent-padding');
+        const box = parent.boundingBox({ includeLabels: false });
+        const keyword = scene.coverage.keywords.find(
+          (row) => row.property === 'padding-relative-to',
+        );
+
+        expect(scene.style.parents['padding-relative-to']).to.equal(
+          relativeTo ?? 'width',
+        );
+        expect(keyword.value).to.equal(relativeTo ?? 'width');
+        return { box, scene };
+      } finally {
+        cy.destroy();
+      }
+    };
+
+    const width = paddingBox('width');
+    const height = paddingBox('height');
+    const min = paddingBox('min');
+    const max = paddingBox('max');
+    const selector = max.scene.controlOptions.paddingRelativeTo;
+
+    expect(
+      selector.values.find((entry) => entry.value === 'max').alternate,
+    ).to.equal('height');
+    expect(
+      selector.values.find((entry) => entry.value === 'min').alternate,
+    ).to.equal('width');
+    expect(
+      max.scene.coverage.keywords.find(
+        (row) => row.property === 'padding-relative-to',
+      ).alternate,
+    ).to.equal('height');
+    expect(
+      min.scene.coverage.keywords.find(
+        (row) => row.property === 'padding-relative-to',
+      ).alternate,
+    ).to.equal('width');
+    expect(max.box.x1).to.be.closeTo(width.box.x1, 0.01);
+    expect(max.box.x2).to.be.closeTo(width.box.x2, 0.01);
+    expect(min.box.x1).to.be.closeTo(height.box.x1, 0.01);
+    expect(min.box.x2).to.be.closeTo(height.box.x2, 0.01);
+    expect(max.box.x1).to.be.lessThan(height.box.x1 - 5);
+    expect(min.box.x1).to.be.greaterThan(width.box.x1 + 5);
+
+    const sideMode = featureScenes.create('compounds', 'padding-sides');
+    expect(
+      sideMode.coverage.keywords.some(
+        (row) => row.property === 'padding-relative-to',
+      ),
+    ).to.equal(false);
+  });
+
   it('records node autorotate as a semantic exception, with an edge route', function () {
     const nodeScene = featureScenes.create('labels', 'nodes');
     const [semanticException] = nodeScene.coverage.semanticExceptions ?? [];

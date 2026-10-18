@@ -325,6 +325,8 @@
   };
 
   const paddingRelativeValues = ['width', 'height', 'average', 'min', 'max'];
+  const paddingRelativeAlternate = (value) =>
+    value === 'width' || value === 'max' ? 'height' : 'width';
   const paddingRelativeSelector = {
     group: 'parents',
     property: 'padding-relative-to',
@@ -333,7 +335,7 @@
     defaultValue: 'width',
     values: paddingRelativeValues.map((value) => ({
       value,
-      alternate: value === 'width' ? 'height' : 'width',
+      alternate: paddingRelativeAlternate(value),
       query: `?network=features&scene=compounds&view=padding-width&paddingRelativeTo=${encodeURIComponent(value)}`,
     })),
   };
@@ -1153,7 +1155,7 @@
         );
         if (relativeRow != null) {
           relativeRow.value = relativeTo;
-          relativeRow.alternate = relativeTo === 'width' ? 'height' : 'width';
+          relativeRow.alternate = paddingRelativeAlternate(relativeTo);
         }
       }
       const selector = paddingRelativeSelector;

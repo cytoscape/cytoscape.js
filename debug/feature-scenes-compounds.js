@@ -9,7 +9,10 @@
       const hullSizing = view === 'hulls-exclude' ? 'exclude' : 'include';
       const nodes = [
         node('hull-convex', 0, 0, { label: 'convex hull' }),
-        node('hull-convex-a', -36, -26, { parent: 'hull-convex', label: 'A' }),
+        node('hull-convex-a', -36, -26, {
+          parent: 'hull-convex',
+          label: 'long child label beyond leaf',
+        }),
         node('hull-convex-b', 34, -8, { parent: 'hull-convex', label: 'B' }),
         node('hull-convex-c', -10, 42, { parent: 'hull-convex', label: 'C' }),
         node('hull-round', 250, 0, { label: 'round convex' }),
@@ -33,7 +36,7 @@
         {
           nodes,
           edges: [
-            edge('hull-crossing', 'hull-convex-a', 'hull-outside', {
+            edge('hull-crossing', 'hull-convex-b', 'hull-outside', {
               label: 'crossing edge',
             }),
           ],
@@ -47,6 +50,7 @@
             'border-color': '#347354',
             'text-halign': 'center',
             'text-valign': 'center',
+            'text-wrap': 'none',
           },
           edges: {
             width: 3,
@@ -128,7 +132,7 @@
             ],
           ),
           notes: [
-            'Compound hulls are parent shapes. Children are deliberately offset to expose contour shape and endpoint trimming; the existing hull browser spec checks picking. The sibling view toggles whether child labels contribute to parent sizing.',
+            'Three compound contours remain visible beside a crossing edge. The convex group has one long child label extending beyond its node: include expands the parent to contain that label, while exclude sizes it around the child bodies.',
           ],
         },
       );
@@ -315,18 +319,26 @@
     return scene(
       { nodes, edges: [] },
       {
-        nodes: { width: 52, height: 38, label: mapper('label', '') },
+        nodes: {
+          width: 52,
+          height: 38,
+          label: mapper('label', ''),
+        },
         parents: parentStyle,
       },
       {
         coverage: coverage(
           [
-            {
-              group: 'parents',
-              property: 'padding-relative-to',
-              target: 'parent-padding',
-              value: rel,
-            },
+            ...(!sideMode
+              ? [
+                  {
+                    group: 'parents',
+                    property: 'padding-relative-to',
+                    target: 'parent-padding',
+                    value: rel,
+                  },
+                ]
+              : []),
             {
               group: 'parents',
               property: 'padding',
@@ -363,12 +375,16 @@
               : []),
           ],
           [
-            {
-              group: 'parents',
-              property: 'padding-relative-to',
-              target: 'parent-padding',
-              value: rel,
-            },
+            ...(!sideMode
+              ? [
+                  {
+                    group: 'parents',
+                    property: 'padding-relative-to',
+                    target: 'parent-padding',
+                    value: rel,
+                  },
+                ]
+              : []),
           ],
         ),
       },

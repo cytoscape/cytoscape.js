@@ -536,6 +536,21 @@ describe('golden coverage: the enumerator (round 135)', function () {
     });
 
     globalThis.cy = cy;
+    globalThis.__goldenSourceScene = {
+      style: {
+        nodes: {
+          'text-transform': { data: 'transform', fallback: 'none' },
+        },
+        edges: { width: 8, 'source-arrow-width': 'match-line' },
+      },
+      elements: {
+        nodes: [
+          { data: { id: 's', transform: 'uppercase' } },
+          { data: { id: 't' } },
+        ],
+        edges: [{ data: { id: 'e' } }],
+      },
+    };
 
     try {
       const arrow = resetKeywordInPage({
@@ -557,6 +572,7 @@ describe('golden coverage: the enumerator (round 135)', function () {
       expect(cy.$id('e').style('source-arrow-width')).to.equal(8);
 
       const sheet = cy.style().json();
+      globalThis.__goldenSourceScene.style.edges['source-arrow-width'] = 8;
       cy.style({
         ...sheet,
         edges: { ...sheet.edges, 'source-arrow-width': 8 },
@@ -619,6 +635,7 @@ describe('golden coverage: the enumerator (round 135)', function () {
       expect(restoreInPage()).to.deep.equal([]);
       expect(cy.$id('s').data('transform')).to.equal('uppercase');
     } finally {
+      delete globalThis.__goldenSourceScene;
       delete globalThis.cy;
       cy.destroy();
     }

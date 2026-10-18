@@ -490,20 +490,27 @@ export const resetKeywordInPage = ({
         ? 'authored-declaration-and-resolved-getter'
         : 'authored-value-and-style-getter';
   const currentSheet = cy.style().json();
-  const currentBypass = currentSheet.bypasses?.[String(target)];
+  const sourceScene = globalThis.__goldenSourceScene;
+  const authoredSheet = sourceScene?.style ?? currentSheet;
+  const authoredBypass = authoredSheet.bypasses?.[String(target)];
   const declaration =
     group === 'core'
-      ? currentSheet.core?.[property]
-      : currentBypass != null && Object.hasOwn(currentBypass, property)
-        ? currentBypass[property]
-        : currentSheet[group]?.[property];
+      ? authoredSheet.core?.[property]
+      : authoredBypass != null && Object.hasOwn(authoredBypass, property)
+        ? authoredBypass[property]
+        : authoredSheet[group]?.[property];
   const declarationElement = group === 'core' ? null : cy.$id(String(target));
+  const sourceElement = (sourceScene?.elements?.nodes ?? [])
+    .concat(sourceScene?.elements?.edges ?? [])
+    .find((element) => String(element.data?.id) === String(target));
   const authoredDeclaration =
     declaration != null &&
     typeof declaration === 'object' &&
     !Array.isArray(declaration) &&
     typeof declaration.data === 'string'
-      ? declarationElement?.data(declaration.data)
+      ? sourceElement != null
+        ? sourceElement.data?.[declaration.data]
+        : declarationElement?.data(declaration.data)
       : declaration;
   const authoredTokens =
     targetIndex == null

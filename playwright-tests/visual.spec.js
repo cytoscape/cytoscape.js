@@ -6,13 +6,14 @@ import {
   writeDiffArtifacts,
   compareToGolden,
 } from './lib/image-diff.mjs';
+import featureScenes from '../debug/feature-scenes.js';
 import {
   collectStyleCoverage,
   compareToCoverage,
   COMPOUND_PROPS,
   MAX_VALUES,
 } from './lib/style-coverage.mjs';
-import { degradeScene } from './lib/degrade-control.mjs';
+import { captureSurface, degradeScene } from './lib/degrade-control.mjs';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -90,6 +91,31 @@ const exportPng = async (page, opts = {}) => {
   lastExportOpts = opts;
 
   return await page.evaluate(async (opts) => await window.cy.png(opts), opts);
+};
+
+const countPixelChangesInRect = (before, after, rect) => {
+  if (before.width !== after.width || before.height !== after.height) return 0;
+  const x1 = Math.max(0, Math.floor(rect.x1));
+  const y1 = Math.max(0, Math.floor(rect.y1));
+  const x2 = Math.min(before.width, Math.ceil(rect.x2));
+  const y2 = Math.min(before.height, Math.ceil(rect.y2));
+  let changed = 0;
+
+  for (let y = y1; y < y2; y++) {
+    for (let x = x1; x < x2; x++) {
+      const offset = (y * before.width + x) * 4;
+      if (
+        before.data[offset] !== after.data[offset] ||
+        before.data[offset + 1] !== after.data[offset + 1] ||
+        before.data[offset + 2] !== after.data[offset + 2] ||
+        before.data[offset + 3] !== after.data[offset + 3]
+      ) {
+        changed++;
+      }
+    }
+  }
+
+  return changed;
 };
 
 test.describe('WebGPU visual goldens', () => {
@@ -196,7 +222,14 @@ test.describe('WebGPU visual goldens', () => {
     await waitFrames(page, 2);
   };
 
-  const checkGolden = async (page, name, uri, testInfo, opts = {}) => {
+  const checkGolden = async (
+    page,
+    name,
+    uri,
+    testInfo,
+    opts = {},
+    featureCoverage = null,
+  ) => {
     // throws with diff artifacts on mismatch; writes the golden under
     // UPDATE_GOLDENS=1
     compareToGolden(name, decodePng(uri), {
@@ -213,7 +246,7 @@ test.describe('WebGPU visual goldens', () => {
       maxValues: MAX_VALUES,
     });
 
-    compareToCoverage(name, coverage);
+    compareToCoverage(name, coverage, featureCoverage);
 
     // round 143 (item 30, tier 2): DEGRADE_CONTROL=1 resets each
     // exercised property to its default in turn on this live scene and
@@ -221,7 +254,7 @@ test.describe('WebGPU visual goldens', () => {
     // playwright-tests/golden-degrade/<name>.json
     if (process.env.DEGRADE_CONTROL) {
       test.setTimeout(300_000);
-      await degradeScene(page, name, coverage, lastExportOpts);
+      await degradeScene(page, name, coverage, lastExportOpts, featureCoverage);
     }
   };
 
@@ -3044,6 +3077,9 @@ test.describe('WebGPU visual goldens', () => {
             else: 'linear-gradient',
           },
           'background-gradient-stop-colors': '#e74c3c #f1c40f #2ecc71',
+          // Uneven stops make the position values visible and let the
+          // degrade control compare them with the evenly spread default.
+          'background-gradient-stop-positions': '0% 38% 100%',
           'background-gradient-direction': {
             case: [
               { when: { data: 'dir', eq: 'to-right' }, then: 'to-right' },
@@ -3064,6 +3100,7 @@ test.describe('WebGPU visual goldens', () => {
           },
           'line-fill': 'linear-gradient',
           'line-gradient-stop-colors': '#8e44ad #3498db #16a085',
+          'line-gradient-stop-positions': '0% 63% 100%',
         },
       },
       zoom: 1,
@@ -3363,6 +3400,10 @@ test.describe('WebGPU visual goldens', () => {
   }, testInfo) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 
+    // The asymmetric parent padding adds 28 px on the left at both nested
+    // levels; give the full hull room while retaining a fixed pixel scale.
+    await useViewport(page, 500, 360);
+
     // gp > p > (a, b) exercises the depth-ordered parent stream (outer
     // under inner under leaves); q > c is a second top-level parent with
     // explicit compound style; the a-c edge crosses both parent bands
@@ -3389,12 +3430,15 @@ test.describe('WebGPU visual goldens', () => {
           'background-color': '#dfe6e9',
           'border-width': 2,
           'border-color': '#0984e3',
-          padding: 12,
+          'padding-top': 8,
+          'padding-right': 20,
+          'padding-bottom': 14,
+          'padding-left': 28,
         },
         edges: { width: 4, 'line-color': '#6c5ce7' },
       },
       zoom: 1,
-      pan: { x: 200, y: 150 },
+      pan: { x: 250, y: 180 },
     });
     await waitFrames(page);
 
@@ -4039,6 +4083,9 @@ test.describe('WebGPU visual goldens', () => {
             else: 'pie',
           },
           'chart-values': { data: 'parts' },
+          // An explicit palette differs from the value-count-derived
+          // default, so resetting it has a visible pixel control.
+          'chart-colors': ['#e84393', '#00b894', '#0984e3', '#fdcb6e'],
           'chart-hole': {
             case: [{ when: { data: 'kind', eq: 'donut' }, then: 0.5 }],
             else: 0,
@@ -4198,6 +4245,18 @@ test.describe('WebGPU visual goldens', () => {
         bypasses: {
           'bar-neg': { 'chart-domain': [-4, -2] },
           'bar-pos': { 'chart-domain': [2, 4] },
+          pie26: {
+            'chart-colors': ['#e84393', '#00b894', '#0984e3', '#fdcb6e'],
+          },
+          pie255: {
+            'chart-colors': ['#e84393', '#00b894', '#0984e3', '#fdcb6e'],
+          },
+          donut: {
+            'chart-colors': ['#e84393', '#00b894', '#0984e3', '#fdcb6e'],
+          },
+          stripes: {
+            'chart-colors': ['#e84393', '#00b894', '#0984e3', '#fdcb6e'],
+          },
         },
       },
       zoom: 1,
@@ -4472,6 +4531,251 @@ test.describe('WebGPU visual goldens', () => {
     }
 
     expect(differing, 'kernel-folded and CPU-folded pixels').toBe(0);
+  });
+
+  // The shared cases include base views and one-axis states of meaningful
+  // controls.  Host-dependent generic font states remain manual-only.
+  for (const sceneCase of featureScenes.goldenCases) {
+    if (sceneCase.goldenOmissionReason) continue;
+    const name = sceneCase.name;
+
+    test(`golden: feature ${sceneCase.familyId} / ${sceneCase.stateId ?? sceneCase.viewId}`, async ({
+      page,
+    }, testInfo) => {
+      test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+      await useViewport(page, 800, 600);
+      if (sceneCase.familyId === 'labels') {
+        // The manual feature page pins all four faces. Add its bold-normal
+        // face only to these feature captures; older label goldens keep
+        // their established font environment.
+        await page.addStyleTag({
+          content: `@font-face {
+            font-family: 'Open Sans';
+            font-style: normal;
+            font-weight: 700;
+            src: url('../node_modules/@fontsource/open-sans/files/open-sans-latin-700-normal.woff2') format('woff2');
+          }`,
+        });
+      }
+      await page.evaluate(async (expectBoldFace) => {
+        const fontLoads = [
+          document.fonts.load("12px 'Open Sans'"),
+          document.fonts.load("italic 12px 'Open Sans'"),
+          document.fonts.load("700 italic 12px 'Open Sans'"),
+        ];
+        if (expectBoldFace) {
+          fontLoads.push(document.fonts.load("700 12px 'Open Sans'"));
+        }
+        fontLoads.push(document.fonts.ready);
+        await Promise.all(fontLoads);
+
+        const fixedFaces = [...document.fonts].filter(
+          (face) => face.family === 'Open Sans' && face.status === 'loaded',
+        );
+        if (!document.fonts.check("12px 'Open Sans'")) {
+          throw new Error('the pinned Open Sans regular face did not load');
+        }
+        if (
+          expectBoldFace &&
+          !fixedFaces.some(
+            (face) => face.style === 'normal' && face.weight === '700',
+          )
+        ) {
+          throw new Error('the pinned Open Sans bold face did not load');
+        }
+      }, sceneCase.familyId === 'labels');
+
+      const scene = featureScenes.create(
+        sceneCase.familyId,
+        sceneCase.viewId,
+        sceneCase.params,
+      );
+
+      await makeReadyCy(page, {
+        ...scene.options,
+        elements: scene.elements,
+        style: scene.style,
+      });
+      await page.evaluate(
+        ({ name, style, elements }) => {
+          // Preserve the uncompiled authored declarations for strict keyword
+          // controls. cy.style().json() may normalize keyword aliases such as
+          // match-line into their numeric resolved values.
+          window.__goldenSourceScene = { name, style, elements };
+        },
+        {
+          name,
+          style: scene.style,
+          elements: scene.elements,
+        },
+      );
+      let preEmphasisPixels = null;
+      if (scene.initialState?.emphasize?.length > 0) {
+        let originalStyle = null;
+        if (scene.style.core?.['dim-opacity'] === 1) {
+          // At opacity 1, emphasis is intentionally pixel-neutral. Prove the
+          // initial state affects rendering at the default dim, then restore
+          // the selected state before capturing its golden.
+          originalStyle = await page.evaluate(() =>
+            JSON.parse(JSON.stringify(window.cy.style().json())),
+          );
+          const probeStyle = JSON.parse(JSON.stringify(originalStyle));
+          probeStyle.core['dim-opacity'] = 0.52;
+          await page.evaluate((style) => window.cy.style(style), probeStyle);
+          await waitFrames(page, 3);
+        }
+        await waitFrames(page, 3);
+        preEmphasisPixels = decodePng(await exportPng(page, { bg: '#fff' }));
+        const farBounds = await page.evaluate((ids) => {
+          let collection = window.cy.collection();
+          for (const id of ids) {
+            collection = collection.union(window.cy.$id(id));
+          }
+          if (collection.length !== ids.length) {
+            throw new Error(
+              'the feature scene initial emphasis targets must exist',
+            );
+          }
+          window.cy.emphasize(collection);
+          const expected = [...ids].sort();
+          const actual = window.cy
+            .elements()
+            .filter((element) => element.emphasized())
+            .map((element) => element.id())
+            .sort();
+          if (
+            JSON.stringify(actual) !== JSON.stringify(expected) ||
+            window.cy.$id('far-a').emphasized()
+          ) {
+            throw new Error('the feature scene emphasis set is not exact');
+          }
+          return window.cy.$id('far-a').renderedBoundingBox();
+        }, scene.initialState.emphasize);
+        await waitFrames(page, 3);
+        const emphasizedPixels = decodePng(
+          await exportPng(page, { bg: '#fff' }),
+        );
+        const farDelta = countPixelChangesInRect(
+          preEmphasisPixels,
+          emphasizedPixels,
+          farBounds,
+        );
+        expect(
+          farDelta,
+          'emphasizing the focus should change pixels in the dimmed far node',
+        ).toBeGreaterThan(0);
+        if (originalStyle != null) {
+          await page.evaluate(
+            ({ style, ids }) => {
+              window.cy.style(style);
+              if (window.cy.style().json().core['dim-opacity'] !== 1) {
+                throw new Error('restoring the selected dim-opacity failed');
+              }
+              let collection = window.cy.collection();
+              for (const id of ids) {
+                collection = collection.union(window.cy.$id(id));
+              }
+              window.cy.emphasize(collection);
+              const actual = window.cy
+                .elements()
+                .filter((element) => element.emphasized())
+                .map((element) => element.id())
+                .sort();
+              if (JSON.stringify(actual) !== JSON.stringify([...ids].sort())) {
+                throw new Error('restoring the selected emphasis state failed');
+              }
+            },
+            { style: originalStyle, ids: scene.initialState.emphasize },
+          );
+          await waitFrames(page, 3);
+        }
+      }
+      await waitFrames(page, 3);
+      await expectGraphFits(page, name);
+
+      const uri = await exportPng(page, { bg: '#ffffff' });
+
+      await checkGolden(page, name, uri, testInfo, {}, scene.coverage);
+    });
+  }
+
+  const gestureElements = [
+    { data: { id: 'a', label: '' }, position: { x: -150, y: -70 } },
+    { data: { id: 'b', label: '' }, position: { x: -50, y: -70 } },
+    { data: { id: 'c', label: '' }, position: { x: 50, y: -70 } },
+    { data: { id: 'd', label: '' }, position: { x: 150, y: -70 } },
+    { data: { id: 'e', label: '' }, position: { x: -100, y: 70 } },
+    { data: { id: 'f', label: '' }, position: { x: 100, y: 70 } },
+  ];
+
+  const makeGestureCy = async (page, core) => {
+    await useViewport(page, 800, 600);
+    await makeReadyCy(page, {
+      elements: gestureElements,
+      layout: { name: 'preset' },
+      style: {
+        nodes: {
+          width: 46,
+          height: 38,
+          'background-color': '#dce8f4',
+          'border-color': '#384e64',
+          'border-width': 2,
+          label: '',
+        },
+        core,
+      },
+      zoom: 1,
+      pan: { x: 400, y: 300 },
+    });
+    await page.evaluate(() => window.cy.boxSelectionEnabled(true));
+    await waitFrames(page, 3);
+  };
+
+  test('golden: active background gesture chrome', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    await makeGestureCy(page, {
+      'active-bg-color': '#2f7de1',
+      'active-bg-opacity': 0.32,
+      'active-bg-size': 48,
+    });
+    await expectGraphFits(page, 'core-active-bg');
+
+    const opts = {
+      captureSelector: '#cytoscape',
+      captureGesture: { type: 'active-bg', x: 400, y: 150 },
+    };
+    lastExportOpts = opts;
+    const png = await captureSurface(page, opts);
+
+    await checkGolden(page, 'core-active-bg', png, testInfo);
+  });
+
+  test('golden: selection box gesture chrome', async ({ page }, testInfo) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    await makeGestureCy(page, {
+      'selection-box-color': '#ef7d35',
+      'selection-box-opacity': 0.4,
+      'selection-box-border-color': '#8b3f16',
+      'selection-box-border-width': 3,
+    });
+    await expectGraphFits(page, 'core-selection-box');
+
+    const opts = {
+      captureSelector: '#cytoscape',
+      captureGesture: {
+        type: 'selection-box',
+        x1: 80,
+        y1: 80,
+        x2: 250,
+        y2: 205,
+      },
+    };
+    lastExportOpts = opts;
+    const png = await captureSurface(page, opts);
+
+    await checkGolden(page, 'core-selection-box', png, testInfo);
   });
 });
 

@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createContext, runInContext } from 'node:vm';
 import cytoscape from '../../src/index.mjs';
+import { CURVE_BEZIER } from '../../src/contract.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const sceneScript = readFileSync(join(ROOT, 'debug/feature-scenes.js'), 'utf8');
@@ -751,6 +752,9 @@ describe('round 149 visual feature scenes', function () {
         row.property === 'background-image-containment' &&
         row.target === 'image-2',
     );
+    const positionYRow = images.coverage.properties.find(
+      (row) => row.property === 'background-position-y',
+    );
 
     expect(tileSvg).to.match(/<svg[^>]*width="48"[^>]*height="48"/);
     expect(images.style.nodes.width).to.equal(150);
@@ -769,6 +773,19 @@ describe('round 149 visual feature scenes', function () {
       'background-image-containment': 'inside',
     });
     expect(containmentRow).to.include({ value: 'inside', alternate: 'over' });
+    expect(positionYRow).to.include({
+      target: 'image-1',
+      value: '35%',
+      alternate: '50%',
+    });
+    expect(images.style.bypasses['image-1']).to.include({
+      'background-position-y': '35%',
+      'background-repeat': 'no-repeat',
+    });
+    expect(images.style.bypasses['image-3']).to.include({
+      'background-position-y': '50%',
+      'background-repeat': 'repeat-y',
+    });
     expect(
       images.coverage.keywords.some(
         (row) => row.property === 'background-clip' && row.target === 'image-0',
@@ -787,6 +804,24 @@ describe('round 149 visual feature scenes', function () {
         (row) => row.property === 'background-clip' && row.target === 'image-5',
       ),
     ).to.include({ value: 'none', alternate: 'node' });
+
+    const imageCy = cytoscape({
+      elements: images.elements,
+      style: images.style,
+    });
+    expect(imageCy.$id('image-1').style('background-repeat')).to.equal(
+      'no-repeat',
+    );
+    expect(imageCy.$id('image-1').style('background-position-y')).to.equal(
+      '35%',
+    );
+    expect(imageCy.$id('image-3').style('background-repeat')).to.equal(
+      'repeat-y',
+    );
+    expect(imageCy.$id('image-3').style('background-position-y')).to.equal(
+      '50%',
+    );
+    imageCy.destroy();
 
     for (const [property, alternate] of [
       ['background-width', 56],
@@ -852,6 +887,73 @@ describe('round 149 visual feature scenes', function () {
     } finally {
       cy.destroy();
     }
+  });
+
+  it('uses scalar control-point weight on a bundled bezier without a weights array', function () {
+    const scene = featureScenes.create('edges', 'routes');
+    const row = scene.coverage.properties.find(
+      (entry) => entry.property === 'control-point-weight',
+    );
+
+    expect(row).to.include({
+      target: 'route-0',
+      value: 0.25,
+      alternate: 0.75,
+    });
+    expect(scene.style.edges).not.to.have.property('control-point-weight');
+    expect(scene.style.edges).not.to.have.property('control-point-weights');
+    expect(scene.style.bypasses['route-0']).to.include({
+      'control-point-weight': 0.25,
+    });
+    expect(scene.style.bypasses['route-0']).not.to.have.property(
+      'control-point-weights',
+    );
+    expect(scene.style.bypasses['route-1']).to.deep.include({
+      'control-point-distances': [90],
+      'control-point-weights': [0.35],
+    });
+
+    const cy = cytoscape({ elements: scene.elements, style: scene.style });
+    const scalarEdge = cy.$id('route-0');
+    const peer = cy.$id('route-0-peer');
+    const slot = scalarEdge._first().slot;
+    const routePoints = () => {
+      const route = cy._store.curveRouteAt(slot);
+
+      expect(route).to.not.equal(null);
+      return Array.from({ length: route.n + 2 }, (_, index) => [
+        route.qx[index],
+        route.qy[index],
+      ]);
+    };
+    const baseline = routePoints();
+    const baselineStyle = cy._store.curveStyleAt(slot);
+
+    expect(scalarEdge.style('curve-style')).to.equal('bezier');
+    expect(scalarEdge.style('control-point-weight')).to.equal(0.25);
+    expect(peer.style('control-point-weight')).to.equal(0.75);
+    expect(baselineStyle.style).to.equal(CURVE_BEZIER);
+    expect(baselineStyle.weight).to.equal(0.25);
+
+    scalarEdge.style('control-point-weight', 0.75);
+    const alternate = routePoints();
+    const alternateStyle = cy._store.curveStyleAt(slot);
+
+    expect(alternateStyle.style).to.equal(CURVE_BEZIER);
+    expect(alternateStyle.weight).to.equal(0.75);
+    expect(alternate).not.to.deep.equal(baseline);
+    cy.destroy();
+
+    const endpoints = featureScenes.create('edges', 'endpoints');
+    expect(
+      endpoints.coverage.properties.some(
+        (entry) => entry.property === 'control-point-weight',
+      ),
+    ).to.equal(false);
+    expect(endpoints.style.edges).not.to.have.property('control-point-weight');
+    expect(endpoints.style.bypasses['route-0']).to.have.property(
+      'control-point-weights',
+    );
   });
 
   it('keeps caption-only nodes undecorated and parent labels below their groups', function () {
@@ -1165,6 +1267,27 @@ describe('round 149 visual feature scenes', function () {
     const maximumRecord = paletteCy._store.chartAt(
       paletteCy.$id('chart-stripes-255')._first().slot,
     );
+    const holeRow = palette.coverage.properties.find(
+      (row) => row.property === 'chart-hole',
+    );
+    const pieWithHole = paletteCy.$id('chart-pie-16');
+    const pieRecord = paletteCy._store.chartAt(pieWithHole._first().slot);
+    const stripeRecord = paletteCy._store.chartAt(
+      paletteCy.$id('chart-stripes-18')._first().slot,
+    );
+
+    expect(holeRow).to.include({
+      target: 'chart-pie-16',
+      value: 0.25,
+      alternate: 0,
+    });
+    expect(pieWithHole.style('chart')).to.equal('pie');
+    expect(pieWithHole.style('chart-hole')).to.equal(0.25);
+    expect(pieRecord.hole).to.equal(0.25);
+    expect(paletteCy.$id('chart-stripes-18').style('chart')).to.equal(
+      'stripes',
+    );
+    expect(stripeRecord.hole).to.equal(0);
     expect(maximumRecord.values).to.have.length(255);
     expect(maximumRecord.values.every((value) => value > 0)).to.equal(true);
     expect(

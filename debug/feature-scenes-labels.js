@@ -1113,7 +1113,7 @@
         'background-height':
           i === 0 ? 40 : i === 4 ? 'auto' : i === 5 ? 140 : 48,
         'background-position-x': ['50%', '35%', '50%', '70%', '50%', '50%'][i],
-        'background-position-y': ['50%', '50%', '50%', '35%', '50%', '50%'][i],
+        'background-position-y': ['50%', '35%', '50%', '50%', '50%', '50%'][i],
       };
       if (i === 5) bypasses[`image-${i}`]['text-margin-y'] = 24;
       if (imageType === 'sdf-icon') {
@@ -1214,6 +1214,13 @@
               target: 'image-1',
               value: 12,
               alternate: 0,
+            },
+            {
+              group: 'nodes',
+              property: 'background-position-y',
+              target: 'image-1',
+              value: '35%',
+              alternate: '50%',
             },
             {
               group: 'nodes',

@@ -282,14 +282,14 @@
         label: 'pie · 16 values',
         kind: 'pie',
         values: chartValues(16),
-        hole: 0,
+        hole: 0.25,
         angle: 0.5,
       }),
       node('chart-stripes-18', 395, 110, {
         label: 'stripes · 18 values',
         kind: 'stripes',
         values: chartValues(18),
-        hole: 0.25,
+        hole: 0,
         angle: 0,
       }),
       node('chart-stripes-255', 705, 110, {
@@ -368,8 +368,9 @@
             {
               group: 'nodes',
               property: 'chart-hole',
-              target: 'chart-stripes-18',
+              target: 'chart-pie-16',
               value: 0.25,
+              alternate: 0,
             },
           ],
           [

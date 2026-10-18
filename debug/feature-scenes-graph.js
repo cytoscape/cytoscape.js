@@ -92,7 +92,6 @@
             'radius type',
             view === 'radius-influence' ? 'influence-radius' : 'arc-radius',
             'round-segments',
-            0.5,
           ],
         ]
       : endpointView
@@ -101,7 +100,6 @@
               'source inside-to-node',
               'intersection',
               'unbundled-bezier',
-              0.25,
               'inside-to-node',
               '225deg',
             ],
@@ -109,7 +107,6 @@
               'source outside-to-line',
               'intersection',
               'unbundled-bezier',
-              0.25,
               'outside-to-line',
               '225deg',
             ],
@@ -117,7 +114,6 @@
               'target inside-to-node',
               'intersection',
               'unbundled-bezier',
-              0.25,
               '18 30',
               'inside-to-node',
             ],
@@ -125,7 +121,6 @@
               'target outside-to-line',
               'intersection',
               'unbundled-bezier',
-              0.25,
               '18 30',
               'outside-to-line',
             ],
@@ -133,20 +128,19 @@
               'manual point + angle',
               'endpoints',
               'unbundled-bezier',
-              0.25,
               '18 30',
               '225deg',
             ],
           ]
         : [
-            ['intersection', 'intersection', 'unbundled-bezier', 0.25],
-            ['node position', 'node-position', 'unbundled-bezier', 0.75],
+            ['intersection', 'intersection', 'bezier'],
+            ['node position', 'node-position', 'unbundled-bezier'],
           ];
     const nodes = [];
     const edges = [];
 
     specs.forEach(
-      ([label, route, curve, weight, sourceEndpoint, targetEndpoint], i) => {
+      ([label, route, curve, sourceEndpoint, targetEndpoint], i) => {
         const y = endpointView ? 90 + i * 95 : 100 + i * 130;
         const s = `route-s${i}`;
         const t = `route-t${i}`;
@@ -155,7 +149,6 @@
         edges.push(
           edge(`route-${i}`, s, t, {
             kind: route,
-            weight,
             curve,
             ...(sourceEndpoint != null ? { sourceEndpoint } : {}),
             ...(targetEndpoint != null ? { targetEndpoint } : {}),
@@ -165,16 +158,50 @@
     );
 
     if (!radiusView && !endpointView) {
+      edges.push(
+        edge('route-0-peer', 'route-t0', 'route-s0', {
+          kind: 'intersection',
+          curve: 'bezier',
+        }),
+      );
       nodes.push(node('route-hidden-s', 100, 360, { label: 'hidden route' }));
       nodes.push(node('route-hidden-t', 470, 360, { label: 'hidden' }));
       edges.push(
         edge('route-hidden', 'route-hidden-s', 'route-hidden-t', {
           kind: 'hidden',
-          weight: 0.5,
           curve: 'bezier',
           visibility: 'hidden',
         }),
       );
+    }
+
+    const bypasses = endpointView
+      ? Object.fromEntries(
+          specs.map(([, , , sourceEndpoint, targetEndpoint], i) => [
+            `route-${i}`,
+            {
+              'control-point-distances': [90],
+              'control-point-weights': [0.35],
+              'source-endpoint': sourceEndpoint,
+              'target-endpoint': targetEndpoint,
+              ...(i === 4
+                ? {
+                    'source-distance-from-node': 0,
+                    'target-distance-from-node': 0,
+                  }
+                : {}),
+            },
+          ]),
+        )
+      : {};
+
+    if (!radiusView && !endpointView) {
+      bypasses['route-0'] = { 'control-point-weight': 0.25 };
+      bypasses['route-0-peer'] = { 'control-point-weight': 0.75 };
+      bypasses['route-1'] = {
+        'control-point-distances': [90],
+        'control-point-weights': [0.35],
+      };
     }
 
     return scene(
@@ -193,7 +220,6 @@
             : radiusView
               ? 'intersection'
               : mapper('kind', 'intersection'),
-          'control-point-weight': mapper('weight', 0.5),
           ...(radiusView
             ? {
                 'radius-type':
@@ -216,10 +242,7 @@
                 'segment-weights': [0.5],
                 'segment-radii': [50],
               }
-            : {
-                'control-point-distances': [90],
-                'control-point-weights': [0.35],
-              }),
+            : {}),
           'target-arrow-shape': 'triangle',
           'line-style': 'solid',
           'target-distance-from-node': 18,
@@ -228,41 +251,26 @@
             ? { visibility: mapper('visibility', 'visible') }
             : {}),
         },
-        bypasses: endpointView
-          ? Object.fromEntries(
-              specs.map(([, , , , sourceEndpoint, targetEndpoint], i) => [
-                `route-${i}`,
-                {
-                  'source-endpoint': sourceEndpoint,
-                  'target-endpoint': targetEndpoint,
-                  ...(i === 4
-                    ? {
-                        'source-distance-from-node': 0,
-                        'target-distance-from-node': 0,
-                      }
-                    : {}),
-                },
-              ]),
-            )
-          : {},
+        bypasses,
       },
       {
         coverage: coverage(
           [
-            ...(!radiusView
+            ...(!radiusView && !endpointView
               ? [
                   {
                     group: 'edges',
                     property: 'control-point-weight',
                     target: 'route-0',
                     value: 0.25,
+                    alternate: 0.75,
                   },
                 ]
               : []),
             ...(endpointView
               ? [
                   ...specs.flatMap(
-                    ([, , , , sourceEndpoint, targetEndpoint], i) => [
+                    ([, , , sourceEndpoint, targetEndpoint], i) => [
                       {
                         group: 'edges',
                         property: 'source-endpoint',

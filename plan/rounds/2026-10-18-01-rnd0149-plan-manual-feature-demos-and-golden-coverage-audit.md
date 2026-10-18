@@ -353,4 +353,40 @@ cartesian-product target for every property combination.
 
 These decisions supersede the audit's tentative scope and organisation
 alternatives. P0/P1/P2 are sequencing suggestions, not exclusions from the
-agreed full scope. The interview is complete; implementation has not started.
+agreed full scope. The interview is complete; implementation progress follows.
+
+### Implementation progress (18 October)
+
+The first isolated implementation slices are committed:
+
+- `6fc4a818` — golden coverage enum and core controls.
+- `d160fe10` — status builds now serve the v3 UMD at the arrow gallery's
+  requested path when present; otherwise a generated sentinel drives an
+  explicit v3-unavailable pane while v4 remains active. The main-page arrow
+  comparison starts on a readable tee near-duplicate view, with the full
+  matrix still selectable.
+- `9b022e49` — source links from this assembled round resolve to the published
+  debug mirror/features CSV or to a pinned repository source; traversal
+  outside the checkout is rejected.
+
+Checks completed for these slices:
+
+- `npm run -s test:js:one -- test/modules/status-arrow-gallery.mjs` — passed
+  the present-v3 copy and missing-v3 fallback planner cases.
+- `npm run -s test:js:one -- test/modules/status-document-links.mjs` — passed
+  all four publication and path-safety cases.
+- `npm run status` — passed; round-relative links resolve. At this point the
+  status builder still reported feature-golden PNGs pending capture.
+- Chromium opened the main feature route and its embedded arrow comparison,
+  the status site's copied-v3 comparison, and the generated missing-v3
+  fallback. The copied case hid the fallback; the missing case kept the v4
+  graph and showed the explanation. The 1280×800 focused comparison was
+  visually reviewed; captures are `/tmp/r149-arrow-focus-readable.png`,
+  `/tmp/r149-arrow-main-overlay.png`, `/tmp/r149-arrow-status-copied.png` and
+  `/tmp/r149-arrow-status-fallback.png`.
+
+The root-only status build does not build v3: it copies the ignored bundle
+only if already available locally, and otherwise publishes the explicit
+fallback. No source runtime code was changed in these slices. Main feature and
+workflow panels, full registry/schema consumers, and the remaining golden
+acceptance work are still in progress; this is not round closure.

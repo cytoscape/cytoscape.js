@@ -639,6 +639,99 @@ describe('round 149 visual feature scenes', function () {
     expect(checkedRows).to.be.greaterThan(100);
   });
 
+  it('gives label and image comparisons geometry that can show their changes', function () {
+    const labels = featureScenes.create('labels', 'edges');
+    const edgeById = new Map(
+      labels.elements.edges.map((edge) => [edge.data.id, edge.data]),
+    );
+    const nodeById = new Map(
+      labels.elements.nodes.map((node) => [node.data.id, node]),
+    );
+    const leftEdge = edgeById.get('label-edge-0');
+    const mixedCaseEdge = edgeById.get('label-edge-2');
+    const autoEdge = edgeById.get('label-edge-3');
+    const noWrapEdge = edgeById.get('label-edge-4');
+
+    expect(
+      nodeById.get(leftEdge.source).position.y,
+      'the left-justification edge is sloped',
+    ).to.not.equal(nodeById.get(leftEdge.target).position.y);
+    expect(leftEdge.label).to.include('extraordinarilylongtoken');
+    expect(leftEdge.wrap).to.equal('wrap');
+    expect(leftEdge.overflowWrap).to.equal('whitespace');
+    expect(mixedCaseEdge.label).to.include('Mixed-Case');
+    expect(mixedCaseEdge.wrap).to.equal('ellipsis');
+    expect(autoEdge.label).to.include('across several words');
+    expect(autoEdge.wrap).to.equal('wrap');
+    expect(noWrapEdge.label).to.include('one line');
+    expect(noWrapEdge.wrap).to.equal('none');
+    expect(
+      labels.coverage.keywords.find(
+        (row) => row.property === 'text-wrap' && row.target === 'label-edge-2',
+      ),
+    ).to.include({ value: 'ellipsis', alternate: 'wrap' });
+    expect(
+      labels.coverage.keywords.find(
+        (row) => row.property === 'text-wrap' && row.target === 'label-edge-4',
+      ),
+    ).to.include({ value: 'none', alternate: 'wrap' });
+
+    const nodeLabels = featureScenes.create('labels', 'nodes');
+    const leftNodeLabel = nodeLabels.elements.nodes.find(
+      (node) => node.data.id === 'label-left',
+    ).data;
+    expect(leftNodeLabel.text).to.include('extraordinarilylongtoken');
+    expect(leftNodeLabel.text).to.include(' with spaces');
+    expect(leftNodeLabel.wrap).to.equal('wrap');
+    expect(leftNodeLabel.wrapRule).to.equal('whitespace');
+
+    const images = featureScenes.create('images', 'layers');
+    const imageById = new Map(
+      images.elements.nodes.map((node) => [node.data.id, node]),
+    );
+    const smallTile = imageById.get('image-0');
+    const unclippedImage = imageById.get('image-5');
+    const tileSvg = decodeURIComponent(smallTile.data.url.split(',')[1]);
+    const unclippedSvg = decodeURIComponent(
+      unclippedImage.data.url.split(',')[1],
+    );
+    const repeatRow = images.coverage.keywords.find(
+      (row) => row.property === 'background-repeat' && row.target === 'image-0',
+    );
+
+    expect(tileSvg).to.match(/<svg[^>]*width="48"[^>]*height="48"/);
+    expect(images.style.nodes.width).to.equal(150);
+    expect(images.style.nodes.height).to.equal(110);
+    expect(images.style.bypasses['image-0']).to.include({
+      'background-fit': 'none',
+      'background-repeat': 'no-repeat',
+      'background-width': 40,
+      'background-height': 40,
+    });
+    expect(repeatRow).to.include({ value: 'no-repeat', alternate: 'repeat' });
+    expect(images.style.bypasses['image-5']).to.include({
+      'background-fit': 'none',
+      'background-clip': 'none',
+      'background-width': 180,
+      'background-height': 140,
+    });
+    expect(unclippedSvg).to.match(/<svg[^>]*width="48"[^>]*height="48"/);
+    expect(
+      images.coverage.keywords.find(
+        (row) => row.property === 'background-clip' && row.target === 'image-5',
+      ),
+    ).to.include({ value: 'none', alternate: 'node' });
+
+    for (const [property, alternate] of [
+      ['background-width', 56],
+      ['background-height', 48],
+    ]) {
+      expect(
+        images.coverage.properties.find((row) => row.property === property),
+      ).to.include({ target: 'image-4', value: 'auto', alternate });
+    }
+  });
+
   it('uses endpoint distances only when both endpoint values are manual', function () {
     const scene = featureScenes.create('edges', 'endpoints');
     const edgeDistanceRow = scene.coverage.keywords.find(

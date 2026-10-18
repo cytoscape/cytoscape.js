@@ -126,17 +126,22 @@
       const styles = ['solid', 'dashed', 'dotted', 'double'];
 
       styles.forEach((border, i) => {
-        const y = 90 + i * 120;
+        const y = 90 + i * 96;
+        const targetY = i === 0 ? y + 40 : y;
         const s = `label-edge-s${i}`;
         const t = `label-edge-t${i}`;
         nodes.push(node(s, 90, y, { label: `text border ${border}` }));
-        nodes.push(node(t, 480, y, { label: '' }));
+        nodes.push(node(t, 480, targetY, { label: '' }));
         edges.push(
           edge(`label-edge-${i}`, s, t, {
             label:
               i === 0
-                ? 'words stay on one line'
-                : `long-edge-label-without-spaces-${i}`,
+                ? 'left alignment wraps extraordinarilylongtoken'
+                : i === 2
+                  ? 'Mixed-Case label without spaces-2'
+                  : i === 3
+                    ? 'auto alignment wraps across several words'
+                    : `long-edge-label-without-spaces-${i}`,
             sourceLabel: i === 0 ? 'SOURCE LABEL 0' : `source label ${i}`,
             targetLabel: i === 0 ? 'TARGET LABEL 0' : `target label ${i}`,
             marginX: [0, 18, 0, -18][i],
@@ -144,7 +149,7 @@
             border,
             align: ['left', 'center', 'right', 'auto'][i],
             transform: ['uppercase', 'lowercase', 'none', 'uppercase'][i],
-            wrap: ['none', 'wrap', 'wrap', 'ellipsis'][i],
+            wrap: ['wrap', 'wrap', 'ellipsis', 'wrap'][i],
             overflowWrap: i === 0 ? 'whitespace' : 'anywhere',
             backgroundShape: i === 0 ? 'rectangle' : 'round-rectangle',
             rotation: i === 0 ? 'none' : 'autorotate',
@@ -153,6 +158,30 @@
           }),
         );
       });
+
+      const noWrapY = 90 + styles.length * 96;
+      nodes.push(
+        node('label-edge-s4', 90, noWrapY, { label: 'text-wrap none' }),
+        node('label-edge-t4', 480, noWrapY, { label: '' }),
+      );
+      edges.push(
+        edge('label-edge-4', 'label-edge-s4', 'label-edge-t4', {
+          label: 'one line text wrap has no breaks',
+          sourceLabel: 'source label 4',
+          targetLabel: 'target label 4',
+          marginX: 0,
+          marginY: 0,
+          border: 'solid',
+          align: 'center',
+          transform: 'none',
+          wrap: 'none',
+          overflowWrap: 'whitespace',
+          backgroundShape: 'round-rectangle',
+          rotation: 'none',
+          sourceRotation: 'none',
+          targetRotation: 'none',
+        }),
+      );
 
       const result = scene(
         { nodes, edges },
@@ -316,6 +345,18 @@
                 group: 'edges',
                 property: 'text-wrap',
                 target: 'label-edge-0',
+                value: 'wrap',
+              },
+              {
+                group: 'edges',
+                property: 'text-wrap',
+                target: 'label-edge-2',
+                value: 'ellipsis',
+              },
+              {
+                group: 'edges',
+                property: 'text-wrap',
+                target: 'label-edge-4',
                 value: 'none',
               },
               {
@@ -419,13 +460,27 @@
                 group: 'edges',
                 property: 'text-wrap',
                 target: 'label-edge-3',
-                value: 'ellipsis',
-                alternate: 'none',
+                value: 'wrap',
+                alternate: 'ellipsis',
               },
               {
                 group: 'edges',
                 property: 'text-wrap',
                 target: 'label-edge-0',
+                value: 'wrap',
+                alternate: 'none',
+              },
+              {
+                group: 'edges',
+                property: 'text-wrap',
+                target: 'label-edge-2',
+                value: 'ellipsis',
+                alternate: 'wrap',
+              },
+              {
+                group: 'edges',
+                property: 'text-wrap',
+                target: 'label-edge-4',
                 value: 'none',
                 alternate: 'wrap',
               },
@@ -474,7 +529,7 @@
     const items = [
       {
         id: 'label-left',
-        text: 'left justified words',
+        text: 'left justified extraordinarilylongtoken with spaces',
         align: 'left',
         transform: 'uppercase',
         wrap: 'wrap',
@@ -884,11 +939,15 @@
         '#1c2733',
         '<path d="M8 8h32v32H8z" fill="none" stroke="#fff" stroke-width="4"/>',
       ),
+      image(
+        '#526b48',
+        '<path d="M0 0l48 48M48 0L0 48" stroke="#f5d76e" stroke-width="5"/>',
+      ),
     ];
     const rows = [
       [
-        'cover · node',
-        'cover',
+        '40 px tile · node',
+        'none',
         'node',
         'inside',
         'no-repeat',
@@ -898,9 +957,9 @@
         0,
       ],
       [
-        'contain · over',
-        'contain',
-        'none',
+        'cover · over',
+        'cover',
+        'node',
         'over',
         'no-repeat',
         'yes',
@@ -941,6 +1000,17 @@
         'sdf-icon',
         0,
       ],
+      [
+        'clip none · oversized',
+        'none',
+        'none',
+        'inside',
+        'no-repeat',
+        'yes',
+        0,
+        'auto',
+        0,
+      ],
     ];
     const nodes = rows.map(
       ([label, fit, clip, containment, repeat, smoothing, offset], i) =>
@@ -974,10 +1044,12 @@
           i === 1 ? 'null' : i === 2 ? 'use-credentials' : 'anonymous',
         'background-offset-x': offset,
         'background-offset-y': offsetY,
-        'background-width': i === 0 ? 'auto' : 56,
-        'background-height': i === 0 ? 'auto' : 48,
-        'background-position-x': ['50%', '35%', '50%', '70%', '50%'][i],
-        'background-position-y': ['50%', '50%', '50%', '35%', '50%'][i],
+        'background-width':
+          i === 0 ? 40 : i === 4 ? 'auto' : i === 5 ? 180 : 56,
+        'background-height':
+          i === 0 ? 40 : i === 4 ? 'auto' : i === 5 ? 140 : 48,
+        'background-position-x': ['50%', '35%', '50%', '70%', '50%', '50%'][i],
+        'background-position-y': ['50%', '50%', '50%', '35%', '50%', '50%'][i],
       };
       if (imageType === 'sdf-icon') {
         bypasses[`image-${i}`]['background-image-type'] = 'sdf-icon';
@@ -1014,16 +1086,16 @@
               property: 'background-fit',
               target: 'image-0',
               targetIndex: 0,
-              value: 'cover',
-              alternate: 'contain',
+              value: 'none',
+              alternate: 'cover',
             },
             {
               group: 'nodes',
               property: 'background-fit',
               target: 'image-1',
               targetIndex: 0,
-              value: 'contain',
-              alternate: 'cover',
+              value: 'cover',
+              alternate: 'contain',
             },
             {
               group: 'nodes',
@@ -1040,6 +1112,12 @@
               targetIndex: 0,
               value: 'node',
               alternate: 'none',
+            },
+            {
+              group: 'nodes',
+              property: 'background-clip',
+              target: 'image-5',
+              value: 'none',
             },
             {
               group: 'nodes',
@@ -1099,14 +1177,14 @@
             {
               group: 'nodes',
               property: 'background-width',
-              target: 'image-0',
+              target: 'image-4',
               value: 'auto',
               alternate: 56,
             },
             {
               group: 'nodes',
               property: 'background-height',
-              target: 'image-0',
+              target: 'image-4',
               value: 'auto',
               alternate: 48,
             },
@@ -1135,6 +1213,13 @@
               property: 'background-clip',
               target: 'image-1',
               targetIndex: 0,
+              value: 'node',
+              alternate: 'none',
+            },
+            {
+              group: 'nodes',
+              property: 'background-clip',
+              target: 'image-5',
               value: 'none',
               alternate: 'node',
             },

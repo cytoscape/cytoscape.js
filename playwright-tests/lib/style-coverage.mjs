@@ -175,6 +175,8 @@ export const collectStyleCoverage = ({ compound, maxValues }) => {
       // in the border-geometry radius word. The generic corner-radius reader
       // exposes that geometry reference as a huge style value, not an authored
       // node paint value; ordinary parent shapes and leaf radii still count.
+      // The same packed hull reference is exposed by the polygon-points reader;
+      // explicit custom-polygon leaf points remain ordinary authored style.
       const hullShape = [
         'convex-hull',
         'round-convex-hull',
@@ -193,7 +195,7 @@ export const collectStyleCoverage = ({ compound, maxValues }) => {
           !compoundSet.has(p) &&
           p !== 'width' &&
           p !== 'height' &&
-          !(hullShape && p === 'corner-radius'),
+          !(hullShape && ['corner-radius', 'shape-polygon-points'].includes(p)),
       );
       sweep('parents', props, def, (p) => compoundSet.has(p));
     } else {

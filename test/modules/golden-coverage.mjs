@@ -1025,19 +1025,39 @@ describe('golden coverage: the capture (round 135)', function () {
     expect(out.core).to.deep.equal({ 'dim-opacity': ['0.5'] });
   });
 
-  it('does not count packed hull references as node corner-radius values', () => {
+  it('does not count packed hull references as authored node geometry', () => {
     const scene = featureScenes.create('compounds', 'hulls');
     const hullIds = ['hull-convex', 'hull-round', 'hull-concave'];
-    const out = run({ elements: scene.elements, style: scene.style }, (cy) => {
+    const elements = {
+      nodes: [
+        ...scene.elements.nodes,
+        { data: { id: 'custom-polygon' }, position: { x: 520, y: 180 } },
+      ],
+      edges: scene.elements.edges,
+    };
+    const style = {
+      ...scene.style,
+      bypasses: {
+        ...scene.style.bypasses,
+        'custom-polygon': {
+          shape: 'polygon',
+          'shape-polygon-points': [0, -1, 1, 1, -1, 1],
+        },
+      },
+    };
+    const out = run({ elements, style }, (cy) => {
       // Hull geometry writes its polygon-pool reference into the radius
-      // word. Resolve the geometry first so the public getter exposes the
-      // same packed value the browser capture sees.
+      // word and polygon-points reader. Resolve it first so the public
+      // getters expose the same packed values the browser capture sees.
       for (const id of hullIds) cy.$id(id).boundingBox();
       cy.$id('hull-outside').style('corner-radius', 14);
+      cy.$id('custom-polygon').boundingBox();
     });
 
     expect(out.nodes['corner-radius']).to.deep.equal(['14']);
+    expect(out.nodes['shape-polygon-points']).to.deep.equal(['0 -1 1 1 -1 1']);
     expect(out.parents['corner-radius']).to.equal(undefined);
+    expect(out.parents['shape-polygon-points']).to.equal(undefined);
   });
 
   it('judges a parent against the parent defaults, not a leaf’s (control)', () => {

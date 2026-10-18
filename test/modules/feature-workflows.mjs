@@ -423,6 +423,29 @@ describe('debug stateful and numeric workflow module (round 149)', function () {
     }
   });
 
+  it('keeps empty clustering results in their reported positions', function () {
+    const cy = makeCy();
+
+    try {
+      const summary = workflows.describeAlgorithm('kMeans', {
+        result: [cy.getElementById('a'), undefined, cy.getElementById('b')],
+        input: { cy, nodes: cy.collection(), pair: [] },
+      });
+
+      expect(summary.rows).to.deep.equal([
+        ['cluster 1', 'a'],
+        ['cluster 2', ''],
+        ['cluster 3', 'b'],
+      ]);
+      expect(summary.highlight.nodes().map((node) => node.id())).to.deep.equal([
+        'a',
+        'b',
+      ]);
+    } finally {
+      cy.destroy();
+    }
+  });
+
   it('executes actual layout transform, ready, and stop callbacks', async function () {
     const cy = makeCy();
 

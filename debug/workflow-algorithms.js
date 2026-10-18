@@ -591,13 +591,15 @@
     };
     const summarizeClusters = (clusters) => {
       const sets = clusters.map((cluster) =>
-        ids(cluster.nodes ? cluster.nodes() : cluster),
+        cluster == null ? [] : ids(cluster.nodes ? cluster.nodes() : cluster),
       );
 
       sets.forEach((members, index) =>
         resultRows.push([`cluster ${index + 1}`, members.join(', ')]),
       );
-      clusters.forEach(addCollection);
+      clusters.forEach((cluster) => {
+        if (cluster != null) addCollection(cluster);
+      });
       return `clusters: ${sets.length}`;
     };
     let heading = operation;
@@ -944,7 +946,7 @@
     );
     const randomnessNote = node(document, 'p', {
       className: 'feature-workflow-note',
-      text: 'Karger–Stein and k-means, k-medoids, and fuzzy c-means use randomized initialization, so repeated results may differ. Executor comparison is for deterministic numeric methods.',
+      text: 'The fixture has a connected A–E subset for Kruskal, biconnected components, and Karger–Stein; Hierholzer uses the A–B–C cycle. Root and goal selections affect only methods that use them. Karger–Stein and k-means, k-medoids, and fuzzy c-means use randomized initialization, so repeated results may differ. Executor comparison is for deterministic numeric methods.',
     });
     const operation = select(
       document,

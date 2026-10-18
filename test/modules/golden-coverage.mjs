@@ -478,6 +478,143 @@ describe('golden coverage: the enumerator (round 135)', function () {
     );
   });
 
+  it('records only the scoped font-style restore residue allowance', () => {
+    const limitation = {
+      group: 'nodes',
+      property: 'font-style',
+      target: 'label-left',
+      value: 'normal',
+      alternate: 'italic',
+      observedResiduePixels: 178,
+      sourceRefs: [
+        'debug/fonts/*.woff2 (four pinned Open Sans faces loaded and fonts.ready)',
+      ],
+      route: '?network=features&scene=labels&view=nodes',
+      reason:
+        'A controlled font-style reset restored its readback while a small settled pixel residue remained.',
+    };
+    const capture = {
+      golden: 'feature-labels-nodes',
+      featureCoverage: {
+        keywords: [
+          {
+            group: 'nodes',
+            property: 'font-style',
+            target: 'label-left',
+            value: 'normal',
+            alternate: 'italic',
+          },
+        ],
+        exceptions: [],
+        restoreLimitations: [limitation],
+      },
+      nodes: {},
+      parents: {},
+      edges: {},
+      core: {},
+    };
+    const target = capture.featureCoverage.keywords[0];
+    const record = {
+      golden: capture.golden,
+      pairs: {},
+      keywords: [
+        {
+          ...target,
+          matched: 1,
+          changed: 1,
+          moved: 17390,
+          restoreMoved: 180,
+          residue: 180,
+        },
+      ],
+    };
+    const accepted = degradeReport([capture], [record]);
+
+    expect(accepted.keywordFailures).to.be.empty;
+    expect(accepted.restoreLimitations).to.deep.equal([
+      {
+        key: 'feature-labels-nodes nodes/font-style=normal',
+        pixels: 180,
+        maxPixels: 256,
+        moved: 17390,
+        matched: 1,
+        changed: 1,
+        route: limitation.route,
+        reason: limitation.reason,
+      },
+    ]);
+
+    const excessive = degradeReport(
+      [capture],
+      [
+        {
+          ...record,
+          keywords: [
+            { ...record.keywords[0], restoreMoved: 257, residue: 257 },
+          ],
+        },
+      ],
+    );
+    expect(excessive.keywordFailures).to.have.length(1);
+    expect(excessive.keywordFailures[0]).to.include(
+      'scoped restore residue must be 0–256 px',
+    );
+    expect(excessive.restoreLimitations).to.be.empty;
+
+    const zeroMovement = degradeReport(
+      [capture],
+      [
+        {
+          ...record,
+          keywords: [
+            {
+              ...record.keywords[0],
+              moved: 0,
+              restoreMoved: 180,
+              residue: 180,
+            },
+          ],
+        },
+      ],
+    );
+    expect(zeroMovement.keywordFailures).to.have.length(1);
+    expect(zeroMovement.restoreLimitations).to.be.empty;
+
+    const lostTarget = degradeReport(
+      [capture],
+      [
+        {
+          ...record,
+          keywords: [{ ...record.keywords[0], lost: ['label-left'] }],
+        },
+      ],
+    );
+    expect(lostTarget.keywordFailures).to.have.length(1);
+    expect(lostTarget.restoreLimitations).to.be.empty;
+
+    const wrongTarget = degradeReport(
+      [
+        {
+          ...capture,
+          featureCoverage: {
+            ...capture.featureCoverage,
+            restoreLimitations: [{ ...limitation, target: 'other-label' }],
+          },
+        },
+      ],
+      [record],
+    );
+    expect(wrongTarget.keywordFailures).to.have.length(1);
+    expect(wrongTarget.restoreLimitations).to.be.empty;
+
+    const wrongGolden = degradeReport(
+      [{ ...capture, golden: 'another-golden' }],
+      [{ ...record, golden: 'another-golden' }],
+    );
+    expect(wrongGolden.keywordFailures).to.have.length(1);
+    expect(wrongGolden.restoreLimitations).to.be.empty;
+  });
+
   it('resets and restores global fonts and core keywords (control)', () => {
     const cy = cytoscape({
       elements: [{ data: { id: 'n' } }],

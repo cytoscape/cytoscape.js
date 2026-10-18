@@ -15,7 +15,7 @@
 // reads those records and diffs them against the universe: every property
 // the stylesheet schema enumerates for a group (round 79's
 // `schemas/stylesheet.schema.json`, itself gated against the compiler)
-// **that the group reads back** — the schema also lists 45 cross-group
+// **that the group reads back** — the schema also lists a set of cross-group
 // names the compiler accepts and nothing reads (`line-color` on a node,
 // `shape` on an edge), which no scene could exercise, so they are reported
 // as inert rather than counted.  The result is the count the item asked
@@ -460,6 +460,7 @@ export const degradeReport = (captures, degrades) => {
   const moved = [];
   const keywordFailures = [];
   const keywordExceptions = [];
+  const restoreLimitations = [];
   const staleKeywords = [];
   let keywordControls = 0;
   const seen = new Set();
@@ -520,6 +521,68 @@ export const degradeReport = (captures, degrades) => {
 
       keywordControls++;
 
+      const restoreLimitation = (
+        capture.featureCoverage?.restoreLimitations ?? []
+      ).find(
+        (row) =>
+          row.group === entry.group &&
+          row.property === entry.property &&
+          row.target === entry.target &&
+          row.value === entry.value &&
+          row.alternate === entry.alternate,
+      );
+      const validRestoreLimitation =
+        capture.golden === 'feature-labels-nodes' &&
+        restoreLimitation != null &&
+        restoreLimitation.group === 'nodes' &&
+        restoreLimitation.property === 'font-style' &&
+        restoreLimitation.target === 'label-left' &&
+        restoreLimitation.value === 'normal' &&
+        restoreLimitation.alternate === 'italic' &&
+        Number.isFinite(restoreLimitation.observedResiduePixels) &&
+        restoreLimitation.observedResiduePixels > 0 &&
+        restoreLimitation.observedResiduePixels <= 256 &&
+        restoreLimitation.route ===
+          '?network=features&scene=labels&view=nodes' &&
+        Array.isArray(restoreLimitation.sourceRefs) &&
+        restoreLimitation.sourceRefs.some((ref) =>
+          ref.includes('four pinned Open Sans faces loaded'),
+        ) &&
+        typeof restoreLimitation.reason === 'string' &&
+        restoreLimitation.reason.length > 0;
+
+      const scopedRestoreResidue =
+        validRestoreLimitation &&
+        Number.isInteger(entry.restoreMoved) &&
+        entry.restoreMoved >= 0 &&
+        entry.restoreMoved <= 256 &&
+        (entry.residue ?? 0) === entry.restoreMoved;
+
+      const validRestoreControl =
+        validRestoreLimitation &&
+        scopedRestoreResidue &&
+        entry.matched === 1 &&
+        entry.changed === 1 &&
+        Number.isFinite(entry.moved) &&
+        entry.moved > 0 &&
+        (entry.unresettable?.length ?? 0) === 0 &&
+        entry.unexpected == null &&
+        entry.rejected == null &&
+        (entry.lost?.length ?? 0) === 0;
+
+      if (validRestoreControl && entry.restoreMoved > 0) {
+        restoreLimitations.push({
+          key: `${capture.golden} ${entry.group}/${entry.property}=${entry.value}`,
+          pixels: entry.restoreMoved,
+          maxPixels: 256,
+          moved: entry.moved,
+          matched: entry.matched,
+          changed: entry.changed,
+          route: restoreLimitation.route,
+          reason: restoreLimitation.reason,
+        });
+      }
+
       const expectedMode =
         entry.controlMode === 'stylesheet'
           ? 'authored-declaration-and-stylesheet-readback'
@@ -530,7 +593,13 @@ export const degradeReport = (captures, degrades) => {
               : null;
       const evidenceModeMismatch =
         expectedMode != null && entry.matchedBy !== expectedMode;
-      const restoreMismatch = expectedMode != null && entry.restoreMoved !== 0;
+      const restoreMismatch =
+        expectedMode != null &&
+        entry.restoreMoved !== 0 &&
+        !scopedRestoreResidue;
+      const restoreLimitationMismatch =
+        restoreLimitation != null &&
+        (!validRestoreLimitation || !scopedRestoreResidue);
 
       if (
         entry.matched !== 1 ||
@@ -539,11 +608,14 @@ export const degradeReport = (captures, degrades) => {
         entry.moved < 1 ||
         evidenceModeMismatch ||
         restoreMismatch ||
+        restoreLimitationMismatch ||
         (entry.unresettable?.length ?? 0) > 0 ||
         entry.unexpected != null ||
         entry.rejected != null ||
         (entry.lost?.length ?? 0) > 0 ||
-        entry.residue != null
+        (entry.residue != null &&
+          !scopedRestoreResidue &&
+          restoreLimitation == null)
       ) {
         keywordFailures.push(
           `${capture.golden} ${entry.group}/${entry.property}=${entry.value}: ` +
@@ -553,6 +625,9 @@ export const degradeReport = (captures, degrades) => {
               : '') +
             (restoreMismatch
               ? `, expected exact pixel restore, got ${entry.restoreMoved ?? 'no restore count'}`
+              : '') +
+            (restoreLimitationMismatch
+              ? `, scoped restore residue must be 0–256 px with matching readback`
               : ''),
         );
       }
@@ -597,6 +672,7 @@ export const degradeReport = (captures, degrades) => {
     staleKeywords,
     keywordFailures,
     keywordExceptions,
+    restoreLimitations,
     counts: {
       pairs: moved.length + decoration.length + unmoved.length,
       moved: moved.length,
@@ -608,6 +684,7 @@ export const degradeReport = (captures, degrades) => {
       keywordControls,
       keywordFailures: keywordFailures.length,
       keywordExceptions: keywordExceptions.length,
+      restoreLimitations: restoreLimitations.length,
     },
   };
 };
@@ -716,7 +793,8 @@ const main = async () => {
   );
   console.log(
     `keyword controls: ${c.keywordControls} checked, ${c.keywordExceptions} ` +
-      `explicit exceptions, ${c.keywordFailures} failed`,
+      `explicit exceptions, ${c.restoreLimitations} scoped restore limitations, ` +
+      `${c.keywordFailures} failed`,
   );
 
   if (verbose) {
@@ -736,6 +814,12 @@ const main = async () => {
 
     for (const r of report.residue) {
       console.log(`    residue      ${r}`);
+    }
+
+    for (const r of report.restoreLimitations) {
+      console.log(
+        `    restore-limit ${r.key} — ${r.pixels}/${r.maxPixels} px; ${r.reason}`,
+      );
     }
   }
 

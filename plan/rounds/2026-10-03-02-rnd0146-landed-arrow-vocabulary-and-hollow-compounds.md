@@ -132,3 +132,28 @@ is a measured renderer cost, not a no-cost claim.
   hollow interior. Every temporary source and test edit was restored exactly.
 
 **Round 146 is complete.**
+
+### Golden refresh follow-up (2026-10-17)
+
+Seven existing goldens still described the pre-round arrow draw quads.
+Their differences were confined to arrow pixels: `nodes-edges-arrows` 3,
+`arrow-gap` 4, `curved-arrows` 6, `taxi-families` 8, `manual-endpoints` 7,
+`emphasis-tiers` 1, and `arrow-scalars` 17 pixels.
+
+A controlled build restored only the four previous `arrowLen` quad-extent
+expressions in `src/render/shaders/arrow.mts`. All seven goldens then matched
+exactly. The arrow-size formula, scale values, shape geometry and fragment
+coverage code were unchanged by this control. This isolates the differences
+to rasterization of the changed quads, consistent with floating-point
+interpolation and antialiasing, rather than a model-space arrow-size change.
+The source, development bundle and latest captures were restored afterward.
+
+The maintainer approved regenerating these seven references for the current
+quads. Their degradation controls were rerun as well; the latest captures
+remain separate from the approved references, and the zero-difference test
+tolerance is unchanged.
+
+All seven scenes passed again with regeneration disabled. The golden
+coverage/degradation, image-tracking and plan-record checks passed (44
+tests). Each regenerated PNG differs from its previous reference by exactly
+the reviewed count above; all 53 stored reference/current pairs now match.

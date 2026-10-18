@@ -24,7 +24,7 @@
       "elements": 1
     },
     "edges/edge-distances": {
-      "moved": 1769,
+      "moved": 1768,
       "elements": 1
     },
     "edges/line-color": {
@@ -36,7 +36,7 @@
       "elements": 3
     },
     "edges/source-endpoint": {
-      "moved": 6064,
+      "moved": 6063,
       "elements": 3
     },
     "edges/target-arrow-color": {
@@ -52,7 +52,7 @@
       "elements": 3
     },
     "edges/width": {
-      "moved": 2402,
+      "moved": 2394,
       "elements": 3
     }
   }

@@ -19,11 +19,11 @@ A round can land with an item held open; the round file says which.
 | State | Rounds |
 | --- | --- |
 | landed | 7–48, 52–70, 72–76, 79–80, 82, 85–124, 126–136, 138–148 |
-| planned | 49–51, 71, 77–78, 81, 83–84, 125, 137 |
+| planned | 49–51, 71, 77–78, 81, 83–84, 125, 137, 149 |
 
 ## The sections
 
-195 sections.
+196 sections.
 
 | # | Round | Date | Kind | Section |
 | --: | --- | --- | --- | --- |
@@ -222,3 +222,4 @@ A round can land with an item held open; the round file says which.
 | 193 | — | 2026-10-11 | note | [Alpha interview follow-up questions and review gates](rounds/2026-10-11-01-rnd0000-note-alpha-interview-open-questions.md) |
 | 194 | — | 2026-10-12 | note | [Bun, documentation and table benchmark interview](rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md) |
 | 195 | — | 2026-10-12 | note | [Graph algorithm documentation contracts](rounds/2026-10-12-02-rnd0000-note-graph-algorithm-documentation-contracts.md) |
+| 196 | 149 | 2026-10-18 | plan | [Manual feature demos and golden coverage audit](rounds/2026-10-18-01-rnd0149-plan-manual-feature-demos-and-golden-coverage-audit.md) |

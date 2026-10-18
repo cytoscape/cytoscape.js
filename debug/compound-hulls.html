@@ -31,7 +31,7 @@
         container: document.getElementById('cy'),
         elements: {
           nodes: [
-            { data: { id: 'p', label: 'compound parent' } },
+            { data: { id: 'p', label: '' } },
             { data: { id: 'a', parent: 'p', label: 'member A' }, position: { x: 0, y: 0 } },
             { data: { id: 'b', parent: 'p', label: 'member B' }, position: { x: 100, y: 0 } },
             { data: { id: 'c', parent: 'p', label: 'member C' }, position: { x: 0, y: 100 } },
@@ -54,10 +54,9 @@
             'background-opacity': 0.65, label: { data: 'label' },
             'compound-sizing-wrt-labels': 'exclude',
           },
+          bypasses: { q: { 'text-valign': 'top' } },
         },
         layout: { name: 'preset' },
-        zoom: 1,
-        pan: { x: 150, y: 150 },
       });
 
       window.setShape = function(shape) {
@@ -65,7 +64,9 @@
         updateStatus();
       };
       window.setSizing = function(include) {
-        cy.$id('p').style('compound-sizing-wrt-labels', include ? 'include' : 'exclude');
+        const sheet = JSON.parse(JSON.stringify(cy.style().json()));
+        sheet.parents['compound-sizing-wrt-labels'] = include ? 'include' : 'exclude';
+        cy.style(sheet);
         updateStatus();
       };
       window.hullStatus = function() {
@@ -80,8 +81,33 @@
       function updateStatus() {
         document.getElementById('status').textContent = JSON.stringify(hullStatus());
       }
-      cy.ready.then(() => {
+      cy.ready.then(async () => {
+        await document.fonts.ready;
+        await cy.viewportCounts();
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        // Fit once to the largest contour/label state, then restore the default view.
+        const initialStyle = JSON.parse(JSON.stringify(cy.style().json()));
+        const fitStyle = JSON.parse(JSON.stringify(initialStyle));
+        fitStyle.parents.shape = 'round-convex-hull';
+        fitStyle.parents['compound-sizing-wrt-labels'] = 'include';
+        cy.style(fitStyle);
+        await cy.viewportCounts();
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        cy.fit(cy.elements(), 30);
+        const largestStateBounds = cy.elements().renderedBoundingBox();
+        cy.style(initialStyle);
+        await cy.viewportCounts();
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         updateStatus();
+        // Leave space below the floating controls, including in the shorter overlay iframe.
+        const controlBottom = document.getElementById('controls').getBoundingClientRect().bottom;
+        const clearControlsY = controlBottom + 12;
+        if (largestStateBounds.y1 < clearControlsY) {
+          cy.panBy({ x: 0, y: clearControlsY - largestStateBounds.y1 });
+          await cy.viewportCounts();
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        }
         window.hullsReady = true;
         window.dispatchEvent(new Event('hulls-ready'));
       });

@@ -29,6 +29,7 @@ test.describe('compound hull renderer', () => {
     await page.setViewportSize({ width: 800, height: 600 });
     await page.goto(PAGE);
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+    await page.waitForFunction(() => window.hullsReady === true);
 
     await page.evaluate(async () => {
       await cy.ready;
@@ -48,6 +49,41 @@ test.describe('compound hull renderer', () => {
     expect(convex.pick).toBe('p');
     expect(convex.gpuPick).toBe('p');
 
+    const excluded = await page.evaluate(() => ({
+      shape: cy.$id('p').style('shape'),
+      sizing: cy.$id('p').style('compound-sizing-wrt-labels'),
+      bounds: cy.$id('p').boundingBox(),
+    }));
+    expect(excluded.shape).toBe('convex-hull');
+    expect(excluded.sizing).toBe('exclude');
+
+    await page.check('#labels');
+    const included = await page.evaluate(async () => {
+      await cy.viewportCounts();
+      return {
+        shape: cy.$id('p').style('shape'),
+        sizing: cy.$id('p').style('compound-sizing-wrt-labels'),
+        bounds: cy.$id('p').boundingBox(),
+      };
+    });
+    expect(included.shape).toBe('convex-hull');
+    expect(included.sizing).toBe('include');
+    expect(included.bounds.w).toBeGreaterThan(excluded.bounds.w);
+    expect(included.bounds.h).toBeGreaterThan(excluded.bounds.h);
+
+    await page.uncheck('#labels');
+    const restored = await page.evaluate(async () => {
+      await cy.viewportCounts();
+      return {
+        shape: cy.$id('p').style('shape'),
+        sizing: cy.$id('p').style('compound-sizing-wrt-labels'),
+        bounds: cy.$id('p').boundingBox(),
+      };
+    });
+    expect(restored.shape).toBe('convex-hull');
+    expect(restored.sizing).toBe('exclude');
+    expect(restored.bounds).toEqual(excluded.bounds);
+
     await page.selectOption('#shape', 'round-convex-hull');
     const rounded = await page.evaluate(async () => {
       await cy.viewportCounts();
@@ -57,6 +93,45 @@ test.describe('compound hull renderer', () => {
     expect(rounded.shape).toBe('round-convex-hull');
     expect(rounded.pick).toBe('p');
     expect(rounded.gpuPick).toBe('p');
+    expect(await page.locator('#labels').isChecked()).toBe(false);
+    expect(
+      await page.evaluate(() =>
+        cy.$id('p').style('compound-sizing-wrt-labels'),
+      ),
+    ).toBe('exclude');
+
+    const verifySizingRoundtrip = async (shape) => {
+      const excludedBounds = await page.evaluate(() =>
+        cy.$id('p').boundingBox(),
+      );
+      await page.check('#labels');
+      const included = await page.evaluate(async () => {
+        await cy.viewportCounts();
+        return {
+          shape: cy.$id('p').style('shape'),
+          sizing: cy.$id('p').style('compound-sizing-wrt-labels'),
+          bounds: cy.$id('p').boundingBox(),
+        };
+      });
+      expect(included.shape).toBe(shape);
+      expect(included.sizing).toBe('include');
+      expect(included.bounds.w).toBeGreaterThan(excludedBounds.w);
+      expect(included.bounds.h).toBeGreaterThan(excludedBounds.h);
+
+      await page.uncheck('#labels');
+      const restored = await page.evaluate(async () => {
+        await cy.viewportCounts();
+        return {
+          shape: cy.$id('p').style('shape'),
+          sizing: cy.$id('p').style('compound-sizing-wrt-labels'),
+          bounds: cy.$id('p').boundingBox(),
+        };
+      });
+      expect(restored.shape).toBe(shape);
+      expect(restored.sizing).toBe('exclude');
+      expect(restored.bounds).toEqual(excludedBounds);
+    };
+    await verifySizingRoundtrip('round-convex-hull');
 
     await page.selectOption('#shape', 'concave-hull');
     const concave = await page.evaluate(async () => {
@@ -69,6 +144,13 @@ test.describe('compound hull renderer', () => {
     expect(concave.pick).toBe(null);
     expect(concave.gpuPick).toBe(null);
     expect(concave.endpoint.x).toBeGreaterThan(50);
+    expect(await page.locator('#labels').isChecked()).toBe(false);
+    expect(
+      await page.evaluate(() =>
+        cy.$id('p').style('compound-sizing-wrt-labels'),
+      ),
+    ).toBe('exclude');
+    await verifySizingRoundtrip('concave-hull');
     expect(deviceErrors).toEqual([]);
   });
 });

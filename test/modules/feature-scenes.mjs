@@ -778,26 +778,38 @@ describe('round 149 visual feature scenes', function () {
       try {
         const parent = cy.$id('hull-convex');
         const child = cy.$id('hull-convex-a');
+        const sibling = cy.$id('hull-convex-b');
         const parentBox = parent.boundingBox({ includeLabels: false });
         const childBody = child.boundingBox({ includeLabels: false });
         const childWithLabel = child.boundingBox({ includeLabels: true });
+        const siblingBody = sibling.boundingBox({ includeLabels: false });
 
         expect(parent.style('compound-sizing-wrt-labels')).to.equal(
           view === 'hulls' ? 'include' : 'exclude',
         );
         expect(child.data('label')).to.equal('long child label beyond leaf');
+        expect(child.style('text-halign')).to.equal('left');
+        expect(child.style('text-margin-x')).to.equal(-8);
         expect(childWithLabel.w).to.be.greaterThan(childBody.w + 80);
-        hullBounds[view] = parentBox;
+        expect(childWithLabel.x2).to.be.closeTo(childBody.x2, 0.01);
+        expect(childWithLabel.x2).to.be.lessThan(siblingBody.x1);
+        hullBounds[view] = { parentBox, childWithLabel };
       } finally {
         cy.destroy();
       }
     }
 
-    expect(hullBounds.hulls.w).to.be.greaterThan(
-      hullBounds['hulls-exclude'].w + 40,
+    expect(hullBounds.hulls.parentBox.w).to.be.greaterThan(
+      hullBounds['hulls-exclude'].parentBox.w + 40,
     );
-    expect(hullBounds.hulls.x1).to.be.lessThan(
-      hullBounds['hulls-exclude'].x1 - 40,
+    expect(hullBounds.hulls.parentBox.x1).to.be.lessThan(
+      hullBounds['hulls-exclude'].parentBox.x1 - 40,
+    );
+    expect(hullBounds.hulls.parentBox.x1).to.be.lessThan(
+      hullBounds.hulls.childWithLabel.x1,
+    );
+    expect(hullBounds['hulls-exclude'].parentBox.x1).to.be.greaterThan(
+      hullBounds['hulls-exclude'].childWithLabel.x1,
     );
 
     const paddingBox = (relativeTo) => {

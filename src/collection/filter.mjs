@@ -433,9 +433,16 @@ let elesfn = ({
         }
       }
 
-      const labelPoly = getLabelPolygon(ele, 'main');
-      if (labelPoly && labelPoly.length && satPolygonIntersection(labelPoly, polygon)) {
-        matches.push(ele);
+      const labels = ele.isEdge() ? ['main', 'source', 'target'] : ['main'];
+      let labelMatched = false;
+
+      for (let j = 0; j < labels.length && !labelMatched; j++) {
+        const labelPoly = getLabelPolygon(ele, labels[j]);
+
+        if (labelPoly && labelPoly.length && satPolygonIntersection(labelPoly, polygon)) {
+          matches.push(ele);
+          labelMatched = true;
+        }
       }
     }
 

@@ -2833,7 +2833,7 @@
 
             {
               "name": "eles.hit",
-              "descr": "Get the elements in the collection that are hit by the given position, sorted topmost first by z-order.",
+              "descr": "Get the interactive elements in the collection that are hit by the given position, sorted topmost first by z-order.",
               "formats": [
                 {
                   "args": [
@@ -2861,7 +2861,7 @@
 
             {
               "name": "eles.polygonIntersection",
-              "descr": "Get the elements in the collection whose body or main label polygonal bounds intersect the specified polygon in [model co-ordinates](#notation/position), using the [Separating Axis Theorem](https://en.wikipedia.org/wiki/Hyperplane_separation_theorem).",
+              "descr": "Get the elements in the collection whose body or label polygonal bounds intersect the specified convex polygon in [model co-ordinates](#notation/position), using the [Separating Axis Theorem](https://en.wikipedia.org/wiki/Hyperplane_separation_theorem).",
               "formats": [
                 {
                   "args": [

@@ -3010,16 +3010,17 @@ declare namespace cytoscape {
          */
         withinBox(box: BoundingBox12 | BoundingBoxWH): Collection<TIn>;
         /**
-         * Returns a new collection containing elements whose body or main label
+         * Returns a new collection containing elements whose body or label
          * polygonal bounds intersect the specified polygon in model coordinates.
-         * This is a spatial filter based on polygon-polygon intersection using SAT.
+         * This is a spatial filter based on polygon-polygon intersection using SAT,
+         * which requires the given polygon to be convex.
          *
-         * @param polygon Array of points {x, y} defining a polygon
+         * @param polygon Array of points {x, y} defining a convex polygon
          */
         polygonIntersection(polygon: PolygonBoundingBox): Collection<TIn>;
         /**
-         * Returns elements from collection that are hit by the given position,
-         * sorted topmost first (by z-order); also works with rotated labels.
+         * Returns interactive elements from collection that are hit by the given
+         * position, sorted topmost first (by z-order); also works with rotated labels.
          *
          * @param pos        The point in model coordinates {x, y}
          * @param options    What to include in the hit test

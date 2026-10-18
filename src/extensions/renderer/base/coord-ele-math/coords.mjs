@@ -195,7 +195,7 @@ BRp.checkEdgeHitAt = function( edge, x, y, threshold ){
   return null;
 };
 
-// Returns all elements from eles that are hit by (x, y), sorted topmost first.
+// Returns all interactive elements from eles that are hit by (x, y), sorted topmost first.
 // options: { includeBody, includeMainLabels, includeSourceLabels, includeTargetLabels, isTouch }
 BRp.hitTestAt = function( x, y, eles, options ){
   var r = this;
@@ -213,7 +213,7 @@ BRp.hitTestAt = function( x, y, eles, options ){
   var eleIds = new Set();
   for( var i = 0; i < eles.length; i++ ){ eleIds.add( eles[i]._private.data.id ); }
 
-  var zSorted = r.getCachedZSortedEles();
+  var zSorted = r.getCachedZSortedEles().interactive;
   var matches = [];
 
   for( var j = zSorted.length - 1; j >= 0; j-- ){ // reverse = topmost first

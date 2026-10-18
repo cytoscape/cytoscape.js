@@ -40,6 +40,14 @@ import {
 import { tmpdir } from 'node:os';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+// The default plan is immutable test input. Build it once outside per-test
+// hooks because the golden gallery comparison reads and diffs every PNG, which
+// exceeds Bun's 5 s default test timeout when repeated for each assertion.
+const defaultPlan = buildPlan({ root: ROOT, gzip: false });
+const planWithoutFixtures = buildPlan({
+  root: ROOT,
+  skip: new Set(['fixtures']),
+});
 
 const goldenNameDiff = (expected, actual) => {
   const expectedNames = new Set(expected);
@@ -54,7 +62,7 @@ const goldenNameDiff = (expected, actual) => {
 /*
 Round 46.5: the status site, checked as a *plan* rather than as a built tree.
 
-`buildPlan()` is pure — stat calls only — so these specs decide what the site
+`buildPlan()` is pure and writes nothing, so these specs decide what the site
 would contain without copying 30 MiB of fixtures.  That is the whole reason the
 build is split that way.
 
@@ -102,8 +110,8 @@ describe('status site: the plan', function () {
   let plan;
 
   before(function () {
-    // gzip off: it is the only slow step and nothing here reads the numbers
-    plan = buildPlan({ root: ROOT, gzip: false });
+    // Share the immutable default plan across the assertions below.
+    plan = defaultPlan;
   });
 
   it('plans a non-trivial site', function () {
@@ -357,7 +365,7 @@ describe('status site: the Cloudflare Pages per-file cap', function () {
       // proved that, and the spec above is the discriminating one.  This exists
       // so that a fixture added later, or a remote that stops being used, fails
       // here rather than at deploy time.
-      const plan = buildPlan({ root: ROOT, gzip: false });
+      const plan = defaultPlan;
 
       for (const op of plan.ops) {
         if (op.kind === 'omit') {
@@ -387,7 +395,7 @@ describe('status site: what the runtime asks for', function () {
   let refs;
 
   before(function () {
-    plan = buildPlan({ root: ROOT, gzip: false });
+    plan = defaultPlan;
     refs = enumerateRefs(plan.ops);
   });
 
@@ -515,7 +523,7 @@ describe('status site: what the runtime asks for', function () {
     // the property that makes "no source file is edited" true: every mirrored
     // asset sits at the same path inside the site as in the repo, so
     // `debug/index.html`'s `../build/cytoscape.umd.js` resolves by construction
-    const plan2 = buildPlan({ root: ROOT, gzip: false });
+    const plan2 = defaultPlan;
     const umd = plan2.ops.find((op) => op.to === 'build/cytoscape.umd.js');
 
     expect(
@@ -596,7 +604,7 @@ describe('status site: the harness mirror', function () {
   });
 
   it('stubs livereload rather than leaving a blocked http:// script', function () {
-    const plan = buildPlan({ root: ROOT, gzip: false });
+    const plan = defaultPlan;
     const stub = plan.ops.find((op) => op.to === 'debug/livereload-setup.js');
 
     expect(stub.kind).to.equal('write');
@@ -610,7 +618,7 @@ describe('status site: the harness mirror', function () {
   });
 
   it('names every encoded fixture in a manifest the source harness does not have', function () {
-    const plan = buildPlan({ root: ROOT, gzip: false });
+    const plan = defaultPlan;
     const config = plan.ops.find((op) => op.to === 'debug/status-config.js');
     const wired = plan.ops.filter((op) => op.kind === 'wire');
 
@@ -646,7 +654,7 @@ describe('status site: the harness mirror', function () {
   it('appends to networks.js rather than rewriting it', function () {
     // `var networks` is in scope after the source's trailing export hook, so
     // the patch is plain assignment and no regex has to understand the file
-    const plan = buildPlan({ root: ROOT, gzip: false });
+    const plan = defaultPlan;
     const emitted = plan.ops.find((op) => op.to === 'debug/networks.js').text;
     const source = readFileSync(join(ROOT, 'debug', 'networks.js'), 'utf8');
 
@@ -663,7 +671,7 @@ describe('status site: the harness mirror', function () {
   it('every network the source declares is either copied, encoded or omitted', function () {
     // no fourth state: a network that is none of these renders nothing and says
     // nothing, which is exactly round 42's failure
-    const plan = buildPlan({ root: ROOT, gzip: false });
+    const plan = defaultPlan;
     const networks = readNetworks(ROOT);
     const written = new Set(plan.ops.map((op) => op.to));
 
@@ -687,7 +695,7 @@ describe('status site: the harness mirror', function () {
 
 describe('status site: internal links', function () {
   it('every link between generated pages lands on a page the build emits', function () {
-    const plan = buildPlan({ root: ROOT, gzip: false });
+    const plan = defaultPlan;
     const written = new Set(
       plan.ops.filter((op) => op.kind !== 'omit').map((op) => op.to),
     );
@@ -717,7 +725,7 @@ describe('status site: internal links', function () {
   });
 
   it('every page is self-contained: no external stylesheet, script or font', function () {
-    const plan = buildPlan({ root: ROOT, gzip: false });
+    const plan = defaultPlan;
 
     for (const op of plan.ops) {
       if (op.kind !== 'write' || !op.to.endsWith('.html')) {
@@ -866,7 +874,7 @@ describe("status site: the documents' paths (round 57.6)", function () {
   );
 
   it('warns about no path at all — the exemptions cover exactly the quotations', function () {
-    const { warnings } = buildPlan({ root: ROOT, skip: new Set(['fixtures']) });
+    const { warnings } = planWithoutFixtures;
 
     expect(warnings.filter((w) => /documented path/.test(w))).to.eql([]);
   });
@@ -938,7 +946,7 @@ describe('status site: the goldens gallery', function () {
       'utf8',
     );
     const titles = goldenTitles(spec);
-    const plan = buildPlan({ root: ROOT, gzip: false });
+    const plan = defaultPlan;
     const pngs = plan.ops.filter((op) => /^goldens\/[^/]+\.png$/.test(op.to));
     const pngNames = pngs
       .map((op) => op.to.slice('goldens/'.length, -'.png'.length))
@@ -1273,9 +1281,7 @@ describe('the benchmark index page (round 60.3)', () => {
     expect(BENCH_CSS).to.include('.runs th, .runs td { white-space: nowrap; }');
     expect(BENCH_CSS).to.match(/\.note-cell[^}]*white-space:\s*normal/);
 
-    const page = buildPlan({ root: ROOT, gzip: false }).ops.find(
-      (op) => op.to === 'benchmark/index.html',
-    );
+    const page = defaultPlan.ops.find((op) => op.to === 'benchmark/index.html');
 
     expect(page, 'the benchmark index is not in the plan').to.not.equal(
       undefined,

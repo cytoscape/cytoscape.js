@@ -306,19 +306,26 @@ describe('soak: the algorithm worker pool', () => {
       for (let i = 0; i < 300; i++) els.push({ data: { source: 'n' + i, target: 'n' + ((i + 1) % 300), w: 1 + (i % 5) } });
       const cy = cytoscape({ elements: els });
       const r = await cy.elements().betweennessCentrality({ weight: (e) => e.data('w'), executor: 'workers' });
-      console.log('ran', r.betweenness(cy.nodes()[1]));
+      console.log('ran ' + r.betweenness(cy.nodes()[1]));
       // no _resetAlgoWorkers(), no process.exit(): the pool must let go
     `;
     const loaderArgs = process.versions.bun == null ? ['--import', 'tsx'] : [];
-    const child = spawnSync(
-      process.execPath,
-      [...loaderArgs, '--input-type=module', '-e', script],
-      { cwd: ROOT, encoding: 'utf8', timeout: 60000 },
-    );
+    for (const forceColor of ['0', '1']) {
+      const child = spawnSync(
+        process.execPath,
+        [...loaderArgs, '--input-type=module', '-e', script],
+        {
+          cwd: ROOT,
+          encoding: 'utf8',
+          timeout: 60000,
+          env: { ...process.env, FORCE_COLOR: forceColor },
+        },
+      );
 
-    expect(child.error, 'the child hung: the pool held the process open').to.be
-      .undefined;
-    expect(child.status, child.stderr).to.equal(0);
-    expect(child.stdout).to.match(/^ran \d/);
+      expect(child.error, 'the child hung: the pool held the process open').to
+        .be.undefined;
+      expect(child.status, child.stderr).to.equal(0);
+      expect(child.stdout).to.match(/^ran \d/);
+    }
   });
 });

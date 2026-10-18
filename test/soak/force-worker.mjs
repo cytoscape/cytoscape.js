@@ -157,19 +157,26 @@ describe('soak: the force sim worker (round 129.3)', () => {
       const layout = cy.layout({ name: 'force', seed: 4, fit: false, executor: 'workers' });
       layout.run();
       await layout.promise();
-      console.log('ran', cy.nodes()[1].position().x);
+      console.log('ran ' + cy.nodes()[1].position().x);
       // no _resetForceWorker(), no process.exit(): the worker must let go
     `;
     const loaderArgs = process.versions.bun == null ? ['--import', 'tsx'] : [];
-    const child = spawnSync(
-      process.execPath,
-      [...loaderArgs, '--input-type=module', '-e', script],
-      { cwd: ROOT, encoding: 'utf8', timeout: 60000 },
-    );
+    for (const forceColor of ['0', '1']) {
+      const child = spawnSync(
+        process.execPath,
+        [...loaderArgs, '--input-type=module', '-e', script],
+        {
+          cwd: ROOT,
+          encoding: 'utf8',
+          timeout: 60000,
+          env: { ...process.env, FORCE_COLOR: forceColor },
+        },
+      );
 
-    expect(child.error, 'the child hung: the worker held the process open').to
-      .be.undefined;
-    expect(child.status, child.stderr).to.equal(0);
-    expect(child.stdout).to.match(/^ran -?\d/);
+      expect(child.error, 'the child hung: the worker held the process open').to
+        .be.undefined;
+      expect(child.status, child.stderr).to.equal(0);
+      expect(child.stdout).to.match(/^ran -?\d/);
+    }
   });
 });

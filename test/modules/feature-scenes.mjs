@@ -307,7 +307,13 @@ class TestElement {
       listener({ target: this });
   }
 
-  setAttribute() {}
+  setAttribute(name, value) {
+    (this.attributes ??= {})[name] = value;
+  }
+
+  getAttribute(name) {
+    return this.attributes?.[name] ?? null;
+  }
 
   get firstChild() {
     return this.children[0] ?? null;
@@ -986,6 +992,7 @@ describe('round 149 visual feature scenes', function () {
     const family = fontSelects.find(
       (select) => select.dataset.control === 'fontFamily',
     );
+    expect(family.getAttribute('aria-label')).to.equal('Font family');
     for (const option of font.controlOptions.fontWeight.values) {
       expect(
         option.alternate,

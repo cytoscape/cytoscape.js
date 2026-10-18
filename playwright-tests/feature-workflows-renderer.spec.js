@@ -51,6 +51,26 @@ test('workflow selector routes to every canonical panel', async ({ page }) => {
   }
 });
 
+test('enables executor comparison after selecting a supported method and executor', async ({
+  page,
+}) => {
+  await openWorkflow(page, 'algorithms');
+  const controls = page.locator('#contextual-controls');
+  await controls.getByLabel('Operation').selectOption('pageRank');
+  await controls.getByLabel('Executor').selectOption('gpu');
+
+  const compare = controls.getByRole('button', {
+    name: 'Compare chosen executor with CPU',
+  });
+  await expect(compare).toBeEnabled();
+  await compare.click();
+  await expect(
+    controls.locator('.feature-workflow-compare-summary'),
+  ).toContainText('pageRank: CPU vs gpu — within tolerance', {
+    timeout: 15000,
+  });
+});
+
 test('algorithm controls use the chosen path IDs and report every leaf score', async ({
   page,
 }, testInfo) => {

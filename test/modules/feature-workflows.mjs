@@ -77,6 +77,30 @@ const normalize = (value) => {
 };
 
 describe('debug stateful and numeric workflow module (round 149)', function () {
+  it('gives workflow fields an explicit accessible name matching the visible label', function () {
+    const control = {
+      attributes: {},
+      setAttribute(name, value) {
+        this.attributes[name] = value;
+      },
+    };
+    const document = {
+      createElement(tagName) {
+        return {
+          tagName,
+          append() {},
+          setAttribute(name, value) {
+            this[name] = value;
+          },
+        };
+      },
+    };
+
+    context.featureWorkflowUI.field(document, 'Workflow', control);
+
+    expect(control.attributes['aria-label']).to.equal('Workflow');
+  });
+
   it('exports stable scene metadata and a non-empty coverage row for each audited family', function () {
     expect(workflows.scenes.map((scene) => scene.id)).to.deep.equal([
       'algorithms',

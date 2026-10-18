@@ -1293,7 +1293,10 @@
     }
 
     operation.addEventListener('change', updateExecutors);
-    executor.addEventListener('change', saveAlgorithmInputs);
+    executor.addEventListener('change', () => {
+      saveAlgorithmInputs();
+      updateCompareEnabled();
+    });
     from.addEventListener('change', saveAlgorithmInputs);
     to.addEventListener('change', saveAlgorithmInputs);
     repeats.addEventListener('change', saveAlgorithmInputs);

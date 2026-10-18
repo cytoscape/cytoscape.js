@@ -73,6 +73,8 @@
   }
 
   function field(document, labelText, control) {
+    control.setAttribute('aria-label', labelText);
+
     return node(document, 'label', { className: 'feature-workflow-field' }, [
       node(document, 'span', { text: labelText }),
       control,

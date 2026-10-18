@@ -1417,6 +1417,7 @@
       label.className = 'feature-scene-control';
       label.appendChild(document.createTextNode(`${labelText} `));
       const select = document.createElement('select');
+      select.setAttribute('aria-label', labelText);
       if (controlName != null) select.dataset.control = controlName;
       values.forEach(({ id, label: text }) => {
         const option = document.createElement('option');

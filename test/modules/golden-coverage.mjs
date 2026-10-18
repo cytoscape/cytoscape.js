@@ -27,6 +27,7 @@ import {
   MAX_VALUES,
 } from '../../playwright-tests/lib/style-coverage.mjs';
 import {
+  resetInPage,
   resetKeywordInPage,
   restoreInPage,
 } from '../../playwright-tests/lib/degrade-control.mjs';
@@ -409,6 +410,71 @@ describe('golden coverage: the enumerator (round 135)', function () {
 
     expect(clean.keywordFailures).to.be.empty;
     expect(clean.staleKeywords).to.be.empty;
+
+    const normalizedCapture = {
+      ...capture,
+      golden: 'normalized-keyword-control',
+      featureCoverage: {
+        keywords: [
+          {
+            group: 'edges',
+            property: 'source-arrow-width',
+            target: 'e',
+            value: 'match-line',
+            resolvedValue: 8,
+            alternate: 4,
+          },
+        ],
+        exceptions: [],
+      },
+    };
+    const normalized = normalizedCapture.featureCoverage.keywords[0];
+    const exactRestore = degradeReport(
+      [normalizedCapture],
+      [
+        {
+          golden: normalizedCapture.golden,
+          pairs: {},
+          keywords: [
+            {
+              ...normalized,
+              matched: 1,
+              changed: 1,
+              moved: 12,
+              matchedBy: 'authored-declaration-and-resolved-getter',
+              restoreMoved: 0,
+            },
+          ],
+        },
+      ],
+    );
+
+    expect(exactRestore.keywordFailures).to.be.empty;
+
+    const impreciseRestore = degradeReport(
+      [normalizedCapture],
+      [
+        {
+          golden: normalizedCapture.golden,
+          pairs: {},
+          keywords: [
+            {
+              ...normalized,
+              matched: 1,
+              changed: 1,
+              moved: 12,
+              matchedBy: 'authored-declaration-and-resolved-getter',
+              restoreMoved: 2,
+            },
+          ],
+        },
+      ],
+    );
+
+    expect(impreciseRestore.keywordFailures).to.have.length(1);
+    expect(impreciseRestore.keywordFailures[0]).to.include(
+      'expected exact pixel restore, got 2',
+    );
   });
 
   it('resets and restores global fonts and core keywords (control)', () => {
@@ -450,6 +516,162 @@ describe('golden coverage: the enumerator (round 135)', function () {
       expect(cy.$id('n').style('font-style')).to.equal('oblique');
     } finally {
       delete globalThis.cy;
+      cy.destroy();
+    }
+  });
+
+  it('validates normalized and mapped keyword reset evidence separately', () => {
+    const cy = cytoscape({
+      elements: [
+        { data: { id: 's', transform: 'uppercase' } },
+        { data: { id: 't' } },
+        { data: { id: 'e', source: 's', target: 't' } },
+      ],
+      style: {
+        nodes: {
+          'text-transform': { data: 'transform', fallback: 'none' },
+        },
+        edges: { width: 8, 'source-arrow-width': 'match-line' },
+      },
+    });
+
+    globalThis.cy = cy;
+
+    try {
+      const arrow = resetKeywordInPage({
+        group: 'edges',
+        property: 'source-arrow-width',
+        target: 'e',
+        value: 'match-line',
+        resolvedValue: 8,
+        alternate: 4,
+      });
+
+      expect(arrow).to.include({
+        matched: 1,
+        changed: 1,
+        matchedBy: 'authored-declaration-and-resolved-getter',
+      });
+      expect(cy.$id('e').style('source-arrow-width')).to.equal(4);
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.$id('e').style('source-arrow-width')).to.equal(8);
+
+      const sheet = cy.style().json();
+      cy.style({
+        ...sheet,
+        edges: { ...sheet.edges, 'source-arrow-width': 8 },
+      });
+      const falseArrowAlias = resetKeywordInPage({
+        group: 'edges',
+        property: 'source-arrow-width',
+        target: 'e',
+        value: 'match-line',
+        resolvedValue: 8,
+        alternate: 4,
+      });
+
+      expect(falseArrowAlias.matched).to.equal(0);
+      expect(falseArrowAlias.unexpected).to.equal(8);
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.$id('e').style('source-arrow-width')).to.equal(8);
+
+      const limitation = {
+        property: 'text-transform',
+        mappedValue: 'uppercase',
+        getterValue: 'none',
+        sourceRefs: ['src/style/readers-labels.mts:44,85'],
+        reason: 'the mapper reader returns its fallback',
+      };
+      const mapped = resetKeywordInPage({
+        group: 'nodes',
+        property: 'text-transform',
+        target: 's',
+        value: 'uppercase',
+        resolvedValue: 'none',
+        readbackLimitation: limitation,
+        alternate: 'lowercase',
+      });
+
+      expect(mapped).to.include({
+        matched: 1,
+        changed: 1,
+        matchedBy: 'authored-mapper-and-documented-getter-fallback',
+      });
+      expect(cy.style().json().bypasses.s['text-transform']).to.equal(
+        'lowercase',
+      );
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.$id('s').style('text-transform')).to.equal('none');
+      expect(cy.$id('s').data('transform')).to.equal('uppercase');
+
+      const incorrect = resetKeywordInPage({
+        group: 'nodes',
+        property: 'text-transform',
+        target: 's',
+        value: 'lowercase',
+        resolvedValue: 'none',
+        readbackLimitation: { ...limitation, mappedValue: 'lowercase' },
+        alternate: 'uppercase',
+      });
+
+      expect(incorrect.matched).to.equal(0);
+      expect(incorrect.unexpected).to.include('authored mapper');
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.$id('s').data('transform')).to.equal('uppercase');
+    } finally {
+      delete globalThis.cy;
+      cy.destroy();
+    }
+  });
+
+  it('resets parent-only styles in the parent sheet and falls back when a bypass is rejected (control)', () => {
+    const cy = cytoscape({
+      elements: [
+        { data: { id: 'p' } },
+        { data: { id: 'c', parent: 'p' } },
+        { data: { id: 'n' } },
+      ],
+      style: {
+        nodes: { 'font-weight': 700, width: 24 },
+        parents: { padding: 14, 'background-color': '#ffeecc' },
+      },
+    });
+    const original = cy.style().json();
+    globalThis.cy = cy;
+    globalThis.cytoscape = cytoscape;
+
+    try {
+      const parent = resetInPage({
+        group: 'parents',
+        prop: 'padding',
+        alternates: {},
+      });
+
+      expect(parent).to.include({ changed: 1, via: 'sheet' });
+      expect(parent.unresettable).to.deep.equal([]);
+      expect(cy.$id('p').style('padding')).to.equal(10);
+      expect(cy.$id('p').style('background-color')).to.equal(
+        'rgb(255,238,204)',
+      );
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.style().json()).to.deep.equal(original);
+      expect(cy.$id('p').style('padding')).to.equal(14);
+
+      const rejectedBypass = resetInPage({
+        group: 'nodes',
+        prop: 'font-weight',
+        alternates: {},
+      });
+
+      expect(rejectedBypass).to.include({ changed: 3, via: 'sheet' });
+      expect(rejectedBypass.unresettable).to.deep.equal([]);
+      expect(cy.$id('n').style('font-weight')).to.equal('normal');
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.style().json()).to.deep.equal(original);
+      expect(cy.$id('n').style('font-weight')).to.equal('700');
+    } finally {
+      delete globalThis.cy;
+      delete globalThis.cytoscape;
       cy.destroy();
     }
   });

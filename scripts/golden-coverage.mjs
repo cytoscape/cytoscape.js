@@ -396,7 +396,7 @@ export const UNMOVABLE = {
   'chart-domain':
     'required by a bar chart in this scene; deleting it makes the stylesheet invalid, so the compiler rejects the reset',
   'chart-colors':
-    'reads back the palette its chart-values imply (one colour per value), set or not',
+    'reads back a derived chart palette (one colour per value); heat charts derive it from chart-scale, and the renderer rejects setting chart-colors on that chart kind',
   'chart-scale':
     'required by a heat chart in this scene; deleting it makes the stylesheet invalid, so the compiler rejects the reset',
   'background-gradient-stop-positions':
@@ -473,6 +473,8 @@ export const degradeReport = (captures, degrades) => {
       entry.targetIndex ?? null,
       entry.value,
       entry.alternate,
+      entry.resolvedValue ?? null,
+      entry.readbackLimitation ?? null,
       entry.exception ?? entry.reason ?? null,
     ]);
 
@@ -517,11 +519,23 @@ export const degradeReport = (captures, degrades) => {
 
       keywordControls++;
 
+      const expectedMode =
+        entry.readbackLimitation != null
+          ? 'authored-mapper-and-documented-getter-fallback'
+          : entry.resolvedValue != null
+            ? 'authored-declaration-and-resolved-getter'
+            : null;
+      const evidenceModeMismatch =
+        expectedMode != null && entry.matchedBy !== expectedMode;
+      const restoreMismatch = expectedMode != null && entry.restoreMoved !== 0;
+
       if (
         entry.matched !== 1 ||
         entry.changed !== 1 ||
         !Number.isFinite(entry.moved) ||
         entry.moved < 1 ||
+        evidenceModeMismatch ||
+        restoreMismatch ||
         (entry.unresettable?.length ?? 0) > 0 ||
         entry.unexpected != null ||
         entry.rejected != null ||
@@ -530,7 +544,13 @@ export const degradeReport = (captures, degrades) => {
       ) {
         keywordFailures.push(
           `${capture.golden} ${entry.group}/${entry.property}=${entry.value}: ` +
-            `matched ${entry.matched}, changed ${entry.changed}, moved ${entry.moved}`,
+            `matched ${entry.matched}, changed ${entry.changed}, moved ${entry.moved}` +
+            (evidenceModeMismatch
+              ? `, expected evidence mode ${expectedMode}, got ${entry.matchedBy ?? 'none'}`
+              : '') +
+            (restoreMismatch
+              ? `, expected exact pixel restore, got ${entry.restoreMoved ?? 'no restore count'}`
+              : ''),
         );
       }
     }

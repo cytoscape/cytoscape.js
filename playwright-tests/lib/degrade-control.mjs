@@ -134,7 +134,12 @@ export const resetInPage = ({ group, prop, alternates }) => {
       ...sheet,
       core: { ...(sheet.core ?? {}) },
     };
-    const saved = { sheet };
+    const saved = {
+      sheet,
+      readbacks: [
+        { group: 'core', property: prop, target: 'core', value: before },
+      ],
+    };
 
     delete next.core[prop];
     globalThis.__degrade = saved;
@@ -184,6 +189,71 @@ export const resetInPage = ({ group, prop, alternates }) => {
       : group === 'parents'
         ? cy.nodes().filter((n) => n.isParent())
         : cy.nodes();
+
+  // Parent-only properties cannot be installed as per-element bypasses.
+  // Change just the parent block in the live sheet and compare the exact
+  // group readbacks; restoreInPage reinstalls the saved sheet afterwards.
+  if (group === 'parents') {
+    const sheet = cy.style().json();
+    const before = new Map();
+    eles.forEach((ele) => before.set(ele.id(), text(ele.style(prop))));
+    const affected = [...before].filter(
+      ([, value]) => value !== text(defaults.parent),
+    );
+    const parentStyle = { ...(sheet.parents ?? {}) };
+
+    delete parentStyle[prop];
+    globalThis.__degrade = {
+      sheet,
+      readbacks: [...before].map(([target, value]) => ({
+        group,
+        property: prop,
+        target,
+        value,
+      })),
+    };
+
+    try {
+      cy.style({ ...sheet, parents: parentStyle });
+    } catch (error) {
+      return {
+        changed: affected.length,
+        via: 'bypass',
+        unresettable: affected.map(([id]) => id),
+        rejected: error instanceof Error ? error.message : String(error),
+      };
+    }
+
+    const changed = affected.filter(
+      ([id, value]) => text(cy.$id(id).style(prop)) !== value,
+    ).length;
+    const unresettable = affected
+      .filter(([id, value]) => text(cy.$id(id).style(prop)) === value)
+      .map(([id]) => id);
+    return { changed, via: 'sheet', unresettable };
+  }
+
+  // A heat chart's palette is resolved from chart-scale. It reads back as
+  // chart-colors but the renderer correctly rejects setting chart-colors on
+  // that chart kind; this readback is derived and cannot be reset directly.
+  if (group === 'nodes' && prop === 'chart-colors') {
+    const sheet = cy.style().json();
+    const derived = eles.filter((ele) => {
+      const chart = String(ele.style('chart'));
+      return chart.includes('heat') && sheet.nodes?.['chart-colors'] == null;
+    });
+
+    if (derived.length > 0) {
+      globalThis.__degrade = { prop, saved: [] };
+      return {
+        changed: derived.length,
+        via: 'bypass',
+        unresettable: derived.map((ele) => ele.id()),
+        rejected:
+          'heat chart palette is derived from chart-scale; chart-colors cannot be set on this chart kind',
+      };
+    }
+  }
 
   if (prop in alternates) {
     const alternate = alternates[prop];
@@ -290,7 +360,15 @@ export const resetInPage = ({ group, prop, alternates }) => {
     }
   }
 
-  globalThis.__degrade = { sheet };
+  globalThis.__degrade = {
+    sheet,
+    readbacks: [...before].map(([target, value]) => ({
+      group,
+      property: prop,
+      target,
+      value,
+    })),
+  };
 
   try {
     cy.style(next);
@@ -336,10 +414,23 @@ export const restoreInPage = () => {
   if (state.sheet != null) {
     globalThis.cy.style(state.sheet);
 
+    for (const row of state.readbacks ?? []) {
+      const actual =
+        row.group === 'core'
+          ? globalThis.cy.style().core()[
+              row.property.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+            ]
+          : globalThis.cy.$id(row.target).style(row.property);
+
+      if (text(actual) !== text(row.value)) {
+        lost.push(row.target);
+      }
+    }
+
     return lost;
   }
 
-  const { prop, saved } = state;
+  const { prop, saved, readbackLimitation } = state;
 
   for (const { ele, cur } of saved) {
     ele.removeStyle(prop);
@@ -348,6 +439,26 @@ export const restoreInPage = () => {
       ele.style(prop, cur); // the scene had bypassed it itself
 
       if (text(ele.style(prop)) !== text(cur)) {
+        lost.push(ele.id());
+      }
+    }
+
+    if (readbackLimitation?.target === ele.id()) {
+      const sheet = globalThis.cy.style().json();
+      const mapping = sheet[readbackLimitation.group]?.[prop];
+      const actual =
+        mapping != null &&
+        typeof mapping === 'object' &&
+        typeof mapping.data === 'string'
+          ? ele.data(mapping.data)
+          : undefined;
+      const bypass = sheet.bypasses?.[ele.id()];
+
+      if (
+        mapping?.data !== readbackLimitation.dataKey ||
+        text(actual) !== text(readbackLimitation.mappedValue) ||
+        (bypass != null && Object.hasOwn(bypass, prop))
+      ) {
         lost.push(ele.id());
       }
     }
@@ -363,19 +474,67 @@ export const resetKeywordInPage = ({
   target,
   targetIndex,
   value,
+  resolvedValue,
+  readbackLimitation,
   alternate,
 }) => {
   const cy = globalThis.cy;
   const text = (v) => (typeof v === 'string' ? v : JSON.stringify(v));
   const coreCodes = { 'label-declutter': { none: 0, cull: 1 } };
   const coreValue = (keyword) => coreCodes[property]?.[keyword] ?? keyword;
+  const expectedReadback = resolvedValue ?? value;
+  const matchedBy =
+    readbackLimitation != null
+      ? 'authored-mapper-and-documented-getter-fallback'
+      : resolvedValue != null
+        ? 'authored-declaration-and-resolved-getter'
+        : 'authored-value-and-style-getter';
+  const currentSheet = cy.style().json();
+  const currentBypass = currentSheet.bypasses?.[String(target)];
+  const declaration =
+    group === 'core'
+      ? currentSheet.core?.[property]
+      : currentBypass != null && Object.hasOwn(currentBypass, property)
+        ? currentBypass[property]
+        : currentSheet[group]?.[property];
+  const declarationElement = group === 'core' ? null : cy.$id(String(target));
+  const authoredDeclaration =
+    declaration != null &&
+    typeof declaration === 'object' &&
+    !Array.isArray(declaration) &&
+    typeof declaration.data === 'string'
+      ? declarationElement?.data(declaration.data)
+      : declaration;
+  const authoredTokens =
+    targetIndex == null
+      ? null
+      : Array.isArray(authoredDeclaration)
+        ? authoredDeclaration
+        : String(authoredDeclaration ?? '')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+  const selectedAuthoredDeclaration =
+    targetIndex == null ? authoredDeclaration : authoredTokens?.[targetIndex];
+  const authoredDeclarationMatches =
+    selectedAuthoredDeclaration != null &&
+    (targetIndex != null
+      ? text(selectedAuthoredDeclaration) === text(value)
+      : Array.isArray(selectedAuthoredDeclaration)
+        ? selectedAuthoredDeclaration.some((part) => text(part) === text(value))
+        : text(selectedAuthoredDeclaration) === text(value));
+  const needsAuthoredDeclaration =
+    resolvedValue !== undefined || readbackLimitation != null;
 
   if (group === 'core') {
     const sheet = cy.style().json();
     const camel = property.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
     const before = cy.style().core()[camel];
 
-    if (text(before) !== text(coreValue(value))) {
+    if (
+      (needsAuthoredDeclaration && !authoredDeclarationMatches) ||
+      text(before) !== text(coreValue(expectedReadback))
+    ) {
       globalThis.__degrade = { prop: property, saved: [] };
 
       return {
@@ -391,7 +550,10 @@ export const resetKeywordInPage = ({
       core: { ...(sheet.core ?? {}), [property]: alternate },
     };
 
-    globalThis.__degrade = { sheet };
+    globalThis.__degrade = {
+      sheet,
+      readbacks: [{ group, property, target: 'core', value: before }],
+    };
     try {
       cy.style(next);
     } catch (error) {
@@ -409,6 +571,7 @@ export const resetKeywordInPage = ({
     return {
       matched: 1,
       changed,
+      ...(needsAuthoredDeclaration ? { matchedBy } : {}),
       unresettable: changed === 1 ? [] : ['core'],
     };
   }
@@ -425,7 +588,10 @@ export const resetKeywordInPage = ({
     const ele = cy.$id(target);
     const before = ele.length === 1 ? ele.style(property) : undefined;
 
-    if (String(before) !== String(value)) {
+    if (
+      (needsAuthoredDeclaration && !authoredDeclarationMatches) ||
+      String(before) !== String(expectedReadback)
+    ) {
       globalThis.__degrade = { prop: property, saved: [] };
 
       return {
@@ -456,7 +622,10 @@ export const resetKeywordInPage = ({
     };
 
     const next = replace(sheet);
-    globalThis.__degrade = { sheet };
+    globalThis.__degrade = {
+      sheet,
+      readbacks: [{ group, property, target, value: before }],
+    };
 
     try {
       cy.style(next);
@@ -475,6 +644,7 @@ export const resetKeywordInPage = ({
     return {
       matched: 1,
       changed,
+      ...(needsAuthoredDeclaration ? { matchedBy } : {}),
       changedRules,
       unresettable: changed === 1 ? [] : [target],
     };
@@ -498,18 +668,100 @@ export const resetKeywordInPage = ({
     };
   }
 
+  const parentOnly = new Set([
+    'collapse-scale',
+    'compound-sizing-wrt-labels',
+    'min-height',
+    'min-width',
+    'padding',
+    'padding-bottom',
+    'padding-left',
+    'padding-relative-to',
+    'padding-right',
+    'padding-top',
+  ]);
+
+  if (group === 'parents' && parentOnly.has(property)) {
+    const sheet = cy.style().json();
+    const before = ele.style(property);
+    if (
+      (needsAuthoredDeclaration && !authoredDeclarationMatches) ||
+      text(before) !== text(expectedReadback)
+    ) {
+      globalThis.__degrade = { prop: property, saved: [] };
+      return { matched: 0, changed: 0, unexpected: before, unresettable: [] };
+    }
+
+    globalThis.__degrade = {
+      sheet,
+      readbacks: [{ group, property, target, value: before }],
+    };
+    try {
+      cy.style({
+        ...sheet,
+        parents: { ...(sheet.parents ?? {}), [property]: alternate },
+      });
+    } catch (error) {
+      return {
+        matched: 1,
+        changed: 0,
+        rejected: error instanceof Error ? error.message : String(error),
+        unresettable: [target],
+      };
+    }
+
+    const after = ele.style(property);
+    const changed = text(after) === text(alternate) ? 1 : 0;
+    return {
+      matched: 1,
+      changed,
+      ...(needsAuthoredDeclaration ? { matchedBy } : {}),
+      scope: 'parents stylesheet group',
+      unresettable: changed === 1 ? [] : [target],
+    };
+  }
+
   const before = ele.style(property);
   const beforeTokens = String(before).trim().split(/\s+/).filter(Boolean);
   const index = Number.isInteger(targetIndex) ? targetIndex : null;
   const actual = index == null ? before : beforeTokens[index];
+  let limitationIsValid = readbackLimitation == null;
 
-  if (text(actual) !== text(value)) {
+  if (readbackLimitation != null) {
+    const limitation = readbackLimitation;
+    const sheetValue = cy.style().json()[group]?.[property];
+    const mappedValue =
+      sheetValue != null &&
+      typeof sheetValue === 'object' &&
+      typeof sheetValue.data === 'string'
+        ? ele.data(sheetValue.data)
+        : undefined;
+    const documentedGetter = limitation.getterValue ?? limitation.resolvedValue;
+
+    limitationIsValid =
+      authoredDeclarationMatches &&
+      limitation.property === property &&
+      text(limitation.mappedValue) === text(value) &&
+      text(mappedValue) === text(value) &&
+      text(actual) === text(documentedGetter) &&
+      (resolvedValue === undefined ||
+        text(resolvedValue) === text(documentedGetter));
+  }
+
+  if (
+    (needsAuthoredDeclaration && !authoredDeclarationMatches) ||
+    !limitationIsValid ||
+    (readbackLimitation == null && text(actual) !== text(expectedReadback))
+  ) {
     globalThis.__degrade = { prop: property, saved: [] };
 
     return {
       matched: 0,
       changed: 0,
-      unexpected: actual,
+      unexpected:
+        readbackLimitation == null
+          ? actual
+          : `authored mapper or documented fallback mismatch (getter: ${text(actual)})`,
       unresettable: [],
     };
   }
@@ -523,17 +775,40 @@ export const resetKeywordInPage = ({
     next = afterTokens.join(' ');
   }
 
-  globalThis.__degrade = { prop: property, saved: [{ ele, cur: before }] };
+  globalThis.__degrade = {
+    prop: property,
+    saved: [{ ele, cur: before }],
+    ...(readbackLimitation == null
+      ? {}
+      : {
+          readbackLimitation: {
+            group,
+            target,
+            dataKey: declaration.data,
+            mappedValue: value,
+          },
+        }),
+  };
   ele.style(property, next);
 
   const after = ele.style(property);
   const afterTokens = String(after).trim().split(/\s+/).filter(Boolean);
   const resetValue = index == null ? after : afterTokens[index];
-  const changed = text(resetValue) === text(alternate) ? 1 : 0;
+  const afterBypasses = cy.style().json().bypasses?.[String(target)];
+  const changed =
+    readbackLimitation != null
+      ? text(afterBypasses?.[property]) === text(next)
+        ? 1
+        : 0
+      : text(resetValue) === text(alternate)
+        ? 1
+        : 0;
 
   return {
     matched: 1,
     changed,
+    matchedBy,
+    ...(readbackLimitation == null ? {} : { readbackLimitation }),
     unresettable: changed === 1 ? [] : [target],
   };
 };
@@ -542,7 +817,68 @@ export const resetKeywordInPage = ({
  * Export until two consecutive exports agree (a label change re-rasters
  * the atlas a frame or more later), and decode it.
  */
-const stableExport = async (page, opts) => {
+export const captureSurface = async (page, opts) => {
+  const gesture = opts.captureGesture;
+
+  if (gesture == null) {
+    return await page.locator(opts.captureSelector).screenshot();
+  }
+
+  // Core gesture styles are painted by short-lived DOM overlays. Replaying
+  // the input for each baseline/degraded/restored frame makes the screenshot
+  // exercise the currently installed core sheet, rather than the inline
+  // style captured when a previous press began.
+  await page.mouse.up();
+  await page.keyboard.up('Shift');
+
+  try {
+    if (gesture.type === 'active-bg') {
+      await page.mouse.move(gesture.x, gesture.y);
+      await page.mouse.down();
+    } else if (gesture.type === 'selection-box') {
+      await page.keyboard.down('Shift');
+      await page.mouse.move(gesture.x1, gesture.y1);
+      await page.mouse.down();
+      await page.mouse.move(gesture.x2, gesture.y2, { steps: 8 });
+    } else {
+      throw new Error(`Unknown screenshot gesture '${gesture.type}'`);
+    }
+
+    await page.waitForFunction(
+      ({ selector, type }) => {
+        const root = document.querySelector(selector);
+
+        if (root == null) return false;
+
+        return [...root.children].some((element) => {
+          const style = element.style;
+
+          if (style.display !== 'block') return false;
+
+          return type === 'active-bg'
+            ? style.borderRadius === '50%'
+            : style.border.includes('solid');
+        });
+      },
+      { selector: opts.captureSelector, type: gesture.type },
+      { timeout: 5000 },
+    );
+
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve())),
+    );
+
+    return await page.locator(opts.captureSelector).screenshot();
+  } finally {
+    await page.mouse.up();
+
+    if (gesture.type === 'selection-box') {
+      await page.keyboard.up('Shift');
+    }
+  }
+};
+
+export const stableExport = async (page, opts) => {
   let last = null;
 
   for (let i = 0; i < 6; i++) {
@@ -555,15 +891,21 @@ const stableExport = async (page, opts) => {
       { timeout: 10000 },
     );
 
-    const png = decodePng(
-      await page.evaluate(async (opts) => {
-        for (let k = 0; k < 2; k++) {
-          await new Promise((resolve) => requestAnimationFrame(resolve));
-        }
+    let png;
 
-        return await window.cy.png(opts);
-      }, opts),
-    );
+    if (opts.captureSelector != null) {
+      png = decodePng(await captureSurface(page, opts));
+    } else {
+      png = decodePng(
+        await page.evaluate(async (opts) => {
+          for (let k = 0; k < 2; k++) {
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+          }
+
+          return await window.cy.png(opts);
+        }, opts),
+      );
+    }
 
     if (last != null && countMoved(last, png) === 0) {
       return png;
@@ -663,8 +1005,16 @@ export const degradeScene = async (
       continue;
     }
 
-    const { matched, changed, unresettable, unexpected, rejected } =
-      await page.evaluate(resetKeywordInPage, entry);
+    const {
+      matched,
+      changed,
+      matchedBy,
+      readbackLimitation,
+      unresettable,
+      unexpected,
+      rejected,
+      scope,
+    } = await page.evaluate(resetKeywordInPage, entry);
     const degraded = await stableExport(page, opts);
     const moved = countMoved(baseline, degraded);
     const lost = await page.evaluate(restoreInPage);
@@ -686,8 +1036,17 @@ export const degradeScene = async (
       matched,
       changed,
       moved,
+      ...(entry.resolvedValue == null
+        ? {}
+        : { resolvedValue: entry.resolvedValue }),
+      ...(matchedBy == null ? {} : { matchedBy }),
+      ...(readbackLimitation == null ? {} : { readbackLimitation }),
+      ...(entry.resolvedValue == null && readbackLimitation == null
+        ? {}
+        : { restoreMoved: back }),
       ...(unexpected == null ? {} : { unexpected }),
       ...(rejected == null ? {} : { rejected }),
+      ...(scope == null ? {} : { scope }),
       ...(unresettable.length > 0 ? { unresettable } : {}),
       ...(lost.length > 0 ? { lost } : {}),
       ...(back > 0 ? { residue: back } : {}),

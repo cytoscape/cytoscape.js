@@ -384,7 +384,7 @@
         layerOpacity: 1,
       }),
       node('layer-caption-round', 100, 220, {
-        label: 'Underlay r4 · overlay r8\nround-rectangle',
+        label: 'Underlay r4 · overlay r3\nround-rectangle',
       }),
       node('layer-caption-ellipse', 250, 220, {
         label: 'Underlay r14 · overlay r18\nellipse overlay',
@@ -396,7 +396,7 @@
     const layerBypasses = {
       'layer-round': {
         'underlay-corner-radius': 4,
-        'overlay-corner-radius': 8,
+        'overlay-corner-radius': 3,
         'overlay-shape': 'round-rectangle',
       },
       'layer-square': {
@@ -510,7 +510,7 @@
               group: 'nodes',
               property: 'overlay-corner-radius',
               target: 'layer-round',
-              value: 8,
+              value: 3,
             },
             {
               group: 'nodes',

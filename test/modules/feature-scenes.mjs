@@ -1296,6 +1296,37 @@ describe('round 149 visual feature scenes', function () {
     paletteCy.destroy();
   });
 
+  it('uses a painted overlay radius distinct from the automatic radius', function () {
+    const scene = featureScenes.create('paint', 'layers');
+    const row = scene.coverage.properties.find(
+      (entry) =>
+        entry.property === 'overlay-corner-radius' &&
+        entry.target === 'layer-round',
+    );
+    const cy = cytoscape({ elements: scene.elements, style: scene.style });
+
+    try {
+      const target = cy.$id('layer-round');
+      const nodes = scene.style.nodes;
+      const autoRadius = Math.min(
+        Math.min(
+          nodes.width / 2 + nodes['overlay-padding'],
+          nodes.height / 2 + nodes['overlay-padding'],
+        ) * 0.5,
+        8,
+      );
+
+      expect(row).to.include({ value: 3 });
+      expectResolvedValue(cy, row, 'paint/layers');
+      expect(target.style('overlay-shape')).to.equal('round-rectangle');
+      expect(target.style('overlay-opacity')).to.be.closeTo(0.502, 0.001);
+      expect(autoRadius).to.equal(8);
+      expect(row.value).not.to.equal(autoRadius);
+    } finally {
+      cy.destroy();
+    }
+  });
+
   it('uses rounded route families when radius controls are meant to render', function () {
     for (const [view, radiusMode] of [
       ['radius-arc', 1],

@@ -386,23 +386,21 @@ export const pairsOf = (capture) =>
   );
 
 /**
- * Pairs a reset cannot move, and why — the property reads back a value
- * derived from another one, so the capture counts it as set though the
- * sheet never names it (or names it through a shorthand a per-side reset
- * cannot undo).  Audited by the gate: every unmoved pair's property is
- * here, and every entry is still unmoved somewhere.
+ * Pairs a reset cannot move, and why — a value is derived or folded,
+ * shorthand authorship survives the per-side reset, or a collapsed
+ * Float32 readback retains a rounding residue.  Audited by the gate:
+ * every unmoved pair's property is here, and every entry is still
+ * unmoved somewhere.
  */
 export const UNMOVABLE = {
-  'chart-domain':
-    'required by a bar chart in this scene; deleting it makes the stylesheet invalid, so the compiler rejects the reset',
   'chart-colors':
     'reads back a derived chart palette (one colour per value); heat charts derive it from chart-scale, and the renderer rejects setting chart-colors on that chart kind',
-  'chart-scale':
-    'required by a heat chart in this scene; deleting it makes the stylesheet invalid, so the compiler rejects the reset',
-  'background-gradient-stop-positions':
-    'reads back the even spread its stop colours imply, set or not',
-  'line-gradient-stop-positions':
-    'reads back the even spread its stop colours imply, set or not',
+  'border-dash-pattern':
+    'feature-compounds-miniature has collapsed children with the default solid border, so the dash pattern is not sampled by the shader; its getter also divides the Float32Array by collapse scale and can retain a rounding residue (src/style/readers-nodes.mts:85-98; src/render/shaders/node.mts:238-250)',
+  color:
+    'feature-labels-edges reads edge label color after text-opacity has been folded into its alpha; resetting to default black leaves the same effective color at the fixture’s text-opacity 0.86 (src/style/engine-write.mts:923-936)',
+  'text-justification':
+    'feature-labels-font-keywords authors center while the reset value auto resolves against centered text-halign; the public getter reports the stylesheet declaration rather than the resolved sidecar, so both states have the same effective centered justification (src/style/engine-write.mts:966-975; src/style/readers-labels.mts:89)',
   'padding-bottom':
     'set through the `padding` shorthand, which the sheet reset leaves; compound props are parents-group constants, so no per-element bypass can name one',
   'padding-left':
@@ -420,12 +418,98 @@ export const UNMOVABLE = {
  * new one is either fixed in its scene or argued for here.
  */
 export const INTENDED_DECORATION = {
+  'feature-arrows-scalars edges/mid-source-arrow-width':
+    'This row’s match-line mid arrow is filled; mid-arrow width only strokes hollow heads, and v4 mid heads are always filled (src/README.md:8241-8250; PLAN.md item 21).',
+  'feature-arrows-scalars edges/mid-target-arrow-width':
+    'This row’s match-line mid arrow is filled; mid-arrow width only strokes hollow heads, and v4 mid heads are always filled (src/README.md:8241-8250; PLAN.md item 21).',
+  'feature-arrows-shapes nodes/text-max-width':
+    'The arrow-shape fixture captions are short, explicitly line-broken group/value labels; each rendered line is below the scene’s 115 px maximum (debug/feature-scenes-graph.js).',
+  'feature-compounds-hulls-exclude nodes/text-max-width':
+    'The hull labels are short captions; the long convex child label has its own no-wrap node style, so the 130 px parent-label limit does not change line breaks (debug/feature-scenes-compounds.js).',
+  'feature-compounds-hulls-exclude nodes/text-wrap':
+    'The three parent captions fit on one line and the long convex child label explicitly uses text-wrap none; changing the parent wrap setting changes no line breaks (debug/feature-scenes-compounds.js).',
+  'feature-compounds-hulls nodes/text-max-width':
+    'The hull labels are short captions; the long convex child label has its own no-wrap node style, so the 130 px parent-label limit does not change line breaks (debug/feature-scenes-compounds.js).',
+  'feature-compounds-hulls nodes/text-wrap':
+    'The three parent captions fit on one line and the long convex child label explicitly uses text-wrap none; changing the parent wrap setting changes no line breaks (debug/feature-scenes-compounds.js).',
+  'feature-compounds-miniature nodes/text-max-width':
+    'The expanded, miniature, child, and outside captions all fit within 140 px; the chart and image bodies carry no long text (debug/feature-scenes-compounds.js).',
+  'feature-compounds-miniature nodes/text-wrap':
+    'Every miniature-fixture caption fits on one line within its body or below its parent, so wrapping does not alter the labels (debug/feature-scenes-compounds.js).',
+  'feature-compounds-minimums nodes/text-max-width':
+    'The parent caption is explicitly split into “min-width 120” and “min-height 90”; both lines fit under 150 px (debug/feature-scenes-compounds.js).',
+  'feature-compounds-padding-sides nodes/text-max-width':
+    'The parent caption is explicitly split into two short lines, both below the 150 px limit (debug/feature-scenes-compounds.js).',
+  'feature-compounds-padding-sides parents/padding':
+    'The sides fixture authors padding: 0 and then supplies all four side values; resetting the shorthand to its default 10 leaves those explicit sides in place (debug/feature-scenes-compounds.js; src/README.md:4325).',
+  'feature-compounds-padding-width-paddingRelativeTo-average nodes/text-max-width':
+    'The parent’s “18% padding” and relative-to captions are explicitly split into short lines under 150 px (debug/feature-scenes-compounds.js).',
+  'feature-compounds-padding-width-paddingRelativeTo-height nodes/text-max-width':
+    'The parent’s “18% padding” and relative-to captions are explicitly split into short lines under 150 px (debug/feature-scenes-compounds.js).',
+  'feature-compounds-padding-width-paddingRelativeTo-max nodes/text-max-width':
+    'The parent’s “18% padding” and relative-to captions are explicitly split into short lines under 150 px (debug/feature-scenes-compounds.js).',
+  'feature-compounds-padding-width-paddingRelativeTo-max parents/padding-relative-to':
+    'This parent is wider than it is tall, so max selects the same width dimension as the default width mode; the authored 18% padding is unchanged (debug/feature-scenes-compounds.js).',
+  'feature-compounds-padding-width-paddingRelativeTo-min nodes/text-max-width':
+    'The parent’s “18% padding” and relative-to captions are explicitly split into short lines under 150 px (debug/feature-scenes-compounds.js).',
+  'feature-compounds-padding-width nodes/text-max-width':
+    'The parent’s “18% padding” and relative-to captions are explicitly split into short lines under 150 px (debug/feature-scenes-compounds.js).',
+  'feature-edges-loops edges/curve-style':
+    'Every edge in this fixture is a self-loop; v4 constructs loops as loops under every declared curve-style (src/README.md:3836-3844).',
+  'feature-emphasis-declutter-dimOpacity-0 nodes/label-priority':
+    'The overlapping pair is outside the emphasized neighborhood and dim-opacity 0 makes both labels transparent, so their priority cannot change this image (debug/feature-scenes-compounds.js).',
+  'feature-emphasis-declutter-dimOpacity-0 nodes/text-max-width':
+    'All visible focus/neighbour labels fit the 86 px limit; the overlapping pair is transparent at dim-opacity 0 (debug/feature-scenes-compounds.js).',
+  'feature-emphasis-declutter-dimOpacity-0 core/label-declutter':
+    'dim-opacity 0 makes every non-emphasized label fully transparent, so culling versus none has no visible ink to change in this state (debug/feature-scenes-compounds.js).',
+  'feature-emphasis-declutter-dimOpacity-1 nodes/label-priority':
+    'The overlapping pair is already culled in the fixture’s settled incumbent state; resetting its higher rank to a tie does not displace the incumbent because label-declutter retains incumbents within its hysteresis margin (src/render/label-declutter.mts:658-676).',
+  'feature-emphasis-declutter-dimOpacity-1 nodes/text-max-width':
+    'Each visible focus/neighbour label is at most two short lines within 86 px; resetting the limit does not change its wrapping (debug/feature-scenes-compounds.js).',
+  'feature-emphasis-declutter-labelDeclutter-none nodes/label-priority':
+    'This state disables decluttering, so label-priority is not consulted when drawing labels (src/render/label-declutter.mts:59-61).',
+  'feature-emphasis-declutter-labelDeclutter-none nodes/text-max-width':
+    'Every label in the emphasis fixture fits within the 86 px limit or has an explicit newline; the limit does not change its wrapping (debug/feature-scenes-compounds.js).',
+  'feature-emphasis-declutter nodes/label-priority':
+    'The overlapping pair keeps its settled high-priority incumbent when reset makes the ranks tie; label-declutter’s incumbent hysteresis prevents a pixel change (src/render/label-declutter.mts:658-676).',
+  'feature-emphasis-declutter nodes/text-max-width':
+    'Every emphasis caption fits within 86 px or uses an explicit newline, so removing the maximum does not change the rendered line breaks (debug/feature-scenes-compounds.js).',
+  'feature-images-layers nodes/background-image-crossorigin':
+    'The compared images are data URLs, so changing request credentials does not change decoded pixels; request-option behavior is covered by test/image-registry.mjs.',
+  'feature-labels-font-keywords-fontStyle-italic nodes/font-weight':
+    'This URL state selects Open Sans italic at weight 400; resetting weight to normal keeps the same weight-400 italic face among the four pinned font assets (debug/style.css:1-4).',
+  'feature-labels-font-keywords-fontStyle-oblique nodes/font-weight':
+    'This URL state selects Open Sans oblique at weight 400; resetting weight to normal keeps the same weight-400 oblique face among the four pinned font assets (debug/style.css:1-4).',
+  'feature-labels-font-keywords-fontWeight-100 nodes/font-weight':
+    'The pinned Open Sans assets provide weight 400 and 700; CSS font matching selects the same 400 face for requested weight 100 and reset value normal (debug/style.css:1-4).',
+  'feature-labels-font-keywords-fontWeight-200 nodes/font-weight':
+    'The pinned Open Sans assets provide weight 400 and 700; CSS font matching selects the same 400 face for requested weight 200 and reset value normal (debug/style.css:1-4).',
+  'feature-labels-font-keywords-fontWeight-300 nodes/font-weight':
+    'The pinned Open Sans assets provide weight 400 and 700; CSS font matching selects the same 400 face for requested weight 300 and reset value normal (debug/style.css:1-4).',
+  'feature-labels-font-keywords-fontWeight-500 nodes/font-weight':
+    'The pinned Open Sans assets provide weight 400 and 700; CSS font matching selects the same 400 face for requested weight 500 and reset value normal (debug/style.css:1-4).',
+  'feature-labels-font-keywords-fontWeight-lighter nodes/font-weight':
+    'The pinned Open Sans assets provide weight 400 and 700; relative lighter from the 400 base selects the same 400 face as reset value normal (debug/style.css:1-4).',
+  'feature-labels-font-keywords nodes/font-weight':
+    'The fixture authors weight 400, which selects the same pinned Open Sans regular face as the default keyword normal (debug/style.css:1-4).',
+  'feature-labels-nodes nodes/events':
+    'Pointer transparency changes pick answers, not pixels; the render pass still draws the labels (src/render/cull.mts:251-253,342; test/events-prop.mjs:33-38).',
+  'feature-labels-nodes nodes/label-priority':
+    'The six label samples occupy separate cells and their label rectangles do not overlap, so changing priority cannot alter culling order (debug/feature-scenes-labels.js).',
+  'feature-labels-nodes nodes/min-zoomed-font-size':
+    'The fitted screenshot stays above the authored 12 px floor, so resetting to 0 does not hide this label at the static capture zoom; zoom-out behavior is covered by playwright-tests/renderer.spec.js:9240 and test/min-zoomed-font-size.mjs (threshold: src/render/label-layer.mts:355-360).',
+  'feature-labels-nodes nodes/text-events':
+    'Label-box hit testing changes CPU pick routing, not pixels; the labels are still drawn (src/cpu-pick.mts:167-176; test/text-events.mjs:58-82).',
+  'feature-paint-layers nodes/text-max-width':
+    'The layer captions use explicit line breaks and each line fits inside the authored 138 px maximum (debug/feature-scenes-paint.js).',
+  'feature-shapes-underlays nodes/text-max-width':
+    'Each underlay sample has a short two-line shape caption that fits within the authored 125 px maximum (debug/feature-scenes-paint.js).',
   'label-border-styles edges/mid-source-arrow-width':
-    'mid heads are always filled and the width strokes only a hollow head (PLAN.md item 21, v3 too): set so the coverage record counts it',
+    'Mid heads are always filled and width only strokes hollow heads; v4 never renders a hollow mid head (src/README.md:8241-8250; PLAN.md item 21).',
   'label-border-styles edges/mid-target-arrow-width':
-    'mid heads are always filled and the width strokes only a hollow head (PLAN.md item 21, v3 too): set so the coverage record counts it',
+    'Mid heads are always filled and width only strokes hollow heads; v4 never renders a hollow mid head (src/README.md:8241-8250; PLAN.md item 21).',
   'self-loops edges/curve-style':
-    "the scene's claim: a straight-styled loop still draws as a loop (the v4 rule), so resetting the style must move nothing",
+    'All edges are self-loops; v4 constructs loops as loops under every declared curve-style (src/README.md:3836-3844).',
 };
 
 /** Every degrade record on disk, sorted by golden name. */

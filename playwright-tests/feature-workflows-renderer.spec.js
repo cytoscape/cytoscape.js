@@ -3,6 +3,22 @@ import { test, expect } from '@playwright/test';
 const PAGE = 'http://127.0.0.1:3333/debug/index.html';
 
 const openWorkflow = async (page, scene) => {
+  // The developer's watch:sync server reloads pages when build/debug files
+  // change. Stub only its client in this test page so it cannot navigate an
+  // in-flight animation when another process updates those files.
+  await page.route(
+    (url) => {
+      const parsed = new URL(url);
+
+      return parsed.port === '35729' && parsed.pathname === '/livereload.js';
+    },
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/javascript',
+        body: '/* LiveReload is disabled for isolated workflow tests. */',
+      }),
+  );
   await page.goto(`${PAGE}?network=workflows&scene=${scene}&layout=preset`);
   const hasAdapter = await page.evaluate(async () => {
     if (navigator.gpu == null) return false;

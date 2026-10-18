@@ -228,7 +228,7 @@
     inspectSelect.addEventListener('change', inspectChanged);
     container.append(
       node(document, 'div', { className: 'feature-workflow-controls' }, [
-        field(document, 'Query object', query),
+        field(document, 'Structured query JSON', query),
         button(document, 'Run query and select matches', runQuery),
         button(document, 'Clear selection and emphasis', () => {
           cy.elements().unselect();

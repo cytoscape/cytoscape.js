@@ -4,12 +4,6 @@ const PAGE = 'http://127.0.0.1:3333/debug/index.html';
 
 const openWorkflow = async (page, scene) => {
   await page.goto(`${PAGE}?network=workflows&scene=${scene}&layout=preset`);
-  await page.waitForLoadState('networkidle');
-  await expect(page.locator('#contextual-tools')).toBeVisible();
-  await expect(page.locator('#contextual-controls')).not.toBeEmpty();
-  await expect
-    .poll(() => page.evaluate(() => Boolean(window.cy?.nodes().length)))
-    .toBe(true);
   const hasAdapter = await page.evaluate(async () => {
     if (navigator.gpu == null) return false;
     return (await navigator.gpu.requestAdapter()) != null;
@@ -19,6 +13,13 @@ const openWorkflow = async (page, scene) => {
     !hasAdapter,
     'no WebGPU adapter available for the renderer workflow',
   );
+
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('#contextual-tools')).toBeVisible();
+  await expect(page.locator('#contextual-controls')).not.toBeEmpty();
+  await expect
+    .poll(() => page.evaluate(() => Boolean(window.cy?.nodes().length)))
+    .toBe(true);
 };
 
 test('workflow selector routes to every canonical panel', async ({ page }) => {
@@ -390,7 +391,13 @@ test('animation transition and gesture controls change live state and event prop
   test.slow();
   await openWorkflow(page, 'animation');
   const controls = page.locator('#contextual-controls');
+  const animationProgress = controls.getByRole('progressbar', {
+    name: 'Read-only progress',
+  });
   const initial = await page.evaluate(() => window.cy.$id('a').position());
+  const targetX =
+    initial.x +
+    Number(await controls.getByLabel('Move by (model px)').inputValue());
 
   await controls.getByLabel('Duration (ms)').fill('6000');
   await expect
@@ -403,14 +410,40 @@ test('animation transition and gesture controls change live state and event prop
   await controls
     .getByRole('button', { name: 'Play transition + position/width tween' })
     .click();
-  const progress = controls.locator(
-    'progress[aria-label="Animation progress"]',
-  );
+  let inFlightSample = null;
   await expect
-    .poll(() => progress.evaluate((element) => element.value), {
-      timeout: 8000,
-    })
-    .toBeGreaterThan(0.08);
+    .poll(
+      async () => {
+        inFlightSample = await animationProgress.evaluate(
+          (progress, { originX, targetX }) => {
+            const value = Number(progress.value);
+            const position = window.cy.$id('a').position();
+            const status = document.querySelector(
+              '#contextual-controls .feature-workflow-output',
+            )?.textContent;
+
+            return value > 0.08 &&
+              value < 1 &&
+              status?.startsWith(
+                'Transition restyle + position/width tween started on a:',
+              ) &&
+              position.x > originX &&
+              position.x < targetX
+              ? { value, position }
+              : null;
+          },
+          { originX: initial.x, targetX },
+        );
+
+        return inFlightSample;
+      },
+      { timeout: 8000 },
+    )
+    .not.toBeNull();
+  expect(inFlightSample.value).toBeGreaterThan(0.08);
+  expect(inFlightSample.value).toBeLessThan(1);
+  expect(inFlightSample.position.x).toBeGreaterThan(initial.x);
+  expect(inFlightSample.position.x).toBeLessThan(targetX);
   const readout = controls.locator('.feature-workflow-output').nth(1);
   await expect(readout).toContainText('background-color opacity');
   await expect(readout).toContainText('lineColor');
@@ -445,9 +478,6 @@ test('animation transition and gesture controls change live state and event prop
   const playTransition = controls.getByRole('button', {
     name: 'Play transition + position/width tween',
   });
-  const animationProgress = controls.locator(
-    'progress[aria-label="Animation progress"]',
-  );
   const sampleAtMidFlight = async (read, what) => {
     const deadline = Date.now() + 8000;
     let sample;
@@ -472,12 +502,9 @@ test('animation transition and gesture controls change live state and event prop
     await playTransition.click();
     const midFlight = await sampleAtMidFlight(
       () =>
-        page.evaluate(() => {
-          const progress = document.querySelector(
-            'progress[aria-label="Animation progress"]',
-          );
+        animationProgress.evaluate((element) => {
           return {
-            progress: progress == null ? null : Number(progress.value),
+            progress: Number(element.value),
             width: window.cy.$id('a').numericStyle('width'),
             url: location.href,
             status: document.querySelector(
@@ -551,12 +578,9 @@ test('animation transition and gesture controls change live state and event prop
     await playTransition.click();
     const middle = await sampleAtMidFlight(
       () =>
-        page.evaluate(() => {
-          const progress = document.querySelector(
-            'progress[aria-label="Animation progress"]',
-          );
+        animationProgress.evaluate((progress) => {
           return {
-            progress: progress == null ? null : Number(progress.value),
+            progress: Number(progress.value),
             node: (() => {
               const ref = window.cy._store.lookup('a');
               const color = window.cy._store.column('node.fillColor');

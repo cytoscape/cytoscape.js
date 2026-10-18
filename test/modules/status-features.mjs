@@ -18,6 +18,10 @@ import {
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const CSV = readFileSync(join(ROOT, 'docs/features.csv'), 'utf8');
 const rows = readInventory(ROOT, CSV);
+// The status planner reads and diffs the complete golden inventory. Keep its
+// immutable result outside the per-test timeout; the CSV assertions below
+// still inspect the same generated page and files.
+const statusPlan = buildPlan({ root: ROOT, gzip: false });
 
 describe('feature status page', () => {
   it('escapes authored data in table cells and filter options', () => {
@@ -113,8 +117,7 @@ describe('feature status page', () => {
   });
 
   it('publishes the same complete CSV and all rows with navigation and source links', () => {
-    const plan = buildPlan({ root: ROOT, gzip: false });
-    const text = (name) => plan.ops.find((op) => op.to === name)?.text;
+    const text = (name) => statusPlan.ops.find((op) => op.to === name)?.text;
     expect(text('features.csv')).to.equal(CSV);
     const html = text('features.html');
     const table = html.slice(html.indexOf('<table class="features">'));

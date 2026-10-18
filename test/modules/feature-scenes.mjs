@@ -83,6 +83,11 @@ const enumValuesFor = (group, property) => {
   return values;
 };
 
+const expectedFontWeightAlternate = (value) =>
+  ['bold', 'bolder'].includes(String(value)) || Number(value) >= 600
+    ? 400
+    : 700;
+
 const readback = (cy, row) => {
   if (row.group !== 'core') return cy.$id(row.target).style(row.property);
 
@@ -445,6 +450,14 @@ describe('round 149 visual feature scenes', function () {
       expect(scene.style.nodes['font-weight'], candidate.name).to.equal(
         candidate.params.fontWeight,
       );
+      for (const row of [
+        ...scene.coverage.properties,
+        ...scene.coverage.keywords,
+      ].filter((entry) => entry.property === 'font-weight')) {
+        expect(row.alternate, candidate.name).to.equal(
+          expectedFontWeightAlternate(candidate.params.fontWeight),
+        );
+      }
     }
 
     for (const candidate of featureScenes.goldenCases.filter(
@@ -974,6 +987,10 @@ describe('round 149 visual feature scenes', function () {
       (select) => select.dataset.control === 'fontFamily',
     );
     for (const option of font.controlOptions.fontWeight.values) {
+      expect(
+        option.alternate,
+        `font-weight alternate ${option.value}`,
+      ).to.equal(expectedFontWeightAlternate(option.value));
       weight.value = String(option.value);
       weight.dispatch('change');
       expect(

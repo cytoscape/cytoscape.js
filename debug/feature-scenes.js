@@ -270,6 +270,12 @@
     800,
     900,
   ];
+  const fontWeightAlternate = (value) => {
+    const keyword = String(value);
+    if (keyword === 'bold' || keyword === 'bolder') return 400;
+
+    return Number(keyword) >= 600 ? 400 : 700;
+  };
   const fontStyleValues = ['normal', 'italic', 'oblique'];
   const fontFamilyValues = ['Open Sans', 'sans-serif', 'serif', 'monospace'];
 
@@ -282,7 +288,7 @@
       defaultValue: 400,
       values: fontWeightValues.map((value) => ({
         value,
-        alternate: String(value) === '400' ? 700 : 400,
+        alternate: fontWeightAlternate(value),
         query: `?network=features&scene=labels&view=font-keywords&fontWeight=${encodeURIComponent(String(value))}`,
       })),
     },
@@ -1079,7 +1085,7 @@
           alternate,
         });
       };
-      const weightAlternate = String(fontWeight) === '400' ? 700 : 400;
+      const weightAlternate = fontWeightAlternate(fontWeight);
       const styleAlternate = fontStyle === 'normal' ? 'italic' : 'normal';
       const familyAlternate = fontFamily === 'serif' ? 'monospace' : 'serif';
       setRows(

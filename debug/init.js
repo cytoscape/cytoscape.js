@@ -462,12 +462,17 @@ const paramDefs = {
     }
 
     cy.ready
-      .then(() => {
+      .then(async () => {
         console.log('webgpu ready');
 
         // a progressive load fits once itself, to its first chunk
         if (!progressive) {
-          cy.fit(undefined, 30);
+          if (networkID === 'workflows') {
+            await (document.fonts?.ready || Promise.resolve());
+            cy.fit(undefined, 44);
+          } else {
+            cy.fit(undefined, 30);
+          }
         }
       })
       .catch((err) => {

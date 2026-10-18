@@ -43,6 +43,9 @@ export function documentLinks(root, documents, sha = null) {
     const hash = href.indexOf('#');
     const path = hash === -1 ? href : href.slice(0, hash);
     const fragment = hash === -1 ? '' : href.slice(hash);
+
+    if (path.includes('\\')) return null;
+
     const candidates = [posix.join(posix.dirname(source), path)];
 
     // PLAN.md includes round text whose relative links were authored under
@@ -50,9 +53,39 @@ export function documentLinks(root, documents, sha = null) {
     if (source === 'PLAN.md') candidates.push(posix.join(rounds, path));
     candidates.push(posix.normalize(path));
 
-    for (const candidate of candidates) {
+    for (const candidate of [...new Set(candidates)]) {
+      // Relative source links can contain ../ (round files live below
+      // plan/rounds/), but a published link must stay inside the checkout.
+      // Reject paths that would escape before joining them to the root.
+      if (
+        candidate === '..' ||
+        candidate.startsWith('../') ||
+        candidate.startsWith('/')
+      ) {
+        continue;
+      }
+
       const page = pages.get(candidate);
       if (page != null) return fragment ? page.split('#')[0] + fragment : page;
+
+      if (
+        candidate === 'docs/features.csv' &&
+        existsSync(join(root, candidate))
+      ) {
+        return fragment ? `features.csv${fragment}` : 'features.csv';
+      }
+
+      // planDebug mirrors these top-level files byte-for-byte at the same
+      // path.  Link the source round to that published copy, not to a dead
+      // relative path from the assembled plan.html page.
+      if (
+        candidate.startsWith('debug/') &&
+        posix.dirname(candidate) === 'debug' &&
+        !/\.(json|mjs)$/.test(candidate) &&
+        existsSync(join(root, candidate))
+      ) {
+        return fragment ? `${candidate}${fragment}` : candidate;
+      }
 
       const documentationSource =
         candidate.startsWith('documentation/') && candidate.endsWith('.md');
@@ -60,8 +93,13 @@ export function documentLinks(root, documents, sha = null) {
         candidate.startsWith('benchmark/published/table-view/') &&
         /\.(md|json)$/.test(candidate);
 
+      const repositorySource =
+        /^(?:src|test|playwright-tests|playwright-page|scripts|benchmark|typescript|v3)\//.test(
+          candidate,
+        ) && existsSync(join(root, candidate));
+
       if (
-        (documentationSource || publishedTableSource) &&
+        (documentationSource || publishedTableSource || repositorySource) &&
         existsSync(join(root, candidate))
       ) {
         // The status preview does not publish the full documentation tree.
@@ -73,13 +111,13 @@ export function documentLinks(root, documents, sha = null) {
           .split('/')
           .map((part) => encodeURIComponent(part))
           .join('/');
-        const source = [
+        const sourceUrl = [
           'https://github.com/cytoscape/cytoscape.js/blob',
           ref,
           path,
         ].join('/');
 
-        return fragment ? source + fragment : source;
+        return fragment ? sourceUrl + fragment : sourceUrl;
       }
     }
 

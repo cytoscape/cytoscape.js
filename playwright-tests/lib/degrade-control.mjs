@@ -307,7 +307,15 @@ export const resetInPage = ({ group, prop, alternates }) => {
         throw new Error(`no default value for '${prop}'`);
       }
 
-      saved.push({ ele, cur });
+      const authoredBypasses =
+        globalThis.__goldenSourceScene?.style?.bypasses?.[ele.id()] ?? {};
+
+      saved.push({
+        ele,
+        cur,
+        hasAuthoredBypass: Object.hasOwn(authoredBypasses, prop),
+        authoredBypass: authoredBypasses[prop],
+      });
       ele.style(prop, def);
 
       // a reset that reads back unchanged did not take; the read-back is
@@ -432,15 +440,15 @@ export const restoreInPage = () => {
 
   const { prop, saved, readbackLimitation } = state;
 
-  for (const { ele, cur } of saved) {
+  for (const { ele, cur, hasAuthoredBypass, authoredBypass } of saved) {
     ele.removeStyle(prop);
 
-    if (text(ele.style(prop)) !== text(cur)) {
-      ele.style(prop, cur); // the scene had bypassed it itself
+    if (hasAuthoredBypass) {
+      ele.style(prop, authoredBypass);
+    }
 
-      if (text(ele.style(prop)) !== text(cur)) {
-        lost.push(ele.id());
-      }
+    if (text(ele.style(prop)) !== text(cur)) {
+      lost.push(ele.id());
     }
 
     if (readbackLimitation?.target === ele.id()) {
@@ -466,6 +474,45 @@ export const restoreInPage = () => {
 
   return lost;
 };
+
+/** Capture the value and authored source for a restore attempt before it is undone. */
+const restoreEvidenceInPage = ({ group, prop }) => {
+  const state = globalThis.__degrade;
+  const sourceStyle = globalThis.__goldenSourceScene?.style ?? {};
+  const saved =
+    state?.saved?.map(({ ele, cur }) => ({ target: ele.id(), value: cur })) ??
+    state?.readbacks ??
+    [];
+
+  return {
+    group,
+    property: prop,
+    saved: saved.map((row) => {
+      const target = String(row.target);
+      const authored = sourceStyle.bypasses?.[target]?.[prop];
+
+      return {
+        target,
+        expected: row.value,
+        authoredBypass: authored,
+        authoredGroup: sourceStyle[group]?.[prop],
+      };
+    }),
+  };
+};
+
+/** Read back the values that a restore attempt could not reinstate. */
+const restoredEvidenceInPage = ({ group, property, targets }) =>
+  targets.map((target) => {
+    const actual =
+      group === 'core'
+        ? globalThis.cy.style().core()[
+            property.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+          ]
+        : globalThis.cy.$id(target).style(property);
+
+    return { target, restored: actual };
+  });
 
 /** Reset one metadata-declared enum value without touching other cells. */
 export const resetKeywordInPage = ({
@@ -1030,6 +1077,10 @@ export const degradeScene = async (
       });
     const degraded = await stableExport(page, opts);
     const moved = countMoved(baseline, degraded);
+    const restoreEvidence = await page.evaluate(restoreEvidenceInPage, {
+      group,
+      prop,
+    });
     const lost = await page.evaluate(restoreInPage);
     // a restored image re-decodes asynchronously, so the scene may take
     // a moment to come back; poll, and give up only on a real residue
@@ -1061,6 +1112,14 @@ export const degradeScene = async (
 
     if (lost.length > 0) {
       stopped = `${pair}: the restore lost ${lost.length} values`;
+      pairs[pair].restoreFailure = {
+        ...restoreEvidence,
+        lost: await page.evaluate(restoredEvidenceInPage, {
+          group,
+          property: prop,
+          targets: lost,
+        }),
+      };
       break;
     }
 
@@ -1099,6 +1158,10 @@ export const degradeScene = async (
     } = await page.evaluate(resetKeywordInPage, entry);
     const degraded = await stableExport(page, opts);
     const moved = countMoved(baseline, degraded);
+    const restoreEvidence = await page.evaluate(restoreEvidenceInPage, {
+      group: entry.group,
+      prop: entry.property,
+    });
     const lost = await page.evaluate(restoreInPage);
     const deadline = Date.now() + 5000;
     let back = countMoved(baseline, await stableExport(page, opts));
@@ -1139,6 +1202,14 @@ export const degradeScene = async (
       stopped =
         `${entry.group}/${entry.property}=${String(entry.value)}: ` +
         `the keyword restore lost ${lost.length} values`;
+      keywordTargets[keywordTargets.length - 1].restoreFailure = {
+        ...restoreEvidence,
+        lost: await page.evaluate(restoredEvidenceInPage, {
+          group: entry.group,
+          property: entry.property,
+          targets: lost,
+        }),
+      };
       break;
     }
 

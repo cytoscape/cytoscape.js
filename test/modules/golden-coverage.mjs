@@ -520,6 +520,54 @@ describe('golden coverage: the enumerator (round 135)', function () {
     }
   });
 
+  it('restores opacity-folded colors through their authored stylesheet (control)', () => {
+    const elements = [
+      { data: { id: 's' } },
+      { data: { id: 't' } },
+      { data: { id: 'e', source: 's', target: 't' } },
+    ];
+    const style = {
+      nodes: { width: 30, height: 30 },
+      edges: {
+        opacity: 0.5,
+        'line-opacity': 0.65,
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': '#263a4d',
+      },
+    };
+    const cy = cytoscape({ elements, style });
+    const original = cy.style().json();
+    const before = cy.$id('e').style('target-arrow-color');
+    globalThis.cy = cy;
+    globalThis.cytoscape = cytoscape;
+    globalThis.__goldenSourceScene = {
+      elements: {
+        nodes: elements.slice(0, 2),
+        edges: [elements[2]],
+      },
+      style,
+    };
+
+    try {
+      expect(before).to.equal('rgba(38,58,77,0.325)');
+      const reset = resetInPage({
+        group: 'edges',
+        prop: 'target-arrow-color',
+        alternates: {},
+      });
+
+      expect(reset.changed).to.equal(1);
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.$id('e').style('target-arrow-color')).to.equal(before);
+      expect(cy.style().json()).to.deep.equal(original);
+    } finally {
+      delete globalThis.__goldenSourceScene;
+      delete globalThis.cy;
+      delete globalThis.cytoscape;
+      cy.destroy();
+    }
+  });
+
   it('validates normalized and mapped keyword reset evidence separately', () => {
     const cy = cytoscape({
       elements: [

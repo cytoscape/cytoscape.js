@@ -6,10 +6,9 @@
 
 Requested audit, before implementation. Inventory the implemented library
 surface, its easy manual test paths, and the visual goldens; propose the
-missing networks and widgets. This is an open plan, not a completed demo
-round. No library, fixture, widget, stylesheet, golden or feature status is
-changed by this audit. The index and dependency graph are generated record
-bookkeeping only. No release-readiness claim follows from this inventory.
+missing networks and widgets. The audit tables below are the pre-implementation
+baseline; implementation and verification are recorded at the end of this
+file. No release-readiness claim follows from the baseline inventory.
 
 **Finding:** existing manual coverage is broad but uneven. Shapes, routes,
 arrows, layouts and basic interaction have useful entry points. Many paint
@@ -107,9 +106,10 @@ path was found in debug code, not absence of automated tests.
 P0 is the first proposed implementation batch, P1 follows by family, P2 is
 optional expansion. These are audit priorities, not an approved release plan.
 
-### Complete golden inventory
+### Pre-implementation golden inventory
 
-All names below are PNG basenames under `playwright-tests/goldens/`.
+The names below are the baseline PNG basenames under
+`playwright-tests/goldens/`, before this round's refresh.
 A golden pins a particular scene, not every value of its named feature.
 
 | Family | Count | Golden names |
@@ -124,7 +124,7 @@ A golden pins a particular scene, not every value of its named feature.
 | Compounds | 2 | `compounds`, `compound-loops` |
 | Charts | 2 | `charts-pie-stripes`, `charts-heat-bars` |
 
-The 53 references each have a coverage record and a degrade record. Existing
+At the baseline, the 53 references each had a coverage record and a degrade record. Existing
 `golden-current/` contains 53 PNGs and 53 timestamp records. Comparing all
 saved current images with their references using the recorded thresholds
 finds **53 exact matches**, with capture timestamps from
@@ -301,6 +301,11 @@ cartesian-product target for every property combination.
 
 ### Verification of this audit
 
+This section records the **pre-implementation audit baseline** taken on 18
+October. Its 53 golden pairs and gap counts are inputs to the round, not
+completion evidence; final counts and gates are recorded in the implementation
+record below.
+
 - `node --import tsx scripts/golden-coverage.mjs --verbose`: counts and full
   gap/degrade inventories reproduced; no reference or capture regenerated.
 - Existing `test/modules/golden-coverage.mjs`, `debug-harness.mjs` and
@@ -357,36 +362,112 @@ agreed full scope. The interview is complete; implementation progress follows.
 
 ### Implementation progress (18 October)
 
-The first isolated implementation slices are committed:
+The requested work is implemented in isolated code commits. These commits add
+the golden coverage and core controls (`6fc4a818`), repair the hosted arrow
+comparison with an explicit copy-or-unavailable fallback (`d160fe10`), resolve
+published plan links safely (`9b022e49`), add the visual scene registry and
+builders (`a25f854f`, `b5d73245`), integrate both registries into the main
+debug page and schema consumers (`bf6018d5`, `671a9078`), add API workflow
+panels (`7e6e92ae`), complete reciprocal workflow routes and controls
+(`865f0d3e`, `85b30418`, `c39194a0`, `da11e13e`), and fill label property and
+keyword coverage (`cd90fe2a`, `90488d68`). The result is compact: 31 visual
+views plus eight selectable workflow contexts share two registry entries and
+one deterministic workflow fixture.
 
-- `6fc4a818` — golden coverage enum and core controls.
-- `d160fe10` — status builds now serve the v3 UMD at the arrow gallery's
-  requested path when present; otherwise a generated sentinel drives an
-  explicit v3-unavailable pane while v4 remains active. The main-page arrow
-  comparison starts on a readable tee near-duplicate view, with the full
-  matrix still selectable.
-- `9b022e49` — source links from this assembled round resolve to the published
-  debug mirror/features CSV or to a pinned repository source; traversal
-  outside the checkout is rejected.
+### Manual review guide
 
-Checks completed for these slices:
+Open `debug/index.html?network=features&scene=paint&view=nodes` to start with
+the curated style comparisons. The family/view map is in
+`debug/feature-scenes.js`; useful focused routes include
+`scene=labels&view=nodes`, `scene=labels&view=edges`,
+`scene=labels&view=font-keywords`, `scene=charts&view=bars`, and
+`scene=compounds&view=miniature`. Open
+`debug/index.html?network=workflows&scene=algorithms` for API/state workflows;
+the visible Workflow selector reaches algorithms, layouts, inspector,
+mutation, animation, gestures, export and runtime. The arrow and hull galleries
+also open as overlays on the main page, and standalone routes remain usable.
+Feature settings persist in the URL; Reset reconstructs the selected view.
+The node-label comparison starts at numeric `text-rotation: 0.35` radians;
+`autorotate` is valid on edges only.
 
-- `npm run -s test:js:one -- test/modules/status-arrow-gallery.mjs` — passed
-  the present-v3 copy and missing-v3 fallback planner cases.
-- `npm run -s test:js:one -- test/modules/status-document-links.mjs` — passed
-  all four publication and path-safety cases.
-- `npm run status` — passed; round-relative links resolve. At this point the
-  status builder still reported feature-golden PNGs pending capture.
-- Chromium opened the main feature route and its embedded arrow comparison,
-  the status site's copied-v3 comparison, and the generated missing-v3
-  fallback. The copied case hid the fallback; the missing case kept the v4
-  graph and showed the explanation. The 1280×800 focused comparison was
-  visually reviewed; captures are `/tmp/r149-arrow-focus-readable.png`,
-  `/tmp/r149-arrow-main-overlay.png`, `/tmp/r149-arrow-status-copied.png` and
-  `/tmp/r149-arrow-status-fallback.png`.
+The fixed workflow fixture has explicit algorithm scopes. Kruskal,
+Hopcroft–Tarjan biconnected components and Karger–Stein use the connected
+A–E induced subgraph (five nodes and six edges); Hierholzer uses the A/B/C
+directed cycle (three nodes and three edges). Other applicable full-graph
+recipes use all seven leaves, including X/Y. Root and goal selectors affect
+only algorithms that accept those inputs.
 
-The root-only status build does not build v3: it copies the ignored bundle
-only if already available locally, and otherwise publishes the explicit
-fallback. No source runtime code was changed in these slices. Main feature and
-workflow panels, full registry/schema consumers, and the remaining golden
-acceptance work are still in progress; this is not round closure.
+### Coverage and verification
+
+The generated `docs/demo-coverage.json` ledger accounts for all 220
+stylesheet properties and 326 schema keyword occurrences: 325 have supported
+examples and one node `text-rotation=autorotate` pair has a semantic exception
+with a direct rejection check. It reports 31 visual views, 55 canonical
+feature states, 83 source records and 68 runnable URLs. The 961 status-feature
+rows are reconciled by family to a scene/widget, an exact automatic test or a
+documented nonvisual reason; Partial rows retain their source restrictions.
+The audit's initial table remains a historical gap analysis. The delivered
+mapping is generated by `scripts/demo-coverage.mjs` and checked by
+`test/modules/demo-coverage.mjs`.
+
+Scene, workflow and harness behavior is covered by
+`test/modules/feature-scenes.mjs`,
+`test/modules/feature-workflows.mjs`, `test/modules/debug-harness.mjs`, and
+`test/modules/schemas.mjs`. Focused Node checks passed on these modules after
+the final route and canonical-state integration. The bounded browser walk
+reached all 31 feature routes through visible selectors; rendered-bounds and
+horizontal-overflow checks passed. Chart controls retained state on reload,
+and Reset kept the selected route. The reciprocal x/y workflow arcs have
+separate routes and legible weights. Screenshots include
+`/tmp/r149-feature-acceptance-compound-after-font.png`,
+`/tmp/r149-final-workflow-algorithms.png`, and
+`/tmp/r149-workflow-reciprocal-curves.png`.
+
+The main debug and published status pages loaded the four vendored Open Sans
+WOFF2 faces (400/700, normal/italic) from HTTP 200 responses;
+`document.fonts.load()` and `font.check()` confirmed all four loaded. The
+files match `@fontsource/open-sans` 5.3.0 Latin assets and are accompanied by
+the OFL license. The status planner copies the nested fonts into the published
+debug mirror. An interim `npm run status` succeeded. The final status build,
+browser opening and status-site module gate remain to be rerun after the
+capture inventory stabilizes. Focused status-site attempts produced no
+diagnostic assertion, so that gate is not counted as passed.
+
+The baseline visual inventory contained 53 golden pairs. The final capture
+suite expects 107 named artifacts; final reference/current/degrade totals and
+the complete suite gates remain pending the active capture batch. The
+published status page also needs one final build/open against that inventory.
+This record does not claim round closure yet.
+
+### Findings held for separate library fixes
+
+No runtime source changes are part of Round 149. The chart-domain bypass
+getter is stale: create the bars scene with stylesheet domain `[-5,6]` and
+values `[-4,0,5]`, then run
+`cy.$id('chart-bar-horizontal').style('chart-domain', [0,100])`. The bypass
+JSON and element chart record hold `[0,100]`, but `style('chart-domain')` and
+legend geometry remain `'-5 6'` and `[-5,6]`. The getter follows
+`src/style/engine-read.mts:181` and
+`src/style/readers-nodes.mts:347-349`, while writes update the chart record at
+`src/style/engine-write.mts:341,800`; this conflicts with the public bypass
+readback statement at `src/collection.mts:1695`. Automatic endpoints are a
+separate supported behavior and are not part of this defect.
+
+Mapped label `text-transform` and `text-justification` visibly use the
+authored per-element values in `scene=labels&view=nodes` and `view=edges`,
+while getters report stylesheet fallbacks (`none` and `auto`). Scene metadata
+records the authored and observed values, and
+`test/modules/feature-scenes.mjs` checks them. The reader paths are
+`src/style/readers-labels.mts:44,85`; the discrepancy conflicts with the
+documented bypass readback contract at `src/collection.mts:1695`.
+
+The `images-multi` restore control retains a repeatable low-amplitude
+624-pixel residue inside the image body after exact style/readback restoration
+and `pendingImages=0`. Its source has not been localized, so it is an
+unexplained visual residual, not a third confirmed library defect. Physical
+touchscreen/pinch acceptance remains a device check because the browser suite
+uses mouse or synthetic touch. The runtime panel reports requested
+`rendererWorker` configuration and readiness; the public API does not expose
+actual renderer-worker host identity. The status build copies the v3 UMD only
+if it is already available locally and otherwise publishes the explicit
+fallback; it does not install or build v3.

@@ -1138,6 +1138,16 @@ export const degradeScene = async (
   ];
 
   for (const entry of keywordEntries) {
+    const tracksRestoreLimitation = (
+      sceneCoverage?.restoreLimitations ?? []
+    ).some(
+      (row) =>
+        row.group === entry.group &&
+        row.property === entry.property &&
+        row.target === entry.target &&
+        row.value === entry.value &&
+        row.alternate === entry.alternate,
+    );
     const exception = entry.exception ?? entry.reason;
 
     if (exception != null) {
@@ -1187,7 +1197,9 @@ export const degradeScene = async (
       ...(matchedBy == null ? {} : { matchedBy }),
       ...(readbackLimitation == null ? {} : { readbackLimitation }),
       ...(controlMode == null ? {} : { controlMode }),
-      ...(entry.resolvedValue == null && readbackLimitation == null
+      ...(entry.resolvedValue == null &&
+      readbackLimitation == null &&
+      !tracksRestoreLimitation
         ? {}
         : { restoreMoved: back }),
       ...(unexpected == null ? {} : { unexpected }),

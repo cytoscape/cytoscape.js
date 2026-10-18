@@ -16,20 +16,27 @@ copy-or-explicit-fallback path. A generated ledger accounts for all 220 style
 properties and 325 of 326 recursive schema property/value combinations. The
 one remaining schema-permitted pair, node `text-rotation=autorotate`, is
 rejected at runtime because `autorotate` is edge-only and has a direct test.
-expected visual inventory is 107 references, and its final capture refresh
-and full gates are still running. Three generic font-family states are
+The final visual inventory has 107 reference PNGs, 107 current PNGs, 107
+coverage records and 107 degrade records. The `visual` Playwright project
+reported 229 passes and one expected failure for the pre-existing Round 55
+compound-routing parity gap; it had no skips, unexpected results or flakes.
+Three generic font-family states are
 intentionally manual-only because platform font resolution varies; pinned
 Open Sans states remain in the visual suite. Physical touch/pinch acceptance
 remains a device check; the public API does not expose actual renderer-worker
 identity.
 
-Two public getter mismatches are recorded for separate library fixes: a
+Three public getter mismatches are recorded for separate library fixes: a
 `chart-domain` bypass changes the stored chart record but leaves the getter
-and legend at the stylesheet domain, and mapped label transform/justification
-render their per-node values while their getters return stylesheet fallbacks.
-An `images-multi` restore still has a 624-pixel low-amplitude image residue
-with exact style/readbacks and no pending images; its cause is unlocalized.
-No renderer runtime source was changed in this round. See the
+and legend at the stylesheet domain; mapped label transform/justification
+render their per-node values while their getters return stylesheet fallbacks;
+and compound hull parents expose a packed polygon reference as `corner-radius`.
+The final pixel scan found three restore observations: resetting node
+`font-weight` moved 24,909 pixels and left 180; scoped `font-style` restoration
+left 169 pixels (bounded at 256) as one scoped restoration limitation; and
+`images-multi` left 624 pixels inside the image body. The font-style and image
+residues, like the font-weight residue, have unlocalized causes. No renderer
+runtime source was changed in this round. See the
 [Round 149 record](plan/rounds/2026-10-18-01-rnd0149-plan-manual-feature-demos-and-golden-coverage-audit.md).
 
 The [12 October interview](plan/rounds/2026-10-12-01-rnd0000-note-bun-documentation-and-table-benchmark-interview.md) scopes three work streams.
@@ -405,9 +412,9 @@ Earlier, round 145 (29 September) was a correctness fix:
 
 | | |
 |---|---|
-| Automated tests | Round 149's focused scene, workflow, harness and schema module checks pass. Its final status-site and full Node/Playwright gates remain pending the golden capture batch; older rounds' recorded test outcomes are in their own records. |
+| Automated tests | Full Node and Bun module gates passed; the final public Bun suite passed. Round 149 status-site modules passed 56/56 and workflow modules 9/9 under both runtimes. Focused workflow browser checks passed 8/8 in Chromium. The renderer and renderer-WebKit projects completed with 262 passes, 232 skips, zero unexpected and zero flaky results; workflow WebKit checks skipped because WebGPU was unavailable. The focused compound-hull spec passed in Chromium and skipped in WebKit for the same adapter limit. The final status build produced 435 files and was opened at 3335; older rounds' recorded outcomes are in their own records. |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | Round 149 expects 107 golden artifacts; the refresh and final current/reference/degrade counts are pending. The feature ledger accounts for 220/220 style properties and 325/326 recursive schema property/value combinations; the one schema-permitted node `text-rotation=autorotate` pair is runtime-rejected because autorotate is edge-only, with a direct test. The ledger includes behavioral/authored evidence and is not a claim of 100% golden pixel coverage. The prior 53-reference exact comparison remains the dated baseline. Older rounds' renderer, gesture, parity and algorithm checks are recorded in their own round files. |
+| Visual regression | The final inventory has 107 reference, current, coverage and degrade records. The `visual` project reported 229 passes and one expected failure for the pre-existing Round 55 compound-routing parity gap (`playwright-tests/lib/routing-scenes.mjs:441`; `playwright-tests/routing.spec.js:66` checks finite geometry separately); it had no skips, unexpected results or flakes. Golden coverage assigns non-default values to 207/220 properties; 13 have no static assignment (four paintable, nine without meaningful single-frame coverage). The reset pass checked 1,701 pairs: 1,600 moved pixels, 46 had value changes without pixel movement, and 55 had unchanged readbacks; 199/207 assigned properties moved pixels in at least one golden. The keyword controls checked 233 cases with 11 semantic exceptions, one scoped font restoration limitation and zero unclassified failures. The manual ledger accounts for all 220 properties and 325/326 recursive schema property/value combinations; the one remaining node `text-rotation=autorotate` pair is runtime-rejected because autorotate is edge-only, with a direct test. These are distinct measures, not a claim of 100% golden pixel coverage. The prior 53-reference exact comparison remains the dated baseline. Older rounds' renderer, gesture, parity and algorithm checks are recorded in their own round files. |
 | Benchmarks | 31 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points · round 82's 41-cluster EM / 500 sparse / 500 degenerate drag p50 for convex controls was 6.967 / 34.558 / 32.088 ms and for concave was 8.462 / 44.534 / 43.144 ms (Node 24.18.0, i9-9900K) |
 | Style parity | v4 accepts 162 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet; round 76 added `text-border-style` and the mid-arrow widths); the rest dropped by decision |
 | Bundle | Built 5 Oct, minified / gzipped: `cytoscape` 1,029,507 / 294,389 bytes; `cytoscape/headless` 617,371 / 190,879 bytes; `cytoscape/headless-gpu` 696,384 / 209,483 bytes. Both slim minified entries stay below the 1,000,000-byte edge budget; every slim raw/gzip pair has a measured ratchet. Import and constant-inlining gates keep the tiers separate and the tables out of minified output. |

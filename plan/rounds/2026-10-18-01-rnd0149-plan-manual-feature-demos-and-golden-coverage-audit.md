@@ -372,7 +372,14 @@ panels (`7e6e92ae`), complete reciprocal workflow routes and controls
 (`865f0d3e`, `85b30418`, `c39194a0`, `da11e13e`), and fill label property and
 keyword coverage (`cd90fe2a`, `90488d68`). The result is compact: 31 visual
 views plus eight selectable workflow contexts share two registry entries and
-one deterministic workflow fixture.
+one deterministic workflow fixture. Commit `11b8be80` aligns the workflow
+query label and progress selector with the browser checks, and skips
+renderer-dependent WebKit assertions before bootstrap when WebGPU is absent.
+Commit `0d986054` records source-derived explanations for zero-pixel and
+unmovable golden resets; the final artifact, pin and manifest slice is
+`54e74b29`. Commit `772c8a7bd` reuses immutable status-plan fixtures in the
+status module tests, and `266699be6` corrects the hull gallery fit and adds
+shape-preserving label-sizing regression coverage.
 
 ### Manual review guide
 
@@ -409,7 +416,7 @@ Partial or remove its recorded restriction.
 | Node geometry, shapes, borders, fill, gradients, ghosts and layers | `features/paint/{nodes,fills,borders,ghosts,layers,outlines}`; `features/shapes/underlays` | `test/modules/feature-scenes.mjs`; canonical visual captures. Only node-supported values are authored. |
 | Edge geometry, caps, routes, loops, arrows and endpoints | `features/edges/{routes,endpoints,radius-arc,radius-influence,loops,taxi}`; `features/arrows/{shapes,scalars}`; main-page arrow overlay | `test/modules/feature-scenes.mjs`; arrow/renderer browser checks and visual captures. Partial overlap/fill semantics remain documented. |
 | Labels and text geometry | `features/labels/{nodes,edges,font-keywords}` | `test/modules/feature-scenes.mjs` and label captures; mapped transform/justification getter limitations are explicit. Generic system font families are manual-only. |
-| Images, raster/SVG, layers and SDF icons | `features/images/layers`; image fixtures in the legacy real-network scenes | Image goldens and renderer checks; fetch/CORS policy is tested as behavior, not inferred from data-URL pixels. The `images-multi` restore residue remains unlocalized. |
+| Images, raster/SVG, layers and SDF icons | `features/images/layers`; image fixtures in the legacy real-network scenes | Image goldens and renderer checks cover image rendering. CORS modes are authored/read back against local data URLs, which do not prove cross-origin fetch policy; no remote-policy claim is made. The `images-multi` restore residue remains unlocalized. |
 | Charts and scale/legend contracts | `features/charts/{palette,heat,bars}`; chart controls and readout | Scene/schema tests and chart captures; numeric `chart-domain` bypass getter/legend mismatch is recorded for a later fix. |
 | Compound hierarchy, hulls and miniature scaling | `features/compounds/{hulls,hulls-exclude,minimums,padding-width,padding-sides,miniature}`; main-page hull overlay | `test/modules/feature-scenes.mjs`, `playwright-tests/compound-hulls.spec.js`, and `miniature-compounds.spec.js`. Original children/edges stay live; aggregate edges and semantic zoom are not promised. |
 | Declarative styles, mappers, bypass and sheet replacement | `features/mappers/scales`; Reset and contextual controls | `test/modules/demo-coverage.mjs`, `schemas.mjs`, `feature-scenes.mjs`, plus existing style/mapping tests. The ledger records authored-vs-resolved and behavioral cases separately. |
@@ -465,19 +472,54 @@ faces (400/700, normal/italic) from HTTP 200 responses;
 `document.fonts.load()` and `font.check()` confirmed all four loaded. The
 files match `@fontsource/open-sans` 5.3.0 Latin assets and are accompanied by
 the OFL license. The status planner copies the nested fonts into the published
-debug mirror. An interim `npm run status` succeeded. The final status build,
-browser opening and status-site module gate remain to be rerun after the
-capture inventory stabilizes. Focused status-site attempts produced no
-diagnostic assertion, so that gate is not counted as passed.
+debug mirror. The final `npm run status` build emitted 435 files (64.5 MiB).
+The published status index, 107-card golden page, debug feature route and
+main-page overlays were opened at port 3335. All four font files returned HTTP
+200 and loaded; the arrow comparison rendered both v3 and v4 panes, and the
+hull overlay's worst-case rounded/include-labels state fit below its controls.
+Status-site modules passed 56/56 under both Node and Bun.
 
-The baseline visual inventory contained 53 golden pairs. The final capture
-suite expects 107 named artifacts; final reference/current/degrade totals and
-the complete suite gates remain pending the active capture batch. The
-published status page also needs one final build/open against that inventory.
-Three generic font-family states (`sans-serif`, `serif`, `monospace`) are
+The baseline visual inventory contained 53 golden pairs. The final inventory
+has 107 reference PNGs, 107 current PNGs, 107 coverage records and 107 degrade
+records. The `visual` Playwright project reported 229 passes and one expected
+failure from the pre-existing Round 55 compound-routing parity gap
+(`playwright-tests/lib/routing-scenes.mjs:441`);
+`playwright-tests/routing.spec.js:66`
+checks finite geometry separately. This gap was not introduced or changed by
+Round 149. There were no skips, unexpected results or flaky results. The full `renderer` and
+`renderer-webkit` projects completed with 262 passes, 232 skips, zero
+unexpected results and zero flaky results (494 total). Chromium had 246
+passes and one platform skip; WebKit had 16 passes and 231 skips, including 8
+workflow skips for unavailable WebGPU. Across the 724 visual/renderer results,
+491 passed, 232 were skipped, and one was the expected pre-existing Round 55
+compound-routing parity gap; there were no unexpected or flaky results. The focused workflow module
+suite passed 9/9 in Node and Bun, and its focused browser suite passed 8/8 in
+Chromium with the 8 WebKit cases skipped for the same adapter limitation. The
+focused golden suite passed 32/32 and the demo-coverage suite passed 7/7 under
+both Node and Bun. The focused compound-hull spec passed in Chromium and
+skipped in WebKit for the unavailable adapter. The final public Bun suite and
+full Node/Bun module gates passed.
+
+The final golden audit covers 207/220 properties with a non-default static
+value. Its 13 remaining property gaps are distinguished explicitly: four
+paintable properties (`nodes/text-transform`, `edges/min-zoomed-font-size`,
+`edges/text-justification`, `edges/text-transform`) still have no static
+golden assignment; nine properties have no meaningful single-frame golden
+(the four transition configuration properties on each group and pointer-only
+`edges/events`). The feature controls and generated manual ledger remain
+separate from this static assignment count. The reset pass checked 1,701
+(golden, property) pairs: 1,600 moved pixels, 46 had value changes without
+pixel movement, and 55 had unchanged readbacks. In 199 of the 207 properties with a
+non-default assignment, at least one golden changed pixels. The keyword
+control pass checked 233 cases with 11 explicit semantic exceptions, one
+scoped font-style restoration limitation, and zero unclassified failures.
+All zero-pixel and unmovable pairs have source-backed map entries. The
+paint-edges/layers restore check passed 2/2 with no exception. The three
+generic font-family states (`sans-serif`, `serif`, `monospace`) are
 intentionally manual-only because they resolve to platform-specific system
 fonts; each carries an explicit golden omission reason. The pinned Open Sans
-states are captured. This record does not claim round closure yet.
+states are captured. The full Node/Bun module gates and final status build,
+page open and record checks passed.
 
 ### Findings held for separate library fixes
 
@@ -501,10 +543,32 @@ records the authored and observed values, and
 `src/style/readers-labels.mts:44,85`; the discrepancy conflicts with the
 documented bypass readback contract at `src/collection.mts:1695`.
 
-The `images-multi` restore control retains a repeatable low-amplitude
-624-pixel residue inside the image body after exact style/readback restoration
-and `pendingImages=0`. Its source has not been localized, so it is an
-unexplained visual residual, not a third confirmed library defect. Physical
+Compound hull parents also return their packed polygon-pool reference as
+`corner-radius`. With the `compounds/hulls` fixture, the public getter for
+`hull-round` reports `7864320.7890625` while its shape is
+`round-convex-hull`. Setting its public `shape` style to `rectangle` returns
+`auto`; setting it back to `round-convex-hull` returns `0`, even though the
+parent bounding box returns to its original dimensions. The stylesheet has
+no corner-radius override and the default is `auto`. The reader special-cases
+only `SHAPE_POLYGON_CUSTOM` before interpreting `NODE_BORDER_GEOM[slot * 4]`
+as a radius (`src/style/readers-nodes.mts:40-54`); compound hull derivation
+stores the polygon record reference in that word
+(`src/store/graph-store/compound.mts:255-262`). This is a third confirmed
+getter defect, separate from normal automatic corner-radius behavior and the
+custom-polygon reader case. No source fix is part of Round 149.
+
+The final visual scan has three pixel observations that need no runtime-source
+change. In `labels/nodes`, resetting `font-weight` through the sheet moved
+24,909 pixels but left a 180-pixel ordinary property-reset residue. The
+separately scoped `font-style=normal` restoration left 169 pixels
+(bounded at 256) after the four pinned Open Sans faces loaded,
+`document.fonts.ready` settled and the getter returned to `normal`; this is
+the single scoped font restoration limitation. The causes of the font-weight,
+font-style and image residues remain unlocalized. The `images-multi` restore retains
+a repeatable 624-pixel residue inside the image body after exact style/readback
+restoration and `pendingImages=0`. These are unresolved visual observations,
+not additional confirmed getter defects.
+Physical
 touchscreen/pinch acceptance remains a device check because the browser suite
 uses mouse or synthetic touch. The runtime panel reports requested
 `rendererWorker` configuration and readiness; the public API does not expose

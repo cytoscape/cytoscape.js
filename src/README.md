@@ -645,13 +645,40 @@ shader over every allocated slot.
   status feature table remains a separate inventory: its rows map to examples,
   widgets, specific automated checks or documented nonvisual reasons, while
   the reviewed Partial limitations remain in force. The visual inventory
-  expects 107 references; its final capture refresh and full gates remain in
-  progress. Three generic font-family states (`sans-serif`, `serif`,
+  has 107 reference PNGs, 107 current PNGs, 107 coverage records and 107
+  degrade records. The `visual` project reported 229 passes and one expected
+  failure for the pre-existing Round 55 compound-routing parity gap
+  (`playwright-tests/lib/routing-scenes.mjs:441`;
+  `playwright-tests/routing.spec.js:66` checks finite geometry
+  separately), with no skips, unexpected results or flakes. Three generic
+  font-family states (`sans-serif`, `serif`,
   `monospace`) are intentionally manual-only because they resolve to
   platform-specific system fonts; their ledger rows carry an explicit golden
   omission reason. The pinned Open Sans states remain in the visual suite.
+  Status-site modules passed 56/56 under both Node and Bun, and the published
+  font assets were confirmed loaded over HTTP in Chromium. The final status
+  build produced 435 files; the status index, 107-card golden page, debug page
+  and main-page arrow/hull overlays were opened and checked. The workflow
+  module suite passed 9/9 under both Node and
+  Bun; its focused browser suite passed 8/8 on Chromium, with eight explicit
+  WebKit skips for the unavailable WebGPU adapter. The full renderer and
+  renderer-WebKit projects completed with 262 passes, 232 skips, zero
+  unexpected results and zero flaky results. The focused hull spec passed on
+  Chromium and skipped on WebKit for the same unavailable-adapter reason. The
+  final public Bun suite and full Node/Bun module gates passed.
 
-  Two getter mismatches were reproduced and recorded for a separate library
+  The golden scan assigns non-default values to 207/220 properties; the 13
+  remaining gaps are four paintable properties without a static assignment
+  and nine properties without meaningful single-frame coverage. It checked
+  1,701 reset pairs (1,600 pixel-moving, 46 value changes without pixel
+  movement, 55 unchanged readbacks); 199
+  of 207 assigned properties moved pixels in at least one golden. The 233
+  keyword-control cases have 11 semantic exceptions, one scoped font
+  restoration limitation and zero unclassified failures. These counts are
+  separate from the manual ledger's 220/220 properties and 325/326 recursive
+  schema property/value combinations.
+
+  Three getter mismatches were reproduced and recorded for a separate library
   fix. A node-level `chart-domain` bypass can update the chart record while
   `style('chart-domain')` and the legend retain the stylesheet domain; the
   reader is in `src/style/readers-nodes.mts:347` and the write in
@@ -659,10 +686,21 @@ shader over every allocated slot.
   `text-transform` and `text-justification`, screenshots show the per-element
   values while getters return stylesheet fallbacks (`src/style/readers-labels.mts:44,85`);
   the authored values and fallback are retained in scene coverage metadata.
-  No runtime source fix is part of Round 149. The `images-multi` restore also
-  retains a repeatable 624-pixel low-amplitude residue after exact style and
-  readback restoration with no pending images; its source is unknown, so it
-  remains a visual residual rather than a confirmed library defect.
+  Compound hull parents also return their packed polygon-pool reference as
+  `corner-radius`: `hull-round` reports `7864320.7890625`, while toggling its
+  public shape to `rectangle` and back returns `auto` then `0` with the
+  original hull bounds restored. The reader special-cases only custom
+  polygons (`src/style/readers-nodes.mts:40-54`), while hull derivation stores
+  the polygon reference in the same word
+  (`src/store/graph-store/compound.mts:255-262`). This is a confirmed third
+  getter defect; no runtime source fix is part of Round 149.
+  The final scan records three restore observations. Resetting `font-weight`
+  in `labels/nodes` moved 24,909 pixels and left 180. Scoped
+  `font-style=normal` restoration left 169 pixels, bounded at 256, after the four pinned
+  Open Sans faces settled; this is the one scoped font restoration limitation.
+  `images-multi` left 624 pixels inside the image body after image loading
+  settled. The causes of all three residue observations are unlocalized; these
+  are visual residuals, not confirmed library defects.
 
   The workflow graph uses deliberately scoped algorithm inputs: Kruskal,
   Hopcroft–Tarjan biconnected components and Karger–Stein use the connected

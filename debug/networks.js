@@ -261,6 +261,23 @@ var networks = {
     layout: { name: 'flow' },
     note: "The same DAG with stage runs grouped under compound parents, every third nested — flow's global compound mode: members contiguous per rank, sibling boxes disjoint, outsiders clear of the walls.",
   },
+  features: {
+    desc: 'Visual feature scenes',
+    category: 'feature',
+    featureScenes: true,
+    note: 'Small deterministic comparisons for implemented style, rendering, chart, image and compound features. Choose a family and view below; each keeps a visible baseline beside the changed value.',
+  },
+  workflows: {
+    desc: 'API and interaction workflows',
+    category: 'feature',
+    generated: 'workflow-demo',
+    workflowDemo: true,
+    nodes: 8,
+    edges: 8,
+    labelKey: 'label',
+    layout: { name: 'preset' },
+    note: 'A fixed directed weighted graph with a cycle, branch, compound parent and a separate x/y component. Workflow panels exercise algorithms, queries, updates, animation, gestures, export and renderer lifecycle against the same IDs.',
+  },
   gen: {
     desc: 'Random generated (?gen=NxM)',
     nodes: '?',

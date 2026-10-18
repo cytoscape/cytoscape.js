@@ -37,17 +37,28 @@ What it deliberately does *not* check is how any of it looks.  That is what
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '../..');
 const DEBUG = join(ROOT, 'debug');
+const FEATURE_SCENE_SCRIPTS = [
+  'feature-scenes-paint',
+  'feature-scenes-graph',
+  'feature-scenes-labels',
+  'feature-scenes-charts',
+  'feature-scenes-compounds',
+  'feature-scenes',
+];
 
 /** Load one of the harness's browser globals as a script. */
 const loadGlobal = (name) => {
-  const src = readFileSync(join(DEBUG, `${name}.js`), 'utf8');
   // the harness's export hook is `if( module && module.exports )`, so the
   // placeholder has to be truthy
   // TextDecoder is a browser global the harness uses to decode packed ids;
   // a bare vm context does not have it, and its absence looks like a code bug
   const ctx = createContext({ module: { exports: {} }, console, TextDecoder });
+  const scripts =
+    name === 'feature-scenes' ? FEATURE_SCENE_SCRIPTS : [`${name}`];
 
-  runInContext(src, ctx);
+  for (const script of scripts) {
+    runInContext(readFileSync(join(DEBUG, `${script}.js`), 'utf8'), ctx);
+  }
 
   return ctx.module.exports;
 };
@@ -56,12 +67,19 @@ const networks = loadGlobal('networks');
 const fixtures = loadGlobal('fixtures');
 const styles = loadGlobal('styles');
 const loadError = loadGlobal('load-error');
+const featureScenes = loadGlobal('feature-scenes');
 
 /** The path the browser would fetch, resolved against the repo root. */
 const fixturePath = (url) => resolve(DEBUG, url);
 
 /** A network's elements, from disk or from the generator. */
 const elementsFor = (id, def) => {
+  if (def.featureScenes) {
+    const family = featureScenes.catalog[0];
+
+    return featureScenes.create(family.id, family.views[0].id).elements;
+  }
+
   if (def.generated) {
     // the generators are random; a small size keeps the spec quick and still
     // exercises every branch (parents, nesting, compound loops)
@@ -84,7 +102,7 @@ describe('debug harness (round 43)', function () {
 
   describe('every fixture resolves', function () {
     for (const [id, def] of entries) {
-      if (def.generated) {
+      if (def.generated || def.featureScenes) {
         continue;
       }
 
@@ -100,6 +118,9 @@ describe('debug harness (round 43)', function () {
   describe('every sheet compiles against its own fixture', function () {
     for (const [id, def] of entries) {
       it(id, { timeout: 120000 }, function () {
+        if (def.featureScenes) {
+          return;
+        }
 
         const elements = elementsFor(id, def);
 
@@ -119,6 +140,30 @@ describe('debug harness (round 43)', function () {
           cy.destroy();
         }
       });
+    }
+  });
+
+  describe('curated feature scene sheets (round 149)', function () {
+    for (const family of featureScenes.catalog) {
+      for (const view of family.views) {
+        it(`${family.id}/${view.id}`, { timeout: 120000 }, function () {
+          const scene = featureScenes.create(family.id, view.id);
+          const cy = cytoscape({
+            ...scene.options,
+            elements: scene.elements,
+            style: scene.style,
+          });
+
+          expect(
+            cy.nodes().length,
+            `${family.id}/${view.id}: no nodes`,
+          ).to.be.greaterThan(0);
+          expect(scene.familyId).to.equal(family.id);
+          expect(scene.viewId).to.equal(view.id);
+          expect(scene.coverage).to.be.an('object');
+          cy.destroy();
+        });
+      }
     }
   });
 
@@ -162,49 +207,52 @@ describe('debug harness (round 43)', function () {
     const LONG = 20;
 
     for (const [id, def] of entries) {
-      if (def.generated) {
+      if (def.generated || def.featureScenes) {
         continue;
       }
 
-      it(`${id}: a sheet for long labels wraps them`, { timeout: 120000 }, function () {
+      it(
+        `${id}: a sheet for long labels wraps them`,
+        { timeout: 120000 },
+        function () {
+          const elements = elementsFor(id, def);
+          const key = def.labelKey || 'id';
+          const lengths = elements.nodes
+            .map((n) => String(n.data[key] ?? '').length)
+            .sort((a, b) => a - b);
+          const p90 = lengths[Math.floor((lengths.length - 1) * 0.9)];
+          const sheet = styles.sheet('production', id, elements, def);
 
-        const elements = elementsFor(id, def);
-        const key = def.labelKey || 'id';
-        const lengths = elements.nodes
-          .map((n) => String(n.data[key] ?? '').length)
-          .sort((a, b) => a - b);
-        const p90 = lengths[Math.floor((lengths.length - 1) * 0.9)];
-        const sheet = styles.sheet('production', id, elements, def);
+          if (p90 <= LONG) {
+            return; // short labels: a single line is right
+          }
 
-        if (p90 <= LONG) {
-          return; // short labels: a single line is right
-        }
-
-        expect(
-          sheet.nodes['text-wrap'],
-          `${id}: p90 label ${p90} chars`,
-        ).to.equal('wrap');
-        expect(sheet.nodes['text-max-width'], `${id}: no wrap width`).to.be.a(
-          'number',
-        );
-
-        // a label with no whitespace at all cannot fold at whitespace:
-        // when that is what most long labels are (package paths), the
-        // sheet needs the anywhere rule; a gene-set name or two among
-        // sentences does not
-        const long = elements.nodes
-          .map((n) => String(n.data[key] ?? ''))
-          .filter((text) => text.length > LONG);
-        const unbreakable =
-          long.filter((text) => !/\s/.test(text)).length > long.length / 2;
-
-        if (unbreakable) {
           expect(
-            sheet.nodes['text-overflow-wrap'],
-            `${id}: paths need anywhere`,
-          ).to.equal('anywhere');
-        }
-      });
+            sheet.nodes['text-wrap'],
+            `${id}: p90 label ${p90} chars`,
+          ).to.equal('wrap');
+          expect(sheet.nodes['text-max-width'], `${id}: no wrap width`).to.be.a(
+            'number',
+          );
+
+          // a label with no whitespace at all cannot fold at whitespace:
+          // when that is what most long labels are (package paths), the
+          // sheet needs the anywhere rule; a gene-set name or two among
+          // sentences does not
+          const long = elements.nodes
+            .map((n) => String(n.data[key] ?? ''))
+            .filter((text) => text.length > LONG);
+          const unbreakable =
+            long.filter((text) => !/\s/.test(text)).length > long.length / 2;
+
+          if (unbreakable) {
+            expect(
+              sheet.nodes['text-overflow-wrap'],
+              `${id}: paths need anywhere`,
+            ).to.equal('anywhere');
+          }
+        },
+      );
     }
 
     it('control: the property is data-driven — em-desktop and reactome are the long ones', function () {
@@ -254,12 +302,11 @@ describe('debug harness (round 43)', function () {
       Array.isArray(v) ? v.join('') : v == null ? undefined : String(v);
 
     for (const [id, def] of entries) {
-      if (def.generated || def.derive != null) {
+      if (def.generated || def.featureScenes || def.derive != null) {
         continue;
       }
 
       it(`${id}: every data column survives`, { timeout: 180000 }, function () {
-
         const before = elementsFor(id, def);
         const after = roundTrip(before);
 
@@ -631,15 +678,14 @@ describe('debug harness (round 43)', function () {
       // fall to their fallbacks without affecting it.
       for (const [id, def] of entries) {
         it(id, { timeout: 120000 }, function () {
+          if (def.featureScenes) {
+            return;
+          }
 
           // real elements, because the demo sheets derive their case-clause
           // lists from the fixture's data — the *instance* below stays tiny
-          const sheet = styles.sheet(
-            'production',
-            id,
-            elementsFor(id, def),
-            def,
-          );
+          const elements = elementsFor(id, def);
+          const sheet = styles.sheet('production', id, elements, def);
           const cy = cytoscape({
             elements: {
               nodes: [{ data: { id: 'n1' } }, { data: { id: 'n2' } }],
@@ -1069,48 +1115,53 @@ describe('debug harness (round 43)', function () {
       },
     };
 
-    it("eh/ed/bc/ab route with v3's arrays, not the family defaults", { timeout: 120000 }, function () {
+    it(
+      "eh/ed/bc/ab route with v3's arrays, not the family defaults",
+      { timeout: 120000 },
+      function () {
+        const def = networks['v3-default'];
+        const elements = elementsFor('v3-default', def);
+        const sheet = styles.sheet('production', 'v3-default', elements, def);
 
-      const def = networks['v3-default'];
-      const elements = elementsFor('v3-default', def);
-      const sheet = styles.sheet('production', 'v3-default', elements, def);
+        expect(
+          sheet.bypasses,
+          'the v3-default sheet lost its bypasses section',
+        ).to.have.keys(['ab', 'bc', 'ed', 'eh']);
 
-      expect(
-        sheet.bypasses,
-        'the v3-default sheet lost its bypasses section',
-      ).to.have.keys(['ab', 'bc', 'ed', 'eh']);
+        const cy = cytoscape({
+          elements: { nodes: elements.nodes, edges: elements.edges },
+          style: sheet,
+        });
 
-      const cy = cytoscape({
-        elements: { nodes: elements.nodes, edges: elements.edges },
-        style: sheet,
-      });
+        cy.layout({
+          name: 'grid',
+          cols: 3,
+          fit: false,
+          boundingBox: { x1: 0, y1: 0, w: 1200, h: 600 },
+        }).run();
 
-      cy.layout({
-        name: 'grid',
-        cols: 3,
-        fit: false,
-        boundingBox: { x1: 0, y1: 0, w: 1200, h: 600 },
-      }).run();
+        for (const [id, want] of Object.entries(ROUTES)) {
+          const e = cy.$id(id);
+          const pts = want.ctrl ? e.controlPoints() : e.segmentPoints();
+          const kind = want.ctrl ? 'controlPoints' : 'segmentPoints';
+          const wantPts = want.ctrl ?? want.seg;
 
-      for (const [id, want] of Object.entries(ROUTES)) {
-        const e = cy.$id(id);
-        const pts = want.ctrl ? e.controlPoints() : e.segmentPoints();
-        const kind = want.ctrl ? 'controlPoints' : 'segmentPoints';
-        const wantPts = want.ctrl ?? want.seg;
+          expect(pts, `${id}.${kind}()`).to.have.length(wantPts.length);
+          wantPts.forEach((p, i) =>
+            closeTo(pts[i], p, `${id}.${kind}()[${i}]`),
+          );
 
-        expect(pts, `${id}.${kind}()`).to.have.length(wantPts.length);
-        wantPts.forEach((p, i) => closeTo(pts[i], p, `${id}.${kind}()[${i}]`));
+          closeTo(e.midpoint(), want.mid, `${id}.midpoint()`);
 
-        closeTo(e.midpoint(), want.mid, `${id}.midpoint()`);
-
-        if (want.src) {
-          closeTo(e.sourceEndpoint(), want.src, `${id}.sourceEndpoint()`);
-          closeTo(e.targetEndpoint(), want.tgt, `${id}.targetEndpoint()`);
+          if (want.src) {
+            closeTo(e.sourceEndpoint(), want.src, `${id}.sourceEndpoint()`);
+            closeTo(e.targetEndpoint(), want.tgt, `${id}.targetEndpoint()`);
+          }
         }
-      }
 
-      cy.destroy();
-    });
+        cy.destroy();
+      },
+    );
   });
 
   describe('the dev server the page expects', function () {

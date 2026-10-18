@@ -884,6 +884,96 @@ var fixtures = (function () {
     return { nodes: nodes, edges: edges, hasPositions: true };
   }
 
+  // Round 149: the shared deterministic model behind API/interaction demos.
+  // Every algorithm and workflow sees the same leaf-only edges, numeric
+  // columns, cycle, branch, disconnected pair and explicit compound parent.
+  function workflowDemoFixture() {
+    var nodes = [
+      {
+        id: 'p',
+        parent: null,
+        x: -205,
+        y: -110,
+        score: 0,
+        kind: 'parent',
+        label: 'compound p',
+      },
+      {
+        id: 'a',
+        parent: 'p',
+        x: -270,
+        y: -100,
+        score: 8,
+        kind: 'source',
+        label: 'A · alpha',
+      },
+      {
+        id: 'b',
+        parent: 'p',
+        x: -155,
+        y: -100,
+        score: 6,
+        kind: 'member',
+        label: 'B · beta',
+      },
+      { id: 'c', x: -35, y: -45, score: 9, kind: 'branch', label: 'C · gamma' },
+      { id: 'd', x: 100, y: -80, score: 5, kind: 'branch', label: 'D · delta' },
+      { id: 'e', x: 225, y: 5, score: 3, kind: 'sink', label: 'E · epsilon' },
+      {
+        id: 'x',
+        x: -35,
+        y: 185,
+        score: 2,
+        kind: 'isolated',
+        label: 'X',
+      },
+      {
+        id: 'y',
+        x: 100,
+        y: 185,
+        score: 4,
+        kind: 'isolated',
+        label: 'Y',
+      },
+    ].map(function (node) {
+      var data = Object.assign({}, node);
+
+      delete data.parent;
+
+      if (node.parent != null) {
+        data.parent = node.parent;
+      }
+
+      return {
+        data: data,
+        position: { x: node.x, y: node.y },
+      };
+    });
+    var edges = [
+      ['ab', 'a', 'b', 1],
+      ['bc', 'b', 'c', 2],
+      ['ca', 'c', 'a', 3],
+      ['cd', 'c', 'd', 1],
+      ['bd', 'b', 'd', 4],
+      ['de', 'd', 'e', 2],
+      ['xy', 'x', 'y', 3],
+      ['yx', 'y', 'x', 3],
+    ].map(function (edge) {
+      return {
+        data: {
+          id: edge[0],
+          source: edge[1],
+          target: edge[2],
+          weight: edge[3],
+          kind: edge[0] === 'xy' || edge[0] === 'yx' ? 'disconnected' : 'path',
+          label: edge[3],
+        },
+      };
+    });
+
+    return { nodes: nodes, edges: edges, hasPositions: true };
+  }
+
   function generate(kind, spec) {
     if (kind === 'v3-default') {
       return v3DefaultFixture();
@@ -911,6 +1001,9 @@ var fixtures = (function () {
     }
     if (kind === 'workflow-dag-clustered') {
       return generateWorkflowDag(spec, true);
+    }
+    if (kind === 'workflow-demo') {
+      return workflowDemoFixture();
     }
     if (kind === 'greek-gods') {
       return greekGodsFixture();

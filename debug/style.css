@@ -9,6 +9,31 @@ body { font: 14pt helvetica; width: 100%; -webkit-text-size-adjust: 100%; margin
 #commands select, #commands textarea { max-width: 100%; }
 #commands .note { font-size: 0.95em; color: #444; margin: 0.35em 0; }
 #stats { position: absolute; left: 0.5em; bottom: 0.5em; z-index: 4; font: 11px monospace; background: rgba(255, 255, 255, 0.85); padding: 0.5em; border-radius: 4px; white-space: pre; pointer-events: none; }
+#contextual-stats-label, #contextual-stats { display: none; }
+body.contextual-demo-active #contextual-stats-label { display: block; margin-top: 0.5em; font-size: 0.75em; font-weight: bold; }
+body.contextual-demo-active #contextual-stats { display: block; min-width: 0; max-width: 100%; }
+body.contextual-demo-active #stats { position: static; z-index: auto; max-width: 100%; padding: 0.4em; margin: 0.25em 0 0; white-space: pre-wrap; overflow-wrap: anywhere; background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(0, 0, 0, 0.15); pointer-events: auto; }
+#gallery-overlay { position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; background: #fff; }
+#gallery-overlay[hidden] { display: none; }
+#gallery-overlay-bar { min-height: 2.5em; display: flex; align-items: center; gap: 1em; padding: 0.25em 0.75em; box-sizing: border-box; background: #eee; border-bottom: 1px solid #aaa; font-size: 0.8em; }
+#gallery-overlay-bar strong { margin-right: auto; }
+#gallery-frame { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; }
+#contextual-tools { border: 1px solid rgba(0, 0, 0, 0.2); padding: 0.35em; margin: 0.4em 0; background: rgba(255, 255, 255, 0.72); }
+#contextual-tools[hidden] { display: none; }
+#contextual-tools .note { white-space: pre-line; }
+#contextual-controls { display: grid; gap: 0.35em; }
+#contextual-controls, #contextual-controls * { min-width: 0; box-sizing: border-box; }
+#contextual-controls input, #contextual-controls select, #contextual-controls textarea { max-width: 100%; }
+#contextual-controls label, .feature-scene-control, .feature-workflow-controls label { display: flex; flex-direction: column; align-items: stretch; gap: 0.2em; max-width: 100%; overflow-wrap: anywhere; }
+.feature-scene-controls, .feature-workflow-controls { display: grid; gap: 0.45em; min-width: 0; max-width: 100%; }
+.feature-scene-readout, .feature-scene-full-readout, .feature-workflow-output, .feature-workflow-table, .feature-workflow-preview { min-width: 0; max-width: 100%; overflow-wrap: anywhere; white-space: pre-wrap; }
+.feature-scene-full-readout, .feature-workflow-output { display: block; max-height: 12em; overflow: auto; }
+.feature-scene-full-readout pre, .feature-workflow-output pre, .feature-workflow-controls pre { max-width: 100%; max-height: 12em; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.feature-workflow-table { display: block; overflow-x: auto; }
+.feature-workflow-controls img, .feature-workflow-preview img { max-width: 100%; height: auto; }
+#gallery-links { border-top: 1px solid rgba(0, 0, 0, 0.15); margin-top: 0.7em; padding-top: 0.2em; }
+#gallery-links button { max-width: 100%; }
+.feature-scenes-active #style-control { display: none; }
 .commands-hidden #commands { display: none; }
 .commands-hidden #cytoscape { right: 0; }
 #commands-show-area { position: absolute; right: 0.5em; top: 0.5em; z-index: 2; }

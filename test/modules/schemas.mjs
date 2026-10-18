@@ -9,6 +9,7 @@ import {
   SCHEMA_DIALECT,
   SCHEMA_DIR,
   debugNetworks,
+  fixtureDocuments,
   loadDebugGlobal,
   describeErrors,
   loadSchemas,
@@ -1631,6 +1632,20 @@ describe('schemas: the options envelope (79.3)', () => {
 describe('schemas: the fixture run the status page reports (79.4)', () => {
   it('validates every fixture document, every schema exercised, none failing', () => {
     const run = validationRun(SCHEMAS, NETWORKS);
+    const sceneCatalog = loadDebugGlobal('feature-scenes').catalog;
+    const featureDocuments = [...fixtureDocuments(NETWORKS)].filter((row) =>
+      row.what.startsWith('features/'),
+    );
+    const featureViews = new Set(
+      featureDocuments
+        .map((row) => row.what.match(/^features\/([^:]+):/i)?.[1])
+        .filter(Boolean),
+    );
+    const expectedFeatureViews = sceneCatalog.flatMap((family) =>
+      family.views.map((view) => `${family.id}/${view.id}`),
+    );
+
+    expect([...featureViews].sort()).to.deep.equal(expectedFeatureViews.sort());
 
     expect(run.total).to.be.at.least(100);
 

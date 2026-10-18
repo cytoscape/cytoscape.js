@@ -25,6 +25,14 @@
       <div id="bb"></div>
       <div id="minimap"><div id="minimap-cy"></div><div id="minimap-view"></div></div>
       <div id="stats"></div>
+      <div id="gallery-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="gallery-title">
+        <div id="gallery-overlay-bar">
+          <strong id="gallery-title">Feature gallery</strong>
+          <span>Press Escape to close</span>
+          <button id="gallery-close" type="button">Close</button>
+        </div>
+        <iframe id="gallery-frame" title="Feature gallery"></iframe>
+      </div>
 
       <div id="commands-show-area">
         <button id="show-commands">+</button>
@@ -35,11 +43,26 @@
         <button id="hide-commands">-</button>
 
         <h1>Cytoscape.js v4<br/>WebGPU demo</h1>
-        <p class="note"><a href="arrow-gallery.html">Arrow-head gallery</a> — every head, v3 beside v4 (PLAN.md item 72)</p>
+        <p class="note"><a href="arrow-gallery.html">Arrow-head gallery</a> — standalone v3/v4 comparison.</p>
 
         <h2>Network</h2>
         <select id="network-select"></select>
         <p id="network-note" class="note"></p>
+        <section id="contextual-tools" hidden>
+          <h2 id="contextual-title">Feature controls</h2>
+          <p id="contextual-purpose" class="note"></p>
+          <p id="contextual-expected" class="note"></p>
+          <div id="contextual-controls"></div>
+          <button id="reset-scene-button" type="button">Reset scene</button>
+          <div id="contextual-stats-label">Renderer stats</div>
+          <div id="contextual-stats"></div>
+        </section>
+        <section id="gallery-links">
+          <h2>Focused comparisons</h2>
+          <button id="open-arrow-gallery" type="button">Arrow comparison — v3 / v4</button>
+          <button id="open-hull-gallery" type="button">Compound hull controls</button>
+          <p class="note">Open either gallery here without leaving the main harness. Arrow heads stay side by side across the two renderers; hull controls expose all three hull shapes and endpoint readouts.</p>
+        </section>
         <section id="chart-demo" hidden>
           <h2>Application chart legend</h2>
           <p class="note">Radial heat encodes each gene set's normalized enrichment score (NES). All nodes share the live domain; the first node uses an explicit scale override and still contributes its base value.</p>
@@ -51,7 +74,7 @@
           <p id="chart-domain-status" class="note"></p>
           <button id="chart-extreme-button" type="button">Add a live NES extreme</button>
         </section>
-        <div>
+        <div id="style-control">
           <label>Style:
             <select id="style-select">
               <option value="production">Production (hand-authored v4)</option>
@@ -372,6 +395,18 @@
       <script src="fixtures.js"></script>
       <script src="load-error.js"></script>
       <script src="styles.js"></script>
+      <script src="feature-scenes-paint.js"></script>
+      <script src="feature-scenes-graph.js"></script>
+      <script src="feature-scenes-labels.js"></script>
+      <script src="feature-scenes-charts.js"></script>
+      <script src="feature-scenes-compounds.js"></script>
+      <script src="feature-scenes.js"></script>
+      <script src="workflow-ui.js"></script>
+      <script src="workflow-algorithms.js"></script>
+      <script src="workflow-panels.js"></script>
+      <script src="workflow-visual-panels.js"></script>
+      <script src="workflow-runtime-panels.js"></script>
+      <script src="feature-workflows.js"></script>
       <script src="layout-config.js"></script>
       <script src="airiness.js"></script>
       <script src="layout-options.js"></script>

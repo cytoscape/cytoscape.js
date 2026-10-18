@@ -693,6 +693,72 @@ var styles = (function () {
     });
   }
 
+  function workflowDemo(elements, def) {
+    return {
+      nodes: {
+        width: { data: 'score', domain: [0, 9], range: [30, 52], fallback: 36 },
+        height: {
+          data: 'score',
+          domain: [0, 9],
+          range: [30, 52],
+          fallback: 36,
+        },
+        'background-color': byData(
+          'kind',
+          {
+            source: '#d8e9fb',
+            member: '#b8d5f0',
+            branch: '#f2d6a0',
+            sink: '#cfebd6',
+            isolated: '#e3e3eb',
+          },
+          '#d8e9fb',
+        ),
+        'border-width': onSelected(4, 1),
+        'border-color': SELECT_BLUE,
+        label: { data: 'label' },
+        'font-size': 11,
+        color: '#182331',
+        'text-valign': 'center',
+        'text-outline-width': 2,
+        'text-outline-color': '#fff',
+      },
+      edges: {
+        width: { data: 'weight', domain: [1, 4], range: [2, 5], fallback: 2 },
+        'line-color': withSelected(
+          byData(
+            'kind',
+            { path: '#536b82', disconnected: '#9b7fa8' },
+            '#536b82',
+          ),
+        ),
+        opacity: 0.9,
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': byData(
+          'kind',
+          { path: '#536b82', disconnected: '#9b7fa8' },
+          '#536b82',
+        ),
+        'arrow-scale': 0.8,
+        label: { data: 'weight' },
+        'font-size': 9,
+        color: '#303944',
+        'text-outline-width': 2,
+        'text-outline-color': '#fff',
+      },
+      parents: {
+        padding: 18,
+        'background-color': '#cedff0',
+        'background-opacity': 0.48,
+        'border-width': 2,
+        'border-color': '#5b7c9d',
+        label: { data: 'label' },
+        'font-size': 11,
+        'text-valign': 'top',
+      },
+    };
+  }
+
   // Round 124.6: the Greek-gods scene — the reference picture: levels
   // as columns (flow rightward), one trunk per family in the gap
   // (`taxi-track: family`), the dark2 scheme per family over the edge's
@@ -1250,6 +1316,7 @@ var styles = (function () {
     compound: generated,
     'workflow-dag': workflowDag,
     'workflow-dag-clustered': workflowDag,
+    workflows: workflowDemo,
     'greek-gods': greekGods,
     'plan-deps': planDeps,
     'npm-deps': workflowDag,

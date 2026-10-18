@@ -93,15 +93,27 @@ export const describeErrors = (errors, max = 3) =>
 // -- the fixture supply --
 
 const DEBUG = join(ROOT, 'debug');
+const FEATURE_SCENE_SCRIPTS = [
+  'feature-scenes-paint',
+  'feature-scenes-graph',
+  'feature-scenes-labels',
+  'feature-scenes-charts',
+  'feature-scenes-compounds',
+  'feature-scenes',
+];
 
 /** One of the debug harness's browser globals, loaded as a script. */
 export const loadDebugGlobal = (name) => {
-  const src = readFileSync(join(DEBUG, `${name}.js`), 'utf8');
   // the harness's export hook is `if( module && module.exports )`; the
   // harness decodes packed ids with TextDecoder, a browser global
   const ctx = createContext({ module: { exports: {} }, console, TextDecoder });
 
-  runInContext(src, ctx);
+  const scripts =
+    name === 'feature-scenes' ? FEATURE_SCENE_SCRIPTS : [`${name}`];
+
+  for (const script of scripts) {
+    runInContext(readFileSync(join(DEBUG, `${script}.js`), 'utf8'), ctx);
+  }
 
   return ctx.module.exports;
 };
@@ -115,11 +127,18 @@ export const loadDebugGlobal = (name) => {
 export function* debugNetworks() {
   const networks = loadDebugGlobal('networks');
   const fixtures = loadDebugGlobal('fixtures');
+  const featureScenes = loadDebugGlobal('feature-scenes');
 
   for (const [id, def] of Object.entries(networks)) {
     let elements;
+    let scene;
 
-    if (def.generated) {
+    if (def.featureScenes) {
+      const family = featureScenes.catalog[0];
+
+      scene = featureScenes.create(family.id, family.views[0].id);
+      elements = scene.elements;
+    } else if (def.generated) {
       elements = fixtures.generate(def.generated, '200x400');
     } else {
       const json = JSON.parse(readFileSync(resolve(DEBUG, def.url), 'utf8'));
@@ -130,7 +149,7 @@ export function* debugNetworks() {
       );
     }
 
-    yield { id, def, elements };
+    yield { id, def, elements, scene };
   }
 }
 
@@ -153,10 +172,60 @@ export const LAYOUT_UI_STATES = [
  */
 export function* fixtureDocuments(networks = [...debugNetworks()]) {
   const styles = loadDebugGlobal('styles');
+  const featureScenes = loadDebugGlobal('feature-scenes');
   const layoutConfig = loadDebugGlobal('layout-config');
   const panel = loadDebugGlobal('layout-options');
 
   for (const { id, def, elements } of networks) {
+    if (def.featureScenes) {
+      // The main page uses curated scene sheets directly; these authored raw
+      // definitions include meaningful element flags and must not be
+      // normalized through the fetched-fixture converter.
+      for (const family of featureScenes.catalog) {
+        for (const view of family.views) {
+          const scene = featureScenes.create(family.id, view.id);
+          const sceneElements = scene.elements;
+          const what = `features/${family.id}/${view.id}`;
+
+          yield {
+            file: 'elements.schema.json',
+            what: `${what}: elements`,
+            doc: sceneElements,
+          };
+          yield {
+            file: 'element.schema.json',
+            what: `${what}: a node`,
+            doc: sceneElements.nodes[0],
+          };
+
+          if (sceneElements.edges.length > 0) {
+            yield {
+              file: 'element.schema.json',
+              what: `${what}: an edge`,
+              doc: sceneElements.edges[0],
+            };
+          }
+
+          yield {
+            file: 'stylesheet.schema.json',
+            what: `${what}: authored sheet`,
+            doc: scene.style,
+          };
+          yield {
+            file: 'cytoscape-options.schema.json',
+            what: `${what}: page options`,
+            doc: {
+              ...scene.options,
+              elements: sceneElements,
+              style: scene.style,
+            },
+          };
+        }
+      }
+
+      continue;
+    }
+
     yield {
       file: 'elements.schema.json',
       what: `${id}: elements`,

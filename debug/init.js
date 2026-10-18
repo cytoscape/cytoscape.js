@@ -159,8 +159,28 @@ const paramDefs = {
     params[p] = urlParams.get(p) || paramDefs[p].default;
   }
 
+  // Feature scenes share one route without expanding the network dropdown
+  // into a separate entry for every view.  These are owned by the contextual
+  // scene modules, so their controls can add them after cy is ready.
+  for (const p of ['scene', 'view', 'rendererWorker', 'gallery']) {
+    params[p] = urlParams.get(p) || '';
+  }
+
+  // Feature and workflow controls own their query keys so a reload restores
+  // the same focused values.  Keep unknown keys in the shared params object
+  // instead of silently dropping them at the harness boundary.
+  for (const [key, value] of urlParams.entries()) {
+    if (!Object.hasOwn(params, key)) {
+      params[key] = value;
+    }
+  }
+
   console.log('params', params);
+  window.debugParams = params;
   $('#cytoscape').style.backgroundColor = params.bgcolor;
+  const statsElement = $('#stats');
+  const statsHome = document.createComment(' renderer stats home ');
+  statsElement.after(statsHome);
 
   // The control sections (view.js, layout.js, …) load after this file and need
   // the core, which only exists once the fixture has been fetched.  Anything
@@ -175,6 +195,59 @@ const paramDefs = {
       pending.push(fn);
     }
   };
+
+  // Curated scene definitions already match the library's element schema.
+  // Keep per-element state (collapsed/locked/etc.) intact; the fetched-file
+  // converter is intentionally lossy for its own wire/legacy boundary.
+  function sceneElements(elements) {
+    const list = Array.isArray(elements)
+      ? elements
+      : (elements?.nodes || []).concat(elements?.edges || []);
+    const nodes = Array.isArray(elements)
+      ? list.filter(
+          (element) =>
+            element.data?.source == null || element.data?.target == null,
+        )
+      : elements?.nodes || [];
+    const edges = Array.isArray(elements)
+      ? list.filter(
+          (element) =>
+            element.data?.source != null && element.data?.target != null,
+        )
+      : elements?.edges || [];
+
+    return {
+      ...(Array.isArray(elements) ? {} : elements),
+      nodes,
+      edges,
+      hasPositions:
+        !Array.isArray(elements) && elements?.hasPositions != null
+          ? elements.hasPositions
+          : nodes.some((node) => node.position != null),
+    };
+  }
+
+  function replaceContextRoute(updates) {
+    const next = new URLSearchParams(window.location.search);
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (value == null || value === '') {
+        next.delete(key);
+        params[key] = '';
+      } else {
+        next.set(key, String(value));
+        params[key] = String(value);
+      }
+    }
+
+    const query = next.toString();
+
+    window.history.replaceState(
+      null,
+      '',
+      window.location.pathname + (query ? `?${query}` : ''),
+    );
+  }
 
   // -- the status line --
   //
@@ -199,10 +272,11 @@ const paramDefs = {
 
   // -- loading --
 
-  function loadNetwork(gpuElements, networkID, def) {
+  function loadNetwork(gpuElements, networkID, def, scene) {
     console.time('cytoscape init');
 
-    let style = styles.sheet(params.style, networkID, gpuElements, def);
+    let style =
+      scene?.style ?? styles.sheet(params.style, networkID, gpuElements, def);
 
     if (params.labels !== 'true') {
       // the checkbox is a plain on/off over whatever the sheet declares — it
@@ -271,7 +345,10 @@ const paramDefs = {
       );
     }
 
+    const sceneOptions = scene?.options || {};
+
     cy = cytoscape({
+      ...sceneOptions,
       container: $('#cytoscape'),
       elements: progressive ? undefined : elements,
       style: style,
@@ -281,6 +358,7 @@ const paramDefs = {
         ? undefined
         : def.layout || { name: 'grid' },
       renderer: {
+        ...sceneOptions.renderer,
         edgeWidthFloor: parseFloat(params.edgeWidthFloor),
         nodeLodPx: parseFloat(params.nodeLodPx),
         hidePx: parseFloat(params.hidePx),
@@ -288,6 +366,7 @@ const paramDefs = {
         labelMinPx: parseFloat(params.labelMinPx),
         renderScaleMin: parseFloat(params.renderScaleMin),
         renderScaleMax: parseFloat(params.renderScaleMax),
+        worker: params.rendererWorker === 'true',
       },
     });
 
@@ -303,7 +382,7 @@ const paramDefs = {
     window.currentStyle = style;
     // the fixture's definition (120): the combo layout reads its
     // signed field off it
-    window.currentNetwork = network;
+    window.currentNetwork = def;
 
     // The positions Preset restores (114.7): a snapshot taken here,
     // synchronously — the factory runs the load-time layout before it
@@ -384,6 +463,15 @@ const paramDefs = {
           }),
         );
       });
+
+    // A route-specific panel is mounted only for its matching family.  A
+    // scene/view change reloads with a shareable URL; pagehide calls the
+    // returned disposer before the old controls lose their core.
+    if (networkID === 'features' || networkID === 'workflows') {
+      cy.ready
+        .then(() => mountContextualControls(scene, networkID))
+        .catch(() => {});
+    }
 
     cy.on('error', (e, message) => {
       console.error('gpu error', message);
@@ -630,9 +718,9 @@ const paramDefs = {
    * reported it as a broken fixture — and only for the networks that load from
    * a fixture, which is why the binary ones looked uniquely broken.
    */
-  function start(gpuElements) {
+  function start(gpuElements, scene) {
     try {
-      loadNetwork(gpuElements, networkID, network);
+      loadNetwork(gpuElements, networkID, network, scene);
     } catch (err) {
       console.error(err);
       showFatal(
@@ -644,15 +732,48 @@ const paramDefs = {
     }
   }
 
-  if (network.generated) {
+  if (network.featureScenes) {
+    const catalog = window.featureScenes?.catalog || [];
+    const family =
+      catalog.find((entry) => entry.id === params.scene) || catalog[0];
+    const view =
+      family?.views?.find((entry) => entry.id === params.view) ||
+      family?.views?.[0];
+
+    if (family == null || typeof window.featureScenes?.create !== 'function') {
+      showFatal('Feature scene catalog did not load.');
+    } else {
+      try {
+        const scene = window.featureScenes.create(family.id, view.id, params);
+
+        replaceContextRoute({ scene: scene.familyId, view: scene.viewId });
+        start(sceneElements(scene.elements), scene);
+      } catch (err) {
+        console.error(err);
+        showFatal(`Feature scene failed to build: ${err.message || err}`);
+      }
+    }
+  } else if (network.generated) {
     // the generated scenes take a derivation as the fetched ones do
     // (125.10: the workflow DAGs' source-band edge colour)
-    start(
-      fixtures.derive(
-        network.derive,
-        fixtures.generate(network.generated, params.gen),
-      ),
+    const gpuElements = fixtures.derive(
+      network.derive,
+      fixtures.generate(network.generated, params.gen),
     );
+
+    if (networkID === 'workflows') {
+      const catalog = window.featureWorkflows?.scenes || [];
+      const workflow =
+        catalog.find((entry) => entry.id === params.scene) || catalog[0];
+      const sceneId = workflow?.id || '';
+
+      if (sceneId) {
+        replaceContextRoute({ scene: sceneId, view: '' });
+      }
+      start(gpuElements, { sceneId, id: sceneId, ...workflow });
+    } else {
+      start(gpuElements);
+    }
   } else {
     // a missing fixture used to reject silently and render nothing at all
     fetchFixture().then(start, (failure) => {
@@ -667,12 +788,24 @@ const paramDefs = {
 
   // -- controls --
 
+  const regularNetworks = document.createElement('optgroup');
+  regularNetworks.label = 'Networks and scale fixtures';
+  const featureNetworks = document.createElement('optgroup');
+  featureNetworks.label = 'Deterministic feature demos';
+
+  $('#network-select').append(regularNetworks, featureNetworks);
+
   for (const [id, def] of Object.entries(networks)) {
     const option = document.createElement('option');
 
     option.value = id;
-    option.innerHTML = `${def.desc} (${def.nodes} nodes, ${def.edges} edges)`;
-    $('#network-select').appendChild(option);
+    option.textContent =
+      def.category === 'feature'
+        ? def.desc
+        : `${def.desc} (${def.nodes} nodes, ${def.edges} edges)`;
+    (def.category === 'feature' ? featureNetworks : regularNetworks).append(
+      option,
+    );
   }
 
   // Say which source served this fixture.  A hosted page silently reading a
@@ -704,6 +837,21 @@ const paramDefs = {
     }
   }
 
+  $('#network-select').value = networkID;
+  const isFeatureScene = network.featureScenes === true;
+  const isContextualDemo = isFeatureScene || networkID === 'workflows';
+
+  $('#contextual-tools').hidden =
+    networkID !== 'features' && networkID !== 'workflows';
+  document.body.classList.toggle('feature-scenes-active', isFeatureScene);
+  document.body.classList.toggle('contextual-demo-active', isContextualDemo);
+
+  if (isContextualDemo) {
+    $('#contextual-stats').append(statsElement);
+  } else {
+    statsHome.before(statsElement);
+  }
+
   function reloadPage(reset = false) {
     const { origin, pathname } = window.location;
 
@@ -730,10 +878,280 @@ const paramDefs = {
       }
     }
 
+    // Scene, view, gallery and construction-time renderer parameters are
+    // owned by contextual controls and do not have fixed DOM controls here.
+    // Preserve them across changes to the shared harness controls.
+    const selectedNetwork = $('#network-select').value;
+    const contextual =
+      selectedNetwork === 'features' || selectedNetwork === 'workflows';
+
+    for (const [key, value] of new URLSearchParams(
+      window.location.search,
+    ).entries()) {
+      if (Object.hasOwn(paramDefs, key)) {
+        continue;
+      }
+
+      if (!contextual && ['scene', 'view', 'rendererWorker'].includes(key)) {
+        continue;
+      }
+
+      nextParams.set(key, value);
+    }
+
     window.location.href = origin + pathname + '?' + nextParams.toString();
   }
 
   window.reloadPage = reloadPage;
+
+  function cleanupContextualControls() {
+    const dispose = window.featureControlsDispose;
+
+    window.featureControlsDispose = null;
+
+    if (typeof dispose === 'function') {
+      dispose();
+    }
+  }
+
+  window.addEventListener('pagehide', cleanupContextualControls, {
+    once: true,
+  });
+
+  function setParams(updates) {
+    const nextParams = new URLSearchParams(window.location.search);
+
+    for (const [key, value] of Object.entries(updates || {})) {
+      if (value == null || value === '') {
+        nextParams.delete(key);
+      } else {
+        nextParams.set(key, String(value));
+      }
+    }
+
+    cleanupContextualControls();
+    const query = nextParams.toString();
+
+    window.location.href =
+      window.location.origin +
+      window.location.pathname +
+      (query ? `?${query}` : '');
+  }
+
+  window.setDebugParams = setParams;
+
+  function mountContextualControls(scene, networkID) {
+    const panel = $('#contextual-tools');
+    const controls = $('#contextual-controls');
+    const catalog =
+      networkID === 'features'
+        ? window.featureScenes?.catalog || []
+        : window.featureWorkflows?.scenes || [];
+    const catalogId = (item) =>
+      typeof item === 'string' ? item : item?.id || item?.scene;
+    const id =
+      scene?.familyId ||
+      scene?.sceneId ||
+      scene?.id ||
+      params.scene ||
+      catalogId(catalog[0]);
+    const entry = catalog.find((item) => catalogId(item) === id) || catalog[0];
+
+    if (entry == null) {
+      panel.hidden = true;
+      return;
+    }
+
+    const sceneId = catalogId(entry);
+    const descriptor =
+      typeof entry === 'string'
+        ? { id: entry, label: entry, purpose: '', expected: '' }
+        : entry;
+    const viewId =
+      scene?.viewId ||
+      descriptor.views?.find((view) => view.id === params.view)?.id ||
+      descriptor.views?.[0]?.id ||
+      '';
+
+    panel.hidden = false;
+    $('#contextual-title').textContent = descriptor.label || 'Feature controls';
+    $('#contextual-purpose').textContent = descriptor.purpose || '';
+    $('#contextual-expected').textContent = descriptor.expected || '';
+    controls.replaceChildren();
+
+    const onViewChange = (nextScene, nextView) =>
+      setParams({ scene: nextScene, view: nextView });
+    let dispose;
+
+    if (networkID === 'features') {
+      const mount = window.featureScenes?.mountControls;
+
+      if (typeof mount !== 'function') {
+        $('#contextual-expected').textContent =
+          'Feature controls did not load. Reload the page after rebuilding the harness.';
+        return;
+      }
+
+      dispose = mount({
+        cy,
+        container: controls,
+        sceneId,
+        viewId,
+        onViewChange,
+        params,
+      });
+    } else {
+      const mount = window.featureWorkflows?.mountControls;
+
+      if (typeof mount !== 'function') {
+        $('#contextual-expected').textContent =
+          'Workflow controls did not load. Reload the page after rebuilding the harness.';
+        return;
+      }
+
+      dispose = mount({
+        cy,
+        container: controls,
+        scene: sceneId,
+        params,
+        setParams,
+        onViewChange,
+      });
+    }
+
+    window.featureControlsDispose =
+      typeof dispose === 'function'
+        ? dispose
+        : typeof dispose?.destroy === 'function'
+          ? () => dispose.destroy()
+          : typeof dispose?.dispose === 'function'
+            ? () => dispose.dispose()
+            : null;
+  }
+
+  $('#reset-scene-button').addEventListener('click', () => {
+    const catalogId = (item) =>
+      typeof item === 'string' ? item : item?.id || item?.scene;
+    const currentScene = network.featureScenes
+      ? window.featureScenes?.catalog.find((entry) => entry.id === params.scene)
+      : window.featureWorkflows?.scenes.find(
+          (entry) => catalogId(entry) === params.scene,
+        );
+    const updates = { scene: catalogId(currentScene) || params.scene };
+
+    // Context-specific values are linkable controls.  Reset their state too,
+    // while keeping the current route and construction-time renderer choice.
+    for (const key of Object.keys(params)) {
+      if (
+        !Object.hasOwn(paramDefs, key) &&
+        !['scene', 'view', 'rendererWorker', 'gallery'].includes(key)
+      ) {
+        updates[key] = null;
+      }
+    }
+
+    if (network.featureScenes) {
+      updates.view =
+        currentScene?.views?.find((view) => view.id === params.view)?.id ||
+        currentScene?.views?.[0]?.id ||
+        params.view;
+    }
+
+    setParams(updates);
+  });
+
+  const overlay = $('#gallery-overlay');
+  const frame = $('#gallery-frame');
+  let previousFocus = null;
+
+  function setGalleryParam(name) {
+    const nextParams = new URLSearchParams(window.location.search);
+
+    if (name) {
+      nextParams.set('gallery', name);
+    } else {
+      nextParams.delete('gallery');
+    }
+
+    const query = nextParams.toString();
+
+    window.history.replaceState(
+      null,
+      '',
+      window.location.pathname + (query ? `?${query}` : ''),
+    );
+    params.gallery = name || '';
+  }
+
+  function openGallery(name, updateUrl = true) {
+    const galleries = {
+      arrows: {
+        title: 'Arrow comparison — v3 / v4',
+        src: 'arrow-gallery.html',
+      },
+      hulls: { title: 'Compound hull controls', src: 'compound-hulls.html' },
+    };
+    const gallery = galleries[name];
+
+    if (gallery == null) {
+      return;
+    }
+
+    previousFocus = document.activeElement;
+    $('#gallery-title').textContent = gallery.title;
+    frame.title = gallery.title;
+    frame.src = gallery.src;
+    overlay.hidden = false;
+    if (updateUrl) {
+      setGalleryParam(name);
+    }
+    $('#gallery-close').focus();
+  }
+
+  function closeGallery(updateUrl = true) {
+    if (overlay.hidden) {
+      return;
+    }
+
+    overlay.hidden = true;
+    frame.src = 'about:blank';
+    if (updateUrl) {
+      setGalleryParam('');
+    }
+    if (cy != null) {
+      cy.resize();
+    }
+    previousFocus?.focus?.();
+  }
+
+  window.closeDebugGallery = closeGallery;
+
+  $('#open-arrow-gallery').addEventListener('click', () =>
+    openGallery('arrows'),
+  );
+  $('#open-hull-gallery').addEventListener('click', () => openGallery('hulls'));
+  $('#gallery-close').addEventListener('click', () => closeGallery());
+  frame.addEventListener('load', () => {
+    try {
+      frame.contentWindow.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeGallery();
+        }
+      });
+    } catch {
+      // The frame is same-origin in the debug harness. Keep the parent close
+      // control usable if a future gallery is hosted elsewhere.
+    }
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeGallery();
+    }
+  });
+
+  if (params.gallery) {
+    openGallery(params.gallery, false);
+  }
 
   $('#hide-commands').addEventListener('click', () => {
     document.body.classList.add('commands-hidden');

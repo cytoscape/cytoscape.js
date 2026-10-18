@@ -905,7 +905,18 @@ export const resetKeywordInPage = ({
 
   globalThis.__degrade = {
     prop: property,
-    saved: [{ ele, cur: before }],
+    saved: [
+      {
+        ele,
+        cur: before,
+        // A resolved getter may have come from an authored per-element
+        // bypass (e.g. arrow-width `match-line` resolves to the edge width).
+        // Removing the temporary bypass alone would lose that declaration.
+        hasAuthoredBypass:
+          authoredBypass != null && Object.hasOwn(authoredBypass, property),
+        authoredBypass: authoredBypass?.[property],
+      },
+    ],
     ...(readbackLimitation == null
       ? {}
       : {

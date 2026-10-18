@@ -574,7 +574,8 @@ describe('golden coverage: the enumerator (round 135)', function () {
       elements: [
         { data: { id: 's', transform: 'uppercase' } },
         { data: { id: 't' } },
-        { data: { id: 'e', source: 's', target: 't' } },
+        { data: { id: 'e-group', source: 's', target: 't' } },
+        { data: { id: 'e-bypass', source: 's', target: 't' } },
       ],
       style: {
         nodes: {
@@ -583,6 +584,7 @@ describe('golden coverage: the enumerator (round 135)', function () {
         edges: { width: 8, 'source-arrow-width': 'match-line' },
       },
     });
+    cy.$id('e-bypass').style('source-arrow-width', 'match-line');
 
     globalThis.cy = cy;
     globalThis.__goldenSourceScene = {
@@ -591,45 +593,68 @@ describe('golden coverage: the enumerator (round 135)', function () {
           'text-transform': { data: 'transform', fallback: 'none' },
         },
         edges: { width: 8, 'source-arrow-width': 'match-line' },
+        bypasses: { 'e-bypass': { 'source-arrow-width': 'match-line' } },
       },
       elements: {
         nodes: [
           { data: { id: 's', transform: 'uppercase' } },
           { data: { id: 't' } },
         ],
-        edges: [{ data: { id: 'e' } }],
+        edges: [{ data: { id: 'e-group' } }, { data: { id: 'e-bypass' } }],
       },
     };
 
     try {
-      const arrow = resetKeywordInPage({
+      const groupArrow = resetKeywordInPage({
         group: 'edges',
         property: 'source-arrow-width',
-        target: 'e',
+        target: 'e-group',
         value: 'match-line',
         resolvedValue: 8,
         alternate: 4,
       });
 
-      expect(arrow).to.include({
+      expect(groupArrow).to.include({
         matched: 1,
         changed: 1,
         matchedBy: 'authored-declaration-and-resolved-getter',
       });
-      expect(cy.$id('e').style('source-arrow-width')).to.equal(4);
+      expect(cy.$id('e-group').style('source-arrow-width')).to.equal(4);
       expect(restoreInPage()).to.deep.equal([]);
-      expect(cy.$id('e').style('source-arrow-width')).to.equal(8);
+      expect(cy.$id('e-group').style('source-arrow-width')).to.equal(8);
+      expect(
+        cy.style().json().bypasses?.['e-group']?.['source-arrow-width'],
+      ).to.equal(undefined);
 
-      const sheet = cy.style().json();
-      globalThis.__goldenSourceScene.style.edges['source-arrow-width'] = 8;
-      cy.style({
-        ...sheet,
-        edges: { ...sheet.edges, 'source-arrow-width': 8 },
+      const bypassArrow = resetKeywordInPage({
+        group: 'edges',
+        property: 'source-arrow-width',
+        target: 'e-bypass',
+        value: 'match-line',
+        resolvedValue: 8,
+        alternate: 4,
       });
+
+      expect(bypassArrow).to.include({
+        matched: 1,
+        changed: 1,
+        matchedBy: 'authored-declaration-and-resolved-getter',
+      });
+      expect(cy.$id('e-bypass').style('source-arrow-width')).to.equal(4);
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.$id('e-bypass').style('source-arrow-width')).to.equal(8);
+      expect(
+        cy.style().json().bypasses['e-bypass']['source-arrow-width'],
+      ).to.equal('match-line');
+
+      globalThis.__goldenSourceScene.style.bypasses['e-bypass'][
+        'source-arrow-width'
+      ] = 8;
+      cy.$id('e-bypass').style('source-arrow-width', 8);
       const falseArrowAlias = resetKeywordInPage({
         group: 'edges',
         property: 'source-arrow-width',
-        target: 'e',
+        target: 'e-bypass',
         value: 'match-line',
         resolvedValue: 8,
         alternate: 4,
@@ -638,7 +663,7 @@ describe('golden coverage: the enumerator (round 135)', function () {
       expect(falseArrowAlias.matched).to.equal(0);
       expect(falseArrowAlias.unexpected).to.equal(8);
       expect(restoreInPage()).to.deep.equal([]);
-      expect(cy.$id('e').style('source-arrow-width')).to.equal(8);
+      expect(cy.$id('e-bypass').style('source-arrow-width')).to.equal(8);
 
       const limitation = {
         property: 'text-transform',

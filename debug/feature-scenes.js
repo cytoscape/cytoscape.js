@@ -578,7 +578,7 @@
       label: 'Declutter and emphasis',
       purpose: 'Show label priority, culling and the core dim opacity.',
       expected:
-        'The overlap cell keeps the higher-priority label; emphasize/clear changes the focus neighborhood and dims the rest.',
+        'In the right-side gap, cull keeps overlap high while none shows both priority labels; emphasize/clear changes the focus neighborhood and dims the rest.',
       views: [
         {
           id: 'declutter',
@@ -1143,7 +1143,7 @@
       result.style.parents['padding-relative-to'] = relativeTo;
       const parent = byId.get('parent-padding');
       if (parent != null)
-        parent.data.label = `padding 18% relative to ${relativeTo}`;
+        parent.data.label = `18% padding\nrelative to ${relativeTo}`;
       for (const rows of [
         result.coverage.properties,
         result.coverage.keywords,
@@ -1582,7 +1582,7 @@
         const sheet = JSON.parse(JSON.stringify(cy.style().json()));
         sheet.parents['padding-relative-to'] = value;
         cy.style(sheet);
-        parent.data('label', `padding 18% relative to ${value}`);
+        parent.data('label', `18% padding\nrelative to ${value}`);
         report.textContent = `18% padding relative to ${value}`;
         if (persist) saveControlParams({ paddingRelativeTo: value });
       };

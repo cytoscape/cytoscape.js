@@ -686,6 +686,75 @@ describe('round 149 visual feature scenes', function () {
     }
   });
 
+  it('keeps caption-only nodes undecorated and parent labels below their groups', function () {
+    const warnings = [];
+    const originalWarn = console.warn;
+    const parentScenes = [
+      ['hulls', 'hull-convex', 12],
+      ['hulls-exclude', 'hull-convex', 12],
+      ['miniature', 'parent-expanded', 14],
+      ['minimums', 'parent-minimums', 12],
+      ['padding-width', 'parent-padding', 14],
+      ['padding-sides', 'parent-padding', 14],
+    ];
+
+    try {
+      console.warn = (...args) => warnings.push(args.join(' '));
+
+      for (const [family, view, captionId] of [
+        ['shapes', 'underlays', 'shape-caption-0'],
+        ['paint', 'layers', 'layer-caption-round'],
+      ]) {
+        const scene = featureScenes.create(family, view);
+        const cy = cytoscape({
+          ...scene.options,
+          elements: scene.elements,
+          style: scene.style,
+        });
+
+        try {
+          const caption = cy.$id(captionId);
+          expect(
+            caption.style('underlay-opacity'),
+            `${family}/${view}`,
+          ).to.equal(0);
+          expect(
+            caption.style('overlay-opacity'),
+            `${family}/${view}`,
+          ).to.equal(0);
+          expect(
+            caption.style('background-opacity'),
+            `${family}/${view}`,
+          ).to.equal(0);
+        } finally {
+          cy.destroy();
+        }
+      }
+
+      for (const [view, parentId, margin] of parentScenes) {
+        const scene = featureScenes.create('compounds', view);
+        const cy = cytoscape({
+          ...scene.options,
+          elements: scene.elements,
+          style: scene.style,
+        });
+
+        try {
+          const parent = cy.$id(parentId);
+          expect(parent.style('text-valign'), view).to.equal('bottom');
+          expect(parent.style('text-margin-y'), view).to.equal(margin);
+          expect(parent.style('text-wrap'), view).to.equal('wrap');
+        } finally {
+          cy.destroy();
+        }
+      }
+    } finally {
+      console.warn = originalWarn;
+    }
+
+    expect(warnings).to.deep.equal([]);
+  });
+
   it('records node autorotate as a semantic exception, with an edge route', function () {
     const nodeScene = featureScenes.create('labels', 'nodes');
     const [semanticException] = nodeScene.coverage.semanticExceptions ?? [];
@@ -973,7 +1042,7 @@ describe('round 149 visual feature scenes', function () {
     expect(
       padding.elements.nodes.find((entry) => entry.data.id === 'parent-padding')
         .data.label,
-    ).to.equal('padding 18% relative to max');
+    ).to.equal('18% padding\nrelative to max');
 
     const emphasized = featureScenes.create('emphasis', 'declutter');
     const priorityLow = emphasized.elements.nodes.find(
@@ -1143,7 +1212,7 @@ describe('round 149 visual feature scenes', function () {
       paddingCy.$id('parent-padding').style('padding-relative-to'),
     ).to.equal('max');
     expect(paddingCy.$id('parent-padding').data('label')).to.equal(
-      'padding 18% relative to max',
+      '18% padding\nrelative to max',
     );
     expect(
       new URLSearchParams(location.search).get('paddingRelativeTo'),

@@ -704,9 +704,10 @@ export const resetKeywordInPage = ({
       readbacks: [{ group, property, target, value: before }],
     };
     try {
+      const parentStyle = sourceScene?.style?.parents ?? sheet.parents ?? {};
       cy.style({
         ...sheet,
-        parents: { ...(sheet.parents ?? {}), [property]: alternate },
+        parents: { ...parentStyle, [property]: alternate },
       });
     } catch (error) {
       return {

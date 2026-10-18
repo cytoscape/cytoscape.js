@@ -686,7 +686,43 @@ describe('golden coverage: the enumerator (round 135)', function () {
       expect(restoreInPage()).to.deep.equal([]);
       expect(cy.style().json()).to.deep.equal(original);
       expect(cy.$id('n').style('font-weight')).to.equal('700');
+
+      const percentSheet = {
+        ...original,
+        parents: {
+          ...original.parents,
+          padding: '18%',
+          'padding-relative-to': 'width',
+        },
+      };
+      cy.style(percentSheet);
+      globalThis.__goldenSourceScene = {
+        style: { parents: percentSheet.parents },
+        elements: {
+          nodes: [
+            { data: { id: 'p' } },
+            { data: { id: 'c', parent: 'p' } },
+            { data: { id: 'n' } },
+          ],
+          edges: [],
+        },
+      };
+      const percentageOriginal = cy.style().json();
+      const referenceControl = resetKeywordInPage({
+        group: 'parents',
+        property: 'padding-relative-to',
+        target: 'p',
+        value: 'width',
+        alternate: 'height',
+      });
+
+      expect(referenceControl).to.include({ matched: 1, changed: 1 });
+      expect(cy.$id('p').style('padding-relative-to')).to.equal('height');
+      expect(cy.$id('p').style('padding')).to.equal('18%');
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.style().json()).to.deep.equal(percentageOriginal);
     } finally {
+      delete globalThis.__goldenSourceScene;
       delete globalThis.cy;
       delete globalThis.cytoscape;
       cy.destroy();

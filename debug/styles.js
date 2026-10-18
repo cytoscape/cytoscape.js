@@ -746,6 +746,19 @@ var styles = (function () {
         'text-outline-width': 2,
         'text-outline-color': '#fff',
       },
+      // The two x/y arcs share endpoints in reverse directions. Unbundled
+      // curves keep each arrow and its weight label readable; equal positive
+      // distances bend to opposite sides because each arc has reversed ends.
+      bypasses: {
+        xy: {
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [36],
+        },
+        yx: {
+          'curve-style': 'unbundled-bezier',
+          'control-point-distances': [36],
+        },
+      },
       parents: {
         padding: 18,
         'background-color': '#cedff0',

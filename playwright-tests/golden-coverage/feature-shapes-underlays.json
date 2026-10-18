@@ -1,0 +1,99 @@
+{
+  "golden": "feature-shapes-underlays",
+  "elements": {
+    "nodes": 8,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(219,230,240)",
+      "rgba(219,230,240,0)"
+    ],
+    "background-opacity": [
+      "0"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "11"
+    ],
+    "height": [
+      "1",
+      "46"
+    ],
+    "label": [
+      "diamond body\nellipse underlay",
+      "ellipse body\nellipse underlay",
+      "round-rectangle body\nellipse underlay",
+      "star body\nellipse underlay"
+    ],
+    "shape": [
+      "diamond",
+      "round-rectangle",
+      "star"
+    ],
+    "text-max-width": [
+      "125"
+    ],
+    "text-valign": [
+      "top"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "underlay-color": [
+      "rgba(224,93,67,0)",
+      "rgba(224,93,67,0.8)"
+    ],
+    "underlay-opacity": [
+      "0.8"
+    ],
+    "underlay-padding": [
+      "12"
+    ],
+    "underlay-shape": [
+      "ellipse"
+    ],
+    "width": [
+      "1",
+      "66"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "underlay-shape",
+        "target": "shape-underlay-0",
+        "value": "ellipse"
+      },
+      {
+        "group": "nodes",
+        "property": "shape",
+        "target": "shape-underlay-2",
+        "value": "diamond"
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "underlay-shape",
+        "target": "shape-underlay-0",
+        "value": "ellipse",
+        "alternate": "round-rectangle"
+      }
+    ],
+    "exceptions": []
+  }
+}

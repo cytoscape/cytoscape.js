@@ -1,0 +1,88 @@
+{
+  "golden": "feature-compounds-padding-sides",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 75724,
+      "elements": 4
+    },
+    "nodes/background-opacity": {
+      "moved": 50706,
+      "elements": 1
+    },
+    "nodes/border-color": {
+      "moved": 8573,
+      "elements": 4
+    },
+    "nodes/border-width": {
+      "moved": 9650,
+      "elements": 4
+    },
+    "nodes/color": {
+      "moved": 3876,
+      "elements": 4
+    },
+    "nodes/font-size": {
+      "moved": 8654,
+      "elements": 4
+    },
+    "nodes/height": {
+      "moved": 21535,
+      "elements": 4
+    },
+    "nodes/label": {
+      "moved": 3900,
+      "elements": 4
+    },
+    "nodes/shape": {
+      "moved": 8425,
+      "elements": 4
+    },
+    "nodes/text-margin-y": {
+      "moved": 5244,
+      "elements": 1
+    },
+    "nodes/text-max-width": {
+      "moved": 0,
+      "elements": 1
+    },
+    "nodes/text-valign": {
+      "moved": 2319,
+      "elements": 3
+    },
+    "nodes/text-wrap": {
+      "moved": 4998,
+      "elements": 1
+    },
+    "nodes/width": {
+      "moved": 24736,
+      "elements": 4
+    },
+    "parents/padding": {
+      "moved": 0,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "parents/padding-bottom": {
+      "moved": 20551,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "parents/padding-left": {
+      "moved": 7213,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "parents/padding-right": {
+      "moved": 17488,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "parents/padding-top": {
+      "moved": 7802,
+      "elements": 1,
+      "via": "sheet"
+    }
+  },
+  "keywords": []
+}

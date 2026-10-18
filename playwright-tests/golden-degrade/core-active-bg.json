@@ -1,0 +1,42 @@
+{
+  "golden": "core-active-bg",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 33708,
+      "elements": 6
+    },
+    "nodes/border-color": {
+      "moved": 8418,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 8444,
+      "elements": 6
+    },
+    "nodes/height": {
+      "moved": 14652,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 19620,
+      "elements": 6
+    },
+    "core/active-bg-color": {
+      "moved": 7368,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "core/active-bg-opacity": {
+      "moved": 7368,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "core/active-bg-size": {
+      "moved": 4636,
+      "elements": 1,
+      "via": "sheet"
+    }
+  },
+  "keywords": []
+}

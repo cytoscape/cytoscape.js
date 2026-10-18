@@ -3,7 +3,7 @@
   "pixels": 120000,
   "pairs": {
     "nodes/background-color": {
-      "moved": 21703,
+      "moved": 21706,
       "elements": 12
     },
     "nodes/border-color": {
@@ -20,8 +20,22 @@
     },
     "nodes/chart-colors": {
       "moved": 0,
-      "elements": 0,
-      "via": "sheet",
+      "elements": 3,
+      "unresettable": [
+        "heat",
+        "radial",
+        "missing"
+      ],
+      "rejected": "heat chart palette is derived from chart-scale; chart-colors cannot be set on this chart kind"
+    },
+    "nodes/chart-direction": {
+      "moved": 3096,
+      "elements": 2
+    },
+    "nodes/chart-domain": {
+      "moved": 340,
+      "elements": 12,
+      "via": "alternate",
       "unresettable": [
         "pie26",
         "pie255",
@@ -32,18 +46,14 @@
         "bar-v",
         "bar-h",
         "missing",
-        "zero"
+        "zero",
+        "bar-neg",
+        "bar-pos"
+      ],
+      "alternate": [
+        -8,
+        8
       ]
-    },
-    "nodes/chart-direction": {
-      "moved": 3096,
-      "elements": 2
-    },
-    "nodes/chart-domain": {
-      "moved": 0,
-      "elements": 0,
-      "via": "sheet",
-      "rejected": "Bar charts require 'chart-domain'"
     },
     "nodes/chart-hole": {
       "moved": 556,
@@ -68,13 +78,38 @@
       ]
     },
     "nodes/chart-scale": {
-      "moved": 0,
-      "elements": 0,
-      "via": "sheet",
-      "rejected": "Heat charts require 'chart-scale' with an explicit domain and range"
+      "moved": 1823,
+      "elements": 12,
+      "via": "alternate",
+      "unresettable": [
+        "pie26",
+        "pie255",
+        "donut",
+        "stripes",
+        "heat",
+        "radial",
+        "bar-v",
+        "bar-h",
+        "missing",
+        "zero",
+        "bar-neg",
+        "bar-pos"
+      ],
+      "alternate": {
+        "domain": [
+          -2,
+          0,
+          4
+        ],
+        "range": [
+          "#2166ac",
+          "#f7f7f7",
+          "#b2182b"
+        ]
+      }
     },
     "nodes/chart-size": {
-      "moved": 8477,
+      "moved": 8478,
       "elements": 10
     },
     "nodes/chart-values": {
@@ -83,7 +118,7 @@
       "via": "sheet"
     },
     "nodes/height": {
-      "moved": 35898,
+      "moved": 35897,
       "elements": 12
     },
     "nodes/shape": {
@@ -91,8 +126,9 @@
       "elements": 1
     },
     "nodes/width": {
-      "moved": 36534,
+      "moved": 36533,
       "elements": 12
     }
-  }
+  },
+  "keywords": []
 }

@@ -1,0 +1,444 @@
+{
+  "golden": "feature-labels-nodes",
+  "elements": {
+    "nodes": 7,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgba(23,36,50,0.839)"
+    ],
+    "events": [
+      "no"
+    ],
+    "font-weight": [
+      "bold"
+    ],
+    "height": [
+      "70"
+    ],
+    "label": [
+      "LEFT VISIBLYLONGWORD WITH SPACES",
+      "UNBROKEN-LABEL-WITH-A-LONG-TAIL",
+      "blank cell = visibility:hidden",
+      "center justified words",
+      "ellipsis truncates this very long label",
+      "hidden visibility sample",
+      "right justified words"
+    ],
+    "label-priority": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "min-zoomed-font-size": [
+      "12"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-background-color": [
+      "rgba(234,241,247,0.294)"
+    ],
+    "text-background-opacity": [
+      "0.294"
+    ],
+    "text-background-padding": [
+      "2"
+    ],
+    "text-background-shape": [
+      "round-rectangle"
+    ],
+    "text-events": [
+      "yes"
+    ],
+    "text-max-width": [
+      "132"
+    ],
+    "text-opacity": [
+      "0.839"
+    ],
+    "text-outline-color": [
+      "rgba(255,255,255,0.545)"
+    ],
+    "text-outline-opacity": [
+      "0.545"
+    ],
+    "text-outline-width": [
+      "2"
+    ],
+    "text-overflow-wrap": [
+      "anywhere"
+    ],
+    "text-rotation": [
+      "0.35"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "text-wrap": [
+      "ellipsis",
+      "wrap"
+    ],
+    "visibility": [
+      "hidden"
+    ],
+    "width": [
+      "150"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {
+    "label-declutter": [
+      "1"
+    ]
+  },
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "label-priority",
+        "target": "label-right",
+        "value": 3
+      },
+      {
+        "group": "nodes",
+        "property": "min-zoomed-font-size",
+        "target": "label-left",
+        "value": 12
+      },
+      {
+        "group": "nodes",
+        "property": "text-opacity",
+        "target": "label-left",
+        "value": 0.84
+      },
+      {
+        "group": "nodes",
+        "property": "text-outline-opacity",
+        "target": "label-left",
+        "value": 0.65
+      },
+      {
+        "group": "nodes",
+        "property": "text-overflow-wrap",
+        "target": "label-anywhere",
+        "value": "anywhere"
+      },
+      {
+        "group": "nodes",
+        "property": "text-overflow-wrap",
+        "target": "label-left",
+        "value": "whitespace",
+        "alternate": "anywhere"
+      },
+      {
+        "group": "nodes",
+        "property": "text-background-shape",
+        "target": "label-left",
+        "value": "rectangle",
+        "alternate": "round-rectangle"
+      },
+      {
+        "group": "nodes",
+        "property": "text-rotation",
+        "target": "label-right",
+        "value": 0.35,
+        "alternate": 0
+      },
+      {
+        "group": "nodes",
+        "property": "text-justification",
+        "target": "label-left",
+        "value": "left",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "left",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "nodes",
+        "property": "text-transform",
+        "target": "label-left",
+        "value": "uppercase",
+        "resolvedValue": "none",
+        "readbackLimitation": {
+          "property": "text-transform",
+          "mappedValue": "uppercase",
+          "getterValue": "none",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "nodes",
+        "property": "text-justification",
+        "target": "label-anywhere",
+        "value": "auto",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "auto",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "font-style",
+        "target": "label-left",
+        "value": "normal",
+        "alternate": "italic"
+      },
+      {
+        "group": "nodes",
+        "property": "text-justification",
+        "target": "label-left",
+        "value": "left",
+        "alternate": "center",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "left",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "nodes",
+        "property": "text-justification",
+        "target": "label-center",
+        "value": "center",
+        "alternate": "right",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "center",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "nodes",
+        "property": "text-justification",
+        "target": "label-right",
+        "value": "right",
+        "alternate": "center",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "right",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "nodes",
+        "property": "text-justification",
+        "target": "label-anywhere",
+        "value": "auto",
+        "alternate": "left",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "auto",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "nodes",
+        "property": "text-overflow-wrap",
+        "target": "label-anywhere",
+        "value": "anywhere",
+        "alternate": "whitespace"
+      },
+      {
+        "group": "nodes",
+        "property": "text-overflow-wrap",
+        "target": "label-left",
+        "value": "whitespace",
+        "alternate": "anywhere"
+      },
+      {
+        "group": "nodes",
+        "property": "text-background-shape",
+        "target": "label-left",
+        "value": "rectangle",
+        "alternate": "round-rectangle"
+      },
+      {
+        "group": "nodes",
+        "property": "text-transform",
+        "target": "label-left",
+        "value": "uppercase",
+        "alternate": "lowercase",
+        "resolvedValue": "none",
+        "readbackLimitation": {
+          "property": "text-transform",
+          "mappedValue": "uppercase",
+          "getterValue": "none",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "nodes",
+        "property": "text-transform",
+        "target": "label-center",
+        "value": "lowercase",
+        "alternate": "uppercase",
+        "resolvedValue": "none",
+        "readbackLimitation": {
+          "property": "text-transform",
+          "mappedValue": "lowercase",
+          "getterValue": "none",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "nodes",
+        "property": "text-transform",
+        "target": "label-right",
+        "value": "none",
+        "alternate": "uppercase",
+        "resolvedValue": "none",
+        "readbackLimitation": {
+          "property": "text-transform",
+          "mappedValue": "none",
+          "getterValue": "none",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "nodes",
+        "property": "visibility",
+        "target": "label-hidden",
+        "value": "hidden",
+        "alternate": "visible",
+        "note": "The adjacent caption identifies the deliberate blank cell."
+      }
+    ],
+    "exceptions": [
+      {
+        "group": "nodes",
+        "property": "events",
+        "target": "label-left",
+        "value": "yes",
+        "alternate": "no",
+        "reason": "Pointer transparency changes hit testing and event delivery, not pixels; click label-left to test picking."
+      },
+      {
+        "group": "nodes",
+        "property": "events",
+        "target": "label-hidden",
+        "value": "no",
+        "alternate": "yes",
+        "reason": "Pointer transparency changes hit testing and event delivery, not pixels; label-hidden has no visible body label."
+      },
+      {
+        "group": "nodes",
+        "property": "text-events",
+        "target": "label-left",
+        "value": "yes",
+        "alternate": "no",
+        "reason": "Label-box hit testing changes pointer routing, not pixels; click label-left to test picking."
+      },
+      {
+        "group": "nodes",
+        "property": "text-events",
+        "target": "label-hidden",
+        "value": "no",
+        "alternate": "yes",
+        "reason": "Label-box hit testing changes pointer routing, not pixels; label-hidden has no visible text."
+      }
+    ],
+    "semanticExceptions": [
+      {
+        "group": "nodes",
+        "property": "text-rotation",
+        "keyword": "autorotate",
+        "reason": "The autorotate keyword is edge-only; node text-rotation takes numeric radians (src/style/apply-prop.mts:832-840). The valid edge example is kept in the labels/edges scene.",
+        "sourceRefs": [
+          "src/style/apply-prop.mts:832-840"
+        ],
+        "rejectionTest": "test/modules/feature-scenes.mjs rejects node autorotate and accepts edge autorotate",
+        "validRoutes": [
+          "debug/index.html?network=features&scene=labels&view=nodes",
+          "debug/index.html?network=features&scene=labels&view=edges"
+        ]
+      }
+    ],
+    "restoreLimitations": [
+      {
+        "group": "nodes",
+        "property": "font-style",
+        "target": "label-left",
+        "value": "normal",
+        "alternate": "italic",
+        "observedResiduePixels": 178,
+        "sourceRefs": [
+          "debug/fonts/*.woff2 (four pinned Open Sans faces loaded and fonts.ready)"
+        ],
+        "route": "?network=features&scene=labels&view=nodes",
+        "reason": "In a controlled probe, font-style normal→italic moved 17390 pixels and restored readback normal, but the settled image retained 178 differing pixels after all four pinned faces loaded; mechanism is unlocalized."
+      }
+    ]
+  }
+}

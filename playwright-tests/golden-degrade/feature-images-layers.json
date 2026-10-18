@@ -1,0 +1,278 @@
+{
+  "golden": "feature-images-layers",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-clip": {
+      "moved": 14519,
+      "elements": 1
+    },
+    "nodes/background-color": {
+      "moved": 144828,
+      "elements": 6
+    },
+    "nodes/background-fit": {
+      "moved": 55857,
+      "elements": 3
+    },
+    "nodes/background-height": {
+      "moved": 110524,
+      "elements": 5
+    },
+    "nodes/background-image": {
+      "moved": 129776,
+      "elements": 6
+    },
+    "nodes/background-image-color": {
+      "moved": 24164,
+      "elements": 6
+    },
+    "nodes/background-image-containment": {
+      "moved": 1365,
+      "elements": 1
+    },
+    "nodes/background-image-crossorigin": {
+      "moved": 0,
+      "elements": 2
+    },
+    "nodes/background-image-opacity": {
+      "moved": 129339,
+      "elements": 6
+    },
+    "nodes/background-image-smoothing": {
+      "moved": 1313,
+      "elements": 2
+    },
+    "nodes/background-image-type": {
+      "moved": 24164,
+      "elements": 1
+    },
+    "nodes/background-offset-x": {
+      "moved": 25317,
+      "elements": 3
+    },
+    "nodes/background-offset-y": {
+      "moved": 29740,
+      "elements": 3
+    },
+    "nodes/background-opacity": {
+      "moved": 30038,
+      "elements": 2
+    },
+    "nodes/background-position-x": {
+      "moved": 4582,
+      "elements": 2
+    },
+    "nodes/background-position-y": {
+      "moved": 7922,
+      "elements": 1
+    },
+    "nodes/background-repeat": {
+      "moved": 7821,
+      "elements": 3
+    },
+    "nodes/background-width": {
+      "moved": 69644,
+      "elements": 5
+    },
+    "nodes/border-color": {
+      "moved": 11535,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 12868,
+      "elements": 6
+    },
+    "nodes/color": {
+      "moved": 3136,
+      "elements": 6
+    },
+    "nodes/font-size": {
+      "moved": 6880,
+      "elements": 6
+    },
+    "nodes/height": {
+      "moved": 129152,
+      "elements": 6
+    },
+    "nodes/label": {
+      "moved": 3173,
+      "elements": 6
+    },
+    "nodes/shape": {
+      "moved": 42647,
+      "elements": 6
+    },
+    "nodes/text-margin-y": {
+      "moved": 5515,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 136660,
+      "elements": 6
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "background-clip",
+      "target": "image-1",
+      "targetIndex": 0,
+      "value": "node",
+      "alternate": "none",
+      "matched": 1,
+      "changed": 1,
+      "moved": 11217,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-clip",
+      "target": "image-5",
+      "targetIndex": 0,
+      "value": "none",
+      "alternate": "node",
+      "matched": 1,
+      "changed": 1,
+      "moved": 14519,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-image-containment",
+      "target": "image-2",
+      "targetIndex": 0,
+      "value": "inside",
+      "alternate": "over",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1255,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-image-containment",
+      "target": "image-1",
+      "targetIndex": 0,
+      "value": "over",
+      "alternate": "inside",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1365,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-repeat",
+      "target": "image-0",
+      "targetIndex": 0,
+      "value": "no-repeat",
+      "alternate": "repeat",
+      "matched": 1,
+      "changed": 1,
+      "moved": 21887,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-repeat",
+      "target": "image-2",
+      "targetIndex": 0,
+      "value": "repeat-x",
+      "alternate": "no-repeat",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1838,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-repeat",
+      "target": "image-3",
+      "targetIndex": 0,
+      "value": "repeat-y",
+      "alternate": "no-repeat",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2833,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-repeat",
+      "target": "image-4",
+      "targetIndex": 0,
+      "value": "repeat",
+      "alternate": "no-repeat",
+      "matched": 1,
+      "changed": 1,
+      "moved": 3150,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-image-smoothing",
+      "target": "image-2",
+      "targetIndex": 0,
+      "value": "no",
+      "alternate": "yes",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1313,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-image-smoothing",
+      "target": "image-0",
+      "targetIndex": 0,
+      "value": "yes",
+      "alternate": "no",
+      "matched": 1,
+      "changed": 1,
+      "moved": 270,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-image-type",
+      "target": "image-0",
+      "targetIndex": 0,
+      "value": "auto",
+      "alternate": "sdf-icon",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2401,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-image-type",
+      "target": "image-4",
+      "targetIndex": 0,
+      "value": "sdf-icon",
+      "alternate": "auto",
+      "matched": 1,
+      "changed": 1,
+      "moved": 24164,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-image-crossorigin",
+      "target": "image-1",
+      "value": "null",
+      "alternate": "anonymous",
+      "reason": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs.",
+      "exception": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs."
+    },
+    {
+      "group": "nodes",
+      "property": "background-image-crossorigin",
+      "target": "image-2",
+      "value": "use-credentials",
+      "alternate": "anonymous",
+      "reason": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs.",
+      "exception": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs."
+    }
+  ]
+}

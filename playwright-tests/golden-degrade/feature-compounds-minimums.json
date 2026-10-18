@@ -1,0 +1,110 @@
+{
+  "golden": "feature-compounds-minimums",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 179281,
+      "elements": 3
+    },
+    "nodes/background-opacity": {
+      "moved": 146409,
+      "elements": 1
+    },
+    "nodes/border-color": {
+      "moved": 19170,
+      "elements": 3
+    },
+    "nodes/border-width": {
+      "moved": 14021,
+      "elements": 3
+    },
+    "nodes/color": {
+      "moved": 10187,
+      "elements": 3
+    },
+    "nodes/font-size": {
+      "moved": 23293,
+      "elements": 3
+    },
+    "nodes/height": {
+      "moved": 5116,
+      "elements": 3
+    },
+    "nodes/label": {
+      "moved": 10218,
+      "elements": 3
+    },
+    "nodes/shape": {
+      "moved": 11712,
+      "elements": 3
+    },
+    "nodes/text-margin-y": {
+      "moved": 12050,
+      "elements": 1
+    },
+    "nodes/text-max-width": {
+      "moved": 0,
+      "elements": 1
+    },
+    "nodes/text-valign": {
+      "moved": 6797,
+      "elements": 2
+    },
+    "nodes/text-wrap": {
+      "moved": 12034,
+      "elements": 1
+    },
+    "nodes/width": {
+      "moved": 13158,
+      "elements": 3
+    },
+    "parents/min-height": {
+      "moved": 92280,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "parents/min-width": {
+      "moved": 61524,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "parents/padding": {
+      "moved": 53730,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "parents/padding-bottom": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-minimums"
+      ]
+    },
+    "parents/padding-left": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-minimums"
+      ]
+    },
+    "parents/padding-right": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-minimums"
+      ]
+    },
+    "parents/padding-top": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-minimums"
+      ]
+    }
+  },
+  "keywords": []
+}

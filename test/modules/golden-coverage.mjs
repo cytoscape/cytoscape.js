@@ -86,10 +86,10 @@ exercised group-properties move pixels in some golden.
 // newly exercised property, and the pins stand
 const PINNED = {
   universe: 220,
-  unexercised: 77,
-  paintable: 65,
-  noStatic: 12,
-  keywordGaps: 95,
+  unexercised: 13,
+  paintable: 4,
+  noStatic: 9,
+  keywordGaps: 12,
   inert: 47,
 };
 
@@ -100,17 +100,32 @@ const PINNED = {
 // reset moved nothing until an opacity bypass demoted the kernel-owned
 // colour it folds into (OPACITY_FOLDS)
 const PINNED_DEGRADE = {
-  pairs: 554,
-  moved: 541,
-  decoration: 3,
-  unmoved: 10,
-  exercised: 143,
-  seen: 132,
-  unseen: 11,
-  keywordControls: 0,
+  pairs: 1701,
+  moved: 1600,
+  decoration: 46,
+  unmoved: 55,
+  exercised: 207,
+  seen: 199,
+  unseen: 8,
+  keywordControls: 233,
   keywordFailures: 0,
-  keywordExceptions: 0,
+  keywordExceptions: 11,
+  restoreLimitations: 1,
 };
+
+const PINNED_KEYWORD_EXCEPTIONS = [
+  'feature-arrows-scalars mid-source-arrow-width=match-line',
+  'feature-arrows-scalars mid-target-arrow-width=match-line',
+  'feature-charts-bars chart=bar',
+  'feature-emphasis-declutter-dimOpacity-0 label-declutter=cull',
+  'feature-images-layers background-image-crossorigin=null',
+  'feature-images-layers background-image-crossorigin=use-credentials',
+  'feature-labels-nodes events=yes',
+  'feature-labels-nodes events=no',
+  'feature-labels-nodes text-events=yes',
+  'feature-labels-nodes text-events=no',
+  'feature-paint-outlines outline-style=double',
+];
 
 describe('golden coverage: the enumerator (round 135)', function () {
   let measured;
@@ -1118,7 +1133,38 @@ describe('golden coverage: the degrade control (round 143)', function () {
 
   it('requires every keyword target to change a pixel or name an exception', () => {
     expect(report.keywordFailures).to.be.empty;
-    expect(report.keywordExceptions).to.deep.equal([]);
+    expect(report.keywordExceptions).to.deep.equal(PINNED_KEYWORD_EXCEPTIONS);
+
+    const capturesByName = new Map(
+      loadCaptures().map((capture) => [capture.golden, capture]),
+    );
+    for (const record of degrades) {
+      const capture = capturesByName.get(record.golden);
+      const authoredRows = [
+        ...(capture.featureCoverage?.keywords ?? []),
+        ...(capture.featureCoverage?.exceptions ?? []),
+      ];
+
+      for (const entry of record.keywords ?? []) {
+        if (entry.reason == null && entry.exception == null) continue;
+
+        const authored = authoredRows.find(
+          (row) =>
+            row.group === entry.group &&
+            row.property === entry.property &&
+            row.target === entry.target &&
+            row.value === entry.value &&
+            row.alternate === entry.alternate,
+        );
+
+        expect(
+          authored?.reason,
+          `${record.golden} ${entry.group}/${entry.property}=${entry.value} ` +
+            'must keep an exact authored exception with a reason',
+        ).to.be.a('string').and.not.empty;
+        expect(entry.reason ?? entry.exception).to.equal(authored.reason);
+      }
+    }
   });
 
   it('resets chart domains through the authored stylesheet (control)', () => {

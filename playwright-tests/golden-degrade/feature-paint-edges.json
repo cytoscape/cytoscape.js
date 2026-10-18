@@ -1,0 +1,197 @@
+{
+  "golden": "feature-paint-edges",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 23784,
+      "elements": 9
+    },
+    "nodes/background-opacity": {
+      "moved": 16,
+      "elements": 3
+    },
+    "nodes/border-color": {
+      "moved": 3852,
+      "elements": 9
+    },
+    "nodes/border-width": {
+      "moved": 5980,
+      "elements": 6
+    },
+    "nodes/color": {
+      "moved": 3820,
+      "elements": 9,
+      "unresettable": [
+        "edge-paint-s0",
+        "edge-paint-t0",
+        "edge-paint-s1",
+        "edge-paint-t1",
+        "edge-paint-s2",
+        "edge-paint-t2"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 7183,
+      "elements": 9,
+      "unresettable": [
+        "edge-paint-s0",
+        "edge-paint-t0",
+        "edge-paint-s1",
+        "edge-paint-t1",
+        "edge-paint-s2",
+        "edge-paint-t2"
+      ]
+    },
+    "nodes/height": {
+      "moved": 5650,
+      "elements": 9
+    },
+    "nodes/label": {
+      "moved": 3843,
+      "elements": 3
+    },
+    "nodes/shape": {
+      "moved": 7781,
+      "elements": 9
+    },
+    "nodes/text-valign": {
+      "moved": 7715,
+      "elements": 9,
+      "unresettable": [
+        "edge-paint-s0",
+        "edge-paint-t0",
+        "edge-paint-s1",
+        "edge-paint-t1",
+        "edge-paint-s2",
+        "edge-paint-t2"
+      ]
+    },
+    "nodes/width": {
+      "moved": 18976,
+      "elements": 9
+    },
+    "edges/line-cap": {
+      "moved": 4137,
+      "elements": 2
+    },
+    "edges/line-color": {
+      "moved": 2633,
+      "elements": 3
+    },
+    "edges/line-dash-offset": {
+      "moved": 1834,
+      "elements": 2
+    },
+    "edges/line-dash-pattern": {
+      "moved": 3352,
+      "elements": 3
+    },
+    "edges/line-fill": {
+      "moved": 7403,
+      "elements": 2
+    },
+    "edges/line-gradient-stop-colors": {
+      "moved": 7403,
+      "elements": 2,
+      "via": "sheet"
+    },
+    "edges/line-gradient-stop-positions": {
+      "moved": 7105,
+      "elements": 2,
+      "via": "alternate",
+      "alternate": "0% 77% 100%"
+    },
+    "edges/line-opacity": {
+      "moved": 18975,
+      "elements": 2
+    },
+    "edges/line-outline-color": {
+      "moved": 18400,
+      "elements": 2
+    },
+    "edges/line-outline-width": {
+      "moved": 18400,
+      "elements": 2
+    },
+    "edges/line-style": {
+      "moved": 2086,
+      "elements": 3
+    },
+    "edges/opacity": {
+      "moved": 18975,
+      "elements": 2
+    },
+    "edges/overlay-color": {
+      "moved": 48286,
+      "elements": 3
+    },
+    "edges/overlay-opacity": {
+      "moved": 48286,
+      "elements": 3
+    },
+    "edges/overlay-padding": {
+      "moved": 28994,
+      "elements": 3
+    },
+    "edges/target-arrow-color": {
+      "moved": 4581,
+      "elements": 3
+    },
+    "edges/target-arrow-shape": {
+      "moved": 6814,
+      "elements": 3,
+      "unresettable": [
+        "edge-paint-0",
+        "edge-paint-1",
+        "edge-paint-2"
+      ]
+    },
+    "edges/underlay-color": {
+      "moved": 64567,
+      "elements": 3
+    },
+    "edges/underlay-opacity": {
+      "moved": 64567,
+      "elements": 3
+    },
+    "edges/underlay-padding": {
+      "moved": 10463,
+      "elements": 3
+    }
+  },
+  "keywords": [
+    {
+      "group": "edges",
+      "property": "line-cap",
+      "target": "edge-paint-0",
+      "value": "butt",
+      "alternate": "round",
+      "matched": 1,
+      "changed": 1,
+      "moved": 808,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "line-cap",
+      "target": "edge-paint-1",
+      "value": "round",
+      "alternate": "butt",
+      "matched": 1,
+      "changed": 1,
+      "moved": 833,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "line-cap",
+      "target": "edge-paint-2",
+      "value": "square",
+      "alternate": "butt",
+      "matched": 1,
+      "changed": 1,
+      "moved": 3304,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

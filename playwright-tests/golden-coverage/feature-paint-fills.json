@@ -1,0 +1,96 @@
+{
+  "golden": "feature-paint-fills",
+  "elements": {
+    "nodes": 3,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(243,201,105)"
+    ],
+    "background-fill": [
+      "linear-gradient",
+      "radial-gradient"
+    ],
+    "background-gradient-direction": [
+      "to-right"
+    ],
+    "background-gradient-stop-colors": [
+      "rgb(243,201,105) rgb(255,244,201) rgb(216,106,85)"
+    ],
+    "background-gradient-stop-positions": [
+      "0% 29% 100%"
+    ],
+    "border-color": [
+      "rgb(40,56,74)"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "80"
+    ],
+    "label": [
+      "linear",
+      "radial",
+      "solid"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-margin-y": [
+      "4"
+    ],
+    "width": [
+      "120"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "background-gradient-stop-positions",
+        "target": "fill-1",
+        "value": [
+          0,
+          29,
+          100
+        ]
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "background-fill",
+        "target": "fill-0",
+        "value": "solid",
+        "alternate": "linear-gradient"
+      },
+      {
+        "group": "nodes",
+        "property": "background-fill",
+        "target": "fill-1",
+        "value": "linear-gradient",
+        "alternate": "solid"
+      },
+      {
+        "group": "nodes",
+        "property": "background-fill",
+        "target": "fill-2",
+        "value": "radial-gradient",
+        "alternate": "solid"
+      }
+    ],
+    "exceptions": []
+  }
+}

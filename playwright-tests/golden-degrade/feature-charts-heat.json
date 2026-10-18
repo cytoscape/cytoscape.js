@@ -1,0 +1,169 @@
+{
+  "golden": "feature-charts-heat",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 140430,
+      "elements": 4
+    },
+    "nodes/background-opacity": {
+      "moved": 16,
+      "elements": 2
+    },
+    "nodes/border-color": {
+      "moved": 6264,
+      "elements": 4
+    },
+    "nodes/border-width": {
+      "moved": 6260,
+      "elements": 2
+    },
+    "nodes/chart": {
+      "moved": 87209,
+      "elements": 2
+    },
+    "nodes/chart-colors": {
+      "moved": 0,
+      "elements": 2,
+      "unresettable": [
+        "chart-heat",
+        "chart-radial-heat"
+      ],
+      "rejected": "heat chart palette is derived from chart-scale; chart-colors cannot be set on this chart kind"
+    },
+    "nodes/chart-hole": {
+      "moved": 7369,
+      "elements": 2
+    },
+    "nodes/chart-missing-color": {
+      "moved": 9953,
+      "elements": 4,
+      "unresettable": [
+        "chart-heat",
+        "chart-radial-heat",
+        "chart-heat-caption",
+        "chart-radial-caption"
+      ]
+    },
+    "nodes/chart-opacity": {
+      "moved": 87165,
+      "elements": 2
+    },
+    "nodes/chart-scale": {
+      "moved": 77767,
+      "elements": 4,
+      "via": "alternate",
+      "unresettable": [
+        "chart-heat",
+        "chart-radial-heat",
+        "chart-heat-caption",
+        "chart-radial-caption"
+      ],
+      "alternate": {
+        "domain": [
+          -2,
+          0,
+          4
+        ],
+        "range": [
+          "#2166ac",
+          "#f7f7f7",
+          "#b2182b"
+        ]
+      }
+    },
+    "nodes/chart-size": {
+      "moved": 32148,
+      "elements": 2
+    },
+    "nodes/chart-start-angle": {
+      "moved": 5791,
+      "elements": 2
+    },
+    "nodes/chart-values": {
+      "moved": 87209,
+      "elements": 2,
+      "via": "sheet"
+    },
+    "nodes/color": {
+      "moved": 4293,
+      "elements": 4,
+      "unresettable": [
+        "chart-heat",
+        "chart-radial-heat"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 9413,
+      "elements": 4,
+      "unresettable": [
+        "chart-heat",
+        "chart-radial-heat"
+      ]
+    },
+    "nodes/height": {
+      "moved": 132277,
+      "elements": 4
+    },
+    "nodes/label": {
+      "moved": 4302,
+      "elements": 2
+    },
+    "nodes/shape": {
+      "moved": 36097,
+      "elements": 4
+    },
+    "nodes/text-max-width": {
+      "moved": 4430,
+      "elements": 4,
+      "unresettable": [
+        "chart-heat",
+        "chart-radial-heat"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 8487,
+      "elements": 4,
+      "unresettable": [
+        "chart-heat",
+        "chart-radial-heat"
+      ]
+    },
+    "nodes/text-wrap": {
+      "moved": 4430,
+      "elements": 4,
+      "unresettable": [
+        "chart-heat",
+        "chart-radial-heat"
+      ]
+    },
+    "nodes/width": {
+      "moved": 129485,
+      "elements": 4
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "chart",
+      "target": "chart-heat",
+      "value": "heat-strip",
+      "alternate": "radial-heat",
+      "matched": 1,
+      "changed": 1,
+      "moved": 55618,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "chart",
+      "target": "chart-radial-heat",
+      "value": "radial-heat",
+      "alternate": "heat-strip",
+      "matched": 1,
+      "changed": 1,
+      "moved": 53273,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

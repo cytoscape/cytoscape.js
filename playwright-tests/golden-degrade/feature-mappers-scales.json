@@ -1,0 +1,63 @@
+{
+  "golden": "feature-mappers-scales",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 23754,
+      "elements": 4
+    },
+    "nodes/border-color": {
+      "moved": 7814,
+      "elements": 4
+    },
+    "nodes/border-width": {
+      "moved": 8228,
+      "elements": 4
+    },
+    "nodes/color": {
+      "moved": 1312,
+      "elements": 4
+    },
+    "nodes/font-size": {
+      "moved": 2705,
+      "elements": 4
+    },
+    "nodes/height": {
+      "moved": 19452,
+      "elements": 4
+    },
+    "nodes/label": {
+      "moved": 1315,
+      "elements": 4
+    },
+    "nodes/shape": {
+      "moved": 10502,
+      "elements": 4
+    },
+    "nodes/text-valign": {
+      "moved": 2637,
+      "elements": 4
+    },
+    "nodes/width": {
+      "moved": 20041,
+      "elements": 4
+    },
+    "edges/line-color": {
+      "moved": 1856,
+      "elements": 2
+    },
+    "edges/target-arrow-color": {
+      "moved": 646,
+      "elements": 2
+    },
+    "edges/target-arrow-shape": {
+      "moved": 732,
+      "elements": 2
+    },
+    "edges/width": {
+      "moved": 2128,
+      "elements": 2
+    }
+  },
+  "keywords": []
+}

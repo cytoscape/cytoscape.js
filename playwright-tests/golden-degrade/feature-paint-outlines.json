@@ -1,0 +1,132 @@
+{
+  "golden": "feature-paint-outlines",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 20481,
+      "elements": 8
+    },
+    "nodes/background-opacity": {
+      "moved": 20,
+      "elements": 4
+    },
+    "nodes/border-color": {
+      "moved": 2313,
+      "elements": 8
+    },
+    "nodes/border-width": {
+      "moved": 8885,
+      "elements": 4
+    },
+    "nodes/color": {
+      "moved": 2371,
+      "elements": 8,
+      "unresettable": [
+        "outline-solid",
+        "outline-dashed",
+        "outline-dotted",
+        "outline-double"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 4956,
+      "elements": 8,
+      "unresettable": [
+        "outline-solid",
+        "outline-dashed",
+        "outline-dotted",
+        "outline-double"
+      ]
+    },
+    "nodes/height": {
+      "moved": 17875,
+      "elements": 8
+    },
+    "nodes/label": {
+      "moved": 2396,
+      "elements": 4
+    },
+    "nodes/outline-color": {
+      "moved": 9872,
+      "elements": 4
+    },
+    "nodes/outline-offset": {
+      "moved": 9563,
+      "elements": 3
+    },
+    "nodes/outline-opacity": {
+      "moved": 9872,
+      "elements": 4
+    },
+    "nodes/outline-style": {
+      "moved": 3674,
+      "elements": 3
+    },
+    "nodes/outline-width": {
+      "moved": 9872,
+      "elements": 4
+    },
+    "nodes/shape": {
+      "moved": 14775,
+      "elements": 8
+    },
+    "nodes/text-valign": {
+      "moved": 4786,
+      "elements": 8,
+      "unresettable": [
+        "outline-solid",
+        "outline-dashed",
+        "outline-dotted",
+        "outline-double"
+      ]
+    },
+    "nodes/width": {
+      "moved": 21228,
+      "elements": 8
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "outline-style",
+      "target": "outline-solid",
+      "value": "solid",
+      "alternate": "dashed",
+      "matched": 1,
+      "changed": 1,
+      "moved": 581,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "outline-style",
+      "target": "outline-dashed",
+      "value": "dashed",
+      "alternate": "solid",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1065,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "outline-style",
+      "target": "outline-dotted",
+      "value": "dotted",
+      "alternate": "solid",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2609,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "outline-style",
+      "target": "outline-double",
+      "value": "double",
+      "reason": "The current outline renderer draws the authored double style as a solid outline. This is recorded as an accepted visual limitation; the authored value still resolves as double.",
+      "alternate": "solid",
+      "exception": "The current outline renderer draws the authored double style as a solid outline. This is recorded as an accepted visual limitation; the authored value still resolves as double."
+    }
+  ]
+}

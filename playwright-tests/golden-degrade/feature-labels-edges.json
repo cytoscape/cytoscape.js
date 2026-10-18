@@ -1,0 +1,562 @@
+{
+  "golden": "feature-labels-edges",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 8050,
+      "elements": 12
+    },
+    "nodes/border-color": {
+      "moved": 1885,
+      "elements": 12
+    },
+    "nodes/border-width": {
+      "moved": 6029,
+      "elements": 12
+    },
+    "nodes/color": {
+      "moved": 1556,
+      "elements": 12,
+      "unresettable": [
+        "label-edge-t0",
+        "label-edge-t1",
+        "label-edge-t2",
+        "label-edge-t3",
+        "label-edge-t4",
+        "label-edge-t5"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 3256,
+      "elements": 12,
+      "unresettable": [
+        "label-edge-t0",
+        "label-edge-t1",
+        "label-edge-t2",
+        "label-edge-t3",
+        "label-edge-t4",
+        "label-edge-t5"
+      ]
+    },
+    "nodes/label": {
+      "moved": 1569,
+      "elements": 6
+    },
+    "nodes/shape": {
+      "moved": 5952,
+      "elements": 12
+    },
+    "nodes/text-halign": {
+      "moved": 2825,
+      "elements": 12,
+      "unresettable": [
+        "label-edge-t0",
+        "label-edge-t1",
+        "label-edge-t2",
+        "label-edge-t3",
+        "label-edge-t4",
+        "label-edge-t5"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 3157,
+      "elements": 12,
+      "unresettable": [
+        "label-edge-t0",
+        "label-edge-t1",
+        "label-edge-t2",
+        "label-edge-t3",
+        "label-edge-t4",
+        "label-edge-t5"
+      ]
+    },
+    "nodes/width": {
+      "moved": 11146,
+      "elements": 12
+    },
+    "edges/color": {
+      "moved": 0,
+      "elements": 6,
+      "unresettable": [
+        "label-edge-0",
+        "label-edge-1",
+        "label-edge-2",
+        "label-edge-3",
+        "label-edge-4",
+        "label-edge-5"
+      ]
+    },
+    "edges/font-size": {
+      "moved": 25831,
+      "elements": 6
+    },
+    "edges/label": {
+      "moved": 18061,
+      "elements": 6
+    },
+    "edges/line-color": {
+      "moved": 5711,
+      "elements": 6
+    },
+    "edges/line-height": {
+      "moved": 4915,
+      "elements": 6
+    },
+    "edges/source-label": {
+      "moved": 3401,
+      "elements": 3
+    },
+    "edges/source-text-margin-x": {
+      "moved": 2164,
+      "elements": 6,
+      "unresettable": [
+        "label-edge-2",
+        "label-edge-3",
+        "label-edge-5"
+      ]
+    },
+    "edges/source-text-margin-y": {
+      "moved": 4325,
+      "elements": 6,
+      "unresettable": [
+        "label-edge-2",
+        "label-edge-3",
+        "label-edge-5"
+      ]
+    },
+    "edges/source-text-offset": {
+      "moved": 2173,
+      "elements": 6,
+      "unresettable": [
+        "label-edge-2",
+        "label-edge-3",
+        "label-edge-5"
+      ]
+    },
+    "edges/source-text-rotation": {
+      "moved": 813,
+      "elements": 1
+    },
+    "edges/target-arrow-color": {
+      "moved": 219,
+      "elements": 6
+    },
+    "edges/target-arrow-shape": {
+      "moved": 9574,
+      "elements": 6
+    },
+    "edges/target-label": {
+      "moved": 3222,
+      "elements": 3
+    },
+    "edges/target-text-margin-x": {
+      "moved": 2111,
+      "elements": 6,
+      "unresettable": [
+        "label-edge-2",
+        "label-edge-3",
+        "label-edge-5"
+      ]
+    },
+    "edges/target-text-margin-y": {
+      "moved": 4119,
+      "elements": 6,
+      "unresettable": [
+        "label-edge-2",
+        "label-edge-3",
+        "label-edge-5"
+      ]
+    },
+    "edges/target-text-offset": {
+      "moved": 2049,
+      "elements": 6,
+      "unresettable": [
+        "label-edge-2",
+        "label-edge-3",
+        "label-edge-5"
+      ]
+    },
+    "edges/target-text-rotation": {
+      "moved": 729,
+      "elements": 1
+    },
+    "edges/text-background-color": {
+      "moved": 23120,
+      "elements": 6
+    },
+    "edges/text-background-opacity": {
+      "moved": 24671,
+      "elements": 6
+    },
+    "edges/text-background-padding": {
+      "moved": 8280,
+      "elements": 6
+    },
+    "edges/text-background-shape": {
+      "moved": 775,
+      "elements": 5
+    },
+    "edges/text-border-color": {
+      "moved": 2379,
+      "elements": 6
+    },
+    "edges/text-border-opacity": {
+      "moved": 2544,
+      "elements": 6
+    },
+    "edges/text-border-style": {
+      "moved": 859,
+      "elements": 3
+    },
+    "edges/text-border-width": {
+      "moved": 2544,
+      "elements": 6
+    },
+    "edges/text-margin-x": {
+      "moved": 3932,
+      "elements": 2
+    },
+    "edges/text-margin-y": {
+      "moved": 5252,
+      "elements": 2
+    },
+    "edges/text-max-width": {
+      "moved": 17703,
+      "elements": 6
+    },
+    "edges/text-opacity": {
+      "moved": 24564,
+      "elements": 6
+    },
+    "edges/text-outline-color": {
+      "moved": 11287,
+      "elements": 6
+    },
+    "edges/text-outline-opacity": {
+      "moved": 2723,
+      "elements": 6
+    },
+    "edges/text-outline-width": {
+      "moved": 6334,
+      "elements": 6
+    },
+    "edges/text-overflow-wrap": {
+      "moved": 2834,
+      "elements": 3
+    },
+    "edges/text-rotation": {
+      "moved": 1506,
+      "elements": 3
+    },
+    "edges/text-wrap": {
+      "moved": 17703,
+      "elements": 5
+    }
+  },
+  "keywords": [
+    {
+      "group": "edges",
+      "property": "text-border-style",
+      "target": "label-edge-2",
+      "value": "dotted",
+      "alternate": "solid",
+      "matched": 1,
+      "changed": 1,
+      "moved": 145,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "text-justification",
+      "target": "label-edge-0",
+      "value": "left",
+      "alternate": "center",
+      "matched": 1,
+      "changed": 1,
+      "moved": 530,
+      "resolvedValue": "auto",
+      "matchedBy": "authored-mapper-and-documented-getter-fallback",
+      "readbackLimitation": {
+        "property": "text-justification",
+        "mappedValue": "left",
+        "getterValue": "auto",
+        "sourceRefs": [
+          "src/style/readers-labels.mts:44,85",
+          "src/collection.mts:1695"
+        ],
+        "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+      },
+      "restoreMoved": 0
+    },
+    {
+      "group": "edges",
+      "property": "text-justification",
+      "target": "label-edge-1",
+      "value": "center",
+      "alternate": "right",
+      "matched": 1,
+      "changed": 1,
+      "moved": 322,
+      "resolvedValue": "auto",
+      "matchedBy": "authored-mapper-and-documented-getter-fallback",
+      "readbackLimitation": {
+        "property": "text-justification",
+        "mappedValue": "center",
+        "getterValue": "auto",
+        "sourceRefs": [
+          "src/style/readers-labels.mts:44,85",
+          "src/collection.mts:1695"
+        ],
+        "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+      },
+      "restoreMoved": 0
+    },
+    {
+      "group": "edges",
+      "property": "text-justification",
+      "target": "label-edge-2",
+      "value": "right",
+      "alternate": "center",
+      "matched": 1,
+      "changed": 1,
+      "moved": 270,
+      "resolvedValue": "auto",
+      "matchedBy": "authored-mapper-and-documented-getter-fallback",
+      "readbackLimitation": {
+        "property": "text-justification",
+        "mappedValue": "right",
+        "getterValue": "auto",
+        "sourceRefs": [
+          "src/style/readers-labels.mts:44,85",
+          "src/collection.mts:1695"
+        ],
+        "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+      },
+      "restoreMoved": 0
+    },
+    {
+      "group": "edges",
+      "property": "text-justification",
+      "target": "label-edge-3",
+      "value": "auto",
+      "alternate": "right",
+      "matched": 1,
+      "changed": 1,
+      "moved": 582,
+      "resolvedValue": "auto",
+      "matchedBy": "authored-mapper-and-documented-getter-fallback",
+      "readbackLimitation": {
+        "property": "text-justification",
+        "mappedValue": "auto",
+        "getterValue": "auto",
+        "sourceRefs": [
+          "src/style/readers-labels.mts:44,85",
+          "src/collection.mts:1695"
+        ],
+        "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+      },
+      "restoreMoved": 0
+    },
+    {
+      "group": "edges",
+      "property": "text-transform",
+      "target": "label-edge-0",
+      "value": "uppercase",
+      "alternate": "lowercase",
+      "matched": 1,
+      "changed": 1,
+      "moved": 4618,
+      "resolvedValue": "none",
+      "matchedBy": "authored-mapper-and-documented-getter-fallback",
+      "readbackLimitation": {
+        "property": "text-transform",
+        "mappedValue": "uppercase",
+        "getterValue": "none",
+        "sourceRefs": [
+          "src/style/readers-labels.mts:44,85",
+          "src/collection.mts:1695"
+        ],
+        "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+      },
+      "restoreMoved": 0
+    },
+    {
+      "group": "edges",
+      "property": "text-transform",
+      "target": "label-edge-1",
+      "value": "lowercase",
+      "alternate": "uppercase",
+      "matched": 1,
+      "changed": 1,
+      "moved": 4319,
+      "resolvedValue": "none",
+      "matchedBy": "authored-mapper-and-documented-getter-fallback",
+      "readbackLimitation": {
+        "property": "text-transform",
+        "mappedValue": "lowercase",
+        "getterValue": "none",
+        "sourceRefs": [
+          "src/style/readers-labels.mts:44,85",
+          "src/collection.mts:1695"
+        ],
+        "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+      },
+      "restoreMoved": 0
+    },
+    {
+      "group": "edges",
+      "property": "text-transform",
+      "target": "label-edge-2",
+      "value": "none",
+      "alternate": "lowercase",
+      "matched": 1,
+      "changed": 1,
+      "moved": 897,
+      "resolvedValue": "none",
+      "matchedBy": "authored-mapper-and-documented-getter-fallback",
+      "readbackLimitation": {
+        "property": "text-transform",
+        "mappedValue": "none",
+        "getterValue": "none",
+        "sourceRefs": [
+          "src/style/readers-labels.mts:44,85",
+          "src/collection.mts:1695"
+        ],
+        "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+      },
+      "restoreMoved": 0
+    },
+    {
+      "group": "edges",
+      "property": "text-overflow-wrap",
+      "target": "label-edge-0",
+      "value": "whitespace",
+      "alternate": "anywhere",
+      "matched": 1,
+      "changed": 1,
+      "moved": 4861,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "text-overflow-wrap",
+      "target": "label-edge-1",
+      "value": "anywhere",
+      "alternate": "whitespace",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2834,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "text-wrap",
+      "target": "label-edge-5",
+      "value": "ellipsis",
+      "alternate": "wrap",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2929,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "text-wrap",
+      "target": "label-edge-0",
+      "value": "wrap",
+      "alternate": "none",
+      "matched": 1,
+      "changed": 1,
+      "moved": 6012,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "text-wrap",
+      "target": "label-edge-2",
+      "value": "wrap",
+      "alternate": "ellipsis",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1775,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "text-wrap",
+      "target": "label-edge-4",
+      "value": "none",
+      "alternate": "wrap",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2612,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "text-wrap",
+      "target": "label-edge-5",
+      "value": "ellipsis",
+      "alternate": "wrap",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2929,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "line-style",
+      "target": "label-edge-0",
+      "value": "solid",
+      "alternate": "dashed",
+      "matched": 1,
+      "changed": 1,
+      "moved": 497,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "text-background-shape",
+      "target": "label-edge-0",
+      "value": "rectangle",
+      "alternate": "round-rectangle",
+      "matched": 1,
+      "changed": 1,
+      "moved": 143,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "text-rotation",
+      "target": "label-edge-0",
+      "value": "none",
+      "alternate": "autorotate",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2876,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "source-text-rotation",
+      "target": "label-edge-0",
+      "value": "none",
+      "alternate": "autorotate",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1209,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "target-text-rotation",
+      "target": "label-edge-0",
+      "value": "none",
+      "alternate": "autorotate",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1083,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

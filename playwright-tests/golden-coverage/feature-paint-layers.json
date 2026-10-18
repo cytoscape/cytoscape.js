@@ -1,0 +1,199 @@
+{
+  "golden": "feature-paint-layers",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgba(204,227,237,0.8)",
+      "rgba(217,233,206,0.8)",
+      "rgba(221,221,221,0)",
+      "rgba(244,214,200,0.8)"
+    ],
+    "background-opacity": [
+      "0",
+      "0.8"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "11"
+    ],
+    "height": [
+      "1",
+      "46"
+    ],
+    "label": [
+      "Underlay r14 · overlay r18\nellipse overlay",
+      "Underlay r4 · overlay r3\nround-rectangle",
+      "Underlay · overlay auto\nround-rectangle"
+    ],
+    "overlay-color": [
+      "rgba(39,133,191,0)",
+      "rgba(39,133,191,0.502)"
+    ],
+    "overlay-corner-radius": [
+      "12",
+      "18",
+      "3"
+    ],
+    "overlay-opacity": [
+      "0.5019607843137255"
+    ],
+    "overlay-padding": [
+      "0",
+      "8"
+    ],
+    "overlay-shape": [
+      "ellipse"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-max-width": [
+      "138"
+    ],
+    "text-valign": [
+      "center",
+      "top"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "underlay-color": [
+      "rgb(240,90,79)",
+      "rgba(240,90,79,0)",
+      "rgba(240,90,79,0.702)",
+      "rgba(240,90,79,0.902)"
+    ],
+    "underlay-corner-radius": [
+      "12",
+      "14",
+      "4"
+    ],
+    "underlay-opacity": [
+      "0.7019607843137254",
+      "0.9019607843137255",
+      "1"
+    ],
+    "underlay-padding": [
+      "0",
+      "12"
+    ],
+    "width": [
+      "1",
+      "66"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "overlay-shape",
+        "target": "layer-square",
+        "value": "ellipse"
+      },
+      {
+        "group": "nodes",
+        "property": "overlay-shape",
+        "target": "layer-round",
+        "value": "round-rectangle"
+      },
+      {
+        "group": "nodes",
+        "property": "underlay-corner-radius",
+        "target": "layer-round",
+        "value": 4
+      },
+      {
+        "group": "nodes",
+        "property": "corner-radius",
+        "target": "layer-soft",
+        "value": "auto",
+        "alternate": 0
+      },
+      {
+        "group": "nodes",
+        "property": "underlay-corner-radius",
+        "target": "layer-soft",
+        "value": "auto",
+        "alternate": 12
+      },
+      {
+        "group": "nodes",
+        "property": "overlay-corner-radius",
+        "target": "layer-round",
+        "value": 3
+      },
+      {
+        "group": "nodes",
+        "property": "overlay-corner-radius",
+        "target": "layer-soft",
+        "value": "auto",
+        "alternate": 12
+      },
+      {
+        "group": "nodes",
+        "property": "underlay-padding",
+        "target": "layer-round",
+        "value": 12
+      },
+      {
+        "group": "nodes",
+        "property": "overlay-padding",
+        "target": "layer-round",
+        "value": 8
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "overlay-shape",
+        "target": "layer-square",
+        "value": "ellipse",
+        "alternate": "round-rectangle"
+      },
+      {
+        "group": "nodes",
+        "property": "overlay-shape",
+        "target": "layer-round",
+        "value": "round-rectangle",
+        "alternate": "ellipse"
+      },
+      {
+        "group": "nodes",
+        "property": "underlay-corner-radius",
+        "target": "layer-soft",
+        "value": "auto",
+        "alternate": 12
+      },
+      {
+        "group": "nodes",
+        "property": "overlay-corner-radius",
+        "target": "layer-soft",
+        "value": "auto",
+        "alternate": 12
+      },
+      {
+        "group": "nodes",
+        "property": "corner-radius",
+        "target": "layer-soft",
+        "value": "auto",
+        "alternate": 0
+      }
+    ],
+    "exceptions": []
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "golden": "feature-edges-endpoints",
+  "elements": {
+    "nodes": 10,
+    "parents": 0,
+    "edges": 5
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "36"
+    ],
+    "label": [
+      "manual point + angle",
+      "source inside-to-node",
+      "source outside-to-line",
+      "target inside-to-node",
+      "target outside-to-line"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-halign": [
+      "left"
+    ],
+    "text-margin-x": [
+      "10"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "48"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "control-point-distances": [
+      "90"
+    ],
+    "control-point-weights": [
+      "0.35"
+    ],
+    "curve-style": [
+      "unbundled-bezier"
+    ],
+    "edge-distances": [
+      "endpoints"
+    ],
+    "line-color": [
+      "rgb(83,103,122)"
+    ],
+    "source-distance-from-node": [
+      "8"
+    ],
+    "source-endpoint": [
+      "18 30",
+      "inside-to-node",
+      "outside-to-line"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "target-distance-from-node": [
+      "18"
+    ],
+    "target-endpoint": [
+      "3.9269908169872414rad",
+      "inside-to-node",
+      "outside-to-line"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "edges",
+        "property": "source-endpoint",
+        "target": "route-0",
+        "value": "inside-to-node"
+      },
+      {
+        "group": "edges",
+        "property": "target-endpoint",
+        "target": "route-0",
+        "value": "225deg"
+      },
+      {
+        "group": "edges",
+        "property": "source-endpoint",
+        "target": "route-1",
+        "value": "outside-to-line"
+      },
+      {
+        "group": "edges",
+        "property": "target-endpoint",
+        "target": "route-1",
+        "value": "225deg"
+      },
+      {
+        "group": "edges",
+        "property": "source-endpoint",
+        "target": "route-2",
+        "value": "18 30"
+      },
+      {
+        "group": "edges",
+        "property": "target-endpoint",
+        "target": "route-2",
+        "value": "inside-to-node"
+      },
+      {
+        "group": "edges",
+        "property": "source-endpoint",
+        "target": "route-3",
+        "value": "18 30"
+      },
+      {
+        "group": "edges",
+        "property": "target-endpoint",
+        "target": "route-3",
+        "value": "outside-to-line"
+      },
+      {
+        "group": "edges",
+        "property": "source-endpoint",
+        "target": "route-4",
+        "value": "18 30"
+      },
+      {
+        "group": "edges",
+        "property": "target-endpoint",
+        "target": "route-4",
+        "value": "225deg"
+      },
+      {
+        "group": "edges",
+        "property": "edge-distances",
+        "target": "route-4",
+        "value": "endpoints"
+      },
+      {
+        "group": "edges",
+        "property": "source-distance-from-node",
+        "target": "route-0",
+        "value": 8
+      },
+      {
+        "group": "edges",
+        "property": "target-distance-from-node",
+        "target": "route-0",
+        "value": 18
+      }
+    ],
+    "keywords": [
+      {
+        "group": "edges",
+        "property": "edge-distances",
+        "target": "route-4",
+        "value": "endpoints",
+        "alternate": "intersection"
+      },
+      {
+        "group": "edges",
+        "property": "source-endpoint",
+        "target": "route-0",
+        "value": "inside-to-node",
+        "alternate": "outside-to-line"
+      },
+      {
+        "group": "edges",
+        "property": "source-endpoint",
+        "target": "route-1",
+        "value": "outside-to-line",
+        "alternate": "inside-to-node"
+      },
+      {
+        "group": "edges",
+        "property": "target-endpoint",
+        "target": "route-2",
+        "value": "inside-to-node",
+        "alternate": "outside-to-line"
+      },
+      {
+        "group": "edges",
+        "property": "target-endpoint",
+        "target": "route-3",
+        "value": "outside-to-line",
+        "alternate": "inside-to-node"
+      }
+    ],
+    "exceptions": []
+  }
+}

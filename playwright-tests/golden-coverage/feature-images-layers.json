@@ -1,0 +1,368 @@
+{
+  "golden": "feature-images-layers",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-clip": [
+      "none"
+    ],
+    "background-color": [
+      "rgb(238,242,245)",
+      "rgba(238,242,245,0.8)",
+      "rgba(238,242,245,0.902)"
+    ],
+    "background-fit": [
+      "contain",
+      "cover"
+    ],
+    "background-height": [
+      "140",
+      "40",
+      "48"
+    ],
+    "background-image": [
+      "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20fill%3D%22%231c2733%22%2F%3E%3Cpath%20d%3D%22M0%2024h48M24%200v48%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%22.8%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M8%208h32v32H8z%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%224%22%2F%3E%3C%2Fsvg%3E",
+      "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20fill%3D%22%232584aa%22%2F%3E%3Cpath%20d%3D%22M0%2024h48M24%200v48%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%22.8%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M0%200l48%2048M48%200L0%2048%22%20stroke%3D%22%23fff%22%20stroke-width%3D%225%22%2F%3E%3C%2Fsvg%3E",
+      "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20fill%3D%22%23526b48%22%2F%3E%3Cpath%20d%3D%22M0%2024h48M24%200v48%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%22.8%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M0%200l48%2048M48%200L0%2048%22%20stroke%3D%22%23f5d76e%22%20stroke-width%3D%225%22%2F%3E%3C%2Fsvg%3E",
+      "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20fill%3D%22%239e6fc5%22%2F%3E%3Cpath%20d%3D%22M0%2024h48M24%200v48%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%22.8%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%227%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2236%22%20cy%3D%2236%22%20r%3D%227%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E",
+      "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20fill%3D%22%23d8962d%22%2F%3E%3Cpath%20d%3D%22M0%2024h48M24%200v48%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%22.8%22%20stroke-width%3D%223%22%2F%3E%3Cpath%20d%3D%22M0%208h48M0%2024h48M0%2040h48%22%20stroke%3D%22%23fff%22%20stroke-width%3D%224%22%2F%3E%3C%2Fsvg%3E",
+      "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20fill%3D%22%23e35b4f%22%2F%3E%3Cpath%20d%3D%22M0%2024h48M24%200v48%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%22.8%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2224%22%20r%3D%228%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E"
+    ],
+    "background-image-color": [
+      "rgb(203,53,80)",
+      "rgb(255,243,194)"
+    ],
+    "background-image-containment": [
+      "over"
+    ],
+    "background-image-crossorigin": [
+      "null",
+      "use-credentials"
+    ],
+    "background-image-opacity": [
+      "0.9399999976158142"
+    ],
+    "background-image-smoothing": [
+      "no"
+    ],
+    "background-image-type": [
+      "sdf-icon"
+    ],
+    "background-offset-x": [
+      "-12",
+      "14",
+      "9"
+    ],
+    "background-offset-y": [
+      "-12",
+      "12",
+      "18"
+    ],
+    "background-opacity": [
+      "0.8",
+      "0.902"
+    ],
+    "background-position-x": [
+      "35%",
+      "70%"
+    ],
+    "background-position-y": [
+      "35%"
+    ],
+    "background-repeat": [
+      "repeat",
+      "repeat-x",
+      "repeat-y"
+    ],
+    "background-width": [
+      "180",
+      "40",
+      "56"
+    ],
+    "border-color": [
+      "rgb(51,71,91)"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "110"
+    ],
+    "label": [
+      "40 px tile · node",
+      "clip none · oversized",
+      "cover · over",
+      "repeat · SDF icon",
+      "repeat-x · crisp",
+      "repeat-y · smooth"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-margin-y": [
+      "24",
+      "4"
+    ],
+    "width": [
+      "150"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "background-fit",
+        "target": "image-0",
+        "targetIndex": 0,
+        "value": "none",
+        "alternate": "cover"
+      },
+      {
+        "group": "nodes",
+        "property": "background-fit",
+        "target": "image-1",
+        "targetIndex": 0,
+        "value": "cover",
+        "alternate": "contain"
+      },
+      {
+        "group": "nodes",
+        "property": "background-fit",
+        "target": "image-4",
+        "targetIndex": 0,
+        "value": "none",
+        "alternate": "contain"
+      },
+      {
+        "group": "nodes",
+        "property": "background-clip",
+        "target": "image-0",
+        "targetIndex": 0,
+        "value": "node",
+        "alternate": "none"
+      },
+      {
+        "group": "nodes",
+        "property": "background-clip",
+        "target": "image-5",
+        "value": "none"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-containment",
+        "target": "image-1",
+        "value": "over"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-smoothing",
+        "target": "image-2",
+        "value": "no"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-smoothing",
+        "target": "image-0",
+        "value": "yes"
+      },
+      {
+        "group": "nodes",
+        "property": "background-offset-x",
+        "target": "image-1",
+        "value": 14
+      },
+      {
+        "group": "nodes",
+        "property": "background-offset-y",
+        "target": "image-1",
+        "value": 12,
+        "alternate": 0
+      },
+      {
+        "group": "nodes",
+        "property": "background-position-y",
+        "target": "image-1",
+        "value": "35%",
+        "alternate": "50%"
+      },
+      {
+        "group": "nodes",
+        "property": "background-opacity",
+        "target": "image-1",
+        "value": 0.8
+      },
+      {
+        "group": "nodes",
+        "property": "background-repeat",
+        "target": "image-2",
+        "value": "repeat-x"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-type",
+        "target": "image-4",
+        "value": "sdf-icon"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-crossorigin",
+        "target": "image-0",
+        "value": "anonymous"
+      },
+      {
+        "group": "nodes",
+        "property": "background-width",
+        "target": "image-4",
+        "value": "auto",
+        "alternate": 56
+      },
+      {
+        "group": "nodes",
+        "property": "background-height",
+        "target": "image-4",
+        "value": "auto",
+        "alternate": 48
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-color",
+        "target": "image-4",
+        "value": "#cb3550"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-opacity",
+        "target": "image-0",
+        "value": 0.94
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "background-clip",
+        "target": "image-1",
+        "targetIndex": 0,
+        "value": "node",
+        "alternate": "none"
+      },
+      {
+        "group": "nodes",
+        "property": "background-clip",
+        "target": "image-5",
+        "value": "none",
+        "alternate": "node",
+        "targetIndex": 0
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-containment",
+        "target": "image-2",
+        "targetIndex": 0,
+        "value": "inside",
+        "alternate": "over"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-containment",
+        "target": "image-1",
+        "targetIndex": 0,
+        "value": "over",
+        "alternate": "inside"
+      },
+      {
+        "group": "nodes",
+        "property": "background-repeat",
+        "target": "image-0",
+        "targetIndex": 0,
+        "value": "no-repeat",
+        "alternate": "repeat"
+      },
+      {
+        "group": "nodes",
+        "property": "background-repeat",
+        "target": "image-2",
+        "targetIndex": 0,
+        "value": "repeat-x",
+        "alternate": "no-repeat"
+      },
+      {
+        "group": "nodes",
+        "property": "background-repeat",
+        "target": "image-3",
+        "targetIndex": 0,
+        "value": "repeat-y",
+        "alternate": "no-repeat"
+      },
+      {
+        "group": "nodes",
+        "property": "background-repeat",
+        "target": "image-4",
+        "targetIndex": 0,
+        "value": "repeat",
+        "alternate": "no-repeat"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-smoothing",
+        "target": "image-2",
+        "targetIndex": 0,
+        "value": "no",
+        "alternate": "yes"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-smoothing",
+        "target": "image-0",
+        "targetIndex": 0,
+        "value": "yes",
+        "alternate": "no"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-type",
+        "target": "image-0",
+        "targetIndex": 0,
+        "value": "auto",
+        "alternate": "sdf-icon"
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-type",
+        "target": "image-4",
+        "targetIndex": 0,
+        "value": "sdf-icon",
+        "alternate": "auto"
+      }
+    ],
+    "exceptions": [
+      {
+        "group": "nodes",
+        "property": "background-image-crossorigin",
+        "target": "image-1",
+        "value": "null",
+        "alternate": "anonymous",
+        "reason": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs."
+      },
+      {
+        "group": "nodes",
+        "property": "background-image-crossorigin",
+        "target": "image-2",
+        "value": "use-credentials",
+        "alternate": "anonymous",
+        "reason": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs."
+      }
+    ]
+  }
+}

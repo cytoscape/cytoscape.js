@@ -1,0 +1,117 @@
+{
+  "golden": "feature-shapes-underlays",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 15149,
+      "elements": 8
+    },
+    "nodes/background-opacity": {
+      "moved": 24,
+      "elements": 4
+    },
+    "nodes/border-color": {
+      "moved": 2088,
+      "elements": 8
+    },
+    "nodes/border-width": {
+      "moved": 2087,
+      "elements": 4
+    },
+    "nodes/color": {
+      "moved": 4330,
+      "elements": 8,
+      "unresettable": [
+        "shape-underlay-0",
+        "shape-underlay-1",
+        "shape-underlay-2",
+        "shape-underlay-3"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 11119,
+      "elements": 8,
+      "unresettable": [
+        "shape-underlay-0",
+        "shape-underlay-1",
+        "shape-underlay-2",
+        "shape-underlay-3"
+      ]
+    },
+    "nodes/height": {
+      "moved": 26216,
+      "elements": 8
+    },
+    "nodes/label": {
+      "moved": 4394,
+      "elements": 4
+    },
+    "nodes/shape": {
+      "moved": 5996,
+      "elements": 3
+    },
+    "nodes/text-max-width": {
+      "moved": 0,
+      "elements": 8,
+      "unresettable": [
+        "shape-underlay-0",
+        "shape-underlay-1",
+        "shape-underlay-2",
+        "shape-underlay-3"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 8934,
+      "elements": 8,
+      "unresettable": [
+        "shape-underlay-0",
+        "shape-underlay-1",
+        "shape-underlay-2",
+        "shape-underlay-3"
+      ]
+    },
+    "nodes/text-wrap": {
+      "moved": 7434,
+      "elements": 8,
+      "unresettable": [
+        "shape-underlay-0",
+        "shape-underlay-1",
+        "shape-underlay-2",
+        "shape-underlay-3"
+      ]
+    },
+    "nodes/underlay-color": {
+      "moved": 22320,
+      "elements": 8
+    },
+    "nodes/underlay-opacity": {
+      "moved": 22320,
+      "elements": 4
+    },
+    "nodes/underlay-padding": {
+      "moved": 5818,
+      "elements": 8
+    },
+    "nodes/underlay-shape": {
+      "moved": 12064,
+      "elements": 8
+    },
+    "nodes/width": {
+      "moved": 24622,
+      "elements": 8
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "underlay-shape",
+      "target": "shape-underlay-0",
+      "value": "ellipse",
+      "alternate": "round-rectangle",
+      "matched": 1,
+      "changed": 1,
+      "moved": 3014,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

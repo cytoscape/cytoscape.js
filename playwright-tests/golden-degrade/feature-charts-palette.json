@@ -1,0 +1,106 @@
+{
+  "golden": "feature-charts-palette",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 57148,
+      "elements": 4
+    },
+    "nodes/border-color": {
+      "moved": 2877,
+      "elements": 4
+    },
+    "nodes/border-width": {
+      "moved": 2903,
+      "elements": 4
+    },
+    "nodes/chart": {
+      "moved": 46584,
+      "elements": 4
+    },
+    "nodes/chart-colors": {
+      "moved": 46584,
+      "elements": 4,
+      "via": "alternate",
+      "alternate": [
+        "#ff00ff",
+        "#00ffff",
+        "#ffff00",
+        "#101010"
+      ]
+    },
+    "nodes/chart-direction": {
+      "moved": 31007,
+      "elements": 4
+    },
+    "nodes/chart-hole": {
+      "moved": 455,
+      "elements": 1
+    },
+    "nodes/chart-opacity": {
+      "moved": 46578,
+      "elements": 4
+    },
+    "nodes/chart-size": {
+      "moved": 34303,
+      "elements": 4
+    },
+    "nodes/chart-start-angle": {
+      "moved": 6652,
+      "elements": 1
+    },
+    "nodes/chart-values": {
+      "moved": 46584,
+      "elements": 4,
+      "via": "sheet"
+    },
+    "nodes/color": {
+      "moved": 1475,
+      "elements": 4
+    },
+    "nodes/font-size": {
+      "moved": 3415,
+      "elements": 4
+    },
+    "nodes/height": {
+      "moved": 52064,
+      "elements": 4
+    },
+    "nodes/label": {
+      "moved": 1487,
+      "elements": 4
+    },
+    "nodes/shape": {
+      "moved": 16034,
+      "elements": 4
+    },
+    "nodes/width": {
+      "moved": 58601,
+      "elements": 4
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "chart",
+      "target": "chart-pie-16",
+      "value": "pie",
+      "alternate": "stripes",
+      "matched": 1,
+      "changed": 1,
+      "moved": 8381,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "chart",
+      "target": "chart-stripes-18",
+      "value": "stripes",
+      "alternate": "pie",
+      "matched": 1,
+      "changed": 1,
+      "moved": 8243,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

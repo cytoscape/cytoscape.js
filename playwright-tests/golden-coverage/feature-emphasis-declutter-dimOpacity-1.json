@@ -1,0 +1,116 @@
+{
+  "golden": "feature-emphasis-declutter-dimOpacity-1",
+  "elements": {
+    "nodes": 9,
+    "parents": 0,
+    "edges": 5
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(154,181,205)",
+      "rgb(243,197,93)"
+    ],
+    "border-color": [
+      "rgb(49,72,94)"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "14"
+    ],
+    "height": [
+      "62"
+    ],
+    "label": [
+      "far element",
+      "focus\npriority 5",
+      "neighbor A",
+      "neighbor B",
+      "neighbor C",
+      "neighbor D",
+      "overlap high",
+      "overlap low"
+    ],
+    "label-priority": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "8"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-max-width": [
+      "86"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "width": [
+      "92"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "line-color": [
+      "rgb(101,123,142)"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ]
+  },
+  "core": {
+    "dim-opacity": [
+      "1"
+    ],
+    "label-declutter": [
+      "1"
+    ]
+  },
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "core",
+        "property": "label-declutter",
+        "target": "core",
+        "value": "cull",
+        "alternate": "none"
+      },
+      {
+        "group": "core",
+        "property": "dim-opacity",
+        "target": "core",
+        "value": 1,
+        "alternate": 0
+      },
+      {
+        "group": "nodes",
+        "property": "label-priority",
+        "target": "overlap-2",
+        "value": 8
+      }
+    ],
+    "keywords": [
+      {
+        "group": "core",
+        "property": "label-declutter",
+        "target": "core",
+        "value": "cull",
+        "alternate": "none"
+      }
+    ],
+    "exceptions": []
+  }
+}

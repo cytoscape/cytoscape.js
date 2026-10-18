@@ -1,0 +1,206 @@
+{
+  "golden": "feature-paint-nodes",
+  "elements": {
+    "nodes": 9,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(216,106,85)",
+      "rgb(231,238,247)",
+      "rgb(243,201,105)"
+    ],
+    "background-fill": [
+      "linear-gradient"
+    ],
+    "background-gradient-direction": [
+      "to-bottom-left",
+      "to-bottom-right",
+      "to-left",
+      "to-right",
+      "to-top",
+      "to-top-left",
+      "to-top-right"
+    ],
+    "background-gradient-stop-colors": [
+      "rgb(231,238,247) rgb(243,201,105) rgb(216,106,85)"
+    ],
+    "background-gradient-stop-positions": [
+      "0% 29% 100%"
+    ],
+    "border-color": [
+      "rgb(40,56,74)",
+      "rgba(40,56,74,0.4)"
+    ],
+    "border-opacity": [
+      "0.4"
+    ],
+    "border-width": [
+      "3"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "13"
+    ],
+    "height": [
+      "58"
+    ],
+    "label": [
+      "bottom · border 0.4",
+      "bottom-left",
+      "bottom-right",
+      "left",
+      "right",
+      "solid baseline",
+      "top",
+      "top-left",
+      "top-right"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-margin-y": [
+      "30"
+    ],
+    "width": [
+      "112"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "background-color",
+        "target": "paint-1",
+        "value": "#d86a55"
+      },
+      {
+        "group": "nodes",
+        "property": "background-fill",
+        "target": "paint-1",
+        "value": "linear-gradient"
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-direction",
+        "target": "paint-1",
+        "value": "to-bottom"
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-stop-colors",
+        "target": "paint-1",
+        "value": [
+          "#e7eef7",
+          "#f3c969",
+          "#d86a55"
+        ]
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-stop-positions",
+        "target": "paint-1",
+        "value": [
+          0,
+          29,
+          100
+        ]
+      },
+      {
+        "group": "nodes",
+        "property": "background-opacity",
+        "target": "paint-1",
+        "value": 1
+      },
+      {
+        "group": "nodes",
+        "property": "border-opacity",
+        "target": "paint-1",
+        "value": 0.4
+      },
+      {
+        "group": "nodes",
+        "property": "border-position",
+        "target": "paint-1",
+        "value": "center"
+      },
+      {
+        "group": "nodes",
+        "property": "border-style",
+        "target": "paint-1",
+        "value": "solid"
+      },
+      {
+        "group": "nodes",
+        "property": "border-dash-offset",
+        "target": "paint-1",
+        "value": 0
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "background-gradient-direction",
+        "target": "paint-1",
+        "value": "to-bottom",
+        "alternate": "to-top"
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-direction",
+        "target": "paint-2",
+        "value": "to-top",
+        "alternate": "to-bottom"
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-direction",
+        "target": "paint-3",
+        "value": "to-left",
+        "alternate": "to-right"
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-direction",
+        "target": "paint-4",
+        "value": "to-right",
+        "alternate": "to-left"
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-direction",
+        "target": "paint-5",
+        "value": "to-bottom-right",
+        "alternate": "to-top-left"
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-direction",
+        "target": "paint-6",
+        "value": "to-bottom-left",
+        "alternate": "to-top-right"
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-direction",
+        "target": "paint-7",
+        "value": "to-top-right",
+        "alternate": "to-bottom-left"
+      },
+      {
+        "group": "nodes",
+        "property": "background-gradient-direction",
+        "target": "paint-8",
+        "value": "to-top-left",
+        "alternate": "to-bottom-right"
+      }
+    ],
+    "exceptions": []
+  }
+}

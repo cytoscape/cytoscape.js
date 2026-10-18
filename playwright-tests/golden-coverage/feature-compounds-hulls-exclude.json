@@ -1,0 +1,159 @@
+{
+  "golden": "feature-compounds-hulls-exclude",
+  "elements": {
+    "nodes": 10,
+    "parents": 3,
+    "edges": 1
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(186,216,200)",
+      "rgba(118,181,150,0.38)"
+    ],
+    "background-opacity": [
+      "0.38"
+    ],
+    "border-color": [
+      "rgb(40,113,75)",
+      "rgb(52,115,84)"
+    ],
+    "border-width": [
+      "2",
+      "3"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "38"
+    ],
+    "label": [
+      "A",
+      "B",
+      "C",
+      "concave hull",
+      "convex hull",
+      "long child label beyond leaf",
+      "outside",
+      "round convex"
+    ],
+    "shape": [
+      "concave-hull",
+      "convex-hull",
+      "round-convex-hull",
+      "round-rectangle"
+    ],
+    "text-halign": [
+      "left"
+    ],
+    "text-margin-x": [
+      "-8"
+    ],
+    "text-margin-y": [
+      "12"
+    ],
+    "text-max-width": [
+      "130"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "width": [
+      "52"
+    ]
+  },
+  "parents": {
+    "padding": [
+      "8"
+    ],
+    "padding-bottom": [
+      "8"
+    ],
+    "padding-left": [
+      "8"
+    ],
+    "padding-right": [
+      "8"
+    ],
+    "padding-top": [
+      "8"
+    ]
+  },
+  "edges": {
+    "line-color": [
+      "rgb(77,99,117)"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "parents",
+        "property": "compound-sizing-wrt-labels",
+        "target": "hull-convex",
+        "value": "exclude"
+      },
+      {
+        "group": "parents",
+        "property": "shape",
+        "target": "hull-convex",
+        "value": "convex-hull"
+      },
+      {
+        "group": "parents",
+        "property": "shape",
+        "target": "hull-round",
+        "value": "round-convex-hull"
+      },
+      {
+        "group": "parents",
+        "property": "shape",
+        "target": "hull-concave",
+        "value": "concave-hull"
+      }
+    ],
+    "keywords": [
+      {
+        "group": "parents",
+        "property": "shape",
+        "target": "hull-convex",
+        "value": "convex-hull",
+        "alternate": "concave-hull"
+      },
+      {
+        "group": "parents",
+        "property": "shape",
+        "target": "hull-round",
+        "value": "round-convex-hull",
+        "alternate": "convex-hull"
+      },
+      {
+        "group": "parents",
+        "property": "shape",
+        "target": "hull-concave",
+        "value": "concave-hull",
+        "alternate": "round-convex-hull"
+      },
+      {
+        "group": "parents",
+        "property": "compound-sizing-wrt-labels",
+        "target": "hull-convex",
+        "value": "exclude",
+        "alternate": "include"
+      }
+    ],
+    "exceptions": []
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "golden": "feature-paint-outlines",
+  "elements": {
+    "nodes": 8,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(231,237,244)",
+      "rgba(231,237,244,0)"
+    ],
+    "background-opacity": [
+      "0"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "1",
+      "46"
+    ],
+    "label": [
+      "dashed · 4 px",
+      "dotted · 5 px",
+      "double (solid today) · 6 px",
+      "solid · 2 px"
+    ],
+    "outline-color": [
+      "rgba(188,74,69,0.878)"
+    ],
+    "outline-offset": [
+      "2",
+      "5",
+      "7"
+    ],
+    "outline-opacity": [
+      "0.878"
+    ],
+    "outline-style": [
+      "dashed",
+      "dotted",
+      "double"
+    ],
+    "outline-width": [
+      "2",
+      "4",
+      "5",
+      "6"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "1",
+      "66"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "outline-style",
+        "target": "outline-double",
+        "value": "double",
+        "reason": "The current outline renderer draws the authored double style as a solid outline. This is recorded as an accepted visual limitation; the authored value still resolves as double."
+      },
+      {
+        "group": "nodes",
+        "property": "outline-color",
+        "target": "outline-dashed",
+        "value": "#bc4a45"
+      },
+      {
+        "group": "nodes",
+        "property": "outline-opacity",
+        "target": "outline-dotted",
+        "value": 0.88
+      },
+      {
+        "group": "nodes",
+        "property": "outline-width",
+        "target": "outline-dotted",
+        "value": 5
+      },
+      {
+        "group": "nodes",
+        "property": "outline-offset",
+        "target": "outline-double",
+        "value": 7
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "outline-style",
+        "target": "outline-solid",
+        "value": "solid",
+        "alternate": "dashed"
+      },
+      {
+        "group": "nodes",
+        "property": "outline-style",
+        "target": "outline-dashed",
+        "value": "dashed",
+        "alternate": "solid"
+      },
+      {
+        "group": "nodes",
+        "property": "outline-style",
+        "target": "outline-dotted",
+        "value": "dotted",
+        "alternate": "solid"
+      },
+      {
+        "group": "nodes",
+        "property": "outline-style",
+        "target": "outline-double",
+        "value": "double",
+        "reason": "The current outline renderer draws the authored double style as a solid outline. This is recorded as an accepted visual limitation; the authored value still resolves as double.",
+        "alternate": "solid"
+      }
+    ],
+    "exceptions": []
+  }
+}

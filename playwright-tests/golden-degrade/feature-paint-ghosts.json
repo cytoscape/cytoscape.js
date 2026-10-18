@@ -1,0 +1,132 @@
+{
+  "golden": "feature-paint-ghosts",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 55248,
+      "elements": 6
+    },
+    "nodes/background-opacity": {
+      "moved": 20,
+      "elements": 3
+    },
+    "nodes/border-color": {
+      "moved": 6991,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 7002,
+      "elements": 3
+    },
+    "nodes/color": {
+      "moved": 3201,
+      "elements": 6,
+      "unresettable": [
+        "ghost-off",
+        "ghost-x",
+        "ghost-y"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 6957,
+      "elements": 6,
+      "unresettable": [
+        "ghost-off",
+        "ghost-x",
+        "ghost-y"
+      ]
+    },
+    "nodes/ghost": {
+      "moved": 8394,
+      "elements": 2
+    },
+    "nodes/ghost-offset-x": {
+      "moved": 3484,
+      "elements": 1
+    },
+    "nodes/ghost-offset-y": {
+      "moved": 4969,
+      "elements": 1
+    },
+    "nodes/ghost-opacity": {
+      "moved": 8394,
+      "elements": 6
+    },
+    "nodes/height": {
+      "moved": 41062,
+      "elements": 6
+    },
+    "nodes/label": {
+      "moved": 3225,
+      "elements": 3
+    },
+    "nodes/shape": {
+      "moved": 19273,
+      "elements": 6
+    },
+    "nodes/text-margin-y": {
+      "moved": 5173,
+      "elements": 6,
+      "unresettable": [
+        "ghost-off",
+        "ghost-x",
+        "ghost-y"
+      ]
+    },
+    "nodes/text-max-width": {
+      "moved": 2623,
+      "elements": 6,
+      "unresettable": [
+        "ghost-off",
+        "ghost-x",
+        "ghost-y"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 6376,
+      "elements": 6,
+      "unresettable": [
+        "ghost-off",
+        "ghost-x",
+        "ghost-y"
+      ]
+    },
+    "nodes/text-wrap": {
+      "moved": 2623,
+      "elements": 6,
+      "unresettable": [
+        "ghost-off",
+        "ghost-x",
+        "ghost-y"
+      ]
+    },
+    "nodes/width": {
+      "moved": 47033,
+      "elements": 6
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "ghost",
+      "target": "ghost-off",
+      "value": "no",
+      "alternate": "yes",
+      "matched": 1,
+      "changed": 1,
+      "moved": 552,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "ghost",
+      "target": "ghost-x",
+      "value": "yes",
+      "alternate": "no",
+      "matched": 1,
+      "changed": 1,
+      "moved": 3508,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

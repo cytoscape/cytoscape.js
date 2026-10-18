@@ -1,0 +1,579 @@
+{
+  "golden": "feature-arrows-shapes",
+  "elements": {
+    "nodes": 66,
+    "parents": 0,
+    "edges": 33
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "14"
+    ],
+    "height": [
+      "14"
+    ],
+    "label": [
+      "mid-source\nchevron",
+      "mid-source\ncircle",
+      "mid-source\ncircle-triangle",
+      "mid-source\ndiamond",
+      "mid-source\nnone",
+      "mid-source\nsquare",
+      "mid-source\ntee",
+      "mid-source\ntriangle",
+      "mid-source\ntriangle-\nbackcurve",
+      "mid-source\ntriangle-tee",
+      "mid-source\nvee",
+      "mid-target\nchevron",
+      "mid-target\ncircle",
+      "mid-target\ncircle-triangle",
+      "mid-target\ndiamond",
+      "mid-target\nnone",
+      "mid-target\nsquare",
+      "mid-target\ntee",
+      "mid-target\ntriangle-\nbackcurve",
+      "mid-target\ntriangle-tee",
+      "mid-target\nvee",
+      "source\narrow",
+      "source\nchevron",
+      "source\ncircle",
+      "source\ncircle-triangle",
+      "source\ndiamond",
+      "source\nnone",
+      "source\nsquare",
+      "source\ntee",
+      "source\ntriangle",
+      "source\ntriangle-\nbackcurve",
+      "source\ntriangle-tee",
+      "…+1"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-margin-x": [
+      "38"
+    ],
+    "text-margin-y": [
+      "14"
+    ],
+    "text-max-width": [
+      "115"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "width": [
+      "14"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "arrow-scale": [
+      "1.5"
+    ],
+    "line-color": [
+      "rgb(83,103,122)"
+    ],
+    "mid-source-arrow-color": [
+      "rgb(76,142,103)"
+    ],
+    "mid-source-arrow-shape": [
+      "chevron",
+      "circle",
+      "circle-triangle",
+      "diamond",
+      "square",
+      "tee",
+      "triangle",
+      "triangle-backcurve",
+      "triangle-tee",
+      "vee"
+    ],
+    "mid-target-arrow-color": [
+      "rgb(66,104,164)"
+    ],
+    "mid-target-arrow-shape": [
+      "chevron",
+      "circle",
+      "circle-triangle",
+      "diamond",
+      "square",
+      "tee",
+      "triangle-backcurve",
+      "triangle-tee",
+      "vee"
+    ],
+    "source-arrow-color": [
+      "rgb(207,76,85)"
+    ],
+    "source-arrow-shape": [
+      "chevron",
+      "circle",
+      "circle-triangle",
+      "diamond",
+      "square",
+      "tee",
+      "triangle",
+      "triangle-backcurve",
+      "triangle-tee",
+      "vee"
+    ],
+    "target-arrow-color": [
+      "rgb(232,163,61)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-0",
+        "value": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-1",
+        "value": "triangle"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-2",
+        "value": "arrow",
+        "resolvedValue": "triangle"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-3",
+        "value": "chevron"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-4",
+        "value": "circle"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-5",
+        "value": "vee"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-6",
+        "value": "square"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-7",
+        "value": "diamond"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-8",
+        "value": "tee"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-9",
+        "value": "triangle-tee"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-10",
+        "value": "circle-triangle"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-11",
+        "value": "triangle-backcurve"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-12",
+        "value": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-13",
+        "value": "triangle"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-14",
+        "value": "circle"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-15",
+        "value": "tee"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-16",
+        "value": "vee"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-17",
+        "value": "chevron"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-18",
+        "value": "square"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-19",
+        "value": "diamond"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-20",
+        "value": "triangle-tee"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-21",
+        "value": "circle-triangle"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-22",
+        "value": "triangle-backcurve"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-23",
+        "value": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-24",
+        "value": "vee"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-25",
+        "value": "chevron"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-26",
+        "value": "circle"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-27",
+        "value": "square"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-28",
+        "value": "diamond"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-29",
+        "value": "tee"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-30",
+        "value": "triangle-tee"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-31",
+        "value": "circle-triangle"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-32",
+        "value": "triangle-backcurve"
+      }
+    ],
+    "keywords": [
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-0",
+        "value": "none",
+        "alternate": "triangle"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-1",
+        "value": "triangle",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-2",
+        "value": "arrow",
+        "resolvedValue": "triangle",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-3",
+        "value": "chevron",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-4",
+        "value": "circle",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-5",
+        "value": "vee",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-6",
+        "value": "square",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-7",
+        "value": "diamond",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-8",
+        "value": "tee",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-9",
+        "value": "triangle-tee",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-10",
+        "value": "circle-triangle",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-shape",
+        "target": "arrow-shape-11",
+        "value": "triangle-backcurve",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-12",
+        "value": "none",
+        "alternate": "triangle"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-13",
+        "value": "triangle",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-14",
+        "value": "circle",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-15",
+        "value": "tee",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-16",
+        "value": "vee",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-17",
+        "value": "chevron",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-18",
+        "value": "square",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-19",
+        "value": "diamond",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-20",
+        "value": "triangle-tee",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-21",
+        "value": "circle-triangle",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-shape",
+        "target": "arrow-shape-22",
+        "value": "triangle-backcurve",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-23",
+        "value": "none",
+        "alternate": "triangle"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-24",
+        "value": "vee",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-25",
+        "value": "chevron",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-26",
+        "value": "circle",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-27",
+        "value": "square",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-28",
+        "value": "diamond",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-29",
+        "value": "tee",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-30",
+        "value": "triangle-tee",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-31",
+        "value": "circle-triangle",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-shape",
+        "target": "arrow-shape-32",
+        "value": "triangle-backcurve",
+        "alternate": "none"
+      }
+    ],
+    "exceptions": []
+  }
+}

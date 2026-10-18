@@ -1,0 +1,120 @@
+{
+  "golden": "feature-compounds-miniature",
+  "elements": {
+    "nodes": 5,
+    "parents": 2,
+    "edges": 1
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,231,241)",
+      "rgba(156,184,208,0.502)"
+    ],
+    "background-image": [
+      "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%3E%3Crect%20width%3D%2248%22%20height%3D%2248%22%20fill%3D%22%23c64d4d%22%2F%3E%3Cpath%20d%3D%22M0%2024h48M24%200v48%22%20stroke%3D%22%23ffffff%22%20stroke-opacity%3D%22.8%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2224%22%20r%3D%2212%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E"
+    ],
+    "background-image-opacity": [
+      "0.949999988079071"
+    ],
+    "background-opacity": [
+      "0.502"
+    ],
+    "border-color": [
+      "rgb(52,74,95)",
+      "rgb(63,99,127)"
+    ],
+    "border-dash-pattern": [
+      "4.00000015894572 2.00000007947286"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "chart": [
+      "pie"
+    ],
+    "chart-colors": [
+      "rgb(198,77,77) rgb(228,167,53) rgb(78,156,115) rgb(71,114,177)"
+    ],
+    "chart-size": [
+      "0.55"
+    ],
+    "chart-values": [
+      "1 0 0 0"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "72"
+    ],
+    "label": [
+      "chart child",
+      "collapsed miniature",
+      "expanded reference",
+      "image child",
+      "outside"
+    ],
+    "shape": [
+      "rectangle"
+    ],
+    "text-margin-y": [
+      "14"
+    ],
+    "text-max-width": [
+      "140"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "width": [
+      "104"
+    ]
+  },
+  "parents": {
+    "collapse-scale": [
+      "0.3"
+    ],
+    "padding": [
+      "2"
+    ],
+    "padding-bottom": [
+      "2"
+    ],
+    "padding-left": [
+      "2"
+    ],
+    "padding-right": [
+      "2"
+    ],
+    "padding-top": [
+      "2"
+    ]
+  },
+  "edges": {
+    "line-color": [
+      "rgb(83,103,122)"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "parents",
+        "property": "collapse-scale",
+        "target": "parent-mini",
+        "value": 0.3
+      }
+    ],
+    "keywords": [],
+    "exceptions": []
+  }
+}

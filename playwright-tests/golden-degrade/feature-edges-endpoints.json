@@ -1,0 +1,191 @@
+{
+  "golden": "feature-edges-endpoints",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 13017,
+      "elements": 10
+    },
+    "nodes/border-color": {
+      "moved": 2449,
+      "elements": 10
+    },
+    "nodes/border-width": {
+      "moved": 6655,
+      "elements": 10
+    },
+    "nodes/color": {
+      "moved": 2123,
+      "elements": 10,
+      "unresettable": [
+        "route-t0",
+        "route-t1",
+        "route-t2",
+        "route-t3",
+        "route-t4"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 4444,
+      "elements": 10,
+      "unresettable": [
+        "route-t0",
+        "route-t1",
+        "route-t2",
+        "route-t3",
+        "route-t4"
+      ]
+    },
+    "nodes/height": {
+      "moved": 8488,
+      "elements": 10
+    },
+    "nodes/label": {
+      "moved": 2156,
+      "elements": 5
+    },
+    "nodes/shape": {
+      "moved": 9909,
+      "elements": 10
+    },
+    "nodes/text-halign": {
+      "moved": 3881,
+      "elements": 10,
+      "unresettable": [
+        "route-t0",
+        "route-t1",
+        "route-t2",
+        "route-t3",
+        "route-t4"
+      ]
+    },
+    "nodes/text-margin-x": {
+      "moved": 3056,
+      "elements": 10,
+      "unresettable": [
+        "route-t0",
+        "route-t1",
+        "route-t2",
+        "route-t3",
+        "route-t4"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 4311,
+      "elements": 10,
+      "unresettable": [
+        "route-t0",
+        "route-t1",
+        "route-t2",
+        "route-t3",
+        "route-t4"
+      ]
+    },
+    "nodes/width": {
+      "moved": 16623,
+      "elements": 10
+    },
+    "edges/control-point-distances": {
+      "moved": 12067,
+      "elements": 5,
+      "via": "sheet"
+    },
+    "edges/control-point-weights": {
+      "moved": 10473,
+      "elements": 5
+    },
+    "edges/curve-style": {
+      "moved": 12113,
+      "elements": 5
+    },
+    "edges/edge-distances": {
+      "moved": 2450,
+      "elements": 1
+    },
+    "edges/line-color": {
+      "moved": 5967,
+      "elements": 5
+    },
+    "edges/source-distance-from-node": {
+      "moved": 4641,
+      "elements": 4
+    },
+    "edges/source-endpoint": {
+      "moved": 9285,
+      "elements": 5
+    },
+    "edges/target-arrow-color": {
+      "moved": 219,
+      "elements": 5
+    },
+    "edges/target-arrow-shape": {
+      "moved": 5145,
+      "elements": 5
+    },
+    "edges/target-distance-from-node": {
+      "moved": 5683,
+      "elements": 4
+    },
+    "edges/target-endpoint": {
+      "moved": 9459,
+      "elements": 5
+    }
+  },
+  "keywords": [
+    {
+      "group": "edges",
+      "property": "edge-distances",
+      "target": "route-4",
+      "value": "endpoints",
+      "alternate": "intersection",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2450,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "source-endpoint",
+      "target": "route-0",
+      "value": "inside-to-node",
+      "alternate": "outside-to-line",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1314,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "source-endpoint",
+      "target": "route-1",
+      "value": "outside-to-line",
+      "alternate": "inside-to-node",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1331,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "target-endpoint",
+      "target": "route-2",
+      "value": "inside-to-node",
+      "alternate": "outside-to-line",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1543,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "target-endpoint",
+      "target": "route-3",
+      "value": "outside-to-line",
+      "alternate": "inside-to-node",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1521,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

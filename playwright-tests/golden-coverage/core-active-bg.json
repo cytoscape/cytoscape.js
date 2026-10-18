@@ -1,0 +1,38 @@
+{
+  "golden": "core-active-bg",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(56,78,100)"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "height": [
+      "38"
+    ],
+    "width": [
+      "46"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {
+    "active-bg-color": [
+      "[47,125,225,255]"
+    ],
+    "active-bg-opacity": [
+      "0.32"
+    ],
+    "active-bg-size": [
+      "48"
+    ]
+  }
+}

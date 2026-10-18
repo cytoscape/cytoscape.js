@@ -1,0 +1,159 @@
+{
+  "golden": "feature-paint-nodes",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 12325,
+      "elements": 9
+    },
+    "nodes/background-fill": {
+      "moved": 98112,
+      "elements": 8
+    },
+    "nodes/background-gradient-direction": {
+      "moved": 85533,
+      "elements": 7
+    },
+    "nodes/background-gradient-stop-colors": {
+      "moved": 98112,
+      "elements": 8,
+      "via": "sheet"
+    },
+    "nodes/background-gradient-stop-positions": {
+      "moved": 97006,
+      "elements": 8,
+      "via": "alternate",
+      "alternate": "0% 23% 100%"
+    },
+    "nodes/border-color": {
+      "moved": 21198,
+      "elements": 9
+    },
+    "nodes/border-opacity": {
+      "moved": 2358,
+      "elements": 1
+    },
+    "nodes/border-width": {
+      "moved": 24602,
+      "elements": 9
+    },
+    "nodes/color": {
+      "moved": 4285,
+      "elements": 9
+    },
+    "nodes/font-size": {
+      "moved": 8444,
+      "elements": 9
+    },
+    "nodes/height": {
+      "moved": 118231,
+      "elements": 9
+    },
+    "nodes/label": {
+      "moved": 4321,
+      "elements": 9
+    },
+    "nodes/shape": {
+      "moved": 40654,
+      "elements": 9
+    },
+    "nodes/text-margin-y": {
+      "moved": 8644,
+      "elements": 9
+    },
+    "nodes/width": {
+      "moved": 119882,
+      "elements": 9
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "background-gradient-direction",
+      "target": "paint-1",
+      "value": "to-bottom",
+      "alternate": "to-top",
+      "matched": 1,
+      "changed": 1,
+      "moved": 12102,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-gradient-direction",
+      "target": "paint-2",
+      "value": "to-top",
+      "alternate": "to-bottom",
+      "matched": 1,
+      "changed": 1,
+      "moved": 12168,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-gradient-direction",
+      "target": "paint-3",
+      "value": "to-left",
+      "alternate": "to-right",
+      "matched": 1,
+      "changed": 1,
+      "moved": 12244,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-gradient-direction",
+      "target": "paint-4",
+      "value": "to-right",
+      "alternate": "to-left",
+      "matched": 1,
+      "changed": 1,
+      "moved": 12102,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-gradient-direction",
+      "target": "paint-5",
+      "value": "to-bottom-right",
+      "alternate": "to-top-left",
+      "matched": 1,
+      "changed": 1,
+      "moved": 12165,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-gradient-direction",
+      "target": "paint-6",
+      "value": "to-bottom-left",
+      "alternate": "to-top-right",
+      "matched": 1,
+      "changed": 1,
+      "moved": 12164,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-gradient-direction",
+      "target": "paint-7",
+      "value": "to-top-right",
+      "alternate": "to-bottom-left",
+      "matched": 1,
+      "changed": 1,
+      "moved": 12102,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-gradient-direction",
+      "target": "paint-8",
+      "value": "to-top-left",
+      "alternate": "to-bottom-right",
+      "matched": 1,
+      "changed": 1,
+      "moved": 12164,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "golden": "feature-compounds-padding-width-paddingRelativeTo-max",
+  "elements": {
+    "nodes": 3,
+    "parents": 1,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)",
+      "rgba(171,199,220,0.502)"
+    ],
+    "background-opacity": [
+      "0.502"
+    ],
+    "border-color": [
+      "rgb(65,101,127)",
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1",
+      "2"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "38"
+    ],
+    "label": [
+      "18% padding\nrelative to max",
+      "A",
+      "B",
+      "reference"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-margin-y": [
+      "14"
+    ],
+    "text-max-width": [
+      "150"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "width": [
+      "52"
+    ]
+  },
+  "parents": {
+    "padding": [
+      "18%"
+    ],
+    "padding-bottom": [
+      "18%"
+    ],
+    "padding-left": [
+      "18%"
+    ],
+    "padding-relative-to": [
+      "max"
+    ],
+    "padding-right": [
+      "18%"
+    ],
+    "padding-top": [
+      "18%"
+    ]
+  },
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "parents",
+        "property": "padding-relative-to",
+        "target": "parent-padding",
+        "value": "max",
+        "alternate": "height"
+      },
+      {
+        "group": "parents",
+        "property": "padding",
+        "target": "parent-padding",
+        "value": "18%"
+      }
+    ],
+    "keywords": [
+      {
+        "group": "parents",
+        "property": "padding-relative-to",
+        "target": "parent-padding",
+        "value": "max",
+        "alternate": "height"
+      }
+    ],
+    "exceptions": []
+  }
+}

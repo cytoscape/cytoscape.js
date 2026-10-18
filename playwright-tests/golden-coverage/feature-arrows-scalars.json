@@ -1,0 +1,185 @@
+{
+  "golden": "feature-arrows-scalars",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 3
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "34"
+    ],
+    "label": [
+      "line 1px",
+      "line 4px",
+      "line 8px"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-halign": [
+      "left"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "1",
+      "4",
+      "50",
+      "8"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "arrow-scale": [
+      "2",
+      "3"
+    ],
+    "line-color": [
+      "rgb(83,103,122)"
+    ],
+    "mid-source-arrow-width": [
+      "8"
+    ],
+    "mid-target-arrow-width": [
+      "8"
+    ],
+    "source-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "source-arrow-fill": [
+      "hollow"
+    ],
+    "source-arrow-shape": [
+      "tee"
+    ],
+    "source-arrow-width": [
+      "4",
+      "8"
+    ],
+    "source-distance-from-node": [
+      "18",
+      "9"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-fill": [
+      "hollow"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "target-arrow-width": [
+      "4"
+    ],
+    "target-distance-from-node": [
+      "18",
+      "9"
+    ],
+    "width": [
+      "1",
+      "4",
+      "8"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "edges",
+        "property": "source-arrow-width",
+        "target": "arrow-width-0",
+        "value": 1
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-width",
+        "target": "arrow-width-1",
+        "value": 4
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-width",
+        "target": "arrow-width-2",
+        "value": "match-line",
+        "resolvedValue": 8
+      },
+      {
+        "group": "edges",
+        "property": "target-arrow-width",
+        "target": "arrow-width-2",
+        "value": "50%"
+      },
+      {
+        "group": "edges",
+        "property": "arrow-scale",
+        "target": "arrow-width-2",
+        "value": 3
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-fill",
+        "target": "arrow-width-0",
+        "value": "filled"
+      }
+    ],
+    "keywords": [
+      {
+        "group": "edges",
+        "property": "source-arrow-width",
+        "target": "arrow-width-2",
+        "value": "match-line",
+        "alternate": "4",
+        "resolvedValue": 8
+      },
+      {
+        "group": "edges",
+        "property": "target-arrow-width",
+        "target": "arrow-width-1",
+        "value": "match-line",
+        "alternate": "1",
+        "resolvedValue": 4
+      },
+      {
+        "group": "edges",
+        "property": "source-arrow-fill",
+        "target": "arrow-width-0",
+        "value": "filled",
+        "alternate": "hollow"
+      }
+    ],
+    "exceptions": [
+      {
+        "group": "edges",
+        "property": "mid-source-arrow-width",
+        "target": "arrow-width-2",
+        "value": "match-line",
+        "reason": "Mid-arrow widths are accepted and read back against edge width, but the render contract always fills mid heads so no width stroke is drawn."
+      },
+      {
+        "group": "edges",
+        "property": "mid-target-arrow-width",
+        "target": "arrow-width-2",
+        "value": "match-line",
+        "reason": "Mid-arrow widths are accepted and read back against edge width, but the render contract always fills mid heads so no width stroke is drawn."
+      }
+    ]
+  }
+}

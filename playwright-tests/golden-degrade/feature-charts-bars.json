@@ -1,0 +1,160 @@
+{
+  "golden": "feature-charts-bars",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 145902,
+      "elements": 4
+    },
+    "nodes/background-opacity": {
+      "moved": 16,
+      "elements": 2
+    },
+    "nodes/border-color": {
+      "moved": 6504,
+      "elements": 4
+    },
+    "nodes/border-width": {
+      "moved": 6504,
+      "elements": 2
+    },
+    "nodes/chart": {
+      "moved": 10373,
+      "elements": 2
+    },
+    "nodes/chart-colors": {
+      "moved": 10373,
+      "elements": 2,
+      "via": "alternate",
+      "alternate": [
+        "#ff00ff",
+        "#00ffff",
+        "#ffff00",
+        "#101010"
+      ]
+    },
+    "nodes/chart-direction": {
+      "moved": 3007,
+      "elements": 1
+    },
+    "nodes/chart-domain": {
+      "moved": 6687,
+      "elements": 4,
+      "via": "alternate",
+      "unresettable": [
+        "chart-bar-negative",
+        "chart-bar-horizontal",
+        "chart-bar-negative-caption",
+        "chart-bar-horizontal-caption"
+      ],
+      "alternate": [
+        -8,
+        8
+      ]
+    },
+    "nodes/chart-opacity": {
+      "moved": 10332,
+      "elements": 2
+    },
+    "nodes/chart-size": {
+      "moved": 9421,
+      "elements": 2
+    },
+    "nodes/chart-values": {
+      "moved": 10373,
+      "elements": 2,
+      "via": "sheet"
+    },
+    "nodes/color": {
+      "moved": 6054,
+      "elements": 4,
+      "unresettable": [
+        "chart-bar-negative",
+        "chart-bar-horizontal"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 12053,
+      "elements": 4,
+      "unresettable": [
+        "chart-bar-negative",
+        "chart-bar-horizontal"
+      ]
+    },
+    "nodes/height": {
+      "moved": 116105,
+      "elements": 4
+    },
+    "nodes/label": {
+      "moved": 6082,
+      "elements": 2
+    },
+    "nodes/shape": {
+      "moved": 37126,
+      "elements": 4
+    },
+    "nodes/text-max-width": {
+      "moved": 11194,
+      "elements": 4,
+      "unresettable": [
+        "chart-bar-negative",
+        "chart-bar-horizontal"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 11722,
+      "elements": 2
+    },
+    "nodes/text-wrap": {
+      "moved": 11194,
+      "elements": 4,
+      "unresettable": [
+        "chart-bar-negative",
+        "chart-bar-horizontal"
+      ]
+    },
+    "nodes/width": {
+      "moved": 130512,
+      "elements": 4
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "chart-direction",
+      "target": "chart-bar-horizontal",
+      "value": "horizontal",
+      "alternate": "vertical",
+      "matched": 1,
+      "changed": 1,
+      "moved": 3007,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "chart-domain",
+      "target": "chart-bar-negative",
+      "value": "auto",
+      "alternate": [
+        -5,
+        6
+      ],
+      "matched": 1,
+      "changed": 1,
+      "moved": 2804,
+      "resolvedValue": "auto auto",
+      "matchedBy": "authored-declaration-and-stylesheet-readback",
+      "controlMode": "stylesheet",
+      "restoreMoved": 0,
+      "scope": "authored stylesheet replacement"
+    },
+    {
+      "group": "nodes",
+      "property": "chart",
+      "target": "chart-bar-negative",
+      "value": "bar",
+      "reason": "chart-domain is valid only for chart kind bar; changing this target to another chart kind while its authored domain remains set is rejected by the style engine.",
+      "exception": "chart-domain is valid only for chart kind bar; changing this target to another chart kind while its authored domain remains set is rejected by the style engine."
+    }
+  ]
+}

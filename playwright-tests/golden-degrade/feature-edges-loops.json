@@ -1,0 +1,79 @@
+{
+  "golden": "feature-edges-loops",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 23753,
+      "elements": 6
+    },
+    "nodes/background-opacity": {
+      "moved": 14,
+      "elements": 3
+    },
+    "nodes/border-color": {
+      "moved": 2142,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 2718,
+      "elements": 3
+    },
+    "nodes/color": {
+      "moved": 4477,
+      "elements": 6
+    },
+    "nodes/font-size": {
+      "moved": 10277,
+      "elements": 6
+    },
+    "nodes/height": {
+      "moved": 14452,
+      "elements": 6
+    },
+    "nodes/label": {
+      "moved": 4519,
+      "elements": 6
+    },
+    "nodes/shape": {
+      "moved": 7851,
+      "elements": 6
+    },
+    "nodes/text-valign": {
+      "moved": 8976,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 18030,
+      "elements": 6
+    },
+    "edges/control-point-step-size": {
+      "moved": 1631,
+      "elements": 3
+    },
+    "edges/curve-style": {
+      "moved": 0,
+      "elements": 3
+    },
+    "edges/line-color": {
+      "moved": 1048,
+      "elements": 3
+    },
+    "edges/loop-direction": {
+      "moved": 1215,
+      "elements": 3
+    },
+    "edges/loop-sweep": {
+      "moved": 3249,
+      "elements": 3
+    },
+    "edges/target-arrow-color": {
+      "moved": 192,
+      "elements": 3
+    },
+    "edges/target-arrow-shape": {
+      "moved": 541,
+      "elements": 3
+    }
+  },
+  "keywords": []
+}

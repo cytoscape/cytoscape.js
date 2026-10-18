@@ -1,0 +1,41 @@
+{
+  "golden": "core-selection-box",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(56,78,100)"
+    ],
+    "border-width": [
+      "2"
+    ],
+    "height": [
+      "38"
+    ],
+    "width": [
+      "46"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {
+    "selection-box-border-color": [
+      "[139,63,22,255]"
+    ],
+    "selection-box-border-width": [
+      "3"
+    ],
+    "selection-box-color": [
+      "[239,125,53,255]"
+    ],
+    "selection-box-opacity": [
+      "0.4"
+    ]
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "golden": "feature-paint-fills",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 15897,
+      "elements": 3
+    },
+    "nodes/background-fill": {
+      "moved": 31877,
+      "elements": 2
+    },
+    "nodes/background-gradient-direction": {
+      "moved": 15919,
+      "elements": 2
+    },
+    "nodes/background-gradient-stop-colors": {
+      "moved": 31877,
+      "elements": 2,
+      "via": "sheet"
+    },
+    "nodes/background-gradient-stop-positions": {
+      "moved": 30606,
+      "elements": 2,
+      "via": "alternate",
+      "alternate": "0% 23% 100%"
+    },
+    "nodes/border-color": {
+      "moved": 4820,
+      "elements": 3
+    },
+    "nodes/border-width": {
+      "moved": 5059,
+      "elements": 3
+    },
+    "nodes/color": {
+      "moved": 679,
+      "elements": 3
+    },
+    "nodes/font-size": {
+      "moved": 1402,
+      "elements": 3
+    },
+    "nodes/height": {
+      "moved": 35819,
+      "elements": 3
+    },
+    "nodes/label": {
+      "moved": 689,
+      "elements": 3
+    },
+    "nodes/shape": {
+      "moved": 14494,
+      "elements": 3
+    },
+    "nodes/text-margin-y": {
+      "moved": 1074,
+      "elements": 3
+    },
+    "nodes/width": {
+      "moved": 48413,
+      "elements": 3
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "background-fill",
+      "target": "fill-0",
+      "value": "solid",
+      "alternate": "linear-gradient",
+      "matched": 1,
+      "changed": 1,
+      "moved": 15897,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-fill",
+      "target": "fill-1",
+      "value": "linear-gradient",
+      "alternate": "solid",
+      "matched": 1,
+      "changed": 1,
+      "moved": 15980,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "background-fill",
+      "target": "fill-2",
+      "value": "radial-gradient",
+      "alternate": "solid",
+      "matched": 1,
+      "changed": 1,
+      "moved": 15897,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

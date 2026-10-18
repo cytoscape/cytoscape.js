@@ -1,0 +1,141 @@
+{
+  "golden": "feature-paint-borders",
+  "elements": {
+    "nodes": 7,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(229,237,245)"
+    ],
+    "border-color": [
+      "rgb(36,58,80)"
+    ],
+    "border-dash-offset": [
+      "2"
+    ],
+    "border-dash-pattern": [
+      "7 3"
+    ],
+    "border-position": [
+      "inside",
+      "outside"
+    ],
+    "border-style": [
+      "dashed",
+      "dotted",
+      "double"
+    ],
+    "border-width": [
+      "7"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "11"
+    ],
+    "height": [
+      "58"
+    ],
+    "label": [
+      "position center",
+      "position inside",
+      "position outside",
+      "style dashed",
+      "style dotted",
+      "style double",
+      "style solid"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-margin-y": [
+      "3"
+    ],
+    "width": [
+      "92"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "border-position",
+        "target": "border-position-inside",
+        "value": "inside"
+      },
+      {
+        "group": "nodes",
+        "property": "border-position",
+        "target": "border-position-outside",
+        "value": "outside"
+      },
+      {
+        "group": "nodes",
+        "property": "border-dash-pattern",
+        "target": "border-style-dashed",
+        "value": [
+          7,
+          3
+        ]
+      },
+      {
+        "group": "nodes",
+        "property": "border-dash-offset",
+        "target": "border-style-dashed",
+        "value": 2
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "border-position",
+        "target": "border-position-inside",
+        "value": "inside",
+        "alternate": "center"
+      },
+      {
+        "group": "nodes",
+        "property": "border-position",
+        "target": "border-position-outside",
+        "value": "outside",
+        "alternate": "center"
+      },
+      {
+        "group": "nodes",
+        "property": "border-style",
+        "target": "border-style-solid",
+        "value": "solid",
+        "alternate": "dashed"
+      },
+      {
+        "group": "nodes",
+        "property": "border-style",
+        "target": "border-style-dashed",
+        "value": "dashed",
+        "alternate": "solid"
+      },
+      {
+        "group": "nodes",
+        "property": "border-style",
+        "target": "border-style-dotted",
+        "value": "dotted",
+        "alternate": "solid"
+      },
+      {
+        "group": "nodes",
+        "property": "border-style",
+        "target": "border-style-double",
+        "value": "double",
+        "alternate": "solid",
+        "note": "The current double border is supported; this row records authored/resolved style, while pixel behavior is checked in browser."
+      }
+    ],
+    "exceptions": []
+  }
+}

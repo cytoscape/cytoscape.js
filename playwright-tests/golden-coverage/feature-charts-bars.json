@@ -1,0 +1,152 @@
+{
+  "golden": "feature-charts-bars",
+  "elements": {
+    "nodes": 4,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)",
+      "rgba(220,232,244,0)"
+    ],
+    "background-opacity": [
+      "0"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "chart": [
+      "bar"
+    ],
+    "chart-colors": [
+      "rgba(200,70,69,0.82) rgba(224,168,46,0.82) rgba(76,154,104,0.82) rgba(62,109,167,0.82)",
+      "rgba(200,70,69,0.82) rgba(224,168,46,0.82) rgba(76,154,104,0.82) rgba(62,109,167,0.82) rgba(200,70,69,0.82) rgba(224,168,46,0.82) rgba(76,154,104,0.82) rgba(62,109,167,0.82) rgba(200,70,69,0.82) rgba(224,168,46,0.82) rgba(76,154,104,0.82) rgba(62,109,167,0.82) rgba(200,70,69,0.82) rgba(224,168,46,0.82) rgba(76,154,104,0.82) rgba(62,109,167,0.82) rgba(200,70,69,0.82) rgba(224,168,46,0.82)"
+    ],
+    "chart-direction": [
+      "horizontal"
+    ],
+    "chart-domain": [
+      "auto auto"
+    ],
+    "chart-opacity": [
+      "0.82"
+    ],
+    "chart-size": [
+      "0.8",
+      "0.92"
+    ],
+    "chart-values": [
+      "-3 0  0.5 0.625 0.75 0.875 0.125 0.25 0.375 0.5 0.625 0.75 0.875 0.125 0.25 0.375 0.5",
+      "-4 0 2 5"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "13"
+    ],
+    "height": [
+      "1",
+      "110"
+    ],
+    "label": [
+      "Horizontal · 18 values · shared auto extent",
+      "Signed −4…5 · shared auto extent"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-max-width": [
+      "170"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "width": [
+      "1",
+      "170"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "chart-domain",
+        "target": "chart-bar-negative",
+        "value": "auto auto",
+        "resolvedValue": "auto auto",
+        "resolvedExtent": [
+          -4,
+          5
+        ]
+      },
+      {
+        "group": "nodes",
+        "property": "chart-colors",
+        "target": "chart-bar-negative",
+        "value": [
+          "#c84645",
+          "#e0a82e",
+          "#4c9a68",
+          "#3e6da7"
+        ]
+      },
+      {
+        "group": "nodes",
+        "property": "chart-opacity",
+        "target": "chart-bar-negative",
+        "value": 0.82
+      },
+      {
+        "group": "nodes",
+        "property": "chart-size",
+        "target": "chart-bar-horizontal",
+        "value": 0.8
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "chart-direction",
+        "target": "chart-bar-horizontal",
+        "value": "horizontal",
+        "alternate": "vertical"
+      },
+      {
+        "group": "nodes",
+        "property": "chart-domain",
+        "target": "chart-bar-negative",
+        "value": "auto",
+        "resolvedValue": "auto auto",
+        "resolvedExtent": [
+          -4,
+          5
+        ],
+        "alternate": [
+          -5,
+          6
+        ],
+        "controlMode": "stylesheet"
+      }
+    ],
+    "exceptions": [
+      {
+        "group": "nodes",
+        "property": "chart",
+        "target": "chart-bar-negative",
+        "value": "bar",
+        "reason": "chart-domain is valid only for chart kind bar; changing this target to another chart kind while its authored domain remains set is rejected by the style engine."
+      }
+    ]
+  }
+}

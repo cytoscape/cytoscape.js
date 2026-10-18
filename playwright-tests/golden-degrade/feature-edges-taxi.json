@@ -1,0 +1,261 @@
+{
+  "golden": "feature-edges-taxi",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 23567,
+      "elements": 30
+    },
+    "nodes/background-opacity": {
+      "moved": 12,
+      "elements": 3
+    },
+    "nodes/border-color": {
+      "moved": 4488,
+      "elements": 30
+    },
+    "nodes/border-width": {
+      "moved": 7287,
+      "elements": 27
+    },
+    "nodes/color": {
+      "moved": 2673,
+      "elements": 30,
+      "unresettable": [
+        "taxi-t0",
+        "taxi-t1",
+        "taxi-t2",
+        "taxi-t3",
+        "taxi-t4",
+        "taxi-t5"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 6275,
+      "elements": 30,
+      "unresettable": [
+        "taxi-t0",
+        "taxi-t1",
+        "taxi-t2",
+        "taxi-t3",
+        "taxi-t4",
+        "taxi-t5"
+      ]
+    },
+    "nodes/height": {
+      "moved": 12627,
+      "elements": 30
+    },
+    "nodes/label": {
+      "moved": 2686,
+      "elements": 24
+    },
+    "nodes/shape": {
+      "moved": 9744,
+      "elements": 30
+    },
+    "nodes/text-halign": {
+      "moved": 5019,
+      "elements": 30,
+      "unresettable": [
+        "taxi-t0",
+        "taxi-t1",
+        "taxi-t2",
+        "taxi-t3",
+        "taxi-t4",
+        "taxi-t5"
+      ]
+    },
+    "nodes/text-margin-x": {
+      "moved": 4229,
+      "elements": 30,
+      "unresettable": [
+        "taxi-t0",
+        "taxi-t1",
+        "taxi-t2",
+        "taxi-t3",
+        "taxi-t4",
+        "taxi-t5"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 5400,
+      "elements": 30,
+      "unresettable": [
+        "taxi-t0",
+        "taxi-t1",
+        "taxi-t2",
+        "taxi-t3",
+        "taxi-t4",
+        "taxi-t5"
+      ]
+    },
+    "nodes/width": {
+      "moved": 17562,
+      "elements": 30
+    },
+    "edges/curve-style": {
+      "moved": 17977,
+      "elements": 18
+    },
+    "edges/line-color": {
+      "moved": 9719,
+      "elements": 18
+    },
+    "edges/target-arrow-color": {
+      "moved": 610,
+      "elements": 18
+    },
+    "edges/target-arrow-shape": {
+      "moved": 948,
+      "elements": 18
+    },
+    "edges/taxi-direction": {
+      "moved": 9117,
+      "elements": 18
+    },
+    "edges/taxi-radius": {
+      "moved": 988,
+      "elements": 18
+    },
+    "edges/taxi-track": {
+      "moved": 3296,
+      "elements": 12
+    },
+    "edges/taxi-track-spacing": {
+      "moved": 4292,
+      "elements": 18
+    },
+    "edges/taxi-turn": {
+      "moved": 8623,
+      "elements": 18
+    },
+    "edges/taxi-turn-min-distance": {
+      "moved": 4366,
+      "elements": 18
+    }
+  },
+  "keywords": [
+    {
+      "group": "edges",
+      "property": "taxi-direction",
+      "target": "taxi-0",
+      "value": "horizontal",
+      "alternate": "vertical",
+      "matched": 1,
+      "changed": 1,
+      "moved": 762,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "taxi-direction",
+      "target": "taxi-1",
+      "value": "upward",
+      "alternate": "auto",
+      "matched": 1,
+      "changed": 1,
+      "moved": 436,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "taxi-direction",
+      "target": "taxi-2",
+      "value": "downward",
+      "alternate": "auto",
+      "matched": 1,
+      "changed": 1,
+      "moved": 765,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "taxi-direction",
+      "target": "taxi-3",
+      "value": "leftward",
+      "alternate": "auto",
+      "matched": 1,
+      "changed": 1,
+      "moved": 793,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "taxi-track",
+      "target": "taxi-track-source-0",
+      "value": "source",
+      "alternate": "target",
+      "matched": 1,
+      "changed": 1,
+      "moved": 3570,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "taxi-track",
+      "target": "taxi-track-target-0",
+      "value": "target",
+      "alternate": "source",
+      "matched": 1,
+      "changed": 1,
+      "moved": 752,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "taxi-track",
+      "target": "taxi-track-family-0",
+      "value": "family",
+      "alternate": "source",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1832,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "taxi-direction",
+      "target": "taxi-4",
+      "value": "vertical",
+      "alternate": "horizontal",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2402,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "taxi-direction",
+      "target": "taxi-5",
+      "value": "rightward",
+      "alternate": "vertical",
+      "matched": 1,
+      "changed": 1,
+      "moved": 565,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "taxi-turn",
+      "target": "taxi-track-source-0",
+      "value": "auto",
+      "alternate": "35",
+      "matched": 1,
+      "changed": 1,
+      "moved": 621,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "curve-style",
+      "target": "taxi-track-source-0",
+      "value": "round-taxi",
+      "alternate": "taxi",
+      "matched": 1,
+      "changed": 1,
+      "moved": 175,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

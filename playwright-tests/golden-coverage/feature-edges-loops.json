@@ -1,0 +1,108 @@
+{
+  "golden": "feature-edges-loops",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 3
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)",
+      "rgba(220,232,244,0)"
+    ],
+    "background-opacity": [
+      "0"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "11"
+    ],
+    "height": [
+      "1",
+      "56"
+    ],
+    "label": [
+      "-35deg direction\n75deg sweep",
+      "150deg direction\n120deg sweep",
+      "24px step",
+      "35deg direction\n-110deg sweep",
+      "46px step",
+      "68px step"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "1",
+      "82"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "control-point-step-size": [
+      "24",
+      "46",
+      "68"
+    ],
+    "curve-style": [
+      "bezier"
+    ],
+    "line-color": [
+      "rgb(83,103,122)"
+    ],
+    "loop-direction": [
+      "-35",
+      "150",
+      "35"
+    ],
+    "loop-sweep": [
+      "-110",
+      "120",
+      "75"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "edges",
+        "property": "control-point-step-size",
+        "target": "loop-wide",
+        "value": 46
+      },
+      {
+        "group": "edges",
+        "property": "loop-direction",
+        "target": "loop-wide",
+        "value": "35deg",
+        "resolvedValue": 35
+      },
+      {
+        "group": "edges",
+        "property": "loop-sweep",
+        "target": "loop-opposed",
+        "value": "120deg",
+        "resolvedValue": 120
+      }
+    ],
+    "keywords": [],
+    "exceptions": []
+  }
+}

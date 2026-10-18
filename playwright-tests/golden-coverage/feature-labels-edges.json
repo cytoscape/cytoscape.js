@@ -1,0 +1,577 @@
+{
+  "golden": "feature-labels-edges",
+  "elements": {
+    "nodes": 12,
+    "parents": 0,
+    "edges": 6
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "label": [
+      "text border dashed",
+      "text border dotted",
+      "text border double",
+      "text border solid",
+      "text-wrap ellipsis",
+      "text-wrap none"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-halign": [
+      "left"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "42"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "color": [
+      "rgba(0,0,0,0.859)"
+    ],
+    "font-size": [
+      "13"
+    ],
+    "label": [
+      "AUTO WORDS WRAP ACROSS LINES",
+      "LEFT EXTRALONGTOKENFORWRAP WORDS",
+      "Mixed-Case right words wrap",
+      "ellipsis shows one truncated readable line",
+      "long-edge-label-without-spaces-1",
+      "one line text wrap has no breaks"
+    ],
+    "line-color": [
+      "rgb(83,103,122)"
+    ],
+    "line-height": [
+      "1.3"
+    ],
+    "source-label": [
+      "SOURCE LABEL 0",
+      "source label 1",
+      "source label 4"
+    ],
+    "source-text-margin-x": [
+      "10"
+    ],
+    "source-text-margin-y": [
+      "-8"
+    ],
+    "source-text-offset": [
+      "4"
+    ],
+    "source-text-rotation": [
+      "autorotate"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "target-label": [
+      "TARGET LABEL 0",
+      "target label 1",
+      "target label 4"
+    ],
+    "target-text-margin-x": [
+      "10"
+    ],
+    "target-text-margin-y": [
+      "8"
+    ],
+    "target-text-offset": [
+      "4"
+    ],
+    "target-text-rotation": [
+      "autorotate"
+    ],
+    "text-background-color": [
+      "rgba(238,243,248,0.671)"
+    ],
+    "text-background-opacity": [
+      "0.671"
+    ],
+    "text-background-padding": [
+      "3"
+    ],
+    "text-background-shape": [
+      "round-rectangle"
+    ],
+    "text-border-color": [
+      "rgba(38,54,70,0.686)"
+    ],
+    "text-border-opacity": [
+      "0.686"
+    ],
+    "text-border-style": [
+      "dashed",
+      "dotted",
+      "double"
+    ],
+    "text-border-width": [
+      "1"
+    ],
+    "text-margin-x": [
+      "-18",
+      "18"
+    ],
+    "text-margin-y": [
+      "-14",
+      "14"
+    ],
+    "text-max-width": [
+      "115"
+    ],
+    "text-opacity": [
+      "0.859"
+    ],
+    "text-outline-color": [
+      "rgba(255,255,255,0.604)"
+    ],
+    "text-outline-opacity": [
+      "0.604"
+    ],
+    "text-outline-width": [
+      "1.5"
+    ],
+    "text-overflow-wrap": [
+      "anywhere"
+    ],
+    "text-rotation": [
+      "autorotate"
+    ],
+    "text-wrap": [
+      "ellipsis",
+      "wrap"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "edges",
+        "property": "source-label",
+        "target": "label-edge-0",
+        "value": "SOURCE LABEL 0"
+      },
+      {
+        "group": "edges",
+        "property": "target-label",
+        "target": "label-edge-0",
+        "value": "TARGET LABEL 0"
+      },
+      {
+        "group": "edges",
+        "property": "source-text-margin-x",
+        "target": "label-edge-0",
+        "value": 10
+      },
+      {
+        "group": "edges",
+        "property": "target-text-margin-y",
+        "target": "label-edge-0",
+        "value": 8
+      },
+      {
+        "group": "edges",
+        "property": "text-margin-x",
+        "target": "label-edge-1",
+        "value": 18,
+        "alternate": 0
+      },
+      {
+        "group": "edges",
+        "property": "text-margin-y",
+        "target": "label-edge-2",
+        "value": 14,
+        "alternate": 0
+      },
+      {
+        "group": "edges",
+        "property": "text-max-width",
+        "target": "label-edge-0",
+        "value": 115
+      },
+      {
+        "group": "edges",
+        "property": "text-opacity",
+        "target": "label-edge-0",
+        "value": 0.86
+      },
+      {
+        "group": "edges",
+        "property": "text-outline-color",
+        "target": "label-edge-0",
+        "value": "#fff"
+      },
+      {
+        "group": "edges",
+        "property": "text-outline-width",
+        "target": "label-edge-0",
+        "value": 1.5
+      },
+      {
+        "group": "edges",
+        "property": "text-outline-opacity",
+        "target": "label-edge-0",
+        "value": 0.7
+      },
+      {
+        "group": "edges",
+        "property": "text-justification",
+        "target": "label-edge-0",
+        "value": "left",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "left",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "text-justification",
+        "target": "label-edge-3",
+        "value": "auto",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "auto",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "text-transform",
+        "target": "label-edge-0",
+        "value": "uppercase",
+        "resolvedValue": "none",
+        "readbackLimitation": {
+          "property": "text-transform",
+          "mappedValue": "uppercase",
+          "getterValue": "none",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "line-style",
+        "target": "label-edge-0",
+        "value": "solid"
+      },
+      {
+        "group": "edges",
+        "property": "text-background-shape",
+        "target": "label-edge-0",
+        "value": "rectangle"
+      },
+      {
+        "group": "edges",
+        "property": "text-overflow-wrap",
+        "target": "label-edge-0",
+        "value": "whitespace"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-0",
+        "value": "wrap"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-2",
+        "value": "wrap"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-3",
+        "value": "wrap"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-4",
+        "value": "none"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-5",
+        "value": "ellipsis"
+      },
+      {
+        "group": "edges",
+        "property": "text-rotation",
+        "target": "label-edge-0",
+        "value": "none"
+      },
+      {
+        "group": "edges",
+        "property": "source-text-rotation",
+        "target": "label-edge-0",
+        "value": "none"
+      },
+      {
+        "group": "edges",
+        "property": "target-text-rotation",
+        "target": "label-edge-0",
+        "value": "none"
+      }
+    ],
+    "keywords": [
+      {
+        "group": "edges",
+        "property": "text-border-style",
+        "target": "label-edge-2",
+        "value": "dotted",
+        "alternate": "solid"
+      },
+      {
+        "group": "edges",
+        "property": "text-justification",
+        "target": "label-edge-0",
+        "value": "left",
+        "alternate": "center",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "left",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "text-justification",
+        "target": "label-edge-1",
+        "value": "center",
+        "alternate": "right",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "center",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "text-justification",
+        "target": "label-edge-2",
+        "value": "right",
+        "alternate": "center",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "right",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "text-justification",
+        "target": "label-edge-3",
+        "value": "auto",
+        "alternate": "right",
+        "resolvedValue": "auto",
+        "readbackLimitation": {
+          "property": "text-justification",
+          "mappedValue": "auto",
+          "getterValue": "auto",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "text-transform",
+        "target": "label-edge-0",
+        "value": "uppercase",
+        "alternate": "lowercase",
+        "resolvedValue": "none",
+        "readbackLimitation": {
+          "property": "text-transform",
+          "mappedValue": "uppercase",
+          "getterValue": "none",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "text-transform",
+        "target": "label-edge-1",
+        "value": "lowercase",
+        "alternate": "uppercase",
+        "resolvedValue": "none",
+        "readbackLimitation": {
+          "property": "text-transform",
+          "mappedValue": "lowercase",
+          "getterValue": "none",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "text-transform",
+        "target": "label-edge-2",
+        "value": "none",
+        "alternate": "lowercase",
+        "resolvedValue": "none",
+        "readbackLimitation": {
+          "property": "text-transform",
+          "mappedValue": "none",
+          "getterValue": "none",
+          "sourceRefs": [
+            "src/style/readers-labels.mts:44,85",
+            "src/collection.mts:1695"
+          ],
+          "reason": "The current public getter returns the stylesheet fallback for a data mapper (src/style/readers-labels.mts:44,85); the golden image verifies the per-element rendered value. This conflicts with the resolved stored-channel contract in src/collection.mts:1695."
+        }
+      },
+      {
+        "group": "edges",
+        "property": "text-overflow-wrap",
+        "target": "label-edge-0",
+        "value": "whitespace",
+        "alternate": "anywhere"
+      },
+      {
+        "group": "edges",
+        "property": "text-overflow-wrap",
+        "target": "label-edge-1",
+        "value": "anywhere",
+        "alternate": "whitespace"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-5",
+        "value": "ellipsis",
+        "alternate": "wrap"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-0",
+        "value": "wrap",
+        "alternate": "none"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-2",
+        "value": "wrap",
+        "alternate": "ellipsis"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-4",
+        "value": "none",
+        "alternate": "wrap"
+      },
+      {
+        "group": "edges",
+        "property": "text-wrap",
+        "target": "label-edge-5",
+        "value": "ellipsis",
+        "alternate": "wrap"
+      },
+      {
+        "group": "edges",
+        "property": "line-style",
+        "target": "label-edge-0",
+        "value": "solid",
+        "alternate": "dashed"
+      },
+      {
+        "group": "edges",
+        "property": "text-background-shape",
+        "target": "label-edge-0",
+        "value": "rectangle",
+        "alternate": "round-rectangle"
+      },
+      {
+        "group": "edges",
+        "property": "text-rotation",
+        "target": "label-edge-0",
+        "value": "none",
+        "alternate": "autorotate"
+      },
+      {
+        "group": "edges",
+        "property": "source-text-rotation",
+        "target": "label-edge-0",
+        "value": "none",
+        "alternate": "autorotate"
+      },
+      {
+        "group": "edges",
+        "property": "target-text-rotation",
+        "target": "label-edge-0",
+        "value": "none",
+        "alternate": "autorotate"
+      }
+    ],
+    "exceptions": []
+  }
+}

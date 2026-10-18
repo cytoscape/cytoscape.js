@@ -1,0 +1,179 @@
+{
+  "golden": "feature-edges-routes",
+  "elements": {
+    "nodes": 6,
+    "parents": 0,
+    "edges": 4
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "36"
+    ],
+    "label": [
+      "hidden",
+      "hidden route",
+      "intersection",
+      "node position"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-halign": [
+      "left"
+    ],
+    "text-margin-x": [
+      "10"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "48"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "control-point-distances": [
+      "90"
+    ],
+    "control-point-weight": [
+      "0.25",
+      "0.75"
+    ],
+    "control-point-weights": [
+      "0.35"
+    ],
+    "curve-style": [
+      "bezier",
+      "unbundled-bezier"
+    ],
+    "edge-distances": [
+      "node-position"
+    ],
+    "line-color": [
+      "rgb(83,103,122)"
+    ],
+    "source-distance-from-node": [
+      "8"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "target-distance-from-node": [
+      "18"
+    ],
+    "visibility": [
+      "hidden"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "edges",
+        "property": "control-point-weight",
+        "target": "route-0",
+        "value": 0.25,
+        "alternate": 0.75
+      },
+      {
+        "group": "edges",
+        "property": "edge-distances",
+        "target": "route-1",
+        "value": "node-position"
+      },
+      {
+        "group": "edges",
+        "property": "source-endpoint",
+        "target": "route-0",
+        "value": "outside-to-node"
+      },
+      {
+        "group": "edges",
+        "property": "target-endpoint",
+        "target": "route-0",
+        "value": "outside-to-node"
+      },
+      {
+        "group": "edges",
+        "property": "line-style",
+        "target": "route-0",
+        "value": "solid"
+      },
+      {
+        "group": "edges",
+        "property": "visibility",
+        "target": "route-hidden",
+        "value": "hidden"
+      },
+      {
+        "group": "edges",
+        "property": "source-distance-from-node",
+        "target": "route-0",
+        "value": 8
+      },
+      {
+        "group": "edges",
+        "property": "target-distance-from-node",
+        "target": "route-0",
+        "value": 18
+      }
+    ],
+    "keywords": [
+      {
+        "group": "edges",
+        "property": "edge-distances",
+        "target": "route-1",
+        "value": "node-position",
+        "alternate": "intersection"
+      },
+      {
+        "group": "edges",
+        "property": "source-endpoint",
+        "target": "route-0",
+        "value": "outside-to-node",
+        "alternate": "inside-to-node"
+      },
+      {
+        "group": "edges",
+        "property": "target-endpoint",
+        "target": "route-0",
+        "value": "outside-to-node",
+        "alternate": "inside-to-node"
+      },
+      {
+        "group": "edges",
+        "property": "line-style",
+        "target": "route-0",
+        "value": "solid",
+        "alternate": "dashed"
+      },
+      {
+        "group": "edges",
+        "property": "visibility",
+        "target": "route-hidden",
+        "value": "hidden",
+        "alternate": "visible"
+      }
+    ],
+    "exceptions": []
+  }
+}

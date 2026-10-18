@@ -1,0 +1,129 @@
+{
+  "golden": "feature-edges-radius-influence",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 6587,
+      "elements": 2
+    },
+    "nodes/border-color": {
+      "moved": 917,
+      "elements": 2
+    },
+    "nodes/border-width": {
+      "moved": 1657,
+      "elements": 2
+    },
+    "nodes/color": {
+      "moved": 498,
+      "elements": 2,
+      "unresettable": [
+        "route-t0"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 1074,
+      "elements": 2,
+      "unresettable": [
+        "route-t0"
+      ]
+    },
+    "nodes/height": {
+      "moved": 1812,
+      "elements": 2
+    },
+    "nodes/label": {
+      "moved": 502,
+      "elements": 1
+    },
+    "nodes/shape": {
+      "moved": 2940,
+      "elements": 2
+    },
+    "nodes/text-halign": {
+      "moved": 989,
+      "elements": 2,
+      "unresettable": [
+        "route-t0"
+      ]
+    },
+    "nodes/text-margin-x": {
+      "moved": 766,
+      "elements": 2,
+      "unresettable": [
+        "route-t0"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 1020,
+      "elements": 2,
+      "unresettable": [
+        "route-t0"
+      ]
+    },
+    "nodes/width": {
+      "moved": 4890,
+      "elements": 2
+    },
+    "edges/curve-style": {
+      "moved": 5208,
+      "elements": 1
+    },
+    "edges/line-color": {
+      "moved": 2505,
+      "elements": 1
+    },
+    "edges/radius-type": {
+      "moved": 1690,
+      "elements": 1
+    },
+    "edges/segment-distances": {
+      "moved": 5110,
+      "elements": 1
+    },
+    "edges/segment-radii": {
+      "moved": 1559,
+      "elements": 1
+    },
+    "edges/source-distance-from-node": {
+      "moved": 433,
+      "elements": 1
+    },
+    "edges/target-arrow-color": {
+      "moved": 109,
+      "elements": 1
+    },
+    "edges/target-arrow-shape": {
+      "moved": 388,
+      "elements": 1
+    },
+    "edges/target-distance-from-node": {
+      "moved": 571,
+      "elements": 1
+    }
+  },
+  "keywords": [
+    {
+      "group": "edges",
+      "property": "curve-style",
+      "target": "route-0",
+      "value": "round-segments",
+      "alternate": "segments",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1907,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "radius-type",
+      "target": "route-0",
+      "value": "influence-radius",
+      "alternate": "arc-radius",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1690,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

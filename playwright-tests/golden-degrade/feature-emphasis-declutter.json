@@ -1,0 +1,92 @@
+{
+  "golden": "feature-emphasis-declutter",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 90762,
+      "elements": 9
+    },
+    "nodes/border-color": {
+      "moved": 12228,
+      "elements": 9
+    },
+    "nodes/border-width": {
+      "moved": 13477,
+      "elements": 9
+    },
+    "nodes/color": {
+      "moved": 5450,
+      "elements": 9
+    },
+    "nodes/font-size": {
+      "moved": 9341,
+      "elements": 9
+    },
+    "nodes/height": {
+      "moved": 60789,
+      "elements": 9
+    },
+    "nodes/label": {
+      "moved": 5476,
+      "elements": 9
+    },
+    "nodes/label-priority": {
+      "moved": 0,
+      "elements": 8
+    },
+    "nodes/shape": {
+      "moved": 31696,
+      "elements": 9
+    },
+    "nodes/text-max-width": {
+      "moved": 0,
+      "elements": 9
+    },
+    "nodes/text-valign": {
+      "moved": 10909,
+      "elements": 9
+    },
+    "nodes/text-wrap": {
+      "moved": 1585,
+      "elements": 9
+    },
+    "nodes/width": {
+      "moved": 73278,
+      "elements": 9
+    },
+    "edges/line-color": {
+      "moved": 513,
+      "elements": 5
+    },
+    "edges/target-arrow-color": {
+      "moved": 527,
+      "elements": 5
+    },
+    "edges/target-arrow-shape": {
+      "moved": 666,
+      "elements": 5
+    },
+    "core/dim-opacity": {
+      "moved": 43262,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "core/label-declutter": {
+      "moved": 629,
+      "elements": 1,
+      "via": "sheet"
+    }
+  },
+  "keywords": [
+    {
+      "group": "core",
+      "property": "label-declutter",
+      "target": "core",
+      "value": "cull",
+      "alternate": "none",
+      "matched": 1,
+      "changed": 1,
+      "moved": 629
+    }
+  ]
+}

@@ -1,0 +1,185 @@
+{
+  "golden": "feature-arrows-scalars",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 12972,
+      "elements": 6
+    },
+    "nodes/border-color": {
+      "moved": 2601,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 5636,
+      "elements": 6
+    },
+    "nodes/color": {
+      "moved": 1251,
+      "elements": 6,
+      "unresettable": [
+        "arrow-t0",
+        "arrow-t1",
+        "arrow-t2"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 2668,
+      "elements": 6,
+      "unresettable": [
+        "arrow-t0",
+        "arrow-t1",
+        "arrow-t2"
+      ]
+    },
+    "nodes/height": {
+      "moved": 3204,
+      "elements": 6
+    },
+    "nodes/label": {
+      "moved": 1252,
+      "elements": 3
+    },
+    "nodes/shape": {
+      "moved": 4922,
+      "elements": 6
+    },
+    "nodes/text-halign": {
+      "moved": 2169,
+      "elements": 6,
+      "unresettable": [
+        "arrow-t0",
+        "arrow-t1",
+        "arrow-t2"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 2489,
+      "elements": 6,
+      "unresettable": [
+        "arrow-t0",
+        "arrow-t1",
+        "arrow-t2"
+      ]
+    },
+    "nodes/width": {
+      "moved": 29245,
+      "elements": 6
+    },
+    "edges/arrow-scale": {
+      "moved": 7978,
+      "elements": 2
+    },
+    "edges/line-color": {
+      "moved": 11027,
+      "elements": 3
+    },
+    "edges/mid-source-arrow-width": {
+      "moved": 0,
+      "elements": 1
+    },
+    "edges/mid-target-arrow-width": {
+      "moved": 0,
+      "elements": 1
+    },
+    "edges/source-arrow-color": {
+      "moved": 4453,
+      "elements": 3
+    },
+    "edges/source-arrow-fill": {
+      "moved": 4671,
+      "elements": 2
+    },
+    "edges/source-arrow-shape": {
+      "moved": 4740,
+      "elements": 3
+    },
+    "edges/source-arrow-width": {
+      "moved": 4232,
+      "elements": 2
+    },
+    "edges/source-distance-from-node": {
+      "moved": 5948,
+      "elements": 2
+    },
+    "edges/target-arrow-color": {
+      "moved": 3407,
+      "elements": 3
+    },
+    "edges/target-arrow-fill": {
+      "moved": 6532,
+      "elements": 3
+    },
+    "edges/target-arrow-shape": {
+      "moved": 4670,
+      "elements": 3
+    },
+    "edges/target-arrow-width": {
+      "moved": 3194,
+      "elements": 2
+    },
+    "edges/target-distance-from-node": {
+      "moved": 6404,
+      "elements": 2
+    },
+    "edges/width": {
+      "moved": 17388,
+      "elements": 3
+    }
+  },
+  "keywords": [
+    {
+      "group": "edges",
+      "property": "source-arrow-width",
+      "target": "arrow-width-2",
+      "value": "match-line",
+      "alternate": "4",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2391,
+      "resolvedValue": 8,
+      "matchedBy": "authored-declaration-and-resolved-getter",
+      "restoreMoved": 0
+    },
+    {
+      "group": "edges",
+      "property": "target-arrow-width",
+      "target": "arrow-width-1",
+      "value": "match-line",
+      "alternate": "1",
+      "matched": 1,
+      "changed": 1,
+      "moved": 800,
+      "resolvedValue": 4,
+      "matchedBy": "authored-declaration-and-resolved-getter",
+      "restoreMoved": 0
+    },
+    {
+      "group": "edges",
+      "property": "source-arrow-fill",
+      "target": "arrow-width-0",
+      "value": "filled",
+      "alternate": "hollow",
+      "matched": 1,
+      "changed": 1,
+      "moved": 119,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "mid-source-arrow-width",
+      "target": "arrow-width-2",
+      "value": "match-line",
+      "reason": "Mid-arrow widths are accepted and read back against edge width, but the render contract always fills mid heads so no width stroke is drawn.",
+      "exception": "Mid-arrow widths are accepted and read back against edge width, but the render contract always fills mid heads so no width stroke is drawn."
+    },
+    {
+      "group": "edges",
+      "property": "mid-target-arrow-width",
+      "target": "arrow-width-2",
+      "value": "match-line",
+      "reason": "Mid-arrow widths are accepted and read back against edge width, but the render contract always fills mid heads so no width stroke is drawn.",
+      "exception": "Mid-arrow widths are accepted and read back against edge width, but the render contract always fills mid heads so no width stroke is drawn."
+    }
+  ]
+}

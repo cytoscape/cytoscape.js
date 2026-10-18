@@ -7,7 +7,7 @@
       "elements": 7
     },
     "nodes/background-gradient-direction": {
-      "moved": 10648,
+      "moved": 10647,
       "elements": 3
     },
     "nodes/background-gradient-stop-colors": {
@@ -16,56 +16,46 @@
       "via": "sheet"
     },
     "nodes/background-gradient-stop-positions": {
-      "moved": 0,
-      "elements": 0,
-      "via": "sheet",
-      "unresettable": [
-        "a",
-        "b",
-        "c",
-        "d",
-        "e",
-        "p",
-        "q"
-      ]
+      "moved": 22641,
+      "elements": 7,
+      "via": "alternate",
+      "alternate": "0% 23% 100%"
     },
     "nodes/height": {
-      "moved": 18943,
+      "moved": 18983,
       "elements": 7
     },
     "nodes/shape": {
-      "moved": 8628,
+      "moved": 8623,
       "elements": 6
     },
     "nodes/width": {
-      "moved": 24071,
+      "moved": 24096,
       "elements": 7
     },
     "edges/curve-style": {
-      "moved": 6058,
+      "moved": 6078,
       "elements": 2
     },
     "edges/line-fill": {
-      "moved": 4306,
+      "moved": 4305,
       "elements": 2
     },
     "edges/line-gradient-stop-colors": {
-      "moved": 4306,
+      "moved": 4305,
       "elements": 2,
       "via": "sheet"
     },
     "edges/line-gradient-stop-positions": {
-      "moved": 0,
-      "elements": 0,
-      "via": "sheet",
-      "unresettable": [
-        "g1",
-        "g2"
-      ]
+      "moved": 4090,
+      "elements": 2,
+      "via": "alternate",
+      "alternate": "0% 77% 100%"
     },
     "edges/width": {
-      "moved": 3570,
+      "moved": 3562,
       "elements": 2
     }
-  }
+  },
+  "keywords": []
 }

@@ -1,0 +1,90 @@
+{
+  "golden": "feature-emphasis-declutter-dimOpacity-0",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 53534,
+      "elements": 9
+    },
+    "nodes/border-color": {
+      "moved": 7039,
+      "elements": 9
+    },
+    "nodes/border-width": {
+      "moved": 7916,
+      "elements": 9
+    },
+    "nodes/color": {
+      "moved": 3407,
+      "elements": 9
+    },
+    "nodes/font-size": {
+      "moved": 5587,
+      "elements": 9
+    },
+    "nodes/height": {
+      "moved": 36366,
+      "elements": 9
+    },
+    "nodes/label": {
+      "moved": 3416,
+      "elements": 9
+    },
+    "nodes/label-priority": {
+      "moved": 0,
+      "elements": 8
+    },
+    "nodes/shape": {
+      "moved": 18720,
+      "elements": 9
+    },
+    "nodes/text-max-width": {
+      "moved": 0,
+      "elements": 9
+    },
+    "nodes/text-valign": {
+      "moved": 6816,
+      "elements": 9
+    },
+    "nodes/text-wrap": {
+      "moved": 1585,
+      "elements": 9
+    },
+    "nodes/width": {
+      "moved": 44486,
+      "elements": 9
+    },
+    "edges/line-color": {
+      "moved": 363,
+      "elements": 5
+    },
+    "edges/target-arrow-color": {
+      "moved": 422,
+      "elements": 5
+    },
+    "edges/target-arrow-shape": {
+      "moved": 553,
+      "elements": 5
+    },
+    "core/dim-opacity": {
+      "moved": 42951,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "core/label-declutter": {
+      "moved": 0,
+      "elements": 1,
+      "via": "sheet"
+    }
+  },
+  "keywords": [
+    {
+      "group": "core",
+      "property": "label-declutter",
+      "target": "core",
+      "value": "cull",
+      "reason": "dim-opacity 0 makes every label fully transparent, so culling cannot change rendered pixels in this state.",
+      "exception": "dim-opacity 0 makes every label fully transparent, so culling cannot change rendered pixels in this state."
+    }
+  ]
+}

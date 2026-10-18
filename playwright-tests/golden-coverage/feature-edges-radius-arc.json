@@ -1,0 +1,119 @@
+{
+  "golden": "feature-edges-radius-arc",
+  "elements": {
+    "nodes": 2,
+    "parents": 0,
+    "edges": 1
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "36"
+    ],
+    "label": [
+      "radius type"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-halign": [
+      "left"
+    ],
+    "text-margin-x": [
+      "10"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "48"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "round-segments"
+    ],
+    "line-color": [
+      "rgb(83,103,122)"
+    ],
+    "segment-distances": [
+      "70"
+    ],
+    "segment-radii": [
+      "50"
+    ],
+    "source-distance-from-node": [
+      "8"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "target-distance-from-node": [
+      "18"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "edges",
+        "property": "curve-style",
+        "target": "route-0",
+        "value": "round-segments"
+      },
+      {
+        "group": "edges",
+        "property": "radius-type",
+        "target": "route-0",
+        "value": "arc-radius"
+      },
+      {
+        "group": "edges",
+        "property": "source-distance-from-node",
+        "target": "route-0",
+        "value": 8
+      },
+      {
+        "group": "edges",
+        "property": "target-distance-from-node",
+        "target": "route-0",
+        "value": 18
+      }
+    ],
+    "keywords": [
+      {
+        "group": "edges",
+        "property": "curve-style",
+        "target": "route-0",
+        "value": "round-segments",
+        "alternate": "segments"
+      },
+      {
+        "group": "edges",
+        "property": "radius-type",
+        "target": "route-0",
+        "value": "arc-radius",
+        "alternate": "influence-radius"
+      }
+    ],
+    "exceptions": []
+  }
+}

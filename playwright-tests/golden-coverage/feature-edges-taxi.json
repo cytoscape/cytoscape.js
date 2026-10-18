@@ -1,0 +1,255 @@
+{
+  "golden": "feature-edges-taxi",
+  "elements": {
+    "nodes": 30,
+    "parents": 0,
+    "edges": 18
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)",
+      "rgba(220,232,244,0)"
+    ],
+    "background-opacity": [
+      "0"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "10",
+      "12"
+    ],
+    "height": [
+      "1",
+      "24",
+      "36"
+    ],
+    "label": [
+      "S0",
+      "S1",
+      "S2",
+      "T0",
+      "T1",
+      "T2",
+      "T3",
+      "auto · family",
+      "auto · source",
+      "auto · target",
+      "downward / family",
+      "horizontal / source",
+      "leftward / family",
+      "rightward / family",
+      "upward / target",
+      "vertical / source"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-halign": [
+      "left"
+    ],
+    "text-margin-x": [
+      "10"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "1",
+      "34",
+      "60"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "curve-style": [
+      "round-taxi"
+    ],
+    "line-color": [
+      "rgb(83,103,122)"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "taxi-direction": [
+      "downward",
+      "horizontal",
+      "leftward",
+      "rightward",
+      "upward",
+      "vertical"
+    ],
+    "taxi-radius": [
+      "18"
+    ],
+    "taxi-track": [
+      "family",
+      "target"
+    ],
+    "taxi-track-spacing": [
+      "12",
+      "16",
+      "17",
+      "22",
+      "27",
+      "32",
+      "37"
+    ],
+    "taxi-turn": [
+      "35",
+      "auto"
+    ],
+    "taxi-turn-min-distance": [
+      "14",
+      "22",
+      "30",
+      "38",
+      "46",
+      "6"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "edges",
+        "property": "taxi-track-spacing",
+        "target": "taxi-track-source-0",
+        "value": 22,
+        "alternate": 10
+      },
+      {
+        "group": "edges",
+        "property": "taxi-turn-min-distance",
+        "target": "taxi-3",
+        "value": 30
+      },
+      {
+        "group": "edges",
+        "property": "taxi-turn",
+        "target": "taxi-track-source-0",
+        "value": "auto"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-track",
+        "target": "taxi-track-source-0",
+        "value": "source"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-track",
+        "target": "taxi-track-target-0",
+        "value": "target"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-track",
+        "target": "taxi-track-family-0",
+        "value": "family"
+      },
+      {
+        "group": "edges",
+        "property": "curve-style",
+        "target": "taxi-5",
+        "value": "round-taxi"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-radius",
+        "target": "taxi-5",
+        "value": 18
+      }
+    ],
+    "keywords": [
+      {
+        "group": "edges",
+        "property": "taxi-direction",
+        "target": "taxi-0",
+        "value": "horizontal",
+        "alternate": "vertical"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-direction",
+        "target": "taxi-1",
+        "value": "upward",
+        "alternate": "auto"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-direction",
+        "target": "taxi-2",
+        "value": "downward",
+        "alternate": "auto"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-direction",
+        "target": "taxi-3",
+        "value": "leftward",
+        "alternate": "auto"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-track",
+        "target": "taxi-track-source-0",
+        "value": "source",
+        "alternate": "target"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-track",
+        "target": "taxi-track-target-0",
+        "value": "target",
+        "alternate": "source"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-track",
+        "target": "taxi-track-family-0",
+        "value": "family",
+        "alternate": "source"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-direction",
+        "target": "taxi-4",
+        "value": "vertical",
+        "alternate": "horizontal"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-direction",
+        "target": "taxi-5",
+        "value": "rightward",
+        "alternate": "vertical"
+      },
+      {
+        "group": "edges",
+        "property": "taxi-turn",
+        "target": "taxi-track-source-0",
+        "value": "auto",
+        "alternate": "35"
+      },
+      {
+        "group": "edges",
+        "property": "curve-style",
+        "target": "taxi-track-source-0",
+        "value": "round-taxi",
+        "alternate": "taxi"
+      }
+    ],
+    "exceptions": []
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "golden": "feature-paint-layers",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 27457,
+      "elements": 6
+    },
+    "nodes/background-opacity": {
+      "moved": 27483,
+      "elements": 6
+    },
+    "nodes/border-color": {
+      "moved": 3065,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 3060,
+      "elements": 3
+    },
+    "nodes/color": {
+      "moved": 6383,
+      "elements": 6,
+      "unresettable": [
+        "layer-round",
+        "layer-square",
+        "layer-soft"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 17001,
+      "elements": 6,
+      "unresettable": [
+        "layer-round",
+        "layer-square",
+        "layer-soft"
+      ]
+    },
+    "nodes/height": {
+      "moved": 44699,
+      "elements": 6
+    },
+    "nodes/label": {
+      "moved": 6442,
+      "elements": 3
+    },
+    "nodes/overlay-color": {
+      "moved": 45987,
+      "elements": 6
+    },
+    "nodes/overlay-corner-radius": {
+      "moved": 282,
+      "elements": 5
+    },
+    "nodes/overlay-opacity": {
+      "moved": 45987,
+      "elements": 3
+    },
+    "nodes/overlay-padding": {
+      "moved": 7375,
+      "elements": 6
+    },
+    "nodes/overlay-shape": {
+      "moved": 3183,
+      "elements": 1
+    },
+    "nodes/shape": {
+      "moved": 8320,
+      "elements": 6
+    },
+    "nodes/text-max-width": {
+      "moved": 0,
+      "elements": 6,
+      "unresettable": [
+        "layer-round",
+        "layer-square",
+        "layer-soft"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 12897,
+      "elements": 6,
+      "unresettable": [
+        "layer-round",
+        "layer-square",
+        "layer-soft"
+      ]
+    },
+    "nodes/text-wrap": {
+      "moved": 10215,
+      "elements": 6,
+      "unresettable": [
+        "layer-round",
+        "layer-square",
+        "layer-soft"
+      ]
+    },
+    "nodes/underlay-color": {
+      "moved": 59430,
+      "elements": 6
+    },
+    "nodes/underlay-corner-radius": {
+      "moved": 856,
+      "elements": 5
+    },
+    "nodes/underlay-opacity": {
+      "moved": 59430,
+      "elements": 3
+    },
+    "nodes/underlay-padding": {
+      "moved": 8237,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 39524,
+      "elements": 6
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "overlay-shape",
+      "target": "layer-square",
+      "value": "ellipse",
+      "alternate": "round-rectangle",
+      "matched": 1,
+      "changed": 1,
+      "moved": 3183,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "overlay-shape",
+      "target": "layer-round",
+      "value": "round-rectangle",
+      "alternate": "ellipse",
+      "matched": 1,
+      "changed": 1,
+      "moved": 4111,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "underlay-corner-radius",
+      "target": "layer-soft",
+      "value": "auto",
+      "alternate": 12,
+      "matched": 1,
+      "changed": 1,
+      "moved": 416,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "overlay-corner-radius",
+      "target": "layer-soft",
+      "value": "auto",
+      "alternate": 12,
+      "matched": 1,
+      "changed": 1,
+      "moved": 402,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "corner-radius",
+      "target": "layer-soft",
+      "value": "auto",
+      "alternate": 0,
+      "matched": 1,
+      "changed": 1,
+      "moved": 424,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

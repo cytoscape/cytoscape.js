@@ -1,0 +1,176 @@
+{
+  "golden": "feature-edges-routes",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 17415,
+      "elements": 6
+    },
+    "nodes/border-color": {
+      "moved": 2537,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 6282,
+      "elements": 6
+    },
+    "nodes/color": {
+      "moved": 1876,
+      "elements": 6,
+      "unresettable": [
+        "route-t0",
+        "route-t1"
+      ]
+    },
+    "nodes/font-size": {
+      "moved": 3842,
+      "elements": 6,
+      "unresettable": [
+        "route-t0",
+        "route-t1"
+      ]
+    },
+    "nodes/height": {
+      "moved": 6919,
+      "elements": 6
+    },
+    "nodes/label": {
+      "moved": 1893,
+      "elements": 4
+    },
+    "nodes/shape": {
+      "moved": 10444,
+      "elements": 6
+    },
+    "nodes/text-halign": {
+      "moved": 3619,
+      "elements": 6,
+      "unresettable": [
+        "route-t0",
+        "route-t1"
+      ]
+    },
+    "nodes/text-margin-x": {
+      "moved": 2675,
+      "elements": 6,
+      "unresettable": [
+        "route-t0",
+        "route-t1"
+      ]
+    },
+    "nodes/text-valign": {
+      "moved": 3765,
+      "elements": 6,
+      "unresettable": [
+        "route-t0",
+        "route-t1"
+      ]
+    },
+    "nodes/width": {
+      "moved": 17783,
+      "elements": 6
+    },
+    "edges/control-point-distances": {
+      "moved": 4541,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "edges/control-point-weight": {
+      "moved": 6128,
+      "elements": 2
+    },
+    "edges/control-point-weights": {
+      "moved": 4295,
+      "elements": 1
+    },
+    "edges/curve-style": {
+      "moved": 11328,
+      "elements": 4
+    },
+    "edges/edge-distances": {
+      "moved": 2036,
+      "elements": 1
+    },
+    "edges/line-color": {
+      "moved": 6391,
+      "elements": 4
+    },
+    "edges/source-distance-from-node": {
+      "moved": 4528,
+      "elements": 4
+    },
+    "edges/target-arrow-color": {
+      "moved": 291,
+      "elements": 4
+    },
+    "edges/target-arrow-shape": {
+      "moved": 4071,
+      "elements": 4
+    },
+    "edges/target-distance-from-node": {
+      "moved": 5877,
+      "elements": 4
+    },
+    "edges/visibility": {
+      "moved": 2386,
+      "elements": 1
+    }
+  },
+  "keywords": [
+    {
+      "group": "edges",
+      "property": "edge-distances",
+      "target": "route-1",
+      "value": "node-position",
+      "alternate": "intersection",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2036,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "source-endpoint",
+      "target": "route-0",
+      "value": "outside-to-node",
+      "alternate": "inside-to-node",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1970,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "target-endpoint",
+      "target": "route-0",
+      "value": "outside-to-node",
+      "alternate": "inside-to-node",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1596,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "line-style",
+      "target": "route-0",
+      "value": "solid",
+      "alternate": "dashed",
+      "matched": 1,
+      "changed": 1,
+      "moved": 944,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "edges",
+      "property": "visibility",
+      "target": "route-hidden",
+      "value": "hidden",
+      "alternate": "visible",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2386,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "golden": "feature-labels-font-keywords-fontWeight-100",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 37421,
+      "elements": 7
+    },
+    "nodes/border-color": {
+      "moved": 4652,
+      "elements": 7
+    },
+    "nodes/border-width": {
+      "moved": 4856,
+      "elements": 7
+    },
+    "nodes/color": {
+      "moved": 5920,
+      "elements": 7
+    },
+    "nodes/font-family": {
+      "moved": 12783,
+      "elements": 7,
+      "via": "sheet"
+    },
+    "nodes/font-size": {
+      "moved": 20793,
+      "elements": 7
+    },
+    "nodes/font-weight": {
+      "moved": 0,
+      "elements": 7,
+      "via": "sheet"
+    },
+    "nodes/height": {
+      "moved": 31416,
+      "elements": 7
+    },
+    "nodes/label": {
+      "moved": 31907,
+      "elements": 7
+    },
+    "nodes/line-height": {
+      "moved": 11725,
+      "elements": 3
+    },
+    "nodes/shape": {
+      "moved": 17754,
+      "elements": 7
+    },
+    "nodes/text-background-color": {
+      "moved": 29681,
+      "elements": 7
+    },
+    "nodes/text-background-opacity": {
+      "moved": 29924,
+      "elements": 7
+    },
+    "nodes/text-background-padding": {
+      "moved": 8479,
+      "elements": 7
+    },
+    "nodes/text-border-color": {
+      "moved": 3634,
+      "elements": 7
+    },
+    "nodes/text-border-opacity": {
+      "moved": 3639,
+      "elements": 7
+    },
+    "nodes/text-border-style": {
+      "moved": 1091,
+      "elements": 3
+    },
+    "nodes/text-border-width": {
+      "moved": 3639,
+      "elements": 7
+    },
+    "nodes/text-justification": {
+      "moved": 0,
+      "elements": 7,
+      "unresettable": [
+        "label-weight-sample",
+        "label-text-border-dashed",
+        "label-text-border-dotted",
+        "label-text-border-double",
+        "label-line-height-0",
+        "label-line-height-1",
+        "label-line-height-2"
+      ]
+    },
+    "nodes/text-max-width": {
+      "moved": 29201,
+      "elements": 7
+    },
+    "nodes/text-valign": {
+      "moved": 38248,
+      "elements": 7
+    },
+    "nodes/text-wrap": {
+      "moved": 29201,
+      "elements": 7
+    },
+    "nodes/width": {
+      "moved": 37889,
+      "elements": 7
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "text-border-style",
+      "target": "label-text-border-dashed",
+      "value": "dashed",
+      "alternate": "dotted",
+      "matched": 1,
+      "changed": 1,
+      "moved": 319,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "text-border-style",
+      "target": "label-text-border-dotted",
+      "value": "dotted",
+      "alternate": "dashed",
+      "matched": 1,
+      "changed": 1,
+      "moved": 294,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "text-border-style",
+      "target": "label-text-border-double",
+      "value": "double",
+      "alternate": "dashed",
+      "matched": 1,
+      "changed": 1,
+      "moved": 513,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "font-weight",
+      "target": "label-weight-sample",
+      "value": 100,
+      "alternate": 700,
+      "matched": 1,
+      "changed": 1,
+      "moved": 13052
+    },
+    {
+      "group": "nodes",
+      "property": "font-style",
+      "target": "label-weight-sample",
+      "value": "normal",
+      "alternate": "italic",
+      "matched": 1,
+      "changed": 1,
+      "moved": 11675
+    }
+  ]
+}

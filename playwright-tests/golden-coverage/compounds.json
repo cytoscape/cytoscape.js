@@ -22,20 +22,17 @@
     ]
   },
   "parents": {
-    "padding": [
-      "12"
-    ],
     "padding-bottom": [
-      "12"
+      "14"
     ],
     "padding-left": [
-      "12"
+      "28"
     ],
     "padding-right": [
-      "12"
+      "20"
     ],
     "padding-top": [
-      "12"
+      "8"
     ]
   },
   "edges": {

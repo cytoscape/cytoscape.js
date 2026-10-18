@@ -1,0 +1,96 @@
+{
+  "golden": "feature-mappers-scales",
+  "elements": {
+    "nodes": 4,
+    "parents": 0,
+    "edges": 2
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(152,150,141)",
+      "rgb(187,159,117)",
+      "rgb(239,170,59)",
+      "rgb(52,120,184)"
+    ],
+    "border-color": [
+      "rgb(135,76,115)",
+      "rgb(38,61,83)",
+      "rgb(57,113,89)"
+    ],
+    "border-width": [
+      "4"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-size": [
+      "12"
+    ],
+    "height": [
+      "42",
+      "58",
+      "64",
+      "74"
+    ],
+    "label": [
+      "auto domain",
+      "high · 10",
+      "low · 0",
+      "mid · 5"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "width": [
+      "42",
+      "58",
+      "64",
+      "74"
+    ]
+  },
+  "parents": {},
+  "edges": {
+    "line-color": [
+      "rgb(217,83,79)",
+      "rgb(74,120,173)"
+    ],
+    "target-arrow-color": [
+      "rgb(153,153,153)"
+    ],
+    "target-arrow-shape": [
+      "triangle"
+    ],
+    "width": [
+      "2",
+      "9"
+    ]
+  },
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "background-color",
+        "target": "map-mid",
+        "value": "rgb(152,150,141)"
+      },
+      {
+        "group": "nodes",
+        "property": "width",
+        "target": "map-high",
+        "value": 74
+      },
+      {
+        "group": "edges",
+        "property": "width",
+        "target": "map-edge-2",
+        "value": 9
+      }
+    ],
+    "keywords": [],
+    "exceptions": []
+  }
+}

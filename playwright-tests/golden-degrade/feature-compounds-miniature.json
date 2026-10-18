@@ -1,0 +1,157 @@
+{
+  "golden": "feature-compounds-miniature",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 45254,
+      "elements": 7
+    },
+    "nodes/background-image": {
+      "moved": 11006,
+      "elements": 2
+    },
+    "nodes/background-image-opacity": {
+      "moved": 11006,
+      "elements": 2
+    },
+    "nodes/background-opacity": {
+      "moved": 15431,
+      "elements": 2
+    },
+    "nodes/border-color": {
+      "moved": 7322,
+      "elements": 7
+    },
+    "nodes/border-dash-pattern": {
+      "moved": 0,
+      "elements": 2,
+      "unresettable": [
+        "mini-child-a",
+        "mini-child-b"
+      ]
+    },
+    "nodes/border-width": {
+      "moved": 9927,
+      "elements": 7
+    },
+    "nodes/chart": {
+      "moved": 1853,
+      "elements": 2
+    },
+    "nodes/chart-colors": {
+      "moved": 1853,
+      "elements": 2,
+      "via": "alternate",
+      "alternate": [
+        "#ff00ff",
+        "#00ffff",
+        "#ffff00",
+        "#101010"
+      ]
+    },
+    "nodes/chart-size": {
+      "moved": 4460,
+      "elements": 2
+    },
+    "nodes/chart-values": {
+      "moved": 1853,
+      "elements": 2,
+      "via": "sheet"
+    },
+    "nodes/color": {
+      "moved": 2310,
+      "elements": 7
+    },
+    "nodes/font-size": {
+      "moved": 5222,
+      "elements": 7
+    },
+    "nodes/height": {
+      "moved": 36987,
+      "elements": 7
+    },
+    "nodes/label": {
+      "moved": 2336,
+      "elements": 7
+    },
+    "nodes/shape": {
+      "moved": 11501,
+      "elements": 5
+    },
+    "nodes/text-margin-y": {
+      "moved": 2610,
+      "elements": 2
+    },
+    "nodes/text-max-width": {
+      "moved": 0,
+      "elements": 2
+    },
+    "nodes/text-wrap": {
+      "moved": 0,
+      "elements": 2
+    },
+    "nodes/width": {
+      "moved": 34806,
+      "elements": 7
+    },
+    "parents/collapse-scale": {
+      "moved": 6219,
+      "elements": 2,
+      "via": "sheet"
+    },
+    "parents/padding": {
+      "moved": 16782,
+      "elements": 2,
+      "via": "sheet"
+    },
+    "parents/padding-bottom": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-expanded",
+        "parent-mini"
+      ]
+    },
+    "parents/padding-left": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-expanded",
+        "parent-mini"
+      ]
+    },
+    "parents/padding-right": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-expanded",
+        "parent-mini"
+      ]
+    },
+    "parents/padding-top": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-expanded",
+        "parent-mini"
+      ]
+    },
+    "edges/line-color": {
+      "moved": 784,
+      "elements": 1
+    },
+    "edges/target-arrow-color": {
+      "moved": 76,
+      "elements": 1
+    },
+    "edges/target-arrow-shape": {
+      "moved": 440,
+      "elements": 1
+    }
+  },
+  "keywords": []
+}

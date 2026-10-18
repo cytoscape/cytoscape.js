@@ -1,0 +1,178 @@
+{
+  "golden": "feature-labels-font-keywords-fontStyle-oblique",
+  "elements": {
+    "nodes": 7,
+    "parents": 0,
+    "edges": 0
+  },
+  "nodes": {
+    "background-color": [
+      "rgb(220,232,244)"
+    ],
+    "border-color": [
+      "rgb(83,103,122)"
+    ],
+    "border-width": [
+      "1"
+    ],
+    "color": [
+      "rgb(23,36,50)"
+    ],
+    "font-family": [
+      "Open Sans"
+    ],
+    "font-size": [
+      "20"
+    ],
+    "font-style": [
+      "oblique"
+    ],
+    "font-weight": [
+      "400"
+    ],
+    "height": [
+      "112",
+      "62"
+    ],
+    "label": [
+      "Font sample",
+      "dashed",
+      "dotted",
+      "double",
+      "line one line two line three"
+    ],
+    "line-height": [
+      "0.8",
+      "1.4",
+      "2.2"
+    ],
+    "shape": [
+      "round-rectangle"
+    ],
+    "text-background-color": [
+      "rgb(255,255,255)"
+    ],
+    "text-background-opacity": [
+      "1"
+    ],
+    "text-background-padding": [
+      "3"
+    ],
+    "text-border-color": [
+      "rgb(37,63,85)"
+    ],
+    "text-border-opacity": [
+      "1"
+    ],
+    "text-border-style": [
+      "dashed",
+      "dotted",
+      "double"
+    ],
+    "text-border-width": [
+      "2"
+    ],
+    "text-justification": [
+      "center"
+    ],
+    "text-max-width": [
+      "82"
+    ],
+    "text-valign": [
+      "center"
+    ],
+    "text-wrap": [
+      "wrap"
+    ],
+    "width": [
+      "132"
+    ]
+  },
+  "parents": {},
+  "edges": {},
+  "core": {},
+  "featureCoverage": {
+    "properties": [
+      {
+        "group": "nodes",
+        "property": "font-weight",
+        "target": "label-weight-sample",
+        "value": 400,
+        "alternate": 700
+      },
+      {
+        "group": "nodes",
+        "property": "line-height",
+        "target": "label-line-height-0",
+        "value": 0.8,
+        "alternate": 1.4
+      },
+      {
+        "group": "nodes",
+        "property": "line-height",
+        "target": "label-line-height-1",
+        "value": 1.4,
+        "alternate": 0.8
+      },
+      {
+        "group": "nodes",
+        "property": "line-height",
+        "target": "label-line-height-2",
+        "value": 2.2,
+        "alternate": 1.4
+      },
+      {
+        "group": "nodes",
+        "property": "font-style",
+        "target": "label-weight-sample",
+        "value": "oblique",
+        "alternate": "normal"
+      },
+      {
+        "group": "nodes",
+        "property": "font-family",
+        "target": "label-weight-sample",
+        "value": "Open Sans",
+        "alternate": "serif"
+      }
+    ],
+    "keywords": [
+      {
+        "group": "nodes",
+        "property": "text-border-style",
+        "target": "label-text-border-dashed",
+        "value": "dashed",
+        "alternate": "dotted"
+      },
+      {
+        "group": "nodes",
+        "property": "text-border-style",
+        "target": "label-text-border-dotted",
+        "value": "dotted",
+        "alternate": "dashed"
+      },
+      {
+        "group": "nodes",
+        "property": "text-border-style",
+        "target": "label-text-border-double",
+        "value": "double",
+        "alternate": "dashed"
+      },
+      {
+        "group": "nodes",
+        "property": "font-weight",
+        "target": "label-weight-sample",
+        "value": 400,
+        "alternate": 700
+      },
+      {
+        "group": "nodes",
+        "property": "font-style",
+        "target": "label-weight-sample",
+        "value": "oblique",
+        "alternate": "normal"
+      }
+    ],
+    "exceptions": []
+  }
+}

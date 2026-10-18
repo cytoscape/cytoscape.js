@@ -1,0 +1,47 @@
+{
+  "golden": "core-selection-box",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 33423,
+      "elements": 6
+    },
+    "nodes/border-color": {
+      "moved": 8315,
+      "elements": 6
+    },
+    "nodes/border-width": {
+      "moved": 8345,
+      "elements": 6
+    },
+    "nodes/height": {
+      "moved": 14523,
+      "elements": 6
+    },
+    "nodes/width": {
+      "moved": 19489,
+      "elements": 6
+    },
+    "core/selection-box-border-color": {
+      "moved": 1734,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "core/selection-box-border-width": {
+      "moved": 1148,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "core/selection-box-color": {
+      "moved": 19516,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "core/selection-box-opacity": {
+      "moved": 19516,
+      "elements": 1,
+      "via": "sheet"
+    }
+  },
+  "keywords": []
+}

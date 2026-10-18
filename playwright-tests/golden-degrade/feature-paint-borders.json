@@ -1,0 +1,130 @@
+{
+  "golden": "feature-paint-borders",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 61089,
+      "elements": 7
+    },
+    "nodes/border-color": {
+      "moved": 27377,
+      "elements": 7
+    },
+    "nodes/border-dash-offset": {
+      "moved": 2457,
+      "elements": 7
+    },
+    "nodes/border-dash-pattern": {
+      "moved": 2650,
+      "elements": 7
+    },
+    "nodes/border-position": {
+      "moved": 8818,
+      "elements": 2
+    },
+    "nodes/border-style": {
+      "moved": 7566,
+      "elements": 3
+    },
+    "nodes/border-width": {
+      "moved": 28392,
+      "elements": 7
+    },
+    "nodes/color": {
+      "moved": 3462,
+      "elements": 7
+    },
+    "nodes/font-size": {
+      "moved": 8514,
+      "elements": 7
+    },
+    "nodes/height": {
+      "moved": 59998,
+      "elements": 7
+    },
+    "nodes/label": {
+      "moved": 3488,
+      "elements": 7
+    },
+    "nodes/shape": {
+      "moved": 33538,
+      "elements": 7
+    },
+    "nodes/text-margin-y": {
+      "moved": 5269,
+      "elements": 7
+    },
+    "nodes/width": {
+      "moved": 66574,
+      "elements": 7
+    }
+  },
+  "keywords": [
+    {
+      "group": "nodes",
+      "property": "border-position",
+      "target": "border-position-inside",
+      "value": "inside",
+      "alternate": "center",
+      "matched": 1,
+      "changed": 1,
+      "moved": 4345,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "border-position",
+      "target": "border-position-outside",
+      "value": "outside",
+      "alternate": "center",
+      "matched": 1,
+      "changed": 1,
+      "moved": 4473,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "border-style",
+      "target": "border-style-solid",
+      "value": "solid",
+      "alternate": "dashed",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1625,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "border-style",
+      "target": "border-style-dashed",
+      "value": "dashed",
+      "alternate": "solid",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1644,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "border-style",
+      "target": "border-style-dotted",
+      "value": "dotted",
+      "alternate": "solid",
+      "matched": 1,
+      "changed": 1,
+      "moved": 4128,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "nodes",
+      "property": "border-style",
+      "target": "border-style-double",
+      "value": "double",
+      "alternate": "solid",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1794,
+      "matchedBy": "authored-value-and-style-getter"
+    }
+  ]
+}

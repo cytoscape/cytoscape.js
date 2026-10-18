@@ -1,0 +1,178 @@
+{
+  "golden": "feature-compounds-hulls",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 31503,
+      "elements": 13
+    },
+    "nodes/background-opacity": {
+      "moved": 21105,
+      "elements": 3
+    },
+    "nodes/border-color": {
+      "moved": 6666,
+      "elements": 13
+    },
+    "nodes/border-width": {
+      "moved": 8738,
+      "elements": 13
+    },
+    "nodes/color": {
+      "moved": 1283,
+      "elements": 13
+    },
+    "nodes/font-size": {
+      "moved": 5831,
+      "elements": 13
+    },
+    "nodes/height": {
+      "moved": 11025,
+      "elements": 13
+    },
+    "nodes/label": {
+      "moved": 8314,
+      "elements": 13
+    },
+    "nodes/shape": {
+      "moved": 20241,
+      "elements": 13
+    },
+    "nodes/text-halign": {
+      "moved": 6008,
+      "elements": 1
+    },
+    "nodes/text-margin-x": {
+      "moved": 1959,
+      "elements": 1
+    },
+    "nodes/text-margin-y": {
+      "moved": 1083,
+      "elements": 3
+    },
+    "nodes/text-max-width": {
+      "moved": 0,
+      "elements": 3
+    },
+    "nodes/text-valign": {
+      "moved": 9477,
+      "elements": 10
+    },
+    "nodes/text-wrap": {
+      "moved": 0,
+      "elements": 3
+    },
+    "nodes/width": {
+      "moved": 16371,
+      "elements": 13
+    },
+    "parents/compound-sizing-wrt-labels": {
+      "moved": 7781,
+      "elements": 3,
+      "via": "sheet"
+    },
+    "parents/padding": {
+      "moved": 6901,
+      "elements": 3,
+      "via": "sheet"
+    },
+    "parents/padding-bottom": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "hull-convex",
+        "hull-round",
+        "hull-concave"
+      ]
+    },
+    "parents/padding-left": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "hull-convex",
+        "hull-round",
+        "hull-concave"
+      ]
+    },
+    "parents/padding-right": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "hull-convex",
+        "hull-round",
+        "hull-concave"
+      ]
+    },
+    "parents/padding-top": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "hull-convex",
+        "hull-round",
+        "hull-concave"
+      ]
+    },
+    "edges/line-color": {
+      "moved": 1653,
+      "elements": 1
+    },
+    "edges/target-arrow-color": {
+      "moved": 40,
+      "elements": 1
+    },
+    "edges/target-arrow-shape": {
+      "moved": 1109,
+      "elements": 1
+    }
+  },
+  "keywords": [
+    {
+      "group": "parents",
+      "property": "shape",
+      "target": "hull-convex",
+      "value": "convex-hull",
+      "alternate": "concave-hull",
+      "matched": 1,
+      "changed": 1,
+      "moved": 3670,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "parents",
+      "property": "shape",
+      "target": "hull-round",
+      "value": "round-convex-hull",
+      "alternate": "convex-hull",
+      "matched": 1,
+      "changed": 1,
+      "moved": 1733,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "parents",
+      "property": "shape",
+      "target": "hull-concave",
+      "value": "concave-hull",
+      "alternate": "round-convex-hull",
+      "matched": 1,
+      "changed": 1,
+      "moved": 2067,
+      "matchedBy": "authored-value-and-style-getter"
+    },
+    {
+      "group": "parents",
+      "property": "compound-sizing-wrt-labels",
+      "target": "hull-convex",
+      "value": "include",
+      "alternate": "exclude",
+      "matched": 1,
+      "changed": 1,
+      "moved": 7781,
+      "scope": "parents stylesheet group"
+    }
+  ]
+}

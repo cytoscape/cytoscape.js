@@ -1,0 +1,112 @@
+{
+  "golden": "feature-compounds-padding-width",
+  "pixels": 480000,
+  "pairs": {
+    "nodes/background-color": {
+      "moved": 89114,
+      "elements": 4
+    },
+    "nodes/background-opacity": {
+      "moved": 66551,
+      "elements": 1
+    },
+    "nodes/border-color": {
+      "moved": 8313,
+      "elements": 4
+    },
+    "nodes/border-width": {
+      "moved": 10716,
+      "elements": 4
+    },
+    "nodes/color": {
+      "moved": 3493,
+      "elements": 4
+    },
+    "nodes/font-size": {
+      "moved": 7805,
+      "elements": 4
+    },
+    "nodes/height": {
+      "moved": 20561,
+      "elements": 4
+    },
+    "nodes/label": {
+      "moved": 3517,
+      "elements": 4
+    },
+    "nodes/shape": {
+      "moved": 7643,
+      "elements": 4
+    },
+    "nodes/text-margin-y": {
+      "moved": 4411,
+      "elements": 1
+    },
+    "nodes/text-max-width": {
+      "moved": 0,
+      "elements": 1
+    },
+    "nodes/text-valign": {
+      "moved": 2155,
+      "elements": 3
+    },
+    "nodes/text-wrap": {
+      "moved": 4223,
+      "elements": 1
+    },
+    "nodes/width": {
+      "moved": 41020,
+      "elements": 4
+    },
+    "parents/padding": {
+      "moved": 38646,
+      "elements": 1,
+      "via": "sheet"
+    },
+    "parents/padding-bottom": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-padding"
+      ]
+    },
+    "parents/padding-left": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-padding"
+      ]
+    },
+    "parents/padding-right": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-padding"
+      ]
+    },
+    "parents/padding-top": {
+      "moved": 0,
+      "elements": 0,
+      "via": "sheet",
+      "unresettable": [
+        "parent-padding"
+      ]
+    }
+  },
+  "keywords": [
+    {
+      "group": "parents",
+      "property": "padding-relative-to",
+      "target": "parent-padding",
+      "value": "width",
+      "alternate": "height",
+      "matched": 1,
+      "changed": 1,
+      "moved": 32810,
+      "scope": "parents stylesheet group"
+    }
+  ]
+}

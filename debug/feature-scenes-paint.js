@@ -23,10 +23,16 @@
       const y = 75 + Math.floor(i / 3) * 128;
 
       return node(`paint-${i}`, x, y, {
-        label: direction === 'solid' ? 'solid baseline' : direction.slice(3),
+        label:
+          i === 1
+            ? 'bottom · border 0.4'
+            : direction === 'solid'
+              ? 'solid baseline'
+              : direction.slice(3),
         bg: direction === 'solid' ? colors[0] : colors[(i % 2) + 1],
         fill: direction === 'solid' ? 'solid' : 'linear-gradient',
         direction: direction === 'solid' ? 'to-bottom' : direction,
+        borderOpacity: i === 1 ? 0.4 : 1,
       });
     });
 
@@ -71,7 +77,7 @@
         group: 'nodes',
         property: 'border-opacity',
         target: 'paint-1',
-        value: 1,
+        value: 0.4,
       },
       {
         group: 'nodes',
@@ -111,7 +117,7 @@
           'background-opacity': 1,
           'border-color': '#28384a',
           'border-width': 3,
-          'border-opacity': 1,
+          'border-opacity': mapper('borderOpacity', 1),
           'border-position': 'center',
           'border-style': 'solid',
           'border-dash-offset': mapper('dashOffset', 0),
@@ -127,7 +133,7 @@
           })),
         ]),
         notes: [
-          'The solid baseline sits beside all eight linear-gradient directions; each colored cell uses the same uneven three-stop ramp and border.',
+          'The solid baseline sits beside all eight linear-gradient directions; each colored cell uses the same uneven three-stop ramp and border. The bottom-gradient sample uses 0.4 border opacity beside opaque borders.',
         ],
       },
     );

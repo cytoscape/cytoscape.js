@@ -835,6 +835,8 @@ describe('round 149 visual feature scenes', function () {
     const paint = featureScenes.create('paint', 'nodes');
     const paintCy = cytoscape({ elements: paint.elements, style: paint.style });
     expect(paintCy.$id('paint-0').style('background-fill')).to.equal('solid');
+    expect(paintCy.$id('paint-0').style('border-opacity')).to.equal(1);
+    expect(paintCy.$id('paint-1').style('border-opacity')).to.equal(0.4);
     for (let i = 1; i < 9; i++) {
       expect(paintCy.$id(`paint-${i}`).style('background-fill')).to.equal(
         'linear-gradient',

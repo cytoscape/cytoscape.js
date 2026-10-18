@@ -243,9 +243,13 @@ const canonical = (value) =>
  * @param capture — `collectStyleCoverage`'s result for the scene
  * @throws when the record is missing or differs, naming what moved
  */
-export const compareToCoverage = (name, capture) => {
+export const compareToCoverage = (name, capture, featureCoverage = null) => {
   const file = path.join(COVERAGE_DIR, `${name}.json`);
-  const record = { golden: name, ...capture };
+  const record = {
+    golden: name,
+    ...capture,
+    ...(featureCoverage == null ? {} : { featureCoverage }),
+  };
 
   if (process.env.UPDATE_GOLDENS || process.env.UPDATE_GOLDEN_COVERAGE) {
     fs.mkdirSync(COVERAGE_DIR, { recursive: true });

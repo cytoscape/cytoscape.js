@@ -8,6 +8,7 @@ import {
   DEGRADE_DIR,
   GROUPS,
   INTENDED_DECORATION,
+  KEYWORD_READBACK,
   NO_STATIC_PIXELS,
   UNMOVABLE,
   degradeReport,
@@ -25,6 +26,10 @@ import {
   COMPOUND_PROPS,
   MAX_VALUES,
 } from '../../playwright-tests/lib/style-coverage.mjs';
+import {
+  resetKeywordInPage,
+  restoreInPage,
+} from '../../playwright-tests/lib/degrade-control.mjs';
 
 /*
 Round 135 (item 30, tier 1): the golden-coverage enumerator, gated.
@@ -80,9 +85,9 @@ exercised group-properties move pixels in some golden.
 const PINNED = {
   universe: 220,
   unexercised: 77,
-  paintable: 58,
-  noStatic: 19,
-  keywordGaps: 66,
+  paintable: 65,
+  noStatic: 12,
+  keywordGaps: 95,
   inert: 47,
 };
 
@@ -100,6 +105,9 @@ const PINNED_DEGRADE = {
   exercised: 143,
   seen: 132,
   unseen: 11,
+  keywordControls: 0,
+  keywordFailures: 0,
+  keywordExceptions: 0,
 };
 
 describe('golden coverage: the enumerator (round 135)', function () {
@@ -231,6 +239,15 @@ describe('golden coverage: the enumerator (round 135)', function () {
     }
   });
 
+  it('keeps transient core paint in the visual universe', () => {
+    const { space } = measured;
+
+    expect(NO_STATIC_PIXELS).not.to.have.property('active-bg-color');
+    expect(NO_STATIC_PIXELS).not.to.have.property('selection-box-color');
+    expect(space.groups.core).to.include('active-bg-color');
+    expect(space.groups.core).to.include('selection-box-color');
+  });
+
   it('holds its keyword aliases to what a sheet reads back', () => {
     const { schema } = measured;
 
@@ -263,12 +280,178 @@ describe('golden coverage: the enumerator (round 135)', function () {
 
     expect(keywordsOf(schema, 'shape')).to.include('concave-hexagon');
     expect(keywordsOf(schema, 'curve-style')).to.include('taxi');
+    expect(keywordsOf(schema, 'background-fit')).to.deep.equal([
+      'none',
+      'contain',
+      'cover',
+    ]);
+    expect(keywordsOf(schema, 'background-clip')).to.deep.equal([
+      'none',
+      'node',
+    ]);
+    expect(keywordsOf(schema, 'background-image-containment')).to.deep.equal([
+      'inside',
+      'over',
+    ]);
+    expect(keywordsOf(schema, 'background-repeat')).to.deep.equal([
+      'no-repeat',
+      'repeat-x',
+      'repeat-y',
+      'repeat',
+    ]);
+    expect(keywordsOf(schema, 'background-image-type')).to.deep.equal([
+      'auto',
+      'sdf-icon',
+    ]);
+    expect(keywordsOf(schema, 'background-image-smoothing')).to.deep.equal([
+      'yes',
+      'no',
+    ]);
+    expect(keywordsOf(schema, 'background-image-crossorigin')).to.deep.equal([
+      'anonymous',
+      'use-credentials',
+      'null',
+    ]);
+    expect(keywordsOf(schema, 'events')).to.deep.equal(['yes', 'no']);
+    expect(keywordsOf(schema, 'radius-type')).to.deep.equal([
+      'arc-radius',
+      'influence-radius',
+    ]);
     expect(keywordsOf(schema, 'label-declutter')).to.deep.equal([
       'none',
       'cull',
     ]);
     // a colour is not a keyword property
     expect(keywordsOf(schema, 'background-color')).to.equal(null);
+  });
+
+  it('counts core keywords through their resolved renderer codes', () => {
+    const { schema, space, defaults } = measured;
+    const absent = enumerate([], space, schema, defaults);
+    const present = enumerate(
+      [{ golden: 'core-cull', core: { 'label-declutter': ['1'] } }],
+      space,
+      schema,
+      defaults,
+    );
+
+    expect(KEYWORD_READBACK['label-declutter']).to.deep.equal({
+      none: 0,
+      cull: 1,
+    });
+    expect(absent.keywordGaps.core['label-declutter']).to.deep.equal(['cull']);
+    expect(present.keywordGaps.core).not.to.have.property('label-declutter');
+  });
+
+  it('splits list-valued readbacks into their individual enum values', () => {
+    const { schema, space, defaults } = measured;
+    const result = enumerate(
+      [
+        {
+          golden: 'image-enums',
+          nodes: {
+            'background-fit': ['cover contain'],
+            'background-image-smoothing': ['no yes'],
+          },
+        },
+      ],
+      space,
+      schema,
+      defaults,
+    );
+
+    expect(result.keywordGaps.nodes).not.to.have.property('background-fit');
+    expect(result.keywordGaps.nodes).not.to.have.property(
+      'background-image-smoothing',
+    );
+  });
+
+  it('requires exact per-keyword degrade records and moved pixels', () => {
+    const capture = {
+      golden: 'keyword-control',
+      featureCoverage: {
+        keywords: [
+          {
+            group: 'nodes',
+            property: 'font-style',
+            target: 'n',
+            value: 'oblique',
+            alternate: 'normal',
+          },
+        ],
+        exceptions: [],
+      },
+      nodes: {},
+      parents: {},
+      edges: {},
+      core: {},
+    };
+    const target = capture.featureCoverage.keywords[0];
+    const record = {
+      golden: capture.golden,
+      pairs: {},
+      keywords: [{ ...target, matched: 1, changed: 1, moved: 0 }],
+    };
+    const failed = degradeReport([capture], [record]);
+
+    expect(failed.keywordFailures).to.have.length(1);
+    expect(failed.staleKeywords).to.be.empty;
+
+    const clean = degradeReport(
+      [capture],
+      [
+        {
+          ...record,
+          keywords: [{ ...target, matched: 1, changed: 1, moved: 12 }],
+        },
+      ],
+    );
+
+    expect(clean.keywordFailures).to.be.empty;
+    expect(clean.staleKeywords).to.be.empty;
+  });
+
+  it('resets and restores global fonts and core keywords (control)', () => {
+    const cy = cytoscape({
+      elements: [{ data: { id: 'n' } }],
+      style: {
+        nodes: { 'font-style': 'oblique' },
+        core: { 'label-declutter': 'cull' },
+      },
+    });
+
+    globalThis.cy = cy;
+
+    try {
+      const core = resetKeywordInPage({
+        group: 'core',
+        property: 'label-declutter',
+        target: null,
+        value: 'cull',
+        alternate: 'none',
+      });
+
+      expect(core).to.include({ matched: 1, changed: 1 });
+      expect(cy.style().core().labelDeclutter).to.equal(0);
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.style().core().labelDeclutter).to.equal(1);
+
+      const font = resetKeywordInPage({
+        group: 'nodes',
+        property: 'font-style',
+        target: 'n',
+        value: 'oblique',
+        alternate: 'normal',
+      });
+
+      expect(font).to.include({ matched: 1, changed: 1 });
+      expect(cy.$id('n').style('font-style')).to.equal('normal');
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.$id('n').style('font-style')).to.equal('oblique');
+    } finally {
+      delete globalThis.cy;
+      cy.destroy();
+    }
   });
 });
 
@@ -280,10 +463,20 @@ describe('golden coverage: the degrade control (round 143)', function () {
   it('has a current degrade record for every golden', () => {
     expect(degrades.length).to.equal(captures.length);
     expect(
-      { stale: report.stale, missing: report.missing, stopped: report.stopped },
+      {
+        stale: report.stale,
+        staleKeywords: report.staleKeywords,
+        missing: report.missing,
+        stopped: report.stopped,
+      },
       'rerun the golden pass with DEGRADE_CONTROL=1 and commit ' +
         'playwright-tests/golden-degrade/',
-    ).to.deep.equal({ stale: [], missing: [], stopped: [] });
+    ).to.deep.equal({
+      stale: [],
+      staleKeywords: [],
+      missing: [],
+      stopped: [],
+    });
 
     const files = readdirSync(DEGRADE_DIR)
       .filter((f) => f.endsWith('.json'))
@@ -318,6 +511,11 @@ describe('golden coverage: the degrade control (round 143)', function () {
       ),
       'stale UNMOVABLE entries',
     ).to.be.empty;
+  });
+
+  it('requires every keyword target to change a pixel or name an exception', () => {
+    expect(report.keywordFailures).to.be.empty;
+    expect(report.keywordExceptions).to.deep.equal([]);
   });
 
   it('classifies a planted record, and catches a stale one (control)', () => {

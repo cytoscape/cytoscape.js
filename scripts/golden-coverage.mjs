@@ -64,6 +64,9 @@ export const GROUPS = ['nodes', 'parents', 'edges', 'core'];
  * the universe fails, so a renamed property cannot keep a stale entry.
  */
 export const NO_STATIC_PIXELS = {
+  // These entries require behaviour or a mid-transition checkpoint. Active
+  // background and selection-box styles remain paintable because fixtures
+  // can capture them while a pointer is held.
   events: 'pointer behaviour only — decides what a press picks, draws nothing',
   'text-events':
     'pointer behaviour only — whether the label box picks, draws nothing',
@@ -75,20 +78,6 @@ export const NO_STATIC_PIXELS = {
     'animation config — a golden is one settled frame, never mid-transition',
   'transition-timing-function':
     'animation config — a golden is one settled frame, never mid-transition',
-  'active-bg-color':
-    'press feedback — drawn only while a pointer is down on the background',
-  'active-bg-opacity':
-    'press feedback — drawn only while a pointer is down on the background',
-  'active-bg-size':
-    'press feedback — drawn only while a pointer is down on the background',
-  'selection-box-color':
-    'gesture chrome — drawn only during a box-selection drag',
-  'selection-box-opacity':
-    'gesture chrome — drawn only during a box-selection drag',
-  'selection-box-border-color':
-    'gesture chrome — drawn only during a box-selection drag',
-  'selection-box-border-width':
-    'gesture chrome — drawn only during a box-selection drag',
   'background-image-crossorigin':
     'a fetch mode — the goldens load same-origin images, where it moves nothing',
   'mid-source-arrow-width':
@@ -108,6 +97,11 @@ export const ALIASES = {
   'target-arrow-shape': { arrow: 'triangle' },
   'mid-source-arrow-shape': { arrow: 'triangle' },
   'mid-target-arrow-shape': { arrow: 'triangle' },
+};
+
+/** Keyword spellings whose public core read-back is an engine code. */
+export const KEYWORD_READBACK = {
+  'label-declutter': { none: 0, cull: 1 },
 };
 
 /** Kebab-case property names of one schema props block. */
@@ -149,25 +143,78 @@ export const universe = (schema, readable) => {
 };
 
 /**
- * A property's keyword vocabulary when it is a plain keyword property —
- * its schema entry a `$ref` to one `$defs/keywords` enum, or an inline
- * `enum` — else null.  List-valued forms (the multi-image `anyOf`s) and
- * the `yes`/`no` kinds are left to the property-level count.
+ * Walk a property schema for finite enum/const values, including enums
+ * nested under `anyOf` and array `items`, and enums referenced from either
+ * `keywords` or `kinds`.  This includes the yes/no kind and list-valued
+ * image properties; those were invisible to the original enum-only scan.
  */
+const enumValues = (schema, entry, seen = new Set()) => {
+  if (entry == null || typeof entry !== 'object') return [];
+  if (Array.isArray(entry.enum)) return entry.enum;
+  if (Object.hasOwn(entry, 'const')) return [entry.const];
+
+  if (typeof entry.$ref === 'string') {
+    const match = /^#\/\$defs\/(keywords|kinds)\/([\w-]+)$/.exec(entry.$ref);
+
+    if (match != null) {
+      const key = `${match[1]}/${match[2]}`;
+
+      if (seen.has(key)) return [];
+
+      seen.add(key);
+      return enumValues(schema, schema.$defs[match[1]][match[2]], seen);
+    }
+  }
+
+  const values = ['anyOf', 'oneOf', 'allOf', 'items'].flatMap((key) => {
+    const part = entry[key];
+
+    if (Array.isArray(part)) {
+      return part.flatMap((child) => enumValues(schema, child, seen));
+    }
+
+    return part == null ? [] : enumValues(schema, part, seen);
+  });
+
+  return values.filter(
+    (value, index) =>
+      values.findIndex((candidate) => String(candidate) === String(value)) ===
+      index,
+  );
+};
+
+/** A property's finite canonical vocabulary, or null when it has none. */
 export const keywordsOf = (schema, prop) => {
-  const entry = schema.$defs.props[prop];
+  const values = enumValues(schema, schema.$defs.props[prop]);
 
-  if (entry == null) {
-    return null;
+  return values.length === 0 ? null : values;
+};
+
+/**
+ * Split the string forms in style read-backs into individual canonical
+ * values.  Multi-image properties resolve as whitespace-separated tokens;
+ * some records can also contain JSON-encoded arrays from older captures.
+ */
+const keywordTokens = (raw) => {
+  let value = raw;
+
+  if (typeof raw === 'string') {
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      value = raw;
+    }
   }
 
-  if (Array.isArray(entry.enum)) {
-    return entry.enum;
+  if (Array.isArray(value)) {
+    return value.flatMap(keywordTokens);
   }
 
-  const m = /^#\/\$defs\/keywords\/(\w+)$/.exec(entry.$ref ?? '');
+  if (typeof value === 'string') {
+    return value.trim().split(/\s+/).filter(Boolean);
+  }
 
-  return m == null ? null : (schema.$defs.keywords[m[1]].enum ?? null);
+  return [String(value)];
 };
 
 /** Every capture record on disk, sorted by golden name. */
@@ -244,7 +291,9 @@ export const enumerate = (captures, space, schema, defaults) => {
         (exercised[group][prop] ??= []).push(capture.golden);
 
         for (const v of values) {
-          (seen[group][prop] ??= new Set()).add(v);
+          for (const token of keywordTokens(v)) {
+            (seen[group][prop] ??= new Set()).add(token);
+          }
         }
       }
     }
@@ -259,13 +308,6 @@ export const enumerate = (captures, space, schema, defaults) => {
 
     keywordGaps[group] = {};
 
-    if (group === 'core') {
-      // the core record reads back engine codes, not keywords; its one
-      // keyword property (label-declutter) is two-valued, so the
-      // property-level count already says it
-      continue;
-    }
-
     for (const prop of space.groups[group]) {
       const words = keywordsOf(schema, prop);
 
@@ -274,11 +316,21 @@ export const enumerate = (captures, space, schema, defaults) => {
       }
 
       const def = defaults[group]?.[prop];
+      const defaultTokens = new Set(keywordTokens(def));
       const have = seen[group][prop] ?? new Set();
       const alias = ALIASES[prop] ?? {};
-      const missing = words.filter(
-        (w) => w !== def && !(w in alias) && !have.has(w),
-      );
+      const readback = KEYWORD_READBACK[prop] ?? {};
+      const missing = words.filter((w) => {
+        if (Object.hasOwn(alias, w)) return false;
+
+        const value = Object.hasOwn(readback, w) ? readback[w] : w;
+        const observed = String(value);
+        const isDefault = Object.hasOwn(readback, w)
+          ? defaultTokens.has(observed)
+          : defaultTokens.has(w);
+
+        return !isDefault && !have.has(observed);
+      });
 
       if (missing.length > 0) {
         keywordGaps[group][prop] = missing;
@@ -322,8 +374,8 @@ export const enumerate = (captures, space, schema, defaults) => {
 /** The degrade control's records, one per golden (round 143). */
 export const DEGRADE_DIR = join(ROOT, 'playwright-tests', 'golden-degrade');
 
-/** The groups a degrade pair can be in: core props are reset otherwise, and no golden sets one. */
-export const DEGRADE_GROUPS = ['nodes', 'parents', 'edges'];
+/** Element groups plus renderer-level core controls. */
+export const DEGRADE_GROUPS = ['nodes', 'parents', 'edges', 'core'];
 
 /** A capture's (group, property) pairs, as the degrade control keys them. */
 export const pairsOf = (capture) =>
@@ -406,8 +458,23 @@ export const degradeReport = (captures, degrades) => {
   const unmoved = [];
   const residue = [];
   const moved = [];
+  const keywordFailures = [];
+  const keywordExceptions = [];
+  const staleKeywords = [];
+  let keywordControls = 0;
   const seen = new Set();
   const exercised = new Set();
+
+  const keywordId = (entry) =>
+    JSON.stringify([
+      entry.group,
+      entry.property,
+      entry.target,
+      entry.targetIndex ?? null,
+      entry.value,
+      entry.alternate,
+      entry.exception ?? entry.reason ?? null,
+    ]);
 
   for (const capture of captures) {
     const record = byName.get(capture.golden);
@@ -425,6 +492,47 @@ export const degradeReport = (captures, degrades) => {
 
     if (record.stopped != null) {
       stopped.push(`${capture.golden}: ${record.stopped}`);
+    }
+
+    const expectedKeywords = [
+      ...(capture.featureCoverage?.keywords ?? []),
+      ...(capture.featureCoverage?.exceptions ?? []),
+    ];
+    const actualKeywords = record.keywords ?? [];
+
+    if (
+      JSON.stringify(expectedKeywords.map(keywordId)) !==
+      JSON.stringify(actualKeywords.map(keywordId))
+    ) {
+      staleKeywords.push(capture.golden);
+    }
+
+    for (const entry of actualKeywords) {
+      if (entry.exception != null || entry.reason != null) {
+        keywordExceptions.push(
+          `${capture.golden} ${entry.property}=${entry.value}`,
+        );
+        continue;
+      }
+
+      keywordControls++;
+
+      if (
+        entry.matched !== 1 ||
+        entry.changed !== 1 ||
+        !Number.isFinite(entry.moved) ||
+        entry.moved < 1 ||
+        (entry.unresettable?.length ?? 0) > 0 ||
+        entry.unexpected != null ||
+        entry.rejected != null ||
+        (entry.lost?.length ?? 0) > 0 ||
+        entry.residue != null
+      ) {
+        keywordFailures.push(
+          `${capture.golden} ${entry.group}/${entry.property}=${entry.value}: ` +
+            `matched ${entry.matched}, changed ${entry.changed}, moved ${entry.moved}`,
+        );
+      }
     }
 
     for (const [pair, r] of Object.entries(record.pairs)) {
@@ -463,6 +571,9 @@ export const degradeReport = (captures, degrades) => {
     unmoved,
     residue,
     unseen,
+    staleKeywords,
+    keywordFailures,
+    keywordExceptions,
     counts: {
       pairs: moved.length + decoration.length + unmoved.length,
       moved: moved.length,
@@ -471,6 +582,9 @@ export const degradeReport = (captures, degrades) => {
       exercised: exercised.size,
       seen: seen.size,
       unseen: unseen.length,
+      keywordControls,
+      keywordFailures: keywordFailures.length,
+      keywordExceptions: keywordExceptions.length,
     },
   };
 };
@@ -498,6 +612,12 @@ export const measure = async () => {
     nodes: cy.$id('n').style(),
     parents: cy.$id('p').style(),
     edges: cy.$id('e').style(),
+    core: Object.fromEntries(
+      Object.entries(cy.style().core()).map(([key, value]) => [
+        key.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase()),
+        value,
+      ]),
+    ),
   };
 
   cy.destroy();
@@ -571,6 +691,10 @@ const main = async () => {
       `could not be moved; ${c.seen}/${c.exercised} group-properties move ` +
       `pixels in some golden`,
   );
+  console.log(
+    `keyword controls: ${c.keywordControls} checked, ${c.keywordExceptions} ` +
+      `explicit exceptions, ${c.keywordFailures} failed`,
+  );
 
   if (verbose) {
     for (const key of report.decoration) {
@@ -594,6 +718,8 @@ const main = async () => {
 
   for (const [what, list] of [
     ['stale', report.stale],
+    ['stale keyword coverage', report.staleKeywords],
+    ['keyword failures', report.keywordFailures],
     ['missing', report.missing],
     ['stopped', report.stopped],
   ]) {

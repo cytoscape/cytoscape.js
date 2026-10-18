@@ -55,8 +55,21 @@ export const DEGRADE_DIR = path.resolve(
   'golden-degrade',
 );
 
-/** The groups a pair can be in (core props are reset differently, and no golden sets one). */
-export const DEGRADE_GROUPS = ['nodes', 'parents', 'edges'];
+/** Element groups plus the two renderer-level core controls. */
+export const DEGRADE_GROUPS = ['nodes', 'parents', 'edges', 'core'];
+
+/** Valid alternate values for required chart properties; deleting either
+ * would make the chart sheet invalid before pixels could be compared. */
+export const DEGRADE_ALTERNATES = {
+  'background-gradient-stop-positions': '0% 23% 100%',
+  'line-gradient-stop-positions': '0% 77% 100%',
+  'chart-domain': [-8, 8],
+  'chart-colors': ['#ff00ff', '#00ffff', '#ffff00', '#101010'],
+  'chart-scale': {
+    domain: [-2, 0, 4],
+    range: ['#2166ac', '#f7f7f7', '#b2182b'],
+  },
+};
 
 /** The (group, property) pairs a coverage record exercises. */
 export const pairsOf = (coverage) =>
@@ -105,9 +118,47 @@ export const countMoved = (a, b) => {
  *   the sheet path, those whose value moved), `'bypass'` or `'sheet'`,
  *   and the ids whose value the reset did not move
  */
-export const resetInPage = ({ group, prop }) => {
+export const resetInPage = ({ group, prop, alternates }) => {
   const cy = globalThis.cy;
   const text = (v) => (typeof v === 'string' ? v : JSON.stringify(v));
+
+  // Core styles have no elements to bypass. Remove the selected entry
+  // from the core sheet and compare the renderer's resolved scalar. This
+  // also gives dim-opacity a real pixel control when emphasis is active
+  // and label-declutter one when labels overlap.
+  if (group === 'core') {
+    const camel = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const before = cy.style().core()[camel];
+    const sheet = cy.style().json();
+    const next = {
+      ...sheet,
+      core: { ...(sheet.core ?? {}) },
+    };
+    const saved = { sheet };
+
+    delete next.core[prop];
+    globalThis.__degrade = saved;
+
+    try {
+      cy.style(next);
+    } catch (error) {
+      return {
+        changed: 0,
+        via: 'sheet',
+        unresettable: [],
+        rejected: error instanceof Error ? error.message : String(error),
+      };
+    }
+
+    const after = cy.style().core()[camel];
+
+    return {
+      changed: text(before) === text(after) ? 0 : 1,
+      via: 'sheet',
+      unresettable: text(before) !== text(after) ? [] : ['core'],
+    };
+  }
+
   const ref = globalThis.cytoscape({
     elements: [
       { data: { id: 'p' } },
@@ -133,6 +184,35 @@ export const resetInPage = ({ group, prop }) => {
       : group === 'parents'
         ? cy.nodes().filter((n) => n.isParent())
         : cy.nodes();
+
+  if (prop in alternates) {
+    const alternate = alternates[prop];
+    const saved = [];
+    const unresettable = [];
+
+    eles.forEach((ele) => {
+      const cur = ele.style(prop);
+
+      if (cur == null || cur === '' || text(cur) === '[]') return;
+
+      saved.push({ ele, cur });
+      ele.style(prop, alternate);
+
+      if (text(ele.style(prop)) === text(cur)) {
+        unresettable.push(ele.id());
+      }
+    });
+
+    globalThis.__degrade = { prop, saved };
+
+    return {
+      changed: saved.length,
+      via: 'alternate',
+      alternate,
+      unresettable,
+    };
+  }
+
   const defOf = (ele) =>
     ele.isEdge()
       ? defaults.edge
@@ -276,6 +356,188 @@ export const restoreInPage = () => {
   return lost;
 };
 
+/** Reset one metadata-declared enum value without touching other cells. */
+export const resetKeywordInPage = ({
+  group,
+  property,
+  target,
+  targetIndex,
+  value,
+  alternate,
+}) => {
+  const cy = globalThis.cy;
+  const text = (v) => (typeof v === 'string' ? v : JSON.stringify(v));
+  const coreCodes = { 'label-declutter': { none: 0, cull: 1 } };
+  const coreValue = (keyword) => coreCodes[property]?.[keyword] ?? keyword;
+
+  if (group === 'core') {
+    const sheet = cy.style().json();
+    const camel = property.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    const before = cy.style().core()[camel];
+
+    if (text(before) !== text(coreValue(value))) {
+      globalThis.__degrade = { prop: property, saved: [] };
+
+      return {
+        matched: 0,
+        changed: 0,
+        unexpected: before,
+        unresettable: [],
+      };
+    }
+
+    const next = {
+      ...sheet,
+      core: { ...(sheet.core ?? {}), [property]: alternate },
+    };
+
+    globalThis.__degrade = { sheet };
+    try {
+      cy.style(next);
+    } catch (error) {
+      return {
+        matched: 1,
+        changed: 0,
+        rejected: error instanceof Error ? error.message : String(error),
+        unresettable: ['core'],
+      };
+    }
+
+    const after = cy.style().core()[camel];
+    const changed = text(after) === text(coreValue(alternate)) ? 1 : 0;
+
+    return {
+      matched: 1,
+      changed,
+      unresettable: changed === 1 ? [] : ['core'],
+    };
+  }
+
+  // The glyph atlas has one font for the whole instance, so font-family,
+  // font-style, and font-weight deliberately reject element bypasses. For
+  // these properties reset the matching authored sheet values and restore
+  // the full sheet after exporting the alternate frame.
+  if (
+    group !== 'edges' &&
+    ['font-family', 'font-style', 'font-weight'].includes(property)
+  ) {
+    const sheet = cy.style().json();
+    const ele = cy.$id(target);
+    const before = ele.length === 1 ? ele.style(property) : undefined;
+
+    if (String(before) !== String(value)) {
+      globalThis.__degrade = { prop: property, saved: [] };
+
+      return {
+        matched: 0,
+        changed: 0,
+        unexpected: before,
+        unresettable: [],
+      };
+    }
+
+    let changedRules = 0;
+    const replace = (entry) => {
+      if (Array.isArray(entry)) return entry.map(replace);
+      if (entry == null || typeof entry !== 'object') return entry;
+
+      const out = {};
+
+      for (const [key, current] of Object.entries(entry)) {
+        if (key === property && String(current) === String(value)) {
+          out[key] = alternate;
+          changedRules++;
+        } else {
+          out[key] = replace(current);
+        }
+      }
+
+      return out;
+    };
+
+    const next = replace(sheet);
+    globalThis.__degrade = { sheet };
+
+    try {
+      cy.style(next);
+    } catch (error) {
+      return {
+        matched: 1,
+        changed: 0,
+        rejected: error instanceof Error ? error.message : String(error),
+        unresettable: ['sheet'],
+      };
+    }
+
+    const after = cy.$id(target).style(property);
+    const changed = String(after) === String(alternate) ? 1 : 0;
+
+    return {
+      matched: 1,
+      changed,
+      changedRules,
+      unresettable: changed === 1 ? [] : [target],
+    };
+  }
+
+  const ele = cy.$id(target);
+  const validGroup =
+    ele.length === 1 &&
+    (group === 'edges'
+      ? ele.isEdge()
+      : ele.isNode() && (group !== 'parents' || ele.isParent()));
+
+  if (!validGroup) {
+    globalThis.__degrade = { prop: property, saved: [] };
+
+    return {
+      matched: 0,
+      changed: 0,
+      unexpected: `target '${target}' is not a ${group} element`,
+      unresettable: [],
+    };
+  }
+
+  const before = ele.style(property);
+  const beforeTokens = String(before).trim().split(/\s+/).filter(Boolean);
+  const index = Number.isInteger(targetIndex) ? targetIndex : null;
+  const actual = index == null ? before : beforeTokens[index];
+
+  if (text(actual) !== text(value)) {
+    globalThis.__degrade = { prop: property, saved: [] };
+
+    return {
+      matched: 0,
+      changed: 0,
+      unexpected: actual,
+      unresettable: [],
+    };
+  }
+
+  let next = alternate;
+
+  if (index != null) {
+    const afterTokens = [...beforeTokens];
+
+    afterTokens[index] = alternate;
+    next = afterTokens.join(' ');
+  }
+
+  globalThis.__degrade = { prop: property, saved: [{ ele, cur: before }] };
+  ele.style(property, next);
+
+  const after = ele.style(property);
+  const afterTokens = String(after).trim().split(/\s+/).filter(Boolean);
+  const resetValue = index == null ? after : afterTokens[index];
+  const changed = text(resetValue) === text(alternate) ? 1 : 0;
+
+  return {
+    matched: 1,
+    changed,
+    unresettable: changed === 1 ? [] : [target],
+  };
+};
+
 /**
  * Export until two consecutive exports agree (a label change re-rasters
  * the atlas a frame or more later), and decode it.
@@ -284,6 +546,15 @@ const stableExport = async (page, opts) => {
   let last = null;
 
   for (let i = 0; i < 6; i++) {
+    // A restored background image is re-decoded asynchronously. Wait for
+    // that registry work to settle before comparing its frame; two equal
+    // early exports can both miss the restored image.
+    await page.waitForFunction(
+      () => window.cy?._store?.images?.pendingCount?.() === 0,
+      null,
+      { timeout: 10000 },
+    );
+
     const png = decodePng(
       await page.evaluate(async (opts) => {
         for (let k = 0; k < 2; k++) {
@@ -314,17 +585,26 @@ const stableExport = async (page, opts) => {
  * @param opts — the export options the golden used
  * @returns the record written
  */
-export const degradeScene = async (page, name, coverage, opts) => {
+export const degradeScene = async (
+  page,
+  name,
+  coverage,
+  opts,
+  sceneCoverage = null,
+) => {
   let baseline = await stableExport(page, opts);
   const pairs = {};
+  const keywordTargets = [];
   let stopped = null;
 
   for (const pair of pairsOf(coverage)) {
     const [group, prop] = pair.split('/');
-    const { changed, via, unresettable, rejected } = await page.evaluate(
-      resetInPage,
-      { group, prop },
-    );
+    const { changed, via, unresettable, rejected, alternate } =
+      await page.evaluate(resetInPage, {
+        group,
+        prop,
+        alternates: DEGRADE_ALTERNATES,
+      });
     const degraded = await stableExport(page, opts);
     const moved = countMoved(baseline, degraded);
     const lost = await page.evaluate(restoreInPage);
@@ -352,6 +632,10 @@ export const degradeScene = async (page, name, coverage, opts) => {
       pairs[pair].rejected = rejected;
     }
 
+    if (alternate != null) {
+      pairs[pair].alternate = alternate;
+    }
+
     if (lost.length > 0) {
       stopped = `${pair}: the restore lost ${lost.length} values`;
       break;
@@ -366,10 +650,64 @@ export const degradeScene = async (page, name, coverage, opts) => {
     }
   }
 
+  const keywordEntries = [
+    ...(sceneCoverage?.keywords ?? []),
+    ...(sceneCoverage?.exceptions ?? []),
+  ];
+
+  for (const entry of keywordEntries) {
+    const exception = entry.exception ?? entry.reason;
+
+    if (exception != null) {
+      keywordTargets.push({ ...entry, exception });
+      continue;
+    }
+
+    const { matched, changed, unresettable, unexpected, rejected } =
+      await page.evaluate(resetKeywordInPage, entry);
+    const degraded = await stableExport(page, opts);
+    const moved = countMoved(baseline, degraded);
+    const lost = await page.evaluate(restoreInPage);
+    const deadline = Date.now() + 5000;
+    let back = countMoved(baseline, await stableExport(page, opts));
+
+    while (back > 0 && Date.now() < deadline) {
+      await page.waitForTimeout(100);
+      back = countMoved(baseline, await stableExport(page, opts));
+    }
+
+    keywordTargets.push({
+      group: entry.group,
+      property: entry.property,
+      target: entry.target,
+      ...(entry.targetIndex == null ? {} : { targetIndex: entry.targetIndex }),
+      value: entry.value,
+      alternate: entry.alternate,
+      matched,
+      changed,
+      moved,
+      ...(unexpected == null ? {} : { unexpected }),
+      ...(rejected == null ? {} : { rejected }),
+      ...(unresettable.length > 0 ? { unresettable } : {}),
+      ...(lost.length > 0 ? { lost } : {}),
+      ...(back > 0 ? { residue: back } : {}),
+    });
+
+    if (lost.length > 0) {
+      stopped =
+        `${entry.group}/${entry.property}=${String(entry.value)}: ` +
+        `the keyword restore lost ${lost.length} values`;
+      break;
+    }
+
+    if (back > 0) baseline = await stableExport(page, opts);
+  }
+
   const record = {
     golden: name,
     pixels: baseline.width * baseline.height,
     pairs,
+    keywords: keywordTargets,
     ...(stopped != null ? { stopped } : {}),
   };
 

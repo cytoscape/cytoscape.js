@@ -793,6 +793,62 @@ describe('golden coverage: the degrade control (round 143)', function () {
     expect(report.keywordExceptions).to.deep.equal([]);
   });
 
+  it('resets chart domains through the authored stylesheet (control)', () => {
+    const cy = cytoscape({
+      elements: [{ data: { id: 'chart', values: [-4, 0, 2, 5] } }],
+      style: {
+        nodes: {
+          chart: 'bar',
+          'chart-values': { data: 'values' },
+          'chart-domain': ['auto', 'auto'],
+        },
+      },
+    });
+    const original = cy.style().json();
+
+    globalThis.cy = cy;
+    globalThis.__goldenSourceScene = {
+      style: {
+        nodes: {
+          chart: 'bar',
+          'chart-values': { data: 'values' },
+          'chart-domain': ['auto', 'auto'],
+        },
+      },
+      elements: {
+        nodes: [{ data: { id: 'chart', values: [-4, 0, 2, 5] } }],
+        edges: [],
+      },
+    };
+
+    try {
+      const result = resetKeywordInPage({
+        group: 'nodes',
+        property: 'chart-domain',
+        target: 'chart',
+        value: 'auto',
+        resolvedValue: 'auto auto',
+        controlMode: 'stylesheet',
+        alternate: [-5, 6],
+      });
+
+      expect(result).to.include({
+        matched: 1,
+        changed: 1,
+        controlMode: 'stylesheet',
+        matchedBy: 'authored-declaration-and-stylesheet-readback',
+      });
+      expect(cy.$id('chart').style('chart-domain')).to.equal('-5 6');
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(cy.style().json()).to.deep.equal(original);
+      expect(cy.$id('chart').style('chart-domain')).to.equal('auto auto');
+    } finally {
+      delete globalThis.__goldenSourceScene;
+      delete globalThis.cy;
+      cy.destroy();
+    }
+  });
+
   it('classifies a planted record, and catches a stale one (control)', () => {
     const capture = captures.find((c) => c.golden === 'nodes-edges-arrows');
     const record = degrades.find((d) => d.golden === capture.golden);

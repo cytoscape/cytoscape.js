@@ -475,6 +475,7 @@ export const degradeReport = (captures, degrades) => {
       entry.alternate,
       entry.resolvedValue ?? null,
       entry.readbackLimitation ?? null,
+      entry.controlMode ?? null,
       entry.exception ?? entry.reason ?? null,
     ]);
 
@@ -520,11 +521,13 @@ export const degradeReport = (captures, degrades) => {
       keywordControls++;
 
       const expectedMode =
-        entry.readbackLimitation != null
-          ? 'authored-mapper-and-documented-getter-fallback'
-          : entry.resolvedValue != null
-            ? 'authored-declaration-and-resolved-getter'
-            : null;
+        entry.controlMode === 'stylesheet'
+          ? 'authored-declaration-and-stylesheet-readback'
+          : entry.readbackLimitation != null
+            ? 'authored-mapper-and-documented-getter-fallback'
+            : entry.resolvedValue != null
+              ? 'authored-declaration-and-resolved-getter'
+              : null;
       const evidenceModeMismatch =
         expectedMode != null && entry.matchedBy !== expectedMode;
       const restoreMismatch = expectedMode != null && entry.restoreMoved !== 0;

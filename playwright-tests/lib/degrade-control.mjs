@@ -476,6 +476,7 @@ export const resetKeywordInPage = ({
   value,
   resolvedValue,
   readbackLimitation,
+  controlMode,
   alternate,
 }) => {
   const cy = globalThis.cy;
@@ -532,6 +533,78 @@ export const resetKeywordInPage = ({
         : text(selectedAuthoredDeclaration) === text(value));
   const needsAuthoredDeclaration =
     resolvedValue !== undefined || readbackLimitation != null;
+
+  if (controlMode === 'stylesheet') {
+    const sheet = cy.style().json();
+    const element = group === 'core' ? null : cy.$id(String(target));
+    const before =
+      group === 'core'
+        ? cy.style().core()[
+            property.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+          ]
+        : element.length === 1
+          ? element.style(property)
+          : undefined;
+
+    if (
+      (needsAuthoredDeclaration && !authoredDeclarationMatches) ||
+      text(before) !== text(expectedReadback)
+    ) {
+      globalThis.__degrade = { prop: property, saved: [] };
+      return { matched: 0, changed: 0, unexpected: before, unresettable: [] };
+    }
+
+    const sourceGroup = sourceScene?.style?.[group] ?? sheet[group] ?? {};
+    globalThis.__degrade = {
+      sheet,
+      readbacks: [
+        {
+          group,
+          property,
+          target: group === 'core' ? 'core' : String(target),
+          value: before,
+        },
+      ],
+    };
+
+    try {
+      cy.style({
+        ...sheet,
+        [group]: {
+          ...(sheet[group] ?? {}),
+          ...sourceGroup,
+          [property]: alternate,
+        },
+      });
+    } catch (error) {
+      return {
+        matched: 1,
+        changed: 0,
+        rejected: error instanceof Error ? error.message : String(error),
+        unresettable: [String(target)],
+      };
+    }
+
+    const installed = cy.style().json()[group]?.[property];
+    const installedTokens = Array.isArray(installed)
+      ? installed.map(String).join(' ')
+      : installed;
+    const alternateTokens = Array.isArray(alternate)
+      ? alternate.map(String).join(' ')
+      : alternate;
+    const changed = text(installedTokens) === text(alternateTokens) ? 1 : 0;
+
+    return {
+      matched: 1,
+      changed,
+      ...(needsAuthoredDeclaration
+        ? { matchedBy: 'authored-declaration-and-stylesheet-readback' }
+        : {}),
+      controlMode,
+      scope: 'authored stylesheet replacement',
+      unresettable: changed === 1 ? [] : [String(target)],
+    };
+  }
 
   if (group === 'core') {
     const sheet = cy.style().json();
@@ -1018,6 +1091,7 @@ export const degradeScene = async (
       changed,
       matchedBy,
       readbackLimitation,
+      controlMode,
       unresettable,
       unexpected,
       rejected,
@@ -1049,6 +1123,7 @@ export const degradeScene = async (
         : { resolvedValue: entry.resolvedValue }),
       ...(matchedBy == null ? {} : { matchedBy }),
       ...(readbackLimitation == null ? {} : { readbackLimitation }),
+      ...(controlMode == null ? {} : { controlMode }),
       ...(entry.resolvedValue == null && readbackLimitation == null
         ? {}
         : { restoreMoved: back }),

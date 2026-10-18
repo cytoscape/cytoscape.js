@@ -1049,6 +1049,11 @@ describe('round 149 visual feature scenes', function () {
     const dim = descendants(emphasisPanel.root, 'input').find(
       (input) => input.type === 'range',
     );
+    expect(dim.step).to.equal('0.01');
+    expect(dim.value).to.equal('0.52');
+    expect(Number(emphasisCy._styleEngine.core().dimOpacity)).to.equal(
+      Number(dim.value),
+    );
     declutter.value = 'none';
     declutter.dispatch('change');
     dim.value = '0.3';
@@ -1105,6 +1110,15 @@ describe('round 149 visual feature scenes', function () {
         onViewChange: (...args) => changes.push(args),
       });
       const selects = descendants(mounted.root, 'select');
+      const rangeInputs = descendants(mounted.root, 'input').filter(
+        (input) => input.type === 'range',
+      );
+      const chartSize = rangeInputs[viewId === 'bars' ? 0 : 2];
+      expect(chartSize.step, `${viewId}: chart-size step`).to.equal('0.01');
+      expect(
+        Number(chartSize.value),
+        `${viewId}: initial chart-size control matches the target`,
+      ).to.equal(Number(cy.$id(expected.id).style('chart-size')));
       if (expected.alternateKind != null) {
         const kind = selects[2];
         const values = kind.children.map((option) => option.value);

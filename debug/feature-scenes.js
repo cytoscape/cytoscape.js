@@ -353,7 +353,7 @@
     defaultValue: 0.52,
     min: 0,
     max: 1,
-    step: 0.05,
+    step: 0.01,
     values: [0, 0.52, 1].map((value) => ({
       value,
       alternate: value === 0 ? 1 : 0,
@@ -1872,7 +1872,7 @@
           'chartSize',
           0.1,
           1,
-          0.05,
+          0.01,
         );
         rangeChartProperty(
           'Chart opacity',

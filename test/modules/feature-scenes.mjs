@@ -7,6 +7,9 @@ import cytoscape from '../../src/index.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const sceneScript = readFileSync(join(ROOT, 'debug/feature-scenes.js'), 'utf8');
+const styleSchema = JSON.parse(
+  readFileSync(join(ROOT, 'schemas/stylesheet.schema.json'), 'utf8'),
+);
 const sceneParts = ['paint', 'graph', 'labels', 'charts', 'compounds'].map(
   (name) => readFileSync(join(ROOT, `debug/feature-scenes-${name}.js`), 'utf8'),
 );
@@ -41,6 +44,44 @@ const elementDefinitions = (scene) => [
   ...scene.elements.nodes,
   ...(scene.elements.edges ?? []),
 ];
+
+const schemaProperty = (group, property) => {
+  const definitions = styleSchema.$defs;
+  if (group === 'nodes') return definitions.nodeProps.properties[property];
+  if (group === 'edges') return definitions.edges.properties[property];
+  if (group === 'parents')
+    return (
+      definitions.parents.properties[property] ??
+      definitions.nodeProps.properties[property]
+    );
+  if (group === 'core') return definitions.core.properties[property];
+  return undefined;
+};
+
+const enumValuesFor = (group, property) => {
+  const values = new Set();
+  const visitedRefs = new Set();
+  const visit = (schema) => {
+    if (schema == null || typeof schema !== 'object') return;
+    if (Array.isArray(schema.enum))
+      for (const value of schema.enum) values.add(value);
+    if (Object.hasOwn(schema, 'const')) values.add(schema.const);
+    if (typeof schema.$ref === 'string' && !visitedRefs.has(schema.$ref)) {
+      visitedRefs.add(schema.$ref);
+      const resolved = schema.$ref
+        .slice(2)
+        .split('/')
+        .map((part) => part.replaceAll('~1', '/').replaceAll('~0', '~'))
+        .reduce((current, part) => current?.[part], styleSchema);
+      visit(resolved);
+    }
+    for (const key of ['anyOf', 'oneOf', 'allOf', 'prefixItems'])
+      for (const child of schema[key] ?? []) visit(child);
+    visit(schema.items);
+  };
+  visit(schemaProperty(group, property));
+  return values;
+};
 
 const readback = (cy, row) => {
   if (row.group !== 'core') return cy.$id(row.target).style(row.property);
@@ -316,6 +357,40 @@ describe('round 149 visual feature scenes', function () {
 
     const caseNames = featureScenes.goldenCases.map((entry) => entry.name);
     expect(new Set(caseNames).size).to.equal(caseNames.length);
+    for (const candidate of featureScenes.goldenCases) {
+      const scene = featureScenes.create(
+        candidate.familyId,
+        candidate.viewId,
+        candidate.params,
+      );
+      const view = featureScenes.catalog
+        .find((family) => family.id === candidate.familyId)
+        .views.find((entry) => entry.id === candidate.viewId);
+      for (const [param, value] of Object.entries(candidate.params)) {
+        const selector = Object.values(view.controlOptions ?? {}).find(
+          (entry) => entry.param === param,
+        );
+        expect(selector, `${candidate.name}: selector for ${param}`).to.exist;
+        const rows = [...scene.coverage.properties, ...scene.coverage.keywords];
+        expect(
+          rows.some(
+            (row) => row.property === selector.property && row.value === value,
+          ),
+          `${candidate.name}: ${selector.property} coverage follows selected state`,
+        ).to.equal(true);
+      }
+      for (const row of scene.coverage.keywords) {
+        const canonical = enumValuesFor(row.group, row.property);
+        expect(
+          canonical.size,
+          `${candidate.name}: ${row.group}/${row.property} has schema keywords`,
+        ).to.be.greaterThan(0);
+        expect(
+          canonical.has(row.value),
+          `${candidate.name}: ${row.group}/${row.property}=${JSON.stringify(row.value)} is a schema keyword`,
+        ).to.equal(true);
+      }
+    }
     for (const family of featureScenes.catalog) {
       for (const view of family.views) {
         expect(
@@ -441,10 +516,15 @@ describe('round 149 visual feature scenes', function () {
         );
 
         expect(cy.nodes().length, scene.id).to.be.greaterThan(0);
-        expect(scene.coverage).to.have.keys(
-          'properties',
-          'keywords',
-          'exceptions',
+        expect(Object.keys(scene.coverage).sort()).to.deep.equal(
+          [
+            'properties',
+            'keywords',
+            'exceptions',
+            ...(scene.coverage.semanticExceptions?.length > 0
+              ? ['semanticExceptions']
+              : []),
+          ].sort(),
         );
 
         for (const groupName of ['properties', 'keywords', 'exceptions']) {
@@ -529,6 +609,48 @@ describe('round 149 visual feature scenes', function () {
     }
 
     expect(checkedRows).to.be.greaterThan(100);
+  });
+
+  it('records node autorotate as a semantic exception, with an edge route', function () {
+    const nodeScene = featureScenes.create('labels', 'nodes');
+    const [semanticException] = nodeScene.coverage.semanticExceptions ?? [];
+
+    expect(semanticException).to.include({
+      group: 'nodes',
+      property: 'text-rotation',
+      keyword: 'autorotate',
+    });
+    expect(semanticException.reason).to.be.a('string').that.is.not.empty;
+    expect(semanticException.sourceRefs).to.include(
+      'src/style/apply-prop.mts:832-840',
+    );
+    expect(semanticException.rejectionTest).to.include(
+      'test/modules/feature-scenes.mjs',
+    );
+    expect(semanticException.validRoutes).to.include.members([
+      'debug/index.html?network=features&scene=labels&view=nodes',
+      'debug/index.html?network=features&scene=labels&view=edges',
+    ]);
+
+    const nodeCy = cytoscape({
+      elements: nodeScene.elements,
+      style: nodeScene.style,
+    });
+    expect(() =>
+      nodeCy.style({ nodes: { 'text-rotation': 'autorotate' } }),
+    ).to.throw(/edge-only/);
+    nodeCy.destroy();
+
+    const edgeScene = featureScenes.create('labels', 'edges');
+    const edgeCy = cytoscape({
+      elements: edgeScene.elements,
+      style: edgeScene.style,
+    });
+    edgeCy.style({ edges: { 'text-rotation': 'autorotate' } });
+    expect(edgeCy.edges().first().style('text-rotation')).to.equal(
+      'autorotate',
+    );
+    edgeCy.destroy();
   });
 
   it('resolves every legacy route claim against its actual fixture and stylesheet', function () {
@@ -768,6 +890,11 @@ describe('round 149 visual feature scenes', function () {
       new URLSearchParams([['paddingRelativeTo', 'max']]),
     );
     expect(padding.style.parents['padding-relative-to']).to.equal('max');
+    expect(
+      padding.coverage.keywords.find(
+        (row) => row.property === 'padding-relative-to',
+      ).value,
+    ).to.equal('max');
     expect(
       padding.elements.nodes.find((entry) => entry.data.id === 'parent-padding')
         .data.label,

@@ -212,7 +212,12 @@
     'background-image-type',
   ]);
 
-  const coverage = (properties = [], keywords = [], exceptions = []) => ({
+  const coverage = (
+    properties = [],
+    keywords = [],
+    exceptions = [],
+    semanticExceptions = [],
+  ) => ({
     properties: properties.map((row) => ({ ...row })),
     keywords: keywords.map((row) => ({
       ...row,
@@ -222,6 +227,11 @@
         : {}),
     })),
     exceptions: exceptions.map((row) => ({ ...row })),
+    ...(semanticExceptions.length > 0
+      ? {
+          semanticExceptions: semanticExceptions.map((row) => ({ ...row })),
+        }
+      : {}),
   });
 
   const controlParamNames = [
@@ -1102,13 +1112,6 @@
         fontStyle,
         styleAlternate,
       );
-      setRows(
-        result.coverage.keywords,
-        'font-family',
-        fontFamily,
-        familyAlternate,
-      );
-
       const selectedOptions = (options, selectedValue) => ({
         ...options,
         selectedValue,
@@ -1135,12 +1138,17 @@
       const parent = byId.get('parent-padding');
       if (parent != null)
         parent.data.label = `padding 18% relative to ${relativeTo}`;
-      const propertyRow = result.coverage.properties.find(
-        (row) => row.property === 'padding-relative-to',
-      );
-      if (propertyRow != null) {
-        propertyRow.value = relativeTo;
-        propertyRow.alternate = relativeTo === 'width' ? 'height' : 'width';
+      for (const rows of [
+        result.coverage.properties,
+        result.coverage.keywords,
+      ]) {
+        const relativeRow = rows.find(
+          (row) => row.property === 'padding-relative-to',
+        );
+        if (relativeRow != null) {
+          relativeRow.value = relativeTo;
+          relativeRow.alternate = relativeTo === 'width' ? 'height' : 'width';
+        }
       }
       const selector = paddingRelativeSelector;
       result.controlOptions = {

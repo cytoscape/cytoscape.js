@@ -384,7 +384,7 @@
         label: 'Underlay r14 · overlay r18\nellipse overlay',
       }),
       node('layer-caption-soft', 400, 220, {
-        label: 'Underlay r22 · overlay r24\nround-rectangle',
+        label: 'Auto body · underlay · overlay radii\nround-rectangle',
       }),
     ];
     const layerBypasses = {
@@ -399,8 +399,8 @@
         'overlay-shape': 'ellipse',
       },
       'layer-soft': {
-        'underlay-corner-radius': 22,
-        'overlay-corner-radius': 24,
+        'underlay-corner-radius': 'auto',
+        'overlay-corner-radius': 'auto',
         'overlay-shape': 'round-rectangle',
       },
     };
@@ -411,6 +411,7 @@
         nodes: {
           'background-color': mapper('bg', '#ddd'),
           'background-opacity': 0.8,
+          'corner-radius': 'auto',
           'underlay-shape': 'round-rectangle',
           'underlay-color': '#f05a4f',
           'underlay-opacity': mapper('layerOpacity', 0.7),
@@ -472,9 +473,30 @@
             },
             {
               group: 'nodes',
+              property: 'corner-radius',
+              target: 'layer-soft',
+              value: 'auto',
+              alternate: 0,
+            },
+            {
+              group: 'nodes',
+              property: 'underlay-corner-radius',
+              target: 'layer-soft',
+              value: 'auto',
+              alternate: 12,
+            },
+            {
+              group: 'nodes',
               property: 'overlay-corner-radius',
               target: 'layer-round',
               value: 8,
+            },
+            {
+              group: 'nodes',
+              property: 'overlay-corner-radius',
+              target: 'layer-soft',
+              value: 'auto',
+              alternate: 12,
             },
             {
               group: 'nodes',
@@ -503,6 +525,27 @@
               target: 'layer-round',
               value: 'round-rectangle',
               alternate: 'ellipse',
+            },
+            {
+              group: 'nodes',
+              property: 'underlay-corner-radius',
+              target: 'layer-soft',
+              value: 'auto',
+              alternate: 12,
+            },
+            {
+              group: 'nodes',
+              property: 'overlay-corner-radius',
+              target: 'layer-soft',
+              value: 'auto',
+              alternate: 12,
+            },
+            {
+              group: 'nodes',
+              property: 'corner-radius',
+              target: 'layer-soft',
+              value: 'auto',
+              alternate: 0,
             },
           ],
         ),

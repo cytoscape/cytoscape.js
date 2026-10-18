@@ -706,6 +706,123 @@ describe('golden coverage: the enumerator (round 135)', function () {
     }
   });
 
+  it('snapshots group read-backs before resetting any target (control)', () => {
+    const elements = [
+      { data: { id: 's' } },
+      { data: { id: 't' } },
+      {
+        data: {
+          id: 'e0',
+          source: 's',
+          target: 't',
+          opacity: 1,
+          lineOpacity: 1,
+        },
+      },
+      {
+        data: {
+          id: 'e1',
+          source: 's',
+          target: 't',
+          opacity: 0.75,
+          lineOpacity: 0.8,
+        },
+      },
+      {
+        data: {
+          id: 'e2',
+          source: 's',
+          target: 't',
+          opacity: 0.5,
+          lineOpacity: 0.65,
+        },
+      },
+    ];
+    const actual = cytoscape({
+      elements,
+      style: {
+        edges: {
+          opacity: { data: 'opacity', fallback: 1 },
+          'line-opacity': { data: 'lineOpacity', fallback: 1 },
+          'target-arrow-shape': 'triangle',
+          'target-arrow-color': '#263a4d',
+        },
+      },
+    });
+    const originals = Object.fromEntries(
+      ['e0', 'e1', 'e2'].map((id) => [
+        id,
+        actual.$id(id).style('target-arrow-color'),
+      ]),
+    );
+    const wrappers = ['e0', 'e1', 'e2'].map((id) => ({
+      id: () => id,
+      isEdge: () => true,
+      isParent: () => false,
+      style(prop, value) {
+        if (arguments.length === 1) return actual.$id(id).style(prop);
+
+        actual.$id(id).style(prop, value);
+
+        // Model a group recomputation after the first bypass.  Untouched
+        // elements now report values from this intermediate pass; the reset
+        // must still restore the read-backs captured before that mutation.
+        if (id === 'e0' && prop === 'target-arrow-color') {
+          actual.$id('e1').style(prop, 'rgba(38,58,77,0.41)');
+          actual.$id('e2').style(prop, 'rgba(38,58,77,0.23)');
+        }
+
+        return this;
+      },
+      removeStyle(prop) {
+        actual.$id(id).removeStyle(prop);
+
+        if (id === 'e1' && prop === 'target-arrow-color') {
+          // Model a transient read-back while sibling bypasses are still
+          // being removed; removing the final sibling settles the group.
+          actual.$id('e1').style(prop, 'rgba(38,58,77,0.19)');
+        }
+
+        if (id === 'e2' && prop === 'target-arrow-color') {
+          actual.$id('e1').removeStyle(prop);
+        }
+      },
+    }));
+    const facade = {
+      edges: () => wrappers,
+    };
+    globalThis.cy = facade;
+    globalThis.cytoscape = cytoscape;
+
+    try {
+      const reset = resetInPage({
+        group: 'edges',
+        prop: 'target-arrow-color',
+        alternates: {},
+      });
+
+      expect(reset).to.include({ changed: 3, via: 'bypass' });
+      expect(globalThis.__degrade.saved.map(({ cur }) => cur)).to.deep.equal(
+        ['e0', 'e1', 'e2'].map((id) => originals[id]),
+      );
+      expect(restoreInPage()).to.deep.equal([]);
+      expect(
+        Object.fromEntries(
+          ['e0', 'e1', 'e2'].map((id) => [
+            id,
+            actual.$id(id).style('target-arrow-color'),
+          ]),
+        ),
+      ).to.deep.equal(originals);
+    } finally {
+      delete globalThis.__degrade;
+      delete globalThis.__goldenSourceScene;
+      delete globalThis.cy;
+      delete globalThis.cytoscape;
+      actual.destroy();
+    }
+  });
+
   it('validates normalized and mapped keyword reset evidence separately', () => {
     const cy = cytoscape({
       elements: [

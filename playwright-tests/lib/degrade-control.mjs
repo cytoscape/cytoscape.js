@@ -291,7 +291,12 @@ export const resetInPage = ({ group, prop, alternates }) => {
         : defaults.leaf;
   const saved = [];
   const unresettable = [];
+  let mutationStarted = false;
 
+  // Snapshot the whole group before writing any bypass.  A style write can
+  // recompile shared group state and change untouched elements' read-backs;
+  // saving later rows after the first mutation would then compare restoration
+  // against an intermediate value rather than the original scene.
   try {
     eles.forEach((ele) => {
       const def = defOf(ele);
@@ -316,23 +321,31 @@ export const resetInPage = ({ group, prop, alternates }) => {
         hasAuthoredBypass: Object.hasOwn(authoredBypasses, prop),
         authoredBypass: authoredBypasses[prop],
       });
-      ele.style(prop, def);
+    });
 
+    for (const { ele } of saved) {
+      mutationStarted = true;
+      ele.style(prop, defOf(ele));
+    }
+
+    for (const { ele, cur } of saved) {
       // a reset that reads back unchanged did not take; the read-back is
       // not compared with the default, since some reads fold an opacity
       // in (a labelled element's label-box colours)
       if (text(ele.style(prop)) === text(cur)) {
         unresettable.push(ele.id());
       }
-    });
+    }
 
     globalThis.__degrade = { prop, saved };
 
     return { changed: saved.length, via: 'bypass', unresettable };
   } catch {
     // the bypass refused: undo what it took, and reset in the sheet
-    for (const { ele } of saved) {
-      ele.removeStyle(prop);
+    if (mutationStarted) {
+      for (const { ele } of saved) {
+        ele.removeStyle(prop);
+      }
     }
   }
 
@@ -440,13 +453,17 @@ export const restoreInPage = () => {
 
   const { prop, saved, readbackLimitation } = state;
 
-  for (const { ele, cur, hasAuthoredBypass, authoredBypass } of saved) {
+  for (const { ele, hasAuthoredBypass, authoredBypass } of saved) {
     ele.removeStyle(prop);
 
     if (hasAuthoredBypass) {
       ele.style(prop, authoredBypass);
     }
+  }
 
+  // Check only after every temporary bypass is gone.  Removing one target's
+  // bypass can temporarily recompile the remaining targets' group read-backs.
+  for (const { ele, cur } of saved) {
     if (text(ele.style(prop)) !== text(cur)) {
       lost.push(ele.id());
     }

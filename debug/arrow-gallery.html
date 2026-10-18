@@ -32,6 +32,8 @@
       .pane { position: absolute; top: 64px; bottom: 0; background: white; }
       .pane .tag { position: absolute; left: 6px; top: 4px; z-index: 2; font: bold 12px monospace; background: rgba(255, 255, 255, 0.85); padding: 1px 4px; pointer-events: none; }
       .pane .cy { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+      .pane .unavailable { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; box-sizing: border-box; color: #444; text-align: center; font: 14px/1.5 helvetica, arial, sans-serif; background: #fafafa; }
+      .pane .unavailable[hidden] { display: none; }
       .side #p3 { left: 0; width: calc(50% - 1px); }
       .side #p4 { left: calc(50% + 1px); right: 0; }
       .stack #p3 { left: 0; right: 0; bottom: calc(50% - 31px); }
@@ -73,12 +75,12 @@
           <option value="stack">stacked</option>
         </select>
       </label>
-      <a href="index.html">back to the harness</a>
+      <a id="back-to-harness" href="index.html">back to the harness</a>
       <br/>
       <span class="note">Columns: edge width × arrow-scale × route (straight, curved, loop). Each edge carries source, mid-target and target heads. Pan and zoom are synced; scroll to zoom. Red bars mark edge width beside tee-like heads.</span>
     </div>
 
-    <div id="p3" class="pane"><div class="tag">v3 (canvas)</div><div id="cy3" class="cy"></div></div>
+    <div id="p3" class="pane"><div class="tag">v3 (canvas)</div><div id="cy3" class="cy"></div><div id="v3-unavailable" class="unavailable" hidden></div></div>
     <div id="divider"></div>
     <div id="p4" class="pane"><div class="tag">v4 (WebGPU)</div><div id="cy4" class="cy"></div></div>
 
@@ -233,8 +235,32 @@
           };
         };
 
-        var cy3 = window.cy3 = cytoscapeV3( common( document.getElementById( 'cy3' ), sheet3 ) );
+        var v3Available = typeof cytoscapeV3 === 'function';
+        var backLink = document.getElementById( 'back-to-harness' );
+
+        if( window.parent !== window ){
+          backLink.textContent = 'close comparison';
+          backLink.href = '#';
+          backLink.addEventListener( 'click', function( e ){
+            e.preventDefault();
+            if( typeof window.parent.closeDebugGallery === 'function' ){
+              window.parent.closeDebugGallery();
+            }
+          } );
+        }
+
+        var cy3 = window.cy3 = v3Available
+          ? cytoscapeV3( common( document.getElementById( 'cy3' ), sheet3 ) )
+          : null;
         var cy4 = window.cy4 = cytoscape( common( document.getElementById( 'cy4' ), sheet4 ) );
+
+        if( !v3Available ){
+          var unavailable = document.getElementById( 'v3-unavailable' );
+          unavailable.hidden = false;
+          unavailable.textContent = window.__CYTOSCAPE_V3_BUNDLE_MISSING__
+            ? 'v3 comparison is unavailable in this status build. Build v3 with `npm --prefix v3 run build:umd` and rebuild the status site to add it.'
+            : 'v3 comparison is unavailable because v3/build/cytoscape.umd.js did not load. Run `npm --prefix v3 run build:umd` and reload this page.';
+        }
 
         // the two panes share one viewport: either one drives the other
         var syncing = false;
@@ -248,8 +274,10 @@
           } );
         };
 
-        follow( cy3, cy4 );
-        follow( cy4, cy3 );
+        if( cy3 != null ){
+          follow( cy3, cy4 );
+          follow( cy4, cy3 );
+        }
 
         // foci are predicates over (row, col) — v4 has no selector strings
         var TT = SHAPES.indexOf( 'triangle-tee' );
@@ -283,6 +311,23 @@
           var f = FOCI.filter(function( g ){ return g.key === key; })[0] || FOCI[0];
 
           focusSelect.value = f.key;
+          var applyFocus = function( cy ){
+            var visible = elements().filter(function( ele ){
+              var row = ele.data.row;
+              var col = ele.data.col;
+
+              return f.key === 'all' || row === -1 || f.has( row, col ) ||
+                ( col === -1 && f.key.indexOf( 'col-' ) === 0 );
+            });
+
+            cy.elements().remove();
+            cy.add( visible );
+          };
+
+          if( cy3 != null ){
+            applyFocus( cy3 );
+          }
+          applyFocus( cy4 );
           // v4 drives; the listener copies its viewport onto v3
           cy4.fit( cy4.nodes().filter(function( n ){ return f.has( n.data( 'row' ), n.data( 'col' ) ); }), 20 );
         };
@@ -292,14 +337,18 @@
           document.getElementById( 'fill' ).value = opts.fill;
           document.getElementById( 'line-opacity' ).value = String( opts.lineOpacity );
           document.getElementById( 'head-colour' ).value = opts.headColour;
-          cy3.style( sheet3( opts ) );
+          if( cy3 != null ){
+            cy3.style( sheet3( opts ) );
+          }
           cy4.style( sheet4( opts ) );
         };
 
         var setLayout = function( mode ){
           document.body.className = mode;
           document.getElementById( 'layout' ).value = mode;
-          cy3.resize();
+          if( cy3 != null ){
+            cy3.resize();
+          }
           cy4.resize();
           focus( focusSelect.value );
         };
@@ -312,10 +361,16 @@
 
         // for scripted screenshots (the record's pictures were taken this way)
         window.gallery = {
-          ready: cy4.ready.then(function(){ focus( 'all' ); }),
+          // Start on a comparison that remains legible at a typical laptop
+          // viewport; the complete matrix stays available as "everything".
+          ready: cy4.ready.then(function(){
+            var requested = new URLSearchParams( window.location.search ).get( 'focus' ) || 'dups-thin';
+            focus( requested );
+          }),
           focus: focus,
           setOptions: setOptions,
           setLayout: setLayout,
+          v3Available: v3Available,
           shapes: SHAPES,
           columns: COLS
         };

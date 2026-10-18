@@ -520,6 +520,16 @@ describe('status site: what the runtime asks for', function () {
     expect(
       relativeFrom('debug/index.html', '../build/cytoscape.umd.js'),
     ).to.equal('build/cytoscape.umd.js');
+
+    const v3Umd = plan2.ops.find((op) => op.to === 'v3/build/cytoscape.umd.js');
+
+    expect(
+      v3Umd,
+      'the arrow gallery script path has no copied bundle or explicit fallback',
+    ).to.not.equal(undefined);
+    expect(
+      relativeFrom('debug/arrow-gallery.html', '../v3/build/cytoscape.umd.js'),
+    ).to.equal(v3Umd.to);
   });
 });
 

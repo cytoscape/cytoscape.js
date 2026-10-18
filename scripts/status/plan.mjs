@@ -256,6 +256,29 @@ export function planDebug({ root, networks, wireEnabled = true }) {
     };
   }
 
+  // The arrow comparison loads v3 beside v4.  v3's build is ignored and is
+  // not produced by the root-only status build, so mirror it when the
+  // maintainer has built it locally and otherwise provide an explicit
+  // browser-visible fallback at the exact script path.  This keeps `npm run
+  // status` independent of `v3/node_modules` while avoiding a silent 404 and
+  // a blank comparison pane on a clean checkout.
+  const v3Umd = join(root, 'v3', 'build', 'cytoscape.umd.js');
+
+  if (existsSync(v3Umd)) {
+    ops.push(copy(v3Umd, 'v3/build/cytoscape.umd.js'));
+  } else {
+    warnings.push(
+      'arrow gallery: v3/build/cytoscape.umd.js is missing — the hosted gallery will show v3 unavailable',
+    );
+    ops.push(
+      write(
+        'v3/build/cytoscape.umd.js',
+        '// Generated fallback: build v3 with `npm --prefix v3 run build:umd` to enable the comparison.\n' +
+          'window.__CYTOSCAPE_V3_BUNDLE_MISSING__ = true;\n',
+      ),
+    );
+  }
+
   return { ops, warnings, available: true, reason: null, dropped };
 }
 

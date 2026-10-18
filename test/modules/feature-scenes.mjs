@@ -610,7 +610,10 @@ describe('round 149 visual feature scenes', function () {
                 `${scene.id}: missing alternate for ${row.property}`,
               ).to.satisfy(
                 (value) =>
-                  typeof value === 'string' || typeof value === 'number',
+                  typeof value === 'string' ||
+                  typeof value === 'number' ||
+                  (Array.isArray(value) &&
+                    value.every((entry) => typeof entry === 'number')),
               );
               expect(row.alternate).to.not.equal(row.value);
             }
@@ -997,6 +1000,133 @@ describe('round 149 visual feature scenes', function () {
       maximumRecord.values.reduce((sum, value) => sum + value, 0),
     ).to.be.closeTo(1, 0.0002);
     paletteCy.destroy();
+  });
+
+  it('uses rounded route families when radius controls are meant to render', function () {
+    for (const [view, radiusMode] of [
+      ['radius-arc', 1],
+      ['radius-influence', 0],
+    ]) {
+      const scene = featureScenes.create('edges', view);
+      const cy = cytoscape({ elements: scene.elements, style: scene.style });
+      const target = cy.$id('route-0');
+      const params = cy._store.curveParamsAt(target._first().slot);
+      const blob = cy._store.curveBlob();
+      // Endpoint distances prefix this scene's blob record by ten floats.
+      const record = Array.from(blob.subarray(params[0] + 10, params[0] + 16));
+
+      expect(target.style('curve-style')).to.equal('round-segments');
+      expect(target.style('segment-radii')).to.equal('50');
+      expect(target.style('radius-type')).to.equal(
+        radiusMode === 1 ? 'arc-radius' : 'influence-radius',
+      );
+      expect(record[1]).to.equal(1);
+      expect(record[4]).to.equal(50);
+      expect(record[5]).to.equal(radiusMode);
+      cy.destroy();
+    }
+
+    const scene = featureScenes.create('edges', 'taxi');
+    const cy = cytoscape({ elements: scene.elements, style: scene.style });
+    const target = cy.$id('taxi-5');
+    const params = cy._store.curveParamsAt(target._first().slot);
+    const blob = cy._store.curveBlob();
+
+    expect(target.style('curve-style')).to.equal('round-taxi');
+    expect(target.style('taxi-radius')).to.equal(18);
+    expect(blob[params[0] + 5]).to.equal(1);
+    expect(blob[params[0] + 6]).to.equal(18);
+
+    const lanes = (prefix, count) =>
+      Array.from({ length: count }, (_, index) => {
+        const edge = cy.$id(`${prefix}-${index}`);
+        return cy._store.curveParamsAt(edge._first().slot)[2];
+      });
+    const sourceLanes = lanes('taxi-track-source', 4);
+    const targetLanes = lanes('taxi-track-target', 4);
+    const familyLanes = lanes('taxi-track-family', 4);
+    expect(cy.$id('taxi-track-source-0').style('taxi-turn')).to.equal('auto');
+    expect(sourceLanes[0]).to.equal(sourceLanes[1]);
+    expect(sourceLanes[2]).to.equal(sourceLanes[3]);
+    expect(sourceLanes[0]).to.not.equal(sourceLanes[2]);
+    expect(targetLanes[0]).to.equal(targetLanes[1]);
+    expect(targetLanes[1]).to.equal(targetLanes[2]);
+    expect(targetLanes[0]).to.not.equal(targetLanes[3]);
+    expect(new Set(familyLanes).size).to.equal(1);
+    expect(cy._store.curves.taxiAutoSlots().size).to.equal(13);
+
+    cy.$id('taxi-track-source-0').style('taxi-track-spacing', 10);
+    expect(lanes('taxi-track-source', 4)).to.not.deep.equal(sourceLanes);
+    cy.destroy();
+  });
+
+  it('records declutter as nonvisual when dim opacity is zero', function () {
+    const scene = featureScenes.create(
+      'emphasis',
+      'declutter',
+      new URLSearchParams([['dimOpacity', '0']]),
+    );
+    const containsDeclutter = (rows) =>
+      rows.some((row) => row.property === 'label-declutter');
+
+    expect(containsDeclutter(scene.coverage.properties)).to.equal(false);
+    expect(containsDeclutter(scene.coverage.keywords)).to.equal(false);
+    expect(scene.coverage.exceptions).to.deep.include({
+      group: 'core',
+      property: 'label-declutter',
+      target: 'core',
+      value: 'cull',
+      reason:
+        'dim-opacity 0 makes every label fully transparent, so culling cannot change rendered pixels in this state.',
+    });
+  });
+
+  it('applies the auto chart-domain alternate through the whole stylesheet', function () {
+    const scene = featureScenes.create('charts', 'bars');
+    const cy = cytoscape({ elements: scene.elements, style: scene.style });
+    const originalSheet = cy.style().json();
+    const row = scene.coverage.keywords.find(
+      (entry) => entry.property === 'chart-domain' && entry.value === 'auto',
+    );
+    const target = cy.$id(row.target);
+    const edge = target._first();
+    const replacement = structuredClone(originalSheet);
+
+    expect(row.controlMode).to.equal('stylesheet');
+    replacement.nodes['chart-domain'] = row.alternate;
+    cy.style(replacement);
+    expect(target.style('chart-domain')).to.equal('-5 6');
+    expect(cy._store.chartAt(edge.slot).barDomain).to.deep.equal([-5, 6]);
+
+    cy.style(originalSheet);
+    expect(target.style('chart-domain')).to.equal('auto auto');
+    expect(cy._store.chartAt(edge.slot).barDomain).to.deep.equal([-4, 5]);
+    cy.destroy();
+  });
+
+  it('keeps the arrow-shape gallery readable with grouped captions', function () {
+    const scene = featureScenes.create('arrows', 'shapes');
+    const cy = cytoscape({ elements: scene.elements, style: scene.style });
+    const expected = [
+      [0, 'source\nnone'],
+      [12, 'mid-source\nnone'],
+      [23, 'mid-target\nnone'],
+      [22, 'mid-source\ntriangle-\nbackcurve'],
+    ];
+
+    expect(cy.edges().length).to.equal(33);
+    expect(scene.coverage.keywords.length).to.equal(33);
+    expect(scene.style.nodes['font-size']).to.equal(14);
+    expect(scene.style.nodes['text-max-width']).to.equal(115);
+    expect(scene.style.nodes['text-wrap']).to.equal('wrap');
+    expect(scene.style.nodes['text-halign']).to.equal('center');
+    expect(scene.style.nodes['text-valign']).to.equal('bottom');
+
+    for (const [index, label] of expected) {
+      expect(cy.$id(`arrow-shape-s${index}`).style('label')).to.equal(label);
+    }
+
+    cy.destroy();
   });
 
   it('fails when a coverage row declares a value that the target does not resolve', function () {

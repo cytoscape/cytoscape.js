@@ -120,7 +120,8 @@
                 value: 'auto',
                 resolvedValue: 'auto auto',
                 resolvedExtent: [-4, 5],
-                alternate: '-5 6',
+                alternate: [-5, 6],
+                controlMode: 'stylesheet',
               },
             ],
             [

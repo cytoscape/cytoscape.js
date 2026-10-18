@@ -91,7 +91,7 @@
           [
             'radius type',
             view === 'radius-influence' ? 'influence-radius' : 'arc-radius',
-            'segments',
+            'round-segments',
             0.5,
           ],
         ]
@@ -298,6 +298,12 @@
               ? [
                   {
                     group: 'edges',
+                    property: 'curve-style',
+                    target: 'route-0',
+                    value: 'round-segments',
+                  },
+                  {
+                    group: 'edges',
                     property: 'radius-type',
                     target: 'route-0',
                     value:
@@ -376,6 +382,13 @@
                 : []),
             ...(radiusView
               ? [
+                  {
+                    group: 'edges',
+                    property: 'curve-style',
+                    target: 'route-0',
+                    value: 'round-segments',
+                    alternate: 'segments',
+                  },
                   {
                     group: 'edges',
                     property: 'radius-type',
@@ -496,6 +509,146 @@
       );
     });
 
+    const trackGroups = [
+      {
+        group: 'source',
+        name: 'source',
+        y: 65,
+        nodes: [
+          ['taxi-track-source-s0', 560, 'S0'],
+          ['taxi-track-source-s1', 660, 'S1'],
+          ['taxi-track-source-t0', 660, 'T0'],
+          ['taxi-track-source-t1', 760, 'T1'],
+          ['taxi-track-source-t2', 560, 'T2'],
+          ['taxi-track-source-t3', 860, 'T3'],
+        ],
+        edges: [
+          [
+            'taxi-track-source-0',
+            'taxi-track-source-s0',
+            'taxi-track-source-t0',
+          ],
+          [
+            'taxi-track-source-1',
+            'taxi-track-source-s0',
+            'taxi-track-source-t1',
+          ],
+          [
+            'taxi-track-source-2',
+            'taxi-track-source-s1',
+            'taxi-track-source-t2',
+          ],
+          [
+            'taxi-track-source-3',
+            'taxi-track-source-s1',
+            'taxi-track-source-t3',
+          ],
+        ],
+      },
+      {
+        group: 'target',
+        name: 'target',
+        y: 230,
+        nodes: [
+          ['taxi-track-target-s0', 560, 'S0'],
+          ['taxi-track-target-s1', 660, 'S1'],
+          ['taxi-track-target-s2', 760, 'S2'],
+          ['taxi-track-target-t0', 660, 'T0'],
+          ['taxi-track-target-t1', 560, 'T1'],
+        ],
+        edges: [
+          [
+            'taxi-track-target-0',
+            'taxi-track-target-s0',
+            'taxi-track-target-t0',
+          ],
+          [
+            'taxi-track-target-1',
+            'taxi-track-target-s1',
+            'taxi-track-target-t0',
+          ],
+          [
+            'taxi-track-target-2',
+            'taxi-track-target-s2',
+            'taxi-track-target-t0',
+          ],
+          [
+            'taxi-track-target-3',
+            'taxi-track-target-s0',
+            'taxi-track-target-t1',
+          ],
+        ],
+      },
+      {
+        group: 'family',
+        name: 'family',
+        y: 395,
+        nodes: [
+          ['taxi-track-family-s0', 560, 'S0'],
+          ['taxi-track-family-s1', 660, 'S1'],
+          ['taxi-track-family-t0', 660, 'T0'],
+          ['taxi-track-family-t1', 760, 'T1'],
+        ],
+        edges: [
+          [
+            'taxi-track-family-0',
+            'taxi-track-family-s0',
+            'taxi-track-family-t0',
+          ],
+          [
+            'taxi-track-family-1',
+            'taxi-track-family-s0',
+            'taxi-track-family-t1',
+          ],
+          [
+            'taxi-track-family-2',
+            'taxi-track-family-s1',
+            'taxi-track-family-t0',
+          ],
+          [
+            'taxi-track-family-3',
+            'taxi-track-family-s1',
+            'taxi-track-family-t1',
+          ],
+        ],
+      },
+    ];
+
+    const trackCaptionBypasses = {};
+    const compactTrackNodeBypasses = {};
+    trackGroups.forEach(
+      ({ group, name, y, nodes: groupNodes, edges: groupEdges }) => {
+        const titleId = `taxi-track-${name}-title`;
+        nodes.push(node(titleId, 700, y - 35, { label: `auto · ${name}` }));
+        trackCaptionBypasses[titleId] = {
+          width: 1,
+          height: 1,
+          'background-opacity': 0,
+          'border-width': 0,
+        };
+        for (const [id, x, label] of groupNodes) {
+          nodes.push(
+            node(id, x, y + (label.startsWith('T') ? 110 : 0), { label }),
+          );
+          compactTrackNodeBypasses[id] = {
+            width: 34,
+            height: 24,
+            'font-size': 10,
+          };
+        }
+        for (const [id, source, target] of groupEdges) {
+          edges.push(
+            edge(id, source, target, {
+              direction: 'downward',
+              track: group,
+              spacing: group === 'source' ? 22 : 16,
+              turnDistance: 14,
+            }),
+          );
+        }
+      },
+    );
+
     return scene(
       { nodes, edges },
       {
@@ -506,37 +659,26 @@
           'text-margin-x': 10,
         },
         edges: {
-          'curve-style': 'taxi',
+          'curve-style': 'round-taxi',
           'taxi-direction': mapper('direction', 'auto'),
           'taxi-track': mapper('track', 'source'),
           'taxi-track-spacing': mapper('spacing', 10),
           'taxi-turn-min-distance': mapper('turnDistance', 10),
-          'taxi-turn': 35,
+          'taxi-turn': mapper('turn', 'auto'),
           'taxi-radius': 18,
           'target-arrow-shape': 'triangle',
         },
-        bypasses: { 'taxi-5': { 'taxi-turn': 'auto' } },
+        bypasses: { ...trackCaptionBypasses, ...compactTrackNodeBypasses },
       },
       {
         coverage: coverage(
           [
             {
               group: 'edges',
-              property: 'taxi-track',
-              target: 'taxi-1',
-              value: 'target',
-            },
-            {
-              group: 'edges',
-              property: 'taxi-track',
-              target: 'taxi-2',
-              value: 'family',
-            },
-            {
-              group: 'edges',
               property: 'taxi-track-spacing',
-              target: 'taxi-2',
+              target: 'taxi-track-source-0',
               value: 22,
+              alternate: 10,
             },
             {
               group: 'edges',
@@ -547,8 +689,38 @@
             {
               group: 'edges',
               property: 'taxi-turn',
-              target: 'taxi-0',
-              value: 35,
+              target: 'taxi-track-source-0',
+              value: 'auto',
+            },
+            {
+              group: 'edges',
+              property: 'taxi-track',
+              target: 'taxi-track-source-0',
+              value: 'source',
+            },
+            {
+              group: 'edges',
+              property: 'taxi-track',
+              target: 'taxi-track-target-0',
+              value: 'target',
+            },
+            {
+              group: 'edges',
+              property: 'taxi-track',
+              target: 'taxi-track-family-0',
+              value: 'family',
+            },
+            {
+              group: 'edges',
+              property: 'curve-style',
+              target: 'taxi-5',
+              value: 'round-taxi',
+            },
+            {
+              group: 'edges',
+              property: 'taxi-radius',
+              target: 'taxi-5',
+              value: 18,
             },
           ],
           [
@@ -579,14 +751,23 @@
             {
               group: 'edges',
               property: 'taxi-track',
-              target: 'taxi-1',
-              value: 'target',
+              target: 'taxi-track-source-0',
+              value: 'source',
+              alternate: 'target',
             },
             {
               group: 'edges',
               property: 'taxi-track',
-              target: 'taxi-2',
+              target: 'taxi-track-target-0',
+              value: 'target',
+              alternate: 'source',
+            },
+            {
+              group: 'edges',
+              property: 'taxi-track',
+              target: 'taxi-track-family-0',
               value: 'family',
+              alternate: 'source',
             },
             {
               group: 'edges',
@@ -605,9 +786,16 @@
             {
               group: 'edges',
               property: 'taxi-turn',
-              target: 'taxi-5',
+              target: 'taxi-track-source-0',
               value: 'auto',
               alternate: '35',
+            },
+            {
+              group: 'edges',
+              property: 'curve-style',
+              target: 'taxi-track-source-0',
+              value: 'round-taxi',
+              alternate: 'taxi',
             },
           ],
         ),
@@ -901,15 +1089,17 @@
     const keywords = [];
 
     rows.forEach(({ prop, value, group }, i) => {
-      const col = i % 9;
-      const row = Math.floor(i / 9);
-      const x = 100 + col * 130;
-      const y = 100 + row * 145;
+      const col = i % 6;
+      const row = Math.floor(i / 6);
+      const x = 35 + col * 125;
+      const y = 42 + row * 88;
       const s = `arrow-shape-s${i}`;
       const t = `arrow-shape-t${i}`;
       const id = `arrow-shape-${i}`;
-      nodes.push(node(s, x, y, { label: value }));
-      nodes.push(node(t, x + 85, y, { label: '' }));
+      const captionValue =
+        value === 'triangle-backcurve' ? 'triangle-\nbackcurve' : value;
+      nodes.push(node(s, x + 20, y, { label: `${group}\n${captionValue}` }));
+      nodes.push(node(t, x + 95, y, { label: '' }));
       edges.push(edge(id, s, t, { group, [prop]: value }));
       const metadataRow = {
         group: 'edges',
@@ -958,10 +1148,13 @@
         nodes: {
           width: 14,
           height: 14,
-          'font-size': 10,
-          'text-halign': 'left',
-          'text-margin-x': -16,
-          'text-valign': 'top',
+          'font-size': 14,
+          'text-halign': 'center',
+          'text-margin-x': 38,
+          'text-valign': 'bottom',
+          'text-margin-y': 14,
+          'text-wrap': 'wrap',
+          'text-max-width': 115,
         },
         edges: edgeProps,
       },

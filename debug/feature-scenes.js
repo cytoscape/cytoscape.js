@@ -1216,11 +1216,32 @@
           }
         }
       };
-      setCoreCoverage(
-        'label-declutter',
-        labelDeclutter,
-        labelDeclutter === 'cull' ? 'none' : 'cull',
-      );
+      if (dimOpacity === 0) {
+        for (const rows of [
+          result.coverage.properties,
+          result.coverage.keywords,
+        ]) {
+          for (let index = rows.length - 1; index >= 0; index--) {
+            if (rows[index].property === 'label-declutter') {
+              rows.splice(index, 1);
+            }
+          }
+        }
+        result.coverage.exceptions.push({
+          group: 'core',
+          property: 'label-declutter',
+          target: 'core',
+          value: labelDeclutter,
+          reason:
+            'dim-opacity 0 makes every label fully transparent, so culling cannot change rendered pixels in this state.',
+        });
+      } else {
+        setCoreCoverage(
+          'label-declutter',
+          labelDeclutter,
+          labelDeclutter === 'cull' ? 'none' : 'cull',
+        );
+      }
       setCoreCoverage('dim-opacity', dimOpacity, dimOpacity === 0 ? 1 : 0);
       result.controlOptions = {
         labelDeclutter: {

@@ -74,6 +74,10 @@
             'hull-convex': { shape: 'convex-hull' },
             'hull-round': { shape: 'round-convex-hull' },
             'hull-concave': { shape: 'concave-hull' },
+            'hull-convex-a': {
+              'text-halign': 'left',
+              'text-margin-x': -8,
+            },
           },
         },
         {

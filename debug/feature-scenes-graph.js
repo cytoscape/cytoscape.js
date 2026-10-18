@@ -494,10 +494,17 @@
       const y = 70 + i * 92;
       const s = `taxi-s${i}`;
       const t = `taxi-t${i}`;
+      const sourceX = i === 5 ? 250 : 90;
       nodes.push(
-        node(s, 90, y, { label: `${direction} / ${track}`, direction, track }),
+        node(s, sourceX, y, {
+          label: `${direction} / ${track}`,
+          direction,
+          track,
+        }),
       );
-      nodes.push(node(t, 420, y + (i % 2 ? -24 : 16), { label: '' }));
+      nodes.push(
+        node(t, 420, y + (i === 4 ? 120 : i % 2 ? -24 : 16), { label: '' }),
+      );
       edges.push(
         edge(`taxi-${i}`, s, t, {
           direction,
@@ -729,6 +736,7 @@
               property: 'taxi-direction',
               target: 'taxi-0',
               value: 'horizontal',
+              alternate: 'vertical',
             },
             {
               group: 'edges',
@@ -781,7 +789,7 @@
               property: 'taxi-direction',
               target: 'taxi-5',
               value: 'rightward',
-              alternate: 'horizontal',
+              alternate: 'vertical',
             },
             {
               group: 'edges',

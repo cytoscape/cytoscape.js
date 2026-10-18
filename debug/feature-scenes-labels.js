@@ -124,10 +124,11 @@
       const nodes = [];
       const edges = [];
       const styles = ['solid', 'dashed', 'dotted', 'double'];
+      const rowStep = 100;
 
       styles.forEach((border, i) => {
-        const y = 90 + i * 96;
-        const targetY = i === 0 ? y + 40 : y;
+        const y = 90 + i * rowStep;
+        const targetY = i === 0 ? y + 35 : i === 1 ? y - 35 : y;
         const s = `label-edge-s${i}`;
         const t = `label-edge-t${i}`;
         nodes.push(node(s, 90, y, { label: `text border ${border}` }));
@@ -136,20 +137,20 @@
           edge(`label-edge-${i}`, s, t, {
             label:
               i === 0
-                ? 'left alignment wraps extraordinarilylongtoken'
+                ? 'left ExtraLongTokenForWrap words'
                 : i === 2
-                  ? 'Mixed-Case label without spaces-2'
+                  ? 'Mixed-Case right words wrap'
                   : i === 3
-                    ? 'auto alignment wraps across several words'
+                    ? 'auto words wrap across lines'
                     : `long-edge-label-without-spaces-${i}`,
-            sourceLabel: i === 0 ? 'SOURCE LABEL 0' : `source label ${i}`,
-            targetLabel: i === 0 ? 'TARGET LABEL 0' : `target label ${i}`,
+            sourceLabel: i < 2 ? `SOURCE LABEL ${i}` : '',
+            targetLabel: i < 2 ? `TARGET LABEL ${i}` : '',
             marginX: [0, 18, 0, -18][i],
             marginY: [0, 0, 14, -14][i],
             border,
             align: ['left', 'center', 'right', 'auto'][i],
             transform: ['uppercase', 'lowercase', 'none', 'uppercase'][i],
-            wrap: ['wrap', 'wrap', 'ellipsis', 'wrap'][i],
+            wrap: ['wrap', 'wrap', 'wrap', 'wrap'][i],
             overflowWrap: i === 0 ? 'whitespace' : 'anywhere',
             backgroundShape: i === 0 ? 'rectangle' : 'round-rectangle',
             rotation: i === 0 ? 'none' : 'autorotate',
@@ -159,7 +160,7 @@
         );
       });
 
-      const noWrapY = 90 + styles.length * 96;
+      const noWrapY = 90 + styles.length * rowStep;
       nodes.push(
         node('label-edge-s4', 90, noWrapY, { label: 'text-wrap none' }),
         node('label-edge-t4', 480, noWrapY, { label: '' }),
@@ -175,6 +176,29 @@
           align: 'center',
           transform: 'none',
           wrap: 'none',
+          overflowWrap: 'whitespace',
+          backgroundShape: 'round-rectangle',
+          rotation: 'none',
+          sourceRotation: 'none',
+          targetRotation: 'none',
+        }),
+      );
+      const ellipsisY = noWrapY + rowStep;
+      nodes.push(
+        node('label-edge-s5', 90, ellipsisY, { label: 'text-wrap ellipsis' }),
+        node('label-edge-t5', 480, ellipsisY, { label: '' }),
+      );
+      edges.push(
+        edge('label-edge-5', 'label-edge-s5', 'label-edge-t5', {
+          label: 'ellipsis shows one truncated readable line',
+          sourceLabel: '',
+          targetLabel: '',
+          marginX: 0,
+          marginY: 0,
+          border: 'solid',
+          align: 'center',
+          transform: 'none',
+          wrap: 'ellipsis',
           overflowWrap: 'whitespace',
           backgroundShape: 'round-rectangle',
           rotation: 'none',
@@ -205,7 +229,9 @@
             'text-rotation': mapper('rotation', 'none'),
             'font-size': 13,
             'line-height': 1.3,
-            'min-zoomed-font-size': 11,
+            // Keep every comparison visible at the scene's fitted zoom. The
+            // node-label view demonstrates the minimum-size threshold.
+            'min-zoomed-font-size': 0,
             'text-wrap': mapper('wrap', 'wrap'),
             'text-max-width': 115,
             'text-overflow-wrap': mapper('overflowWrap', 'whitespace'),
@@ -351,13 +377,25 @@
                 group: 'edges',
                 property: 'text-wrap',
                 target: 'label-edge-2',
-                value: 'ellipsis',
+                value: 'wrap',
+              },
+              {
+                group: 'edges',
+                property: 'text-wrap',
+                target: 'label-edge-3',
+                value: 'wrap',
               },
               {
                 group: 'edges',
                 property: 'text-wrap',
                 target: 'label-edge-4',
                 value: 'none',
+              },
+              {
+                group: 'edges',
+                property: 'text-wrap',
+                target: 'label-edge-5',
+                value: 'ellipsis',
               },
               {
                 group: 'edges',
@@ -459,9 +497,9 @@
               {
                 group: 'edges',
                 property: 'text-wrap',
-                target: 'label-edge-3',
-                value: 'wrap',
-                alternate: 'ellipsis',
+                target: 'label-edge-5',
+                value: 'ellipsis',
+                alternate: 'wrap',
               },
               {
                 group: 'edges',
@@ -474,14 +512,21 @@
                 group: 'edges',
                 property: 'text-wrap',
                 target: 'label-edge-2',
-                value: 'ellipsis',
-                alternate: 'wrap',
+                value: 'wrap',
+                alternate: 'ellipsis',
               },
               {
                 group: 'edges',
                 property: 'text-wrap',
                 target: 'label-edge-4',
                 value: 'none',
+                alternate: 'wrap',
+              },
+              {
+                group: 'edges',
+                property: 'text-wrap',
+                target: 'label-edge-5',
+                value: 'ellipsis',
                 alternate: 'wrap',
               },
               {
@@ -529,7 +574,7 @@
     const items = [
       {
         id: 'label-left',
-        text: 'left justified extraordinarilylongtoken with spaces',
+        text: 'left visiblylongword with spaces',
         align: 'left',
         transform: 'uppercase',
         wrap: 'wrap',
@@ -917,6 +962,25 @@
       );
     }
 
+    if (view === 'nodes') {
+      result.coverage.restoreLimitations = [
+        {
+          group: 'nodes',
+          property: 'font-style',
+          target: 'label-left',
+          value: 'normal',
+          alternate: 'italic',
+          observedResiduePixels: 178,
+          sourceRefs: [
+            'debug/fonts/*.woff2 (four pinned Open Sans faces loaded and fonts.ready)',
+          ],
+          route: '?network=features&scene=labels&view=nodes',
+          reason:
+            'In a controlled probe, font-style normal→italic moved 17390 pixels and restored readback normal, but the settled image retained 178 differing pixels after all four pinned faces loaded; mechanism is unlocalized.',
+        },
+      ];
+    }
+
     return result;
   };
 
@@ -1051,6 +1115,7 @@
         'background-position-x': ['50%', '35%', '50%', '70%', '50%', '50%'][i],
         'background-position-y': ['50%', '50%', '50%', '35%', '50%', '50%'][i],
       };
+      if (i === 5) bypasses[`image-${i}`]['text-margin-y'] = 24;
       if (imageType === 'sdf-icon') {
         bypasses[`image-${i}`]['background-image-type'] = 'sdf-icon';
         bypasses[`image-${i}`]['background-image-color'] = '#cb3550';
@@ -1205,12 +1270,6 @@
             {
               group: 'nodes',
               property: 'background-clip',
-              target: 'image-0',
-              value: 'node',
-            },
-            {
-              group: 'nodes',
-              property: 'background-clip',
               target: 'image-1',
               targetIndex: 0,
               value: 'node',
@@ -1226,7 +1285,7 @@
             {
               group: 'nodes',
               property: 'background-image-containment',
-              target: 'image-0',
+              target: 'image-2',
               targetIndex: 0,
               value: 'inside',
               alternate: 'over',

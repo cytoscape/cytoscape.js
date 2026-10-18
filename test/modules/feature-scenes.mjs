@@ -549,6 +549,9 @@ describe('round 149 visual feature scenes', function () {
             ...(scene.coverage.semanticExceptions?.length > 0
               ? ['semanticExceptions']
               : []),
+            ...(scene.coverage.restoreLimitations?.length > 0
+              ? ['restoreLimitations']
+              : []),
           ].sort(),
         );
 
@@ -641,6 +644,7 @@ describe('round 149 visual feature scenes', function () {
 
   it('gives label and image comparisons geometry that can show their changes', function () {
     const labels = featureScenes.create('labels', 'edges');
+    expect(labels.style.edges['min-zoomed-font-size']).to.equal(0);
     const edgeById = new Map(
       labels.elements.edges.map((edge) => [edge.data.id, edge.data]),
     );
@@ -648,28 +652,55 @@ describe('round 149 visual feature scenes', function () {
       labels.elements.nodes.map((node) => [node.data.id, node]),
     );
     const leftEdge = edgeById.get('label-edge-0');
+    const anywhereEdge = edgeById.get('label-edge-1');
     const mixedCaseEdge = edgeById.get('label-edge-2');
     const autoEdge = edgeById.get('label-edge-3');
     const noWrapEdge = edgeById.get('label-edge-4');
+    const ellipsisEdge = edgeById.get('label-edge-5');
 
     expect(
       nodeById.get(leftEdge.source).position.y,
       'the left-justification edge is sloped',
     ).to.not.equal(nodeById.get(leftEdge.target).position.y);
-    expect(leftEdge.label).to.include('extraordinarilylongtoken');
+    expect(leftEdge.label).to.equal('left ExtraLongTokenForWrap words');
     expect(leftEdge.wrap).to.equal('wrap');
     expect(leftEdge.overflowWrap).to.equal('whitespace');
+    expect(anywhereEdge.label).to.equal('long-edge-label-without-spaces-1');
+    expect(anywhereEdge.overflowWrap).to.equal('anywhere');
+    expect(anywhereEdge.sourceLabel).to.equal('SOURCE LABEL 1');
+    expect(anywhereEdge.targetLabel).to.equal('TARGET LABEL 1');
+    expect(
+      nodeById.get(anywhereEdge.source).position.y,
+      'the autorotated edge-label sample is also sloped',
+    ).to.not.equal(nodeById.get(anywhereEdge.target).position.y);
     expect(mixedCaseEdge.label).to.include('Mixed-Case');
-    expect(mixedCaseEdge.wrap).to.equal('ellipsis');
-    expect(autoEdge.label).to.include('across several words');
+    expect(mixedCaseEdge.label).to.equal('Mixed-Case right words wrap');
+    expect(mixedCaseEdge.wrap).to.equal('wrap');
+    expect(autoEdge.label).to.equal('auto words wrap across lines');
     expect(autoEdge.wrap).to.equal('wrap');
     expect(noWrapEdge.label).to.include('one line');
     expect(noWrapEdge.wrap).to.equal('none');
+    expect(ellipsisEdge.label).to.include(
+      'ellipsis shows one truncated readable line',
+    );
+    expect(ellipsisEdge.wrap).to.equal('ellipsis');
     expect(
       labels.coverage.keywords.find(
         (row) => row.property === 'text-wrap' && row.target === 'label-edge-2',
       ),
+    ).to.include({ value: 'wrap', alternate: 'ellipsis' });
+    expect(
+      labels.coverage.keywords.find(
+        (row) => row.property === 'text-wrap' && row.target === 'label-edge-5',
+      ),
     ).to.include({ value: 'ellipsis', alternate: 'wrap' });
+    expect(
+      labels.coverage.keywords.find(
+        (row) =>
+          row.property === 'text-justification' &&
+          row.target === 'label-edge-2',
+      ),
+    ).to.include({ value: 'right', alternate: 'center' });
     expect(
       labels.coverage.keywords.find(
         (row) => row.property === 'text-wrap' && row.target === 'label-edge-4',
@@ -677,13 +708,30 @@ describe('round 149 visual feature scenes', function () {
     ).to.include({ value: 'none', alternate: 'wrap' });
 
     const nodeLabels = featureScenes.create('labels', 'nodes');
+    expect(nodeLabels.style.nodes['min-zoomed-font-size']).to.equal(12);
     const leftNodeLabel = nodeLabels.elements.nodes.find(
       (node) => node.data.id === 'label-left',
     ).data;
-    expect(leftNodeLabel.text).to.include('extraordinarilylongtoken');
+    expect(leftNodeLabel.text).to.include('visiblylongword');
     expect(leftNodeLabel.text).to.include(' with spaces');
     expect(leftNodeLabel.wrap).to.equal('wrap');
     expect(leftNodeLabel.wrapRule).to.equal('whitespace');
+    expect(nodeLabels.coverage.restoreLimitations).to.deep.equal([
+      {
+        group: 'nodes',
+        property: 'font-style',
+        target: 'label-left',
+        value: 'normal',
+        alternate: 'italic',
+        observedResiduePixels: 178,
+        sourceRefs: [
+          'debug/fonts/*.woff2 (four pinned Open Sans faces loaded and fonts.ready)',
+        ],
+        route: '?network=features&scene=labels&view=nodes',
+        reason:
+          'In a controlled probe, font-style normal→italic moved 17390 pixels and restored readback normal, but the settled image retained 178 differing pixels after all four pinned faces loaded; mechanism is unlocalized.',
+      },
+    ]);
 
     const images = featureScenes.create('images', 'layers');
     const imageById = new Map(
@@ -698,6 +746,11 @@ describe('round 149 visual feature scenes', function () {
     const repeatRow = images.coverage.keywords.find(
       (row) => row.property === 'background-repeat' && row.target === 'image-0',
     );
+    const containmentRow = images.coverage.keywords.find(
+      (row) =>
+        row.property === 'background-image-containment' &&
+        row.target === 'image-2',
+    );
 
     expect(tileSvg).to.match(/<svg[^>]*width="48"[^>]*height="48"/);
     expect(images.style.nodes.width).to.equal(150);
@@ -709,11 +762,24 @@ describe('round 149 visual feature scenes', function () {
       'background-height': 40,
     });
     expect(repeatRow).to.include({ value: 'no-repeat', alternate: 'repeat' });
+    expect(images.style.bypasses['image-2']).to.include({
+      'background-fit': 'cover',
+      'background-clip': 'node',
+      'background-repeat': 'repeat-x',
+      'background-image-containment': 'inside',
+    });
+    expect(containmentRow).to.include({ value: 'inside', alternate: 'over' });
+    expect(
+      images.coverage.keywords.some(
+        (row) => row.property === 'background-clip' && row.target === 'image-0',
+      ),
+    ).to.equal(false);
     expect(images.style.bypasses['image-5']).to.include({
       'background-fit': 'none',
       'background-clip': 'none',
       'background-width': 180,
       'background-height': 140,
+      'text-margin-y': 24,
     });
     expect(unclippedSvg).to.match(/<svg[^>]*width="48"[^>]*height="48"/);
     expect(
@@ -1162,6 +1228,48 @@ describe('round 149 visual feature scenes', function () {
 
     cy.$id('taxi-track-source-0').style('taxi-track-spacing', 10);
     expect(lanes('taxi-track-source', 4)).to.not.deep.equal(sourceLanes);
+    cy.destroy();
+  });
+
+  it('makes the three taxi direction alternates change route geometry', function () {
+    const scene = featureScenes.create('edges', 'taxi');
+    const cy = cytoscape({ elements: scene.elements, style: scene.style });
+    const routePoints = (id) => {
+      const edge = cy.$id(id);
+      const route = cy._store.curveRouteAt(edge._first().slot);
+
+      return Array.from({ length: route.n + 2 }, (_, index) => [
+        route.qx[index],
+        route.qy[index],
+      ]);
+    };
+
+    for (const [id, direction, alternate] of [
+      ['taxi-0', 'horizontal', 'vertical'],
+      ['taxi-4', 'vertical', 'horizontal'],
+      ['taxi-5', 'rightward', 'vertical'],
+    ]) {
+      const edge = cy.$id(id);
+      const baseline = routePoints(id);
+
+      expect(edge.style('taxi-direction')).to.equal(direction);
+
+      if (id === 'taxi-4') {
+        const source = cy.$id('taxi-s4').position();
+        const target = cy.$id('taxi-t4').position();
+
+        expect(target.x - source.x).to.equal(330);
+        expect(target.y - source.y).to.equal(120);
+        expect(baseline[0][0]).to.equal(baseline[1][0]);
+        expect(baseline[1][1]).to.equal(baseline[2][1]);
+      }
+
+      edge.style('taxi-direction', alternate);
+
+      expect(edge.style('taxi-direction')).to.equal(alternate);
+      expect(routePoints(id)).to.not.deep.equal(baseline);
+    }
+
     cy.destroy();
   });
 

@@ -128,7 +128,10 @@ export function planGoldens({ root }) {
         <button type="button" data-golden-select="now" aria-pressed="false"${disabled}>Now</button>
         <button type="button" data-golden-select="diff" aria-pressed="false"${disabled}>Diff</button>
       </div>
-      <p class="golden-metric${count > 0 ? ' changed' : ''}" role="status">${metric}</p>
+      <div class="golden-summary">
+        <p class="golden-metric${count > 0 ? ' changed' : ''}" role="status">${metric}</p>
+        <a class="golden-download" href="goldens/${esc(f)}" download="${esc(name)}-gold.png" aria-label="Download Gold image for ${esc(name)}">DL</a>
+      </div>
       <figcaption><code>${esc(name)}</code>
         <span>${title != null ? esc(title) : '<em>no call site in visual.spec.js</em>'}</span>
         ${testedAt == null ? '' : `<time datetime="${esc(testedAt)}">Last tested ${esc(testedAt.replace('T', ' ').replace('Z', ' UTC'))}</time>`}
@@ -147,6 +150,10 @@ export function planGoldens({ root }) {
   answer the second question.</p>
   ${orphans.length > 0 ? `<p class="warn">${orphans.map(esc).join('<br>')}</p>` : ''}
   <div class="golden-grid">${cards}</div>
+  <dialog class="golden-overlay" aria-labelledby="golden-overlay-title">
+    <header><h2 id="golden-overlay-title"></h2><button type="button" data-golden-close aria-label="Close image">Close ×</button></header>
+    <div data-golden-overlay-content></div>
+  </dialog>
   <script>(${goldenControls.toString()})();</script>`;
 
   return {
@@ -161,10 +168,30 @@ export function planGoldens({ root }) {
 
 /** Self-contained, inlined in the static gallery; every card has independent state. */
 export function goldenControls() {
+  const overlay = document.querySelector('.golden-overlay');
+  const content = overlay.querySelector('[data-golden-overlay-content]');
+  let expanded = null;
+  let placeholder = null;
+
+  overlay
+    .querySelector('[data-golden-close]')
+    .addEventListener('click', () => overlay.close());
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) overlay.close();
+  });
+  overlay.addEventListener('close', () => {
+    placeholder.replaceWith(expanded);
+    expanded.querySelector('[data-golden-view]:not([hidden])').focus();
+    expanded = null;
+    placeholder = null;
+    document.documentElement.classList.remove('golden-overlay-open');
+  });
+
   for (const card of document.querySelectorAll('[data-golden]')) {
     const views = [...card.querySelectorAll('[data-golden-view]')];
     const buttons = card.querySelectorAll('[data-golden-select]');
     const cycle = card.querySelector('[data-golden-cycle]');
+    const download = card.querySelector('.golden-download');
     const names = { gold: 'Gold', now: 'Now', diff: 'Diff' };
     let selected = 0;
     const select = (key) => {
@@ -182,7 +209,30 @@ export function goldenControls() {
       }
 
       cycle.textContent = `View: ${names[key]} ↻`;
+      download.setAttribute('href', views[index].getAttribute('href'));
+      download.setAttribute('download', `${card.dataset.golden}-${key}.png`);
+      download.setAttribute(
+        'aria-label',
+        `Download ${names[key]} image for ${card.dataset.golden}`,
+      );
     };
+
+    for (const view of views) {
+      view.addEventListener('click', (event) => {
+        event.preventDefault();
+        if (overlay.open) return;
+
+        placeholder = document.createElement('div');
+        placeholder.style.minHeight = `${card.getBoundingClientRect().height}px`;
+        card.replaceWith(placeholder);
+        expanded = card;
+        content.append(card);
+        overlay.querySelector('#golden-overlay-title').textContent =
+          card.dataset.golden;
+        document.documentElement.classList.add('golden-overlay-open');
+        overlay.showModal();
+      });
+    }
 
     cycle.addEventListener('click', () => {
       select(views[(selected + 1) % views.length].dataset.goldenView);
@@ -216,7 +266,23 @@ main.prose .lede { max-width: 82ch; }
 .golden-controls button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
 .golden-controls button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .golden-controls button:disabled { opacity: .45; cursor: default; }
+.golden-summary { display: flex; align-items: center; gap: 8px; }
+.golden-download { font-size: 12px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; text-decoration: none; color: var(--ink); background: var(--surface); }
 .golden-metric { margin: 7px 0; font-size: 12px; color: var(--muted); }
 .golden-metric.changed { display: inline-block; padding: 4px 8px; border: 1px solid #c100a2; border-radius: 4px; color: #a00087; background: #fff0fc; font-weight: 750; }
 @media (prefers-color-scheme: dark) { .golden-metric.changed { color: #ff8ce9; background: #3b1035; border-color: #f048ce; } }
+.golden-overlay-open { overflow: hidden; }
+.golden-overlay { box-sizing: border-box; width: calc(100vw - 24px); height: calc(100dvh - 24px); max-width: none; max-height: none; padding: 0; border: 1px solid var(--border); border-radius: 8px; color: var(--ink); background: var(--surface, #fff); }
+.golden-overlay[open] { display: flex; flex-direction: column; }
+.golden-overlay::backdrop { background: rgb(0 0 0 / .8); }
+.golden-overlay > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.golden-overlay > header h2 { margin: 0; padding: 0; border: 0; font-size: 16px; overflow-wrap: anywhere; }
+.golden-overlay > header button { flex-shrink: 0; font: inherit; padding: 6px 12px; cursor: pointer; }
+.golden-overlay [data-golden-overlay-content] { flex: 1; min-height: 0; display: flex; padding: 12px 16px; }
+.golden-overlay .golden { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+.golden-overlay [data-golden-view]:not([hidden]) { display: flex; flex: 1; min-height: 0; align-items: center; justify-content: center; }
+.golden-overlay .golden img { width: 100%; height: 100%; min-height: 0; object-fit: contain; border: 0; border-radius: 0; background: none; }
+.golden-overlay .golden figcaption { display: none; }
+.golden-overlay .golden-controls { flex-shrink: 0; margin-top: 12px; }
+.golden-overlay .golden-summary { flex-shrink: 0; }
 .warn { color: var(--warn); }`;

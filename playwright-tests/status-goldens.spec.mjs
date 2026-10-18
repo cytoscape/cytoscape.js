@@ -116,3 +116,89 @@ test('untested goldens keep their reference visible with unavailable views disab
     ).toBeDisabled();
   }
 });
+
+test('images open an overlay with bottom controls and download the selected view', async ({
+  page,
+}) => {
+  await page.goto(url);
+  const card = page.locator('[data-golden="changed"]');
+  await card.locator('[data-golden-view="gold"]').click();
+  const overlay = page.getByRole('dialog', { name: 'changed', exact: true });
+  await expect(overlay).toBeVisible();
+  expect(page.url()).toBe(url);
+  const bounds = await overlay.boundingBox();
+  const viewport = page.viewportSize();
+  expect(bounds.width).toBeGreaterThan(viewport.width * 0.9);
+  expect(bounds.height).toBeGreaterThan(viewport.height * 0.9);
+  const controls = overlay.locator('.golden-controls');
+  const controlsBounds = await controls.boundingBox();
+  expect(controlsBounds.y).toBeGreaterThan(bounds.y + bounds.height * 0.75);
+  await expect(overlay.locator('.golden-metric.changed')).toHaveText(
+    '1 px differ',
+  );
+
+  for (const label of ['Gold', 'Now', 'Diff']) {
+    await controls.getByRole('button', { name: label, exact: true }).click();
+    const link = overlay.getByRole('link', {
+      name: `Download ${label} image for changed`,
+    });
+    await expect(link).toHaveText('DL');
+    const count = await overlay.locator('.golden-metric').boundingBox();
+    const dl = await link.boundingBox();
+    expect(Math.abs(count.y - dl.y)).toBeLessThan(5);
+    expect(dl.x).toBeGreaterThan(count.x + count.width);
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      link.click(),
+    ]);
+    expect(download.suggestedFilename()).toBe(
+      `changed-${label.toLowerCase()}.png`,
+    );
+    const downloaded = readFileSync(await download.path());
+    const expectedPath =
+      label === 'Gold'
+        ? 'goldens/changed.png'
+        : label === 'Now'
+          ? 'goldens/current/changed.png'
+          : 'goldens/diff/changed.png';
+    const response = await page.request.get(new URL(expectedPath, url).href);
+    expect(downloaded.equals(await response.body())).toBe(true);
+  }
+
+  await overlay.getByRole('button', { name: 'Close image' }).click();
+  await expect(overlay).not.toBeVisible();
+  await expect(
+    page.locator('.golden-grid [data-golden="changed"]'),
+  ).toBeVisible();
+  await expect(card.locator('[data-golden-view="diff"]')).toBeFocused();
+  await card.locator('[data-golden-view="diff"]').click();
+  await expect(overlay).toBeVisible();
+  await expect(overlay.locator('[data-golden-view="diff"]')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(overlay).not.toBeVisible();
+});
+
+test('the overlay fits narrow screens and closes from its backdrop', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(url);
+  const card = page.locator('[data-golden="untested"]');
+  await card.locator('[data-golden-view="gold"]').click();
+  const overlay = page.getByRole('dialog', { name: 'untested', exact: true });
+  await expect(overlay).toBeVisible();
+  const controls = await overlay.locator('.golden-controls').boundingBox();
+  const summary = await overlay.locator('.golden-summary').boundingBox();
+  expect(controls.x).toBeGreaterThanOrEqual(0);
+  expect(controls.x + controls.width).toBeLessThanOrEqual(390);
+  expect(summary.y + summary.height).toBeLessThanOrEqual(844);
+  await expect(
+    overlay.getByRole('button', { name: 'Now', exact: true }),
+  ).toBeDisabled();
+  await expect(
+    overlay.getByRole('link', { name: 'Download Gold image for untested' }),
+  ).toHaveText('DL');
+  await page.mouse.click(2, 2);
+  await expect(overlay).not.toBeVisible();
+  await expect(card.locator('[data-golden-view="gold"]')).toBeFocused();
+});

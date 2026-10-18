@@ -53,6 +53,10 @@ with the thing it tests deliberately broken, and watch it fail.
   status output, not maintained as a third reference artifact. The visual CI
   job also uploads `golden-current` on success or failure, so its latest
   captures can be retrieved without approving or regenerating references.
+  Clicking a gallery image opens a near-full-screen overlay with the same
+  view controls at the bottom. `DL` beside the pixel count downloads the
+  selected Gold, Now or Diff image. Close, Escape or a backdrop click returns
+  to the card without resetting its selected view.
 
 - `playwright-tests/` and `playwright.config.js`: Browser-level regression coverage — the `renderer` project (and `renderer-webkit`) — which since round 65 also carries `algorithms-gpu.spec.js`, the CPU-vs-GPU executor parity suite for the async algorithm tier (headless instances, adapter soft-skip) — and `visual` (goldens + live v3-vs-v4 parity diffs — including round 56's **close-up** tier at zoom 3-4 — plus round 55's **numeric** routing parity in `routing.spec.js`).
   - **`routing.spec.js` compares geometry, not pixels** — both libraries' `controlPoints()`/`segmentPoints()`/endpoints/`midpoint()` through one symmetric probe on `playwright-page/parity.html`, reporting *which field on which edge* diverged and by how many model px.  It exists because a 6 px arrow gap is 0.005% of a 400x300 canvas, 400x under the pixel bound.  It needs **no WebGPU adapter and draws no frame**, so it carries no `hasAdapter` skip — do not add one.  It runs in the browser only because v3 computes routing inside its renderer; importing v3's entry from `test/` would break the Node tier's no-v3-install invariant.

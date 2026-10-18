@@ -13,11 +13,15 @@ comparisons, focused controls and embedded arrow/hull galleries. The
 published status mirror serves its local Open Sans faces, and the arrow
 comparison has a working v3
 copy-or-explicit-fallback path. A generated ledger accounts for all 220 style
-properties and 325 of 326 recursive keyword values; the remaining node
-`text-rotation=autorotate` value is a tested unsupported-group exception. The
+properties and 325 of 326 recursive schema property/value combinations. The
+one remaining schema-permitted pair, node `text-rotation=autorotate`, is
+rejected at runtime because `autorotate` is edge-only and has a direct test.
 expected visual inventory is 107 references, and its final capture refresh
-and full gates are still running. Physical touch/pinch acceptance remains a
-device check; the public API does not expose actual renderer-worker identity.
+and full gates are still running. Three generic font-family states are
+intentionally manual-only because platform font resolution varies; pinned
+Open Sans states remain in the visual suite. Physical touch/pinch acceptance
+remains a device check; the public API does not expose actual renderer-worker
+identity.
 
 Two public getter mismatches are recorded for separate library fixes: a
 `chart-domain` bypass changes the stored chart record but leaves the getter
@@ -403,7 +407,7 @@ Earlier, round 145 (29 September) was a correctness fix:
 |---|---|
 | Automated tests | Round 149's focused scene, workflow, harness and schema module checks pass. Its final status-site and full Node/Playwright gates remain pending the golden capture batch; older rounds' recorded test outcomes are in their own records. |
 | Documented API | 347 members over 48 sections, gated at 100% — round 90's review removed or demoted the rest of the parity pass's accidental surface |
-| Visual regression | Round 149 expects 107 golden artifacts; the refresh and final current/reference/degrade counts are pending. The feature ledger accounts for all 220 style properties and 325/326 recursive keyword values (one node-group semantic exception); this ledger includes behavioral/authored evidence and is not a claim of 100% golden pixel coverage. The prior 53-reference exact comparison remains the dated baseline. Older rounds' renderer, gesture, parity and algorithm checks are recorded in their own round files. |
+| Visual regression | Round 149 expects 107 golden artifacts; the refresh and final current/reference/degrade counts are pending. The feature ledger accounts for 220/220 style properties and 325/326 recursive schema property/value combinations; the one schema-permitted node `text-rotation=autorotate` pair is runtime-rejected because autorotate is edge-only, with a direct test. The ledger includes behavioral/authored evidence and is not a claim of 100% golden pixel coverage. The prior 53-reference exact comparison remains the dated baseline. Older rounds' renderer, gesture, parity and algorithm checks are recorded in their own round files. |
 | Benchmarks | 31 suites, 5 published profiles · **all 373 v3-comparative pairs read v4-faster** as of 2 Sep — 269 core/collection pairs at geometric mean 10.7×, minimum 1.02×, plus 104 renderer pairs at 31× · GPU algorithm executors 7.5× geo-mean over their CPU reference across the 65-pair sweep of 18 Sep (medians of three; the 14 pairs behind are the cells the CPU owns by design) · the worker pool 2.4–18× over the CPU reference across its 18-pair sweep of 18 Sep, every pair ahead · the offload tier's 32 cells of the same day: the calling thread held for 0 ms of a 180 ms Floyd–Warshall, a 593 ms MCL, a 1 s affinity propagation — and, from 29 Sep, of a 265 ms k-medoids and a 630 ms hierarchical clustering at 5,120 points · round 82's 41-cluster EM / 500 sparse / 500 degenerate drag p50 for convex controls was 6.967 / 34.558 / 32.088 ms and for concave was 8.462 / 44.534 / 43.144 ms (Node 24.18.0, i9-9900K) |
 | Style parity | v4 accepts 162 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet; round 76 added `text-border-style` and the mid-arrow widths); the rest dropped by decision |
 | Bundle | Built 5 Oct, minified / gzipped: `cytoscape` 1,029,507 / 294,389 bytes; `cytoscape/headless` 617,371 / 190,879 bytes; `cytoscape/headless-gpu` 696,384 / 209,483 bytes. Both slim minified entries stay below the 1,000,000-byte edge budget; every slim raw/gzip pair has a measured ratchet. Import and constant-inlining gates keep the tiers separate and the tables out of minified output. |

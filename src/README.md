@@ -638,14 +638,18 @@ shader over every allocated slot.
   `scripts/demo-coverage.mjs` and checked by `test/modules/demo-coverage.mjs`.
   It lists 31 visual views, 55 canonical feature states, 83 source records and
   68 runnable URLs. It accounts for all 220 style properties and 325 of 326
-  recursive keyword values; the one separate semantic exception is
-  node `text-rotation=autorotate`, which the implementation rejects because
-  `autorotate` is edge-only (`src/style/apply-prop.mts:832-840`). The 961-row
+  recursive schema property/value combinations. The one schema-permitted
+  pair, node `text-rotation=autorotate`, is rejected at runtime because
+  `autorotate` is edge-only (`src/style/apply-prop.mts:832-840`), with a direct
+  test. The 961-row
   status feature table remains a separate inventory: its rows map to examples,
   widgets, specific automated checks or documented nonvisual reasons, while
   the reviewed Partial limitations remain in force. The visual inventory
   expects 107 references; its final capture refresh and full gates remain in
-  progress.
+  progress. Three generic font-family states (`sans-serif`, `serif`,
+  `monospace`) are intentionally manual-only because they resolve to
+  platform-specific system fonts; their ledger rows carry an explicit golden
+  omission reason. The pinned Open Sans states remain in the visual suite.
 
   Two getter mismatches were reproduced and recorded for a separate library
   fix. A node-level `chart-domain` bypass can update the chart record while

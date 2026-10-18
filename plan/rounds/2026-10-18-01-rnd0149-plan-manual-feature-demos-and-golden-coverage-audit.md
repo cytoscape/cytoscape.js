@@ -399,10 +399,35 @@ only algorithms that accept those inputs.
 
 ### Coverage and verification
 
+The following crosswalk reconciles the sixteen audit families at family level;
+it does not create a one-control-per-row promise. The 961 CSV rows remain the
+feature-status source of truth, and a demo does not upgrade a row marked
+Partial or remove its recorded restriction.
+
+| Audit family | Manual route or recipe | Automated evidence / boundary |
+| --- | --- | --- |
+| Node geometry, shapes, borders, fill, gradients, ghosts and layers | `features/paint/{nodes,fills,borders,ghosts,layers,outlines}`; `features/shapes/underlays` | `test/modules/feature-scenes.mjs`; canonical visual captures. Only node-supported values are authored. |
+| Edge geometry, caps, routes, loops, arrows and endpoints | `features/edges/{routes,endpoints,radius-arc,radius-influence,loops,taxi}`; `features/arrows/{shapes,scalars}`; main-page arrow overlay | `test/modules/feature-scenes.mjs`; arrow/renderer browser checks and visual captures. Partial overlap/fill semantics remain documented. |
+| Labels and text geometry | `features/labels/{nodes,edges,font-keywords}` | `test/modules/feature-scenes.mjs` and label captures; mapped transform/justification getter limitations are explicit. Generic system font families are manual-only. |
+| Images, raster/SVG, layers and SDF icons | `features/images/layers`; image fixtures in the legacy real-network scenes | Image goldens and renderer checks; fetch/CORS policy is tested as behavior, not inferred from data-URL pixels. The `images-multi` restore residue remains unlocalized. |
+| Charts and scale/legend contracts | `features/charts/{palette,heat,bars}`; chart controls and readout | Scene/schema tests and chart captures; numeric `chart-domain` bypass getter/legend mismatch is recorded for a later fix. |
+| Compound hierarchy, hulls and miniature scaling | `features/compounds/{hulls,hulls-exclude,minimums,padding-width,padding-sides,miniature}`; main-page hull overlay | `test/modules/feature-scenes.mjs`, `playwright-tests/compound-hulls.spec.js`, and `miniature-compounds.spec.js`. Original children/edges stay live; aggregate edges and semantic zoom are not promised. |
+| Declarative styles, mappers, bypass and sheet replacement | `features/mappers/scales`; Reset and contextual controls | `test/modules/demo-coverage.mjs`, `schemas.mjs`, `feature-scenes.mjs`, plus existing style/mapping tests. The ledger records authored-vs-resolved and behavioral cases separately. |
+| Layout portfolio, options, constraints and packing | Existing layout panel plus `workflows/layouts` | `test/modules/layout-options-panel.mjs`, layout module suites and existing browser layout checks. Function-valued options remain recipes/exclusions where they cannot be serialized into URL state. |
+| Selection, states, queries, sets and topology | `workflows/inspector` and `workflows/algorithms` | `test/modules/feature-workflows.mjs` and existing collection/query tests; no button is added for every API alias. |
+| Pointer, wheel, touch, picking and events | Existing gesture controls plus `workflows/gestures` | `playwright-tests/gestures.spec.js` and gesture trace suites; browser-synthetic touch does not prove physical touchscreen/pinch acceptance. |
+| Animation and transitions | `workflows/animation` | `test/modules/feature-workflows.mjs` and `playwright-tests/feature-workflows-renderer.spec.js`; state is inspected at supported transitions, not with an unsupported progress setter. |
+| Add/remove, reparent, data, batch, patch, persistence and compaction | `workflows/mutation` | `test/modules/feature-workflows.mjs` and existing model/patch/wire tests; undo is app-owned and is not introduced by this demo. |
+| Multiple views, mount/unmount and worker rendering | Existing minimap plus `workflows/runtime` | `test/modules/runtime-smoke.mjs`, workflow tests and worker browser suites. UI reports requested renderer worker and readiness; actual host identity is not exposed publicly. |
+| Algorithms: paths, cuts, components, centrality and clustering | `workflows/algorithms` with operation, root/goal and executor controls | `test/modules/feature-workflows.mjs`, `playwright-tests/algorithms-gpu.spec.js`, and `algorithms-workers.spec.js`. Kruskal/biconnected/Karger–Stein use A–E; Hierholzer uses A/B/C; other applicable recipes use all seven leaves. |
+| PNG/JPEG export and rendered geometry | `workflows/export` plus contextual canvas/export examples | `playwright-tests/feature-workflows-renderer.spec.js`, visual export probes, and renderer tests. SVG/PDF export and headless figures remain outside the implemented surface. |
+| Headless runtimes, builds, schemas, declarations, typed data, documentation and benchmarks | Nonvisual command recipes and status links; no static graph can establish these contracts | Schema, type/build, module/runtime and benchmark suites are primary evidence. Run their relevant commands from the `AGENTS.md` routing table; benchmark numbers remain attached to their dated reports. |
+
 The generated `docs/demo-coverage.json` ledger accounts for all 220
-stylesheet properties and 326 schema keyword occurrences: 325 have supported
-examples and one node `text-rotation=autorotate` pair has a semantic exception
-with a direct rejection check. It reports 31 visual views, 55 canonical
+stylesheet properties and 326 recursive schema property/value combinations:
+325 are covered by supported examples and the remaining schema-permitted pair,
+node `text-rotation=autorotate`, is runtime-rejected because autorotate is
+edge-only, with a direct rejection check. It reports 31 visual views, 55 canonical
 feature states, 83 source records and 68 runnable URLs. The 961 status-feature
 rows are reconciled by family to a scene/widget, an exact automatic test or a
 documented nonvisual reason; Partial rows retain their source restrictions.
@@ -423,8 +448,8 @@ separate routes and legible weights. Screenshots include
 `/tmp/r149-final-workflow-algorithms.png`, and
 `/tmp/r149-workflow-reciprocal-curves.png`.
 
-The main debug and published status pages loaded the four vendored Open Sans
-WOFF2 faces (400/700, normal/italic) from HTTP 200 responses;
+The published status debug page loaded the four vendored Open Sans WOFF2
+faces (400/700, normal/italic) from HTTP 200 responses;
 `document.fonts.load()` and `font.check()` confirmed all four loaded. The
 files match `@fontsource/open-sans` 5.3.0 Latin assets and are accompanied by
 the OFL license. The status planner copies the nested fonts into the published
@@ -437,7 +462,10 @@ The baseline visual inventory contained 53 golden pairs. The final capture
 suite expects 107 named artifacts; final reference/current/degrade totals and
 the complete suite gates remain pending the active capture batch. The
 published status page also needs one final build/open against that inventory.
-This record does not claim round closure yet.
+Three generic font-family states (`sans-serif`, `serif`, `monospace`) are
+intentionally manual-only because they resolve to platform-specific system
+fonts; each carries an explicit golden omission reason. The pinned Open Sans
+states are captured. This record does not claim round closure yet.
 
 ### Findings held for separate library fixes
 

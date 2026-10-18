@@ -630,6 +630,62 @@ describe('round 149 visual feature scenes', function () {
     expect(checkedRows).to.be.greaterThan(100);
   });
 
+  it('uses endpoint distances only when both endpoint values are manual', function () {
+    const scene = featureScenes.create('edges', 'endpoints');
+    const edgeDistanceRow = scene.coverage.keywords.find(
+      (row) => row.property === 'edge-distances' && row.value === 'endpoints',
+    );
+
+    expect(scene.style.edges['edge-distances']).to.deep.equal({
+      data: 'kind',
+      fallback: 'intersection',
+    });
+    expect(edgeDistanceRow.target).to.equal('route-4');
+    expect(scene.style.bypasses['route-4']).to.include({
+      'source-endpoint': '18 30',
+      'target-endpoint': '225deg',
+    });
+
+    const warnings = [];
+    const originalWarn = console.warn;
+    let cy;
+
+    try {
+      console.warn = (...args) => warnings.push(args.join(' '));
+      cy = cytoscape({
+        ...scene.options,
+        elements: scene.elements,
+        style: scene.style,
+      });
+    } finally {
+      console.warn = originalWarn;
+    }
+
+    try {
+      const edge = cy.$id('route-4');
+      const source = edge.sourceEndpoint();
+      const target = edge.targetEndpoint();
+
+      expect(edge.style('edge-distances')).to.equal('endpoints');
+      expect(edge.style('source-endpoint')).to.equal('18 30');
+      expect(edge.style('target-endpoint')).to.equal('3.9269908169872414rad');
+      expect(source.x).to.be.closeTo(118, 1e-5);
+      expect(source.y).to.be.closeTo(500, 1e-5);
+      expect(Number.isFinite(target.x)).to.equal(true);
+      expect(Number.isFinite(target.y)).to.equal(true);
+      expect(Math.hypot(target.x - 470, target.y - 470)).to.be.greaterThan(0);
+      expect(warnings).to.deep.equal([]);
+
+      for (let i = 0; i < 4; i++) {
+        expect(cy.$id(`route-${i}`).style('edge-distances')).to.equal(
+          'intersection',
+        );
+      }
+    } finally {
+      cy.destroy();
+    }
+  });
+
   it('records node autorotate as a semantic exception, with an edge route', function () {
     const nodeScene = featureScenes.create('labels', 'nodes');
     const [semanticException] = nodeScene.coverage.semanticExceptions ?? [];
@@ -920,6 +976,36 @@ describe('round 149 visual feature scenes', function () {
     ).to.equal('padding 18% relative to max');
 
     const emphasized = featureScenes.create('emphasis', 'declutter');
+    const priorityLow = emphasized.elements.nodes.find(
+      (element) => element.data.id === 'overlap-1',
+    );
+    const priorityHigh = emphasized.elements.nodes.find(
+      (element) => element.data.id === 'overlap-2',
+    );
+    const farTop = emphasized.elements.nodes.find(
+      (element) => element.data.id === 'far-a',
+    );
+    const farBottom = emphasized.elements.nodes.find(
+      (element) => element.data.id === 'far-b',
+    );
+    expect(priorityLow.position).to.deep.equal({ x: 465, y: 145 });
+    expect(priorityHigh.position).to.deep.equal({ x: 495, y: 159 });
+    expect(priorityLow.data.label).to.equal('overlap low');
+    expect(priorityHigh.data.label).to.equal('overlap high');
+    expect(priorityLow.data.priority).to.equal(0);
+    expect(priorityHigh.data.priority).to.equal(8);
+    expect(priorityLow.position.y - 31).to.be.greaterThan(
+      farTop.position.y + 31,
+    );
+    expect(priorityHigh.position.y + 31).to.be.lessThan(
+      farBottom.position.y - 31,
+    );
+    expect(
+      Math.abs(priorityHigh.position.x - priorityLow.position.x),
+    ).to.be.lessThan(86);
+    expect(
+      Math.abs(priorityHigh.position.y - priorityLow.position.y),
+    ).to.be.lessThan(18.2);
     expect(emphasized.initialState).to.deep.equal({
       emphasize: [
         'focus',

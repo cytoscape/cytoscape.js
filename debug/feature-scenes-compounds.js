@@ -366,8 +366,8 @@
       node('neighbor-b', 290, 75, { label: 'neighbor B', priority: 3 }),
       node('neighbor-c', 70, 225, { label: 'neighbor C', priority: 1 }),
       node('neighbor-d', 290, 225, { label: 'neighbor D', priority: 4 }),
-      node('overlap-1', 180, 150, { label: 'overlap low', priority: 0 }),
-      node('overlap-2', 190, 155, { label: 'overlap high', priority: 8 }),
+      node('overlap-1', 465, 145, { label: 'overlap low', priority: 0 }),
+      node('overlap-2', 495, 159, { label: 'overlap high', priority: 8 }),
       node('far-a', 480, 70, { label: 'far element', priority: 1 }),
       node('far-b', 480, 240, { label: 'far element', priority: 1 }),
     ];
@@ -434,7 +434,7 @@
           ],
         ),
         notes: [
-          'Use Emphasize focus / Clear to invoke cy.emphasize() and cy.unemphasize(); labels overlap at the center so priority determines which survives culling.',
+          'Use Emphasize focus / Clear to invoke cy.emphasize() and cy.unemphasize(); in the right-side gap, the cull state keeps overlap high while none shows both priority labels.',
         ],
       },
     );

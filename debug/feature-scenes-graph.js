@@ -73,7 +73,7 @@
         ? [
             [
               'source inside-to-node',
-              'endpoints',
+              'intersection',
               'unbundled-bezier',
               0.25,
               'inside-to-node',
@@ -81,7 +81,7 @@
             ],
             [
               'source outside-to-line',
-              'endpoints',
+              'intersection',
               'unbundled-bezier',
               0.25,
               'outside-to-line',
@@ -89,7 +89,7 @@
             ],
             [
               'target inside-to-node',
-              'endpoints',
+              'intersection',
               'unbundled-bezier',
               0.25,
               '18 30',
@@ -97,11 +97,19 @@
             ],
             [
               'target outside-to-line',
-              'endpoints',
+              'intersection',
               'unbundled-bezier',
               0.25,
               '18 30',
               'outside-to-line',
+            ],
+            [
+              'manual point + angle',
+              'endpoints',
+              'unbundled-bezier',
+              0.25,
+              '18 30',
+              '225deg',
             ],
           ]
         : [
@@ -113,7 +121,7 @@
 
     specs.forEach(
       ([label, route, curve, weight, sourceEndpoint, targetEndpoint], i) => {
-        const y = 100 + i * 130;
+        const y = endpointView ? 90 + i * 95 : 100 + i * 130;
         const s = `route-s${i}`;
         const t = `route-t${i}`;
         nodes.push(node(s, 100, y, { label, kind: route }));
@@ -155,7 +163,7 @@
         edges: {
           'curve-style': mapper('curve', 'unbundled-bezier'),
           'edge-distances': endpointView
-            ? 'endpoints'
+            ? mapper('kind', 'intersection')
             : radiusView
               ? 'intersection'
               : mapper('kind', 'intersection'),
@@ -201,6 +209,12 @@
                 {
                   'source-endpoint': sourceEndpoint,
                   'target-endpoint': targetEndpoint,
+                  ...(i === 4
+                    ? {
+                        'source-distance-from-node': 0,
+                        'target-distance-from-node': 0,
+                      }
+                    : {}),
                 },
               ]),
             )
@@ -240,7 +254,7 @@
                   {
                     group: 'edges',
                     property: 'edge-distances',
-                    target: 'route-0',
+                    target: 'route-4',
                     value: 'endpoints',
                   },
                 ]
@@ -318,7 +332,7 @@
                   {
                     group: 'edges',
                     property: 'edge-distances',
-                    target: 'route-0',
+                    target: 'route-4',
                     value: 'endpoints',
                     alternate: 'intersection',
                   },

@@ -443,7 +443,19 @@ the final route and canonical-state integration. The bounded browser walk
 reached all 31 feature routes through visible selectors; rendered-bounds and
 horizontal-overflow checks passed. Chart controls retained state on reload,
 and Reset kept the selected route. The reciprocal x/y workflow arcs have
-separate routes and legible weights. Screenshots include
+separate routes and legible weights. The final workflow browser acceptance ran
+after font readiness on a 1280×800 viewport. Its parent `p` rendered bounds
+were x=44.00–343.57 and y=112.30–265.07; the visible graph was x=44–886 in a
+930px canvas, with no horizontal overflow. Bounds stayed identical before
+and after a PageRank CPU versus GPU comparison. Seven values were within the
+tolerance `abs 0.0001 + rel 0.0001 × max(|CPU|, 0)`; maximum absolute
+difference was `7.1633e-9` at `rank.x`, and maximum relative difference was
+`6.2046e-8`. `navigator.gpu.requestAdapter().info` reported vendor `amd`,
+architecture `gcn-4`, and `isFallbackAdapter: false` (device and description
+were empty). The only HTTP/console 404 was the unreferenced `/favicon.ico`
+request on the local debug server. Captures include
+`/tmp/r149-workflow-acceptance.json` and
+`/tmp/r149-workflow-executor-comparison-page.png`. Earlier review screenshots:
 `/tmp/r149-feature-acceptance-compound-after-font.png`,
 `/tmp/r149-final-workflow-algorithms.png`, and
 `/tmp/r149-workflow-reciprocal-curves.png`.

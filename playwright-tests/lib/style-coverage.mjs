@@ -171,6 +171,15 @@ export const collectStyleCoverage = ({ compound, maxValues }) => {
 
     if (node.isParent()) {
       const def = refFor(node, 'parent');
+      // Round 149: the hull writer stores its packed polygon-pool reference
+      // in the border-geometry radius word. The generic corner-radius reader
+      // exposes that geometry reference as a huge style value, not an authored
+      // node paint value; ordinary parent shapes and leaf radii still count.
+      const hullShape = [
+        'convex-hull',
+        'round-convex-hull',
+        'concave-hull',
+      ].includes(node.style('shape'));
 
       counts.parents++;
       // a parent's width and height read back its auto-sized box, which
@@ -180,7 +189,11 @@ export const collectStyleCoverage = ({ compound, maxValues }) => {
         'nodes',
         props,
         def,
-        (p) => !compoundSet.has(p) && p !== 'width' && p !== 'height',
+        (p) =>
+          !compoundSet.has(p) &&
+          p !== 'width' &&
+          p !== 'height' &&
+          !(hullShape && p === 'corner-radius'),
       );
       sweep('parents', props, def, (p) => compoundSet.has(p));
     } else {

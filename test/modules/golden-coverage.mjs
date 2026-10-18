@@ -26,6 +26,7 @@ import {
   COMPOUND_PROPS,
   MAX_VALUES,
 } from '../../playwright-tests/lib/style-coverage.mjs';
+import featureScenes from '../../debug/feature-scenes.js';
 import {
   resetInPage,
   resetKeywordInPage,
@@ -939,13 +940,14 @@ describe('golden coverage: the degrade control (round 143)', function () {
 });
 
 describe('golden coverage: the capture (round 135)', function () {
-  const run = (options) => {
+  const run = (options, prepare) => {
     const cy = cytoscape(options);
 
     globalThis.cy = cy;
     globalThis.cytoscape = cytoscape;
 
     try {
+      prepare?.(cy);
       return collectStyleCoverage({
         compound: COMPOUND_PROPS,
         maxValues: MAX_VALUES,
@@ -996,6 +998,21 @@ describe('golden coverage: the capture (round 135)', function () {
     });
     expect(out.edges).to.deep.equal({ 'line-style': ['dashed'] });
     expect(out.core).to.deep.equal({ 'dim-opacity': ['0.5'] });
+  });
+
+  it('does not count packed hull references as node corner-radius values', () => {
+    const scene = featureScenes.create('compounds', 'hulls');
+    const hullIds = ['hull-convex', 'hull-round', 'hull-concave'];
+    const out = run({ elements: scene.elements, style: scene.style }, (cy) => {
+      // Hull geometry writes its polygon-pool reference into the radius
+      // word. Resolve the geometry first so the public getter exposes the
+      // same packed value the browser capture sees.
+      for (const id of hullIds) cy.$id(id).boundingBox();
+      cy.$id('hull-outside').style('corner-radius', 14);
+    });
+
+    expect(out.nodes['corner-radius']).to.deep.equal(['14']);
+    expect(out.parents['corner-radius']).to.equal(undefined);
   });
 
   it('judges a parent against the parent defaults, not a leaf’s (control)', () => {

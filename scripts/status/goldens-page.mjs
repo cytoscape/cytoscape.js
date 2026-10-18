@@ -9,12 +9,20 @@
 // A spec asserts the two counts match.  Without it a rename orphans a PNG
 // silently, and this gallery is the only thing that would ever have shown it.
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join, basename } from 'node:path';
 
 import { PNG } from 'pngjs';
+import featureScenes from '../../debug/feature-scenes.js';
 import { esc } from '../theme.mjs';
-import { goldenComparison } from '../golden-images.mjs';
 import { copy, write } from './plan.mjs';
+
+// Playwright can load `.mjs` helpers through both its ESM loader and the
+// CommonJS transform used by `.spec.js` tests. Requiring this shared helper
+// keeps both paths on the same interop view instead of linking a static named
+// export after the CommonJS transform has cached it.
+const require = createRequire(import.meta.url);
+const { goldenComparison } = require('../golden-images.mjs');
 
 /**
  * Map each `checkGolden( 'name', … )` to the `test( 'title' )` enclosing it.
@@ -31,7 +39,10 @@ import { copy, write } from './plan.mjs';
  * 135 the call takes the page first (`checkGolden( page, '<name>', … )`, so
  * it can capture the scene's style coverage); both spellings match.
  */
-export function goldenTitles(specSource) {
+export function goldenTitles(
+  specSource,
+  featureCases = featureScenes.goldenCases,
+) {
   const titles = new Map();
   const re =
     /^[ \t]*test\(\s*'((?:[^'\\]|\\.)*)'|checkGolden\(\s*(?:page\s*,\s*)?'([^']+)'/gm;
@@ -41,6 +52,16 @@ export function goldenTitles(specSource) {
   while ((m = re.exec(specSource)) != null) {
     if (m[1] != null) current = m[1].replace(/\\'/g, "'");
     else titles.set(m[2], current);
+  }
+
+  if (specSource.includes('featureScenes.goldenCases')) {
+    for (const sceneCase of featureCases) {
+      if (sceneCase.goldenOmissionReason) continue;
+      titles.set(
+        sceneCase.name,
+        `golden: feature ${sceneCase.familyId} / ${sceneCase.stateId ?? sceneCase.viewId}`,
+      );
+    }
   }
 
   return titles;
@@ -69,9 +90,11 @@ export function planGoldens({ root }) {
   const pngs = readdirSync(dir)
     .filter((f) => f.endsWith('.png'))
     .sort();
-  const titles = existsSync(specPath)
-    ? goldenTitles(readFileSync(specPath, 'utf8'))
-    : new Map();
+  const specSource = existsSync(specPath) ? readFileSync(specPath, 'utf8') : '';
+  const titles =
+    specSource.length > 0
+      ? goldenTitles(specSource, featureScenes.goldenCases)
+      : new Map();
 
   const ops = pngs.map((f) => copy(join(dir, f), `goldens/${f}`));
 

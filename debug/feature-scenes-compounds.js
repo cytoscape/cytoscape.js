@@ -60,6 +60,10 @@
             'background-opacity': 0.38,
             'border-width': 3,
             'border-color': '#28714b',
+            'text-valign': 'bottom',
+            'text-margin-y': 12,
+            'text-wrap': 'wrap',
+            'text-max-width': 130,
             'compound-sizing-wrt-labels': hullSizing,
           },
           bypasses: {
@@ -190,6 +194,10 @@
             'background-opacity': 0.5,
             'border-width': 2,
             'border-color': '#3f637f',
+            'text-valign': 'bottom',
+            'text-margin-y': 14,
+            'text-wrap': 'wrap',
+            'text-max-width': 140,
           },
         },
         {
@@ -211,7 +219,7 @@
     if (view === 'minimums') {
       const nodes = [
         node('parent-minimums', 100, 100, {
-          label: 'min-width 120 · min-height 90',
+          label: 'min-width 120\nmin-height 90',
         }),
         node('minimum-child-a', 80, 90, {
           parent: 'parent-minimums',
@@ -240,6 +248,10 @@
             'background-opacity': 0.55,
             'border-width': 2,
             'border-color': '#38647d',
+            'text-valign': 'bottom',
+            'text-margin-y': 12,
+            'text-wrap': 'wrap',
+            'text-max-width': 150,
           },
         },
         {
@@ -273,8 +285,8 @@
     const nodes = [
       node('parent-padding', 100, 100, {
         label: sideMode
-          ? 'direct padding sides'
-          : `padding 18% relative to ${rel}`,
+          ? 'padding sides\nL4 · T8 · R26 · B18'
+          : `18% padding\nrelative to ${rel}`,
       }),
       node('padding-a', 65, 78, { parent: 'parent-padding', label: 'A' }),
       node('padding-b', 140, 110, { parent: 'parent-padding', label: 'B' }),
@@ -287,6 +299,10 @@
       'background-opacity': 0.5,
       'border-width': 2,
       'border-color': '#41657f',
+      'text-valign': 'bottom',
+      'text-margin-y': 14,
+      'text-wrap': 'wrap',
+      'text-max-width': 150,
     };
 
     if (sideMode) {

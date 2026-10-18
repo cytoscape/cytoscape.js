@@ -6,11 +6,31 @@
   const { image, node, edge, mapper, coverage, scene, baseStyle } = api;
   const shapesUnderlays = () => {
     const shapes = ['ellipse', 'round-rectangle', 'diamond', 'star'];
-    const nodes = shapes.map((shape, i) =>
-      node(`shape-underlay-${i}`, 100 + i * 150, 110, {
-        label: `${shape}\nunderlay ellipse`,
-        shape,
-      }),
+    const nodes = shapes.flatMap((shape, i) => {
+      const x = 100 + i * 150;
+
+      return [
+        node(`shape-underlay-${i}`, x, 110, { label: '', shape }),
+        node(`shape-caption-${i}`, x, 190, {
+          label: `${shape} body\nellipse underlay`,
+        }),
+      ];
+    });
+    const captionBypasses = Object.fromEntries(
+      shapes.map((_, i) => [
+        `shape-caption-${i}`,
+        {
+          width: 1,
+          height: 1,
+          'background-opacity': 0,
+          'border-width': 0,
+          'underlay-opacity': 0,
+          'overlay-opacity': 0,
+          'text-valign': 'top',
+          'text-wrap': 'wrap',
+          'text-max-width': 125,
+        },
+      ]),
     );
 
     return scene(
@@ -23,7 +43,13 @@
           'underlay-color': '#e05d43',
           'underlay-opacity': 0.8,
           'underlay-padding': 12,
+          'text-halign': 'center',
+          'text-valign': 'top',
+          'font-size': 11,
+          'text-wrap': 'wrap',
+          'text-max-width': 125,
         },
+        bypasses: captionBypasses,
       },
       {
         coverage: coverage(

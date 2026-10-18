@@ -21,7 +21,7 @@
   const labels = (view) => {
     if (view === 'font-keywords') {
       const weightNode = node('label-weight-sample', 95, 100, {
-        label: 'font weight 400',
+        label: 'Font sample',
       });
       const lineHeights = [0.8, 1.4, 2.2];
       const lineNodes = lineHeights.map((lineHeight, i) =>

@@ -38,6 +38,11 @@ routes, these files explain.
 ## `test/`
 
 - `test/`: `node:test` suites (Mocha-shaped, see above). Add regression coverage here for API and logic changes; `test/modules/` holds internal-only and tooling coverage; `test/soak/` holds the round-48 robustness tier (leaks, churn, wire fuzzing, multi-instance isolation), run by `npm run test:soak` under Node `--expose-gc` or Bun's real `Bun.gc()`. `test/lib/` holds test preloads that are not themselves discovered as specs. `test/runtimes/` holds the round-98 Node/Bun bundle smoke plus the isolate and workerd checks; see `docs/agents/testing.md`.
+- `playwright-tests/goldens/` holds approved reference PNGs;
+  `playwright-tests/golden-current/` holds the latest tested PNG and timestamp
+  for each scene, including failures. `scripts/golden-images.mjs` shares the
+  comparison and capture code with the status gallery, which derives its
+  neon diff images from those stored pairs.
 
 ## `documentation/` — v4-authored prose
 

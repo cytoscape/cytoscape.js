@@ -39,6 +39,21 @@ with the thing it tests deliberately broken, and watch it fail.
 - **Gesture behaviour is held by scripted traces, compared as numbers** (round 142).  `playwright-tests/lib/gesture-traces.mjs` scripts the inventory's ten traces on one scene; `playwright-tests/lib/trace-replay.mjs` plays a script on `parity.html` — trusted mouse input, in-page touch `PointerEvent`s — and snapshots, at each `mark` and at the end, the positions, selection, viewport, grabbed and hovered sets and the event log (discrete events in order, each run of per-move events collapsed to its set).  `gestures.spec.js` (the `visual` project) holds **every v4 host** to the checked-in record in `playwright-tests/gesture-traces/` — the same-thread and worker renderers today; the WebGL2 backend is one `HOSTS` entry — and replays the mouse traces on **v3**, whose known differences are listed in `V3_DIVERGENCES` and asserted to still differ.  Two rules keep it deterministic, and both are the replayer's, not each trace's: a pointer step waits for its DOM event to arrive before the next (a browser coalescing moves under load cannot change what the gesture saw), and a hover is polled with nudges the log does not record.  After an intended gesture change, `UPDATE_GESTURE_TRACES=1 npx playwright test gestures -g webgpu` and read the record diff — it is the behaviour change.  `test/modules/gesture-traces.mjs` holds scripts, records, inventory and comparator to each other in Node.
 - Visual regression coverage for the GPU prototype lives in the `visual` Playwright project (`playwright-tests/visual.spec.js`): golden-image diffs against PNGs checked into `playwright-tests/goldens/` plus live v3-vs-v4 parity diffs. After an intended visual change, regenerate goldens with `UPDATE_GOLDENS=1 npx playwright test --project=visual` and commit the updated PNGs; never edit goldens by hand.
 
+- **Reference and latest capture are separate.** Every golden comparison saves
+  its latest actual PNG to `playwright-tests/golden-current/`, with a JSON
+  sidecar recording the test time and comparison threshold, before checking
+  the reference. Passing and failing comparisons both refresh it; a test that
+  never reaches comparison leaves the previous capture intact. Commit these
+  captures when updating the status gallery, including failures, without
+  approving them as references. `UPDATE_GOLDENS=1` remains the explicit way to
+  change `playwright-tests/goldens/`. `npm run status` compares each stored pair
+  and generates a neon-highlighted Diff view and pixel count; Gold is the
+  default view, Now shows the latest capture, and untested references are
+  labelled rather than shown as matching. The diff PNG is derived in the
+  status output, not maintained as a third reference artifact. The visual CI
+  job also uploads `golden-current` on success or failure, so its latest
+  captures can be retrieved without approving or regenerating references.
+
 - `playwright-tests/` and `playwright.config.js`: Browser-level regression coverage — the `renderer` project (and `renderer-webkit`) — which since round 65 also carries `algorithms-gpu.spec.js`, the CPU-vs-GPU executor parity suite for the async algorithm tier (headless instances, adapter soft-skip) — and `visual` (goldens + live v3-vs-v4 parity diffs — including round 56's **close-up** tier at zoom 3-4 — plus round 55's **numeric** routing parity in `routing.spec.js`).
   - **`routing.spec.js` compares geometry, not pixels** — both libraries' `controlPoints()`/`segmentPoints()`/endpoints/`midpoint()` through one symmetric probe on `playwright-page/parity.html`, reporting *which field on which edge* diverged and by how many model px.  It exists because a 6 px arrow gap is 0.005% of a 400x300 canvas, 400x under the pixel bound.  It needs **no WebGPU adapter and draws no frame**, so it carries no `hasAdapter` skip — do not add one.  It runs in the browser only because v3 computes routing inside its renderer; importing v3's entry from `test/` would break the Node tier's no-v3-install invariant.
 

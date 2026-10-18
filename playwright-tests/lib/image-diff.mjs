@@ -1,7 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import pixelmatch from 'pixelmatch';
 import { PNG } from 'pngjs';
+import {
+  diffPngs,
+  GOLDEN_CURRENT_DIR,
+  recordGoldenCurrent,
+} from '../../scripts/golden-images.mjs';
+
+export { diffPngs } from '../../scripts/golden-images.mjs';
 
 /*
 Pixel-diff harness for the visual Playwright specs (pixelmatch + pngjs).
@@ -50,34 +56,6 @@ export const maskRects = (png, rects) => {
   return png;
 };
 
-/**
- * Diff two decoded PNGs.  `threshold` is pixelmatch's per-pixel color
- * tolerance (0..1); mismatch counts exclude anti-aliased pixels.  Returns
- * { mismatched, ratio, diff } where diff is a decoded PNG of the mismatch
- * map.  Throws when dimensions differ (that is already a failure worth a
- * clearer message than a pixel count).
- */
-export const diffPngs = (actual, expected, { threshold = 0.1 } = {}) => {
-  if (actual.width !== expected.width || actual.height !== expected.height) {
-    throw new Error(
-      `Image dimensions differ: ${actual.width}×${actual.height} vs ${expected.width}×${expected.height}`,
-    );
-  }
-
-  const { width, height } = actual;
-  const diff = new PNG({ width, height });
-  const mismatched = pixelmatch(
-    actual.data,
-    expected.data,
-    diff.data,
-    width,
-    height,
-    { threshold },
-  );
-
-  return { mismatched, ratio: mismatched / (width * height), diff };
-};
-
 /** Write actual/expected/diff PNGs for a failed comparison; returns the paths. */
 export const writeDiffArtifacts = (dir, name, actual, expected, diff) => {
   fs.mkdirSync(dir, { recursive: true });
@@ -101,6 +79,8 @@ export const writeDiffArtifacts = (dir, name, actual, expected, diff) => {
  * without it a missing golden is a failure that says how to create it.
  * On mismatch beyond `maxDiffRatio`, writes actual/expected/diff PNGs
  * into `artifactsDir` (pass testInfo.outputPath('')) and throws.
+ * Every invocation first saves the actual image and test time to
+ * `playwright-tests/golden-current/`, independently of the reference.
  *
  * **The default is exact — zero differing pixels** (round 57.1e).  It
  * used to be 0.5%, with eleven label scenes granted 2% on top, and the
@@ -126,12 +106,20 @@ export const writeDiffArtifacts = (dir, name, actual, expected, diff) => {
 export const compareToGolden = (
   name,
   actual,
-  { threshold = 0, maxDiffRatio = 0, artifactsDir } = {},
+  {
+    threshold = 0,
+    maxDiffRatio = 0,
+    artifactsDir,
+    goldensDir = GOLDENS_DIR,
+    currentDir = GOLDEN_CURRENT_DIR,
+  } = {},
 ) => {
-  const goldenPath = path.join(GOLDENS_DIR, `${name}.png`);
+  const goldenPath = path.join(goldensDir, `${name}.png`);
+
+  recordGoldenCurrent(name, actual, { dir: currentDir, threshold });
 
   if (process.env.UPDATE_GOLDENS) {
-    fs.mkdirSync(GOLDENS_DIR, { recursive: true });
+    fs.mkdirSync(goldensDir, { recursive: true });
     fs.writeFileSync(goldenPath, PNG.sync.write(actual));
 
     return { updated: true, ratio: 0 };

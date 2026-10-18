@@ -1,8 +1,8 @@
 // Round 46.5: the visual goldens as a contact sheet.
 //
-// The 43 PNGs in `playwright-tests/goldens/` are what the WebGPU renderer
-// currently produces, and until now the only way to look at them was to open
-// 43 files.  Each golden's name is passed explicitly at its
+// Approved PNGs live in `playwright-tests/goldens/`; the most recent tested
+// captures live separately in `playwright-tests/golden-current/`. Diffs are
+// derived from those two images when building the site. Each name is passed at its
 // `checkGolden( '<name>', … )` call site in `playwright-tests/visual.spec.js`,
 // so the page can caption each image with the `test()` it came from.
 //
@@ -11,8 +11,10 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 
-import { esc, fmtBytes } from '../theme.mjs';
-import { copy } from './plan.mjs';
+import { PNG } from 'pngjs';
+import { esc } from '../theme.mjs';
+import { goldenComparison } from '../golden-images.mjs';
+import { copy, write } from './plan.mjs';
 
 /**
  * Map each `checkGolden( 'name', … )` to the `test( 'title' )` enclosing it.
@@ -50,6 +52,7 @@ export function goldenTitles(specSource) {
  */
 export function planGoldens({ root }) {
   const dir = join(root, 'playwright-tests', 'goldens');
+  const currentDir = join(root, 'playwright-tests', 'golden-current');
   const specPath = join(root, 'playwright-tests', 'visual.spec.js');
 
   if (!existsSync(dir)) {
@@ -85,19 +88,50 @@ export function planGoldens({ root }) {
     .map((f) => {
       const name = basename(f, '.png');
       const title = titles.get(name);
-      const bytes = (() => {
-        try {
-          return readFileSync(join(dir, f)).length;
-        } catch {
-          return null;
-        }
-      })();
+      const reference = PNG.sync.read(readFileSync(join(dir, f)));
+      const currentPath = join(currentDir, f);
+      let comparison = null;
+      let current = null;
+      let testedAt = null;
 
-      return `<figure class="golden">
-      <a href="goldens/${esc(f)}"><img src="goldens/${esc(f)}" alt="${esc(title ?? name)}" loading="lazy"></a>
+      if (existsSync(currentPath)) {
+        const metadataPath = join(currentDir, `${name}.json`);
+        const metadata = existsSync(metadataPath)
+          ? JSON.parse(readFileSync(metadataPath, 'utf8'))
+          : {};
+
+        testedAt = metadata.testedAt ?? null;
+        current = PNG.sync.read(readFileSync(currentPath));
+        comparison = goldenComparison(current, reference, {
+          threshold: metadata.threshold ?? 0,
+        });
+        ops.push(copy(currentPath, `goldens/current/${f}`));
+        ops.push(write(`goldens/diff/${f}`, PNG.sync.write(comparison.diff)));
+      }
+
+      const view = (key, label, url, image) =>
+        `<a data-golden-view="${key}" href="${esc(url)}"${key === 'gold' ? '' : ' hidden'}><img src="${esc(url)}" alt="${esc(name)} — ${label}" width="${image.width}" height="${image.height}" loading="lazy"></a>`;
+      const count = comparison?.mismatched;
+      const metric =
+        comparison == null
+          ? 'Not tested yet'
+          : `${count.toLocaleString('en-US')} px differ${comparison.sizeChanged ? ' · image size changed' : ''}`;
+      const disabled = comparison == null ? ' disabled' : '';
+
+      return `<figure class="golden" data-golden="${esc(name)}">
+      ${view('gold', 'Gold reference', `goldens/${f}`, reference)}
+      ${comparison == null ? '' : view('now', 'Now, latest tested image', `goldens/current/${f}`, current)}
+      ${comparison == null ? '' : view('diff', 'Diff, changed pixels in neon magenta', `goldens/diff/${f}`, comparison.diff)}
+      <div class="golden-controls" role="group" aria-label="Views for ${esc(name)}">
+        <button type="button" data-golden-cycle aria-label="Next view for ${esc(name)}"${disabled}>View: Gold ↻</button>
+        <button type="button" data-golden-select="gold" aria-pressed="true">Gold</button>
+        <button type="button" data-golden-select="now" aria-pressed="false"${disabled}>Now</button>
+        <button type="button" data-golden-select="diff" aria-pressed="false"${disabled}>Diff</button>
+      </div>
+      <p class="golden-metric${count > 0 ? ' changed' : ''}" role="status">${metric}</p>
       <figcaption><code>${esc(name)}</code>
         <span>${title != null ? esc(title) : '<em>no call site in visual.spec.js</em>'}</span>
-        <span class="muted">${esc(fmtBytes(bytes) ?? '')}</span>
+        ${testedAt == null ? '' : `<time datetime="${esc(testedAt)}">Last tested ${esc(testedAt.replace('T', ' ').replace('Z', ' UTC'))}</time>`}
       </figcaption>
     </figure>`;
     })
@@ -105,11 +139,15 @@ export function planGoldens({ root }) {
 
   const html = `<h1>Visual goldens</h1>
   <p class="lede">${pngs.length} golden images from the <code>visual</code> Playwright project — what the
-  WebGPU renderer produces for each pinned scene. These are v4's own previous output, so they answer
+  WebGPU renderer produces for each pinned scene. Gold is the approved reference; Now is the
+  latest tested capture, including failed tests. Diff highlights changed pixels in neon magenta
+  with a halo so small differences remain visible. Counts use the test's pixel comparison.
+  These are v4's own previous output, so they answer
   “did this change?” and not “is this right”; the live v3-vs-v4 parity diffs in the same project
   answer the second question.</p>
   ${orphans.length > 0 ? `<p class="warn">${orphans.map(esc).join('<br>')}</p>` : ''}
-  <div class="golden-grid">${cards}</div>`;
+  <div class="golden-grid">${cards}</div>
+  <script>(${goldenControls.toString()})();</script>`;
 
   return {
     ops,
@@ -121,12 +159,50 @@ export function planGoldens({ root }) {
   };
 }
 
+/** Self-contained, inlined in the static gallery; every card has independent state. */
+export function goldenControls() {
+  for (const card of document.querySelectorAll('[data-golden]')) {
+    const views = [...card.querySelectorAll('[data-golden-view]')];
+    const buttons = card.querySelectorAll('[data-golden-select]');
+    const cycle = card.querySelector('[data-golden-cycle]');
+    const names = { gold: 'Gold', now: 'Now', diff: 'Diff' };
+    let selected = 0;
+    const select = (key) => {
+      const index = views.findIndex((view) => view.dataset.goldenView === key);
+
+      if (index < 0) return;
+      selected = index;
+
+      for (const view of views) view.hidden = view.dataset.goldenView !== key;
+      for (const button of buttons) {
+        button.setAttribute(
+          'aria-pressed',
+          String(button.dataset.goldenSelect === key),
+        );
+      }
+
+      cycle.textContent = `View: ${names[key]} ↻`;
+    };
+
+    cycle.addEventListener('click', () => {
+      select(views[(selected + 1) % views.length].dataset.goldenView);
+    });
+
+    for (const button of buttons) {
+      button.addEventListener('click', () =>
+        select(button.dataset.goldenSelect),
+      );
+    }
+  }
+}
+
 export const GOLDENS_CSS = `
 /* a contact sheet wants the page, not the 82ch measure the documents use */
 main.prose { max-width: none; }
 main.prose .lede { max-width: 82ch; }
 .golden-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; margin-top: 20px; }
 .golden { margin: 0; }
+.golden [hidden] { display: none; }
 .golden img {
   width: 100%; height: auto; display: block; border: 1px solid var(--border);
   border-radius: 4px; background: #fff;
@@ -134,4 +210,13 @@ main.prose .lede { max-width: 82ch; }
 .golden figcaption { font-size: 12px; margin-top: 5px; display: flex; flex-direction: column; gap: 1px; }
 .golden figcaption code { font-size: 11.5px; }
 .golden figcaption span { color: var(--ink-2); }
+.golden figcaption time { color: var(--muted); font-size: 11px; }
+.golden-controls { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.golden-controls button { font: inherit; font-size: 12px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.golden-controls button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.golden-controls button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.golden-controls button:disabled { opacity: .45; cursor: default; }
+.golden-metric { margin: 7px 0; font-size: 12px; color: var(--muted); }
+.golden-metric.changed { display: inline-block; padding: 4px 8px; border: 1px solid #c100a2; border-radius: 4px; color: #a00087; background: #fff0fc; font-weight: 750; }
+@media (prefers-color-scheme: dark) { .golden-metric.changed { color: #ff8ce9; background: #3b1035; border-color: #f048ce; } }
 .warn { color: var(--warn); }`;

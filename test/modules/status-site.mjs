@@ -893,7 +893,7 @@ describe('status site: the goldens gallery', function () {
     );
     const titles = goldenTitles(spec);
     const plan = buildPlan({ root: ROOT, gzip: false });
-    const pngs = plan.ops.filter((op) => op.to.startsWith('goldens/'));
+    const pngs = plan.ops.filter((op) => /^goldens\/[^/]+\.png$/.test(op.to));
 
     expect(pngs.length).to.be.at.least(40);
     expect(titles.size).to.equal(pngs.length);

@@ -133,6 +133,13 @@ jobs:
       run: npm run build
     - name: Run the ${{ matrix.project }} project
       run: npx playwright test --project=${{ matrix.project }}
+    - name: Upload latest golden captures
+      if: always() && matrix.project == 'visual'
+      uses: actions/upload-artifact@v4
+      with:
+        name: golden-current
+        path: playwright-tests/golden-current/
+        retention-days: 7
     - name: Upload failure artifacts
       if: failure()
       uses: actions/upload-artifact@v4

@@ -92,6 +92,7 @@ export const hopcroftTarjanBiconnected = (
     root: number,
     current: number,
     parent: number,
+    parentEdge: number,
   ): void => {
     if (root === parent) {
       edgeCount += 1;
@@ -115,7 +116,10 @@ export const hopcroftTarjanBiconnected = (
       const otherSlot = sSlot === nodeSlots[current] ? tSlot : sSlot;
       const other = index.get(otherSlot);
 
-      if (other == null || other === parent) {
+      // skip only the edge we arrived by: a parallel twin back to the
+      // parent is a back edge (v3 skipped every edge to the parent, and
+      // a twin pair that was a node's only link landed in no component)
+      if (other == null || e === parentEdge) {
         continue;
       }
 
@@ -125,7 +129,7 @@ export const hopcroftTarjanBiconnected = (
       }
 
       if (id[other] < 0) {
-        biconnectedSearch(root, other, current);
+        biconnectedSearch(root, other, current, e);
         low[current] = Math.min(low[current], low[other]);
 
         if (id[current] <= low[other]) {
@@ -141,7 +145,7 @@ export const hopcroftTarjanBiconnected = (
   for (let i = 0; i < n; i++) {
     if (id[i] < 0) {
       edgeCount = 0;
-      biconnectedSearch(i, i, -1);
+      biconnectedSearch(i, i, -1, -1);
       cutVertex[i] = edgeCount > 1 ? 1 : 0;
     }
   }

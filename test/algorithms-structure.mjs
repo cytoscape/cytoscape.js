@@ -116,6 +116,33 @@ describe('gpu/algorithms: structure', function () {
   });
 
   describe('eles.hopcroftTarjanBiconnected()', function () {
+    it("keeps a parallel twin that is a node's only link", function () {
+      // v3 skipped every edge back to the DFS parent, so the second of two
+      // edges joining a leaf landed in no component (found by the
+      // every-edge-in-one-component check in test/algorithms-reference.mjs)
+      var twins = cytoscape({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } },
+          { data: { id: 'ab1', source: 'a', target: 'b' } },
+          { data: { id: 'ab2', source: 'a', target: 'b' } },
+          { data: { id: 'bc', source: 'b', target: 'c' } },
+        ],
+      });
+      var res = twins.elements().hopcroftTarjanBiconnected();
+
+      expect(res.cut.map((n) => n.id())).to.deep.equal(['b']);
+      expect(
+        res.components.map((c) =>
+          c
+            .edges()
+            .map((e) => e.id())
+            .sort(),
+        ),
+      ).to.have.deep.members([['ab1', 'ab2'], ['bc']]);
+    });
+
     var cy;
     var sub = (prefix) =>
       cy.elements().filter((ele) => ele.id().startsWith(prefix));

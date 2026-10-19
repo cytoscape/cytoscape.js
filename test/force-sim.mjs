@@ -4,6 +4,7 @@ import {
   seedPositions,
   defaultForceParams,
 } from '../src/layout/force-sim.mjs';
+import { boxes, mkSim, probe } from './lib/force-sim-fixtures.mjs';
 
 // round 18.1, model rebuilt in round 59: the CPU reference force
 // simulation — the spec the GPU kernels must match (degree-normalised
@@ -112,25 +113,6 @@ const finiteStats = (sim, n, edges) => {
   }
 
   return { nonFinite, maxR, meanLink: m > 0 ? linkSum / m : 0 };
-};
-
-const mkSim = (n, edges, over = {}) => {
-  const positions = new Float32Array(n * 2);
-
-  seedPositions(n, over.seed ?? 1, over.spread ?? 100, positions);
-
-  const edgeLength = new Float32Array(edges.length / 2).fill(
-    over.edgeLength ?? 60,
-  );
-
-  return new ForceSim({
-    n,
-    edges,
-    edgeLength,
-    positions,
-    ...defaultForceParams(),
-    ...over,
-  });
 };
 
 describe('gpu/layout: the force reference sim (round 18.1)', function () {
@@ -634,48 +616,12 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
 
       return Uint32Array.from(list);
     };
-    // equal square boxes of `size` px padded by `pad` (half per side),
-    // the shape the layout hands the sim under avoidOverlap
-    const boxes = (n, size, pad = 10) => {
-      const half = size / 2 + pad / 2;
-
-      return {
-        x1: new Float32Array(n).fill(-half),
-        y1: new Float32Array(n).fill(-half),
-        x2: new Float32Array(n).fill(half),
-        y2: new Float32Array(n).fill(half),
-        maxW: 2 * half,
-        maxH: 2 * half,
-      };
-    };
     const settle = (sim) => {
       while (!sim.converged()) {
         sim.step(50);
       }
 
       return sim.positions;
-    };
-    // overlapping pairs and the smallest axis gap between two boxes
-    const probe = (pos, n, ext) => {
-      let overlaps = 0;
-      let minGap = Infinity;
-
-      for (let i = 0; i < n; i++) {
-        for (let j = i + 1; j < n; j++) {
-          const dx = Math.abs(pos[j * 2] - pos[i * 2]);
-          const dy = Math.abs(pos[j * 2 + 1] - pos[i * 2 + 1]);
-          const w = ext.x2[i] - ext.x1[j];
-          const h = ext.y2[i] - ext.y1[j];
-
-          if (dx < w && dy < h) {
-            overlaps++;
-          }
-
-          minGap = Math.min(minGap, Math.max(dx - w, dy - h));
-        }
-      }
-
-      return { overlaps, minGap };
     };
 
     it('a 30-clique of padded 40 px boxes settles overlap-free, at the padding', function () {
@@ -794,54 +740,5 @@ describe('gpu/layout: the force reference sim (round 18.1)', function () {
       expect(probe(point, n, ext).overlaps).to.equal(1);
       expect(probe(boxed, n, ext).overlaps).to.equal(0);
     });
-
-    it(
-      'a field denser than its boxes allow rests on the floor budget: a sweep cannot open it, so the run does not sweep forever (118.4)',
-      { timeout: 15000 },
-      function () {
-        // the 118.1 regime: a 3k random graph at the default ideal
-        // length settles with most of its padded 12 px boxes inside a
-        // neighbour's, and the local passes cannot open it — the 25k
-        // scene on the page under 'sim' alone.  Without the budget the
-        // largest push never drops under the threshold and an infinite
-        // run never rests
-        const n = 3000;
-        const list = [];
-        let a = 42;
-        const rand = () => {
-          a = (a + 0x6d2b79f5) >>> 0;
-
-          let t = a;
-
-          t = Math.imul(t ^ (t >>> 15), t | 1);
-          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-
-          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-
-        for (let e = 0; e < n * 2; e++) {
-          list.push(Math.floor(rand() * n), Math.floor(rand() * n));
-        }
-
-        const ext = boxes(n, 12);
-        const sim = mkSim(n, Uint32Array.from(list), {
-          seed: 1,
-          extents: ext,
-          infinite: true,
-        });
-        let ticks = 0;
-
-        while (!sim.idle() && ticks < 3000) {
-          sim.step(1);
-          ticks++;
-        }
-
-        expect(sim.idle()).to.equal(true);
-        // ~460 ticks to the floor, then the budget
-        expect(ticks).to.be.within(600, 700);
-        // and it rested with overlap left: the field a sweep cannot open
-        expect(probe(sim.positions, n, ext).overlaps).to.be.greaterThan(100);
-      },
-    );
   });
 });

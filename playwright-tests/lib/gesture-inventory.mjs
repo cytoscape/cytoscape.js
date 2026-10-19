@@ -1145,7 +1145,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/force-layout.mjs',
+        'test/force-layout-infinite.mjs',
         'a drag reheats the field: the grabbed node holds where it is put and its neighbours follow',
         'api',
       ],

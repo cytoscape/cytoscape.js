@@ -228,6 +228,29 @@ def shortest_paths(G, refs):
         'distance': {n: finite(d.get(n, math.inf)) for n in g['nodes']},
         'hasNegativeWeightCycle': False,
     }
+    # undirected: each edge is both arcs, so a negative edge reachable from
+    # the root is a 2-node negative cycle (NetworkXUnbounded)
+    def unbounded(D, root):
+        try:
+            nx.single_source_bellman_ford_path_length(D, root, weight='w')
+            return False
+        except nx.NetworkXUnbounded:
+            return True
+
+    refs['bellmanFord']['negd-undirected'] = {
+        'root': '0',
+        'hasNegativeWeightCycle': unbounded(nx_graph({**g, 'directed': False}), '0'),
+    }
+    for name in ('wu', 'multi'):
+        g = G[name]
+        root = g['nodes'][0]
+        d = nx.single_source_bellman_ford_path_length(nx_graph(g, multi=True), root, weight='w')
+        refs['bellmanFord'][name] = {
+            'root': root,
+            'distance': {n: finite(d.get(n, math.inf)) for n in g['nodes']},
+            'hasNegativeWeightCycle': False,
+        }
+
     g = G['negcyc']
     refs['bellmanFord']['negcyc'] = {
         'root': '0',

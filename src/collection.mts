@@ -3181,7 +3181,10 @@ export class Collection<
   /**
    * Compute single-source shortest paths with Bellman–Ford. Unlike
    * `dijkstra()`, this algorithm supports negative edge weights and reports
-   * reachable negative-weight cycles.
+   * reachable negative-weight cycles.  Undirected, every edge is both arcs,
+   * so a negative edge reachable from the root is itself a negative cycle
+   * (v3 never relaxed back over the edge that reached a node, and missed
+   * it).
    *
    * @param options — `{ root, weight, directed, findNegativeWeightCycles }`.
    *   The root must belong to this collection; `weight(edge)` defaults to 1

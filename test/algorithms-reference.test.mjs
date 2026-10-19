@@ -159,6 +159,50 @@ describe('algorithms against NetworkX / SciPy references', function () {
       );
     });
 
+    for (const name of ['wu', 'multi']) {
+      it(`bellmanFord on ${name}, undirected, matches the shortest paths`, function () {
+        const ref = REF.bellmanFord[name];
+        const { g, eles, node } = build(name);
+        const res = eles.bellmanFord({
+          root: node(ref.root),
+          weight,
+          directed: false,
+        });
+
+        expect(res.hasNegativeWeightCycle).to.equal(false);
+        perNode(
+          g,
+          (id) => res.distanceTo(node(id)),
+          ref.distance,
+          1e-9,
+          'distance',
+        );
+      });
+    }
+
+    it('bellmanFord reads a negative undirected edge as a negative cycle', function () {
+      const ref = REF.bellmanFord['negd-undirected'];
+      const { eles, node } = build('negd');
+      const res = eles.bellmanFord({
+        root: node(ref.root),
+        weight,
+        directed: false,
+      });
+
+      expect(ref.hasNegativeWeightCycle).to.equal(true);
+      expect(res.hasNegativeWeightCycle).to.equal(true);
+      expect(res.negativeWeightCycles.length).to.be.above(0);
+
+      // each found cycle is a negative closed walk: one negative edge
+      // walked both ways, or a longer cycle whose edges sum negative
+      for (const cycle of res.negativeWeightCycles) {
+        const edges = cycle.edges();
+        const sum = edges.reduce((total, e) => total + weight(e), 0);
+
+        expect(edges.length === 1 ? 2 * sum : sum).to.be.below(0);
+      }
+    });
+
     it('bellmanFord finds the negative cycle', function () {
       const ref = REF.bellmanFord.negcyc;
       const { eles, node } = build('negcyc');

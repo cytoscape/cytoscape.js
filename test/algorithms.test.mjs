@@ -538,8 +538,17 @@ describe('gpu/algorithms: search + paths', function () {
       for (var i = 0; i < numCycles; i++) {
         var cycle = res.negativeWeightCycles[i];
 
-        // v4 collections dedupe, so the closing node collapses: even length,
-        // alternating node/edge, and the cycle's edge weights sum negative
+        // v4 collections dedupe, so the closing node collapses, and a
+        // 2-node cycle over one undirected edge lists it once: node,
+        // edge, node — walked both ways, it weighs twice the edge
+        if (cycle.edges().length === 1) {
+          expect(cycle.nodes().length).to.equal(2);
+          expect(cycle.edges().data('weight')).to.be.below(0);
+          continue;
+        }
+
+        // otherwise even length, alternating node/edge, and the cycle's
+        // edge weights sum negative
         expect(cycle.length % 2).to.equal(0);
 
         for (var el = 1; el < cycle.length; el += 2) {
@@ -560,6 +569,32 @@ describe('gpu/algorithms: search + paths', function () {
 
         expect(sum).to.be.below(0);
       }
+    });
+
+    it('a negative undirected edge is a 2-node negative cycle', function () {
+      // both arcs of b–e: b → e → b weighs −10.  v3 never relaxed back
+      // over the edge that reached a node, so it reported no cycle here
+      be.data('weight', -5);
+
+      var res = cy.elements().bellmanFord({ root: a, directed: false, weight });
+
+      expect(res.hasNegativeWeightCycle).to.equal(true);
+      expect(
+        res.negativeWeightCycles.map((cycle) =>
+          cycle
+            .map((ele) => ele.id())
+            .sort()
+            .join(),
+        ),
+      ).to.deep.equal(['b,be,e']);
+
+      // control: directed, the same edge is one arc and no cycle
+      var directed = cy
+        .elements()
+        .bellmanFord({ root: a, directed: true, weight });
+
+      expect(directed.hasNegativeWeightCycle).to.equal(false);
+      expect(directed.distanceTo(e)).to.equal(-2);
     });
 
     it('throws without a root', function () {

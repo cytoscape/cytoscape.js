@@ -68,12 +68,15 @@ export const bellmanFord = (
 
   let replacedEdge = false;
 
-  // relax u → v via edge e, with v3's same-edge guard (never relax straight
-  // back over the edge that reached u)
+  // relax u → v via edge e.  An undirected edge is both arcs, so a
+  // negative one is a 2-node negative cycle, as in NetworkX and Boost.
+  // v3 refused to relax straight back over the edge that reached u, which
+  // hid that cycle but still let a longer walk cross the edge twice, so
+  // its distances matched no definition (removed 2026-10-19).
   const relax = (u: number, v: number, e: number, w: number): void => {
     const d = dist[u] + w;
 
-    if (d < dist[v] && e !== edgeOf[u]) {
+    if (d < dist[v]) {
       dist[v] = d;
       pred[v] = u;
       edgeOf[v] = e;
@@ -103,14 +106,17 @@ export const bellmanFord = (
   if (replacedEdge) {
     const cycleIds: string[] = [];
 
-    for (let e = 0; e < m; e++) {
-      const u = srcIdx[e];
-      const v = tgtIdx[e];
-      const w = weights[e];
-      const forward = dist[u] + w < dist[v];
-      const backward = !directed && dist[v] + w < dist[u];
+    // the n-th pass: an arc that still relaxes has a negative cycle
+    // behind it.  Relax it, and its head's predecessor walk, n steps
+    // back, stands on that cycle (the standard extraction).
+    const arcs = directed ? 1 : 2;
 
-      if (!forward && !backward) {
+    for (let a = 0; a < m * arcs; a++) {
+      const e = a % m;
+      const u = a < m ? srcIdx[e] : tgtIdx[e];
+      const v = a < m ? tgtIdx[e] : srcIdx[e];
+
+      if (!(dist[u] + weights[e] < dist[v])) {
         continue;
       }
 
@@ -123,73 +129,64 @@ export const bellmanFord = (
         break;
       }
 
-      const negativeNodes: number[] = [];
+      dist[v] = dist[u] + weights[e];
+      pred[v] = u;
+      edgeOf[v] = edges[e];
 
-      if (forward) {
-        negativeNodes.push(u);
+      let start = v;
+
+      for (let i = 0; i < n; i++) {
+        start = pred[start];
       }
-      if (backward) {
-        negativeNodes.push(v);
+
+      // entries alternate node dense index / edge slot, mirroring v3's
+      // element cycle array; a 2-node cycle over one undirected edge
+      // lists that edge twice, which the collection dedupes
+      let nodes: number[] = [start];
+      let cycleEdges: number[] = [edgeOf[start]];
+
+      for (let node = pred[start]; node !== start; node = pred[node]) {
+        nodes.push(node);
+        cycleEdges.push(edgeOf[node]);
       }
 
-      for (const start of negativeNodes) {
-        // walk pred until a node repeats: entries alternate node dense index /
-        // edge slot, mirroring v3's element cycle array
-        let nodes: number[] = [start];
-        let cycleEdges: number[] = [edgeOf[start]];
-        let node = pred[start];
+      // rotate the smallest node id to the front (v3's canonical form)
+      let smallestId = store.idAt(GROUP_NODES, nodeSlots[nodes[0]]) as string;
+      let smallestIndex = 0;
 
-        while (nodes.indexOf(node) === -1) {
-          nodes.push(node);
-          cycleEdges.push(edgeOf[node]);
-          node = pred[node];
+      for (let c = 1; c < nodes.length; c++) {
+        const id = store.idAt(GROUP_NODES, nodeSlots[nodes[c]]) as string;
+
+        if (id < smallestId) {
+          smallestId = id;
+          smallestIndex = c;
+        }
+      }
+
+      nodes = nodes.slice(smallestIndex).concat(nodes.slice(0, smallestIndex));
+      cycleEdges = cycleEdges
+        .slice(smallestIndex)
+        .concat(cycleEdges.slice(0, smallestIndex));
+
+      const cycleId = nodes
+        .map(
+          (ni, c) =>
+            `${store.idAt(GROUP_NODES, nodeSlots[ni])},${store.idAt(GROUP_EDGES, cycleEdges[c])}`,
+        )
+        .join(',');
+
+      if (cycleIds.indexOf(cycleId) === -1) {
+        cycleIds.push(cycleId);
+
+        const refs: Ref[] = [];
+
+        for (let c = 0; c < nodes.length; c++) {
+          refs.push(store.ref(GROUP_NODES, nodeSlots[nodes[c]]));
+          refs.push(store.ref(GROUP_EDGES, cycleEdges[c]));
         }
 
-        const at = nodes.indexOf(node);
-
-        nodes = nodes.slice(at);
-        cycleEdges = cycleEdges.slice(at);
-
-        // rotate the smallest node id to the front (v3's canonical form)
-        let smallestId = store.idAt(GROUP_NODES, nodeSlots[nodes[0]]) as string;
-        let smallestIndex = 0;
-
-        for (let c = 1; c < nodes.length; c++) {
-          const id = store.idAt(GROUP_NODES, nodeSlots[nodes[c]]) as string;
-
-          if (id < smallestId) {
-            smallestId = id;
-            smallestIndex = c;
-          }
-        }
-
-        nodes = nodes
-          .slice(smallestIndex)
-          .concat(nodes.slice(0, smallestIndex));
-        cycleEdges = cycleEdges
-          .slice(smallestIndex)
-          .concat(cycleEdges.slice(0, smallestIndex));
-
-        const cycleId = nodes
-          .map(
-            (ni, c) =>
-              `${store.idAt(GROUP_NODES, nodeSlots[ni])},${store.idAt(GROUP_EDGES, cycleEdges[c])}`,
-          )
-          .join(',');
-
-        if (cycleIds.indexOf(cycleId) === -1) {
-          cycleIds.push(cycleId);
-
-          const refs: Ref[] = [];
-
-          for (let c = 0; c < nodes.length; c++) {
-            refs.push(store.ref(GROUP_NODES, nodeSlots[nodes[c]]));
-            refs.push(store.ref(GROUP_EDGES, cycleEdges[c]));
-          }
-
-          refs.push(store.ref(GROUP_NODES, nodeSlots[nodes[0]])); // close the cycle (deduped)
-          negativeWeightCycles.push(coll._spawn(refs));
-        }
+        refs.push(store.ref(GROUP_NODES, nodeSlots[nodes[0]])); // close the cycle (deduped)
+        negativeWeightCycles.push(coll._spawn(refs));
       }
     }
   }

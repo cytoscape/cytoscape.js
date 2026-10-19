@@ -755,6 +755,13 @@ that compile and then behave differently.
   `dampingFactor: 1 / (2 − d)`.  A value outside (0, 1], or not a number,
   throws `TypeError`.
 
+- **`bellmanFord` reports a negative undirected edge as a negative cycle.**
+  An undirected edge is both arcs, so a negative one reachable from the root
+  is a 2-node negative cycle, as in NetworkX and Boost.  v3 never relaxed back
+  over the edge that reached a node, which hid it while still letting longer
+  walks cross the edge twice.  Positive-weight and directed runs are
+  unchanged.
+
 ### Removed
 
 - Deno runtime support, probes, npm test scripts and CI jobs (round 99).

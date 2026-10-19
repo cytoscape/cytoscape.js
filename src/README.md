@@ -957,10 +957,10 @@ fixture graphs (weighted, directed, disconnected, multigraph,
 negative-weight; 30+ nodes) and compares with what NetworkX 3.7, SciPy
 and NumPy compute, recorded once in `test/fixtures/algorithm-references.json`
 by `scripts/algorithm-references.py`.  The references compute v4's
-definitions where those keep v3's: undirected betweenness is not halved, closeness is measured from the node, and
-`bellmanFord` never relaxes back over the edge that reached a node, so
-an undirected negative edge is not a negative cycle (its references are
-directed).  The comparison found three defects inherited from v3, fixed:
+definitions where those keep v3's: undirected betweenness is not halved,
+and closeness is measured from the node.  Two v3 definitions did not
+survive it (see the deviations below): PageRank's damping and
+`bellmanFord`'s undirected negative edges.  The comparison found three defects inherited from v3, fixed:
 `affinityPropagation` dropped the members of an exemplar at index 0 and
 shifted later assignments; `median()`, behind its `preference:
 'median'`, read one past the middle; and `hopcroftTarjanBiconnected`
@@ -7775,6 +7775,19 @@ fragment premium is **unmeasurable at scene level** on real hardware
   divides the textbook matrix by α instead (`buildPageRankSparse`), so
   neither kernel changed; 0 is rejected because of that division, and so
   is anything above 1.  A v3 run is reproduced by passing 1/(2 − d).
+- **`bellmanFord` reads a negative undirected edge as a negative cycle**
+  (2026-10-19).  An undirected edge is both arcs, so a → b → a over a
+  negative edge is a negative closed walk — NetworkX raises
+  `NetworkXUnbounded`, Boost reports the cycle.  v3 refused to relax
+  straight back over the edge that had reached a node, which hid that
+  2-node cycle but still let a longer walk cross the edge twice, so its
+  distances were neither shortest walks nor shortest simple paths (the
+  latter is NP-hard with negative edges).  v4 drops the guard and finds
+  cycles the standard way: relax the arc that still relaxes on pass n,
+  walk its head's predecessors n steps back, and read the cycle there.
+  A 2-node cycle over one edge is that node, edge, node — the collection
+  holds the edge once.  Positive-weight and directed results are
+  unchanged.
 
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over

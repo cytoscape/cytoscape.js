@@ -50,7 +50,7 @@ Object.assign(globalThis, {
 // aliasing, so a worker that `import()`s `src/index.mts` fails at the
 // entry's first import unless tsx registers inside the worker first.
 // The library names no loader (the runtime-clean invariant,
-// test/modules/import-graph.mjs); the suites install this one.
+// test/modules/import-graph.test.mjs); the suites install this one.
 import { _setForceWorkerLoader } from '../src/layout/force-remote.mjs';
 
 _setForceWorkerLoader(

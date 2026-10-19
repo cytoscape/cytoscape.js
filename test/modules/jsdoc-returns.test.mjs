@@ -4,8 +4,8 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-// Round 36.1.  The precedent is test/modules/throw-coverage.mjs and
-// test/modules/bench-coverage.mjs: a tool's own parser gets a fixture
+// Round 36.1.  The precedent is test/modules/throw-coverage.test.mjs and
+// test/modules/bench-coverage.test.mjs: a tool's own parser gets a fixture
 // rather than trust, because a parser that silently stops matching reads
 // as a clean bill of health.
 //

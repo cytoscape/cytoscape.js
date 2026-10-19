@@ -7,7 +7,7 @@ implementation) is built from.
 Why a module rather than a document: the trace tier replays traces and
 diffs end states, so it needs the gesture list, the end-state fields and
 the traces as data it can import; and a coverage claim written as prose
-rots silently.  `test/modules/gesture-inventory.mjs` holds this table to
+rots silently.  `test/modules/gesture-inventory.test.mjs` holds this table to
 the tree — every cited spec title exists verbatim in its file, every
 cited source file exists, every gesture event name `src/interact/` emits
 is named by some entry, and the coverage tallies are pinned — so a spec
@@ -18,7 +18,7 @@ the gesture through the real `PointerHandler` in a real browser — with
 trusted Playwright input (`input: 'real'`, `page.mouse` / `page.keyboard`)
 or with `PointerEvent`s dispatched in the page (`'synthetic'`; every touch
 spec, since `page.touchscreen` is never used).  `headless` cites Node
-specs, which come in two kinds: `'driven'` — test/pointer-cursors.mjs's
+specs, which come in two kinds: `'driven'` — test/pointer-cursors.test.mjs's
 stub-canvas harness, the only Node spec that runs the real handler, and
 it asserts cursors only — and `'api'`, which reproduces a gesture's
 consequence through the public API (`ele.emit('grab')`, `position()`,
@@ -236,7 +236,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/selection.mjs',
+        'test/selection.test.mjs',
         'emits select and unselect per state change only',
         'api',
       ],
@@ -375,7 +375,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/interaction-options.mjs',
+        'test/interaction-options.test.mjs',
         'tapholdDuration is a validated getter/setter with a ctor option',
         'api',
       ],
@@ -425,7 +425,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/active-pannable.mjs',
+        'test/active-pannable.test.mjs',
         "gives a press v3's overlay out of the box, and lets a sheet drop it",
         'api',
       ],
@@ -519,7 +519,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/pointer-cursors.mjs',
+        'test/pointer-cursors.test.mjs',
         'says grab over a draggable node and grabbing while it drags',
         'driven',
       ],
@@ -588,7 +588,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/grab-lock.mjs',
+        'test/grab-lock.test.mjs',
         'no position event on the stayer; one on the mover',
         'api',
       ],
@@ -626,7 +626,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/pointer-cursors.mjs',
+        'test/pointer-cursors.test.mjs',
         'says pointer, not grab, over a node the drag predicate refuses',
         'driven',
       ],
@@ -670,7 +670,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/pointer-cursors.mjs',
+        'test/pointer-cursors.test.mjs',
         'says grabbing for a background pan and crosshair for a box',
         'driven',
       ],
@@ -757,9 +757,13 @@ export const GESTURES = [
       ],
     ],
     headless: [
-      ['test/box-select.mjs', 'takes a node the band merely touches', 'api'],
       [
-        'test/pointer-cursors.mjs',
+        'test/box-select.test.mjs',
+        'takes a node the band merely touches',
+        'api',
+      ],
+      [
+        'test/pointer-cursors.test.mjs',
         'says grabbing for a background pan and crosshair for a box',
         'driven',
       ],
@@ -852,12 +856,12 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/interaction-options.mjs',
+        'test/interaction-options.test.mjs',
         'maps each mode and modifier to an action',
         'api',
       ],
       [
-        'test/interaction-options.mjs',
+        'test/interaction-options.test.mjs',
         'leaves the wheel to the page when the toggles refuse the action',
         'api',
       ],
@@ -886,7 +890,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/interaction-options.mjs',
+        'test/interaction-options.test.mjs',
         'maps each mode and modifier to an action',
         'api',
       ],
@@ -916,7 +920,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/interaction-options.mjs',
+        'test/interaction-options.test.mjs',
         'maps each mode and modifier to an action',
         'api',
       ],
@@ -945,7 +949,7 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/pointer-cursors.mjs',
+        'test/pointer-cursors.test.mjs',
         'restores through pointercancel, where a sticky grabbing would hide',
         'driven',
       ],
@@ -975,7 +979,11 @@ export const GESTURES = [
       ],
     ],
     headless: [
-      ['test/pointer-cursors.mjs', 'leaves a touch gesture alone', 'driven'],
+      [
+        'test/pointer-cursors.test.mjs',
+        'leaves a touch gesture alone',
+        'driven',
+      ],
     ],
     gaps: ['a one-finger hold (taphold)', 'the touch hit pads'],
     trace: 'touch-tap-drag',
@@ -1086,17 +1094,17 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/pointer-cursors.mjs',
+        'test/pointer-cursors.test.mjs',
         'answers every gesture x hover cell for a mouse',
         'driven',
       ],
       [
-        'test/pointer-cursors.mjs',
+        'test/pointer-cursors.test.mjs',
         'mirrors an active drag onto the document and puts it back',
         'driven',
       ],
       [
-        'test/pointer-cursors.mjs',
+        'test/pointer-cursors.test.mjs',
         'hands the cursor back on destroy',
         'driven',
       ],
@@ -1145,12 +1153,12 @@ export const GESTURES = [
     ],
     headless: [
       [
-        'test/force-layout-infinite.mjs',
+        'test/force-layout-infinite.test.mjs',
         'a drag reheats the field: the grabbed node holds where it is put and its neighbours follow',
         'api',
       ],
       [
-        'test/force-worker.mjs',
+        'test/force-worker.test.mjs',
         'an infinite run reheats through the worker: the grabbed node holds where it is put, its neighbours follow (118.3 on the worker)',
         'api',
       ],

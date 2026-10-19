@@ -119,7 +119,7 @@ describe('gpu/algorithms: structure', function () {
     it("keeps a parallel twin that is a node's only link", function () {
       // v3 skipped every edge back to the DFS parent, so the second of two
       // edges joining a leaf landed in no component (found by the
-      // every-edge-in-one-component check in test/algorithms-reference.mjs)
+      // every-edge-in-one-component check in test/algorithms-reference.test.mjs)
       var twins = cytoscape({
         elements: [
           { data: { id: 'a' } },

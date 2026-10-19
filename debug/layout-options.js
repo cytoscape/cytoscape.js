@@ -6,7 +6,7 @@
 // sitting can try an option without the console.
 //
 // The table below is the page's knowledge of the option surface, and
-// `test/modules/layout-options-panel.mjs` holds it to the declaration:
+// `test/modules/layout-options-panel.test.mjs` holds it to the declaration:
 // every member of a layout's option interface in src/public-types.mts
 // is either here, owned by one of the panel's existing controls
 // (`OWNED`), or excluded with a reason (`EXCLUDED`); nothing here is

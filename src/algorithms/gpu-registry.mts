@@ -13,7 +13,7 @@ and `cytoscape/headless-gpu` register `gpu-lanes.mts`'s `GPU_RUNTIME`;
 
 This module is GPU-free by construction — types, one class and a slot —
 because every algorithm imports it, and the tier walk
-(`test/modules/import-graph.mjs`) follows type imports too: nothing here
+(`test/modules/import-graph.test.mjs`) follows type imports too: nothing here
 may name `gpu/`, `render/` or an `algo-gpu-*` module.  The lane table's
 signatures are therefore spelled out rather than derived with
 `typeof import(…)`.

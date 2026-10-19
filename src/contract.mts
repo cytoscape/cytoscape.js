@@ -13,7 +13,7 @@ when the layout changes.
  * The two element groups (round 127.6): the discriminant every
  * per-group table, column, index and event path branches on, and the
  * `group` field of an element definition.  Spelled once here;
- * `test/modules/string-keys.mjs` rejects the literal elsewhere.
+ * `test/modules/string-keys.test.mjs` rejects the literal elsewhere.
  */
 export const GROUP_NODES = 'nodes';
 export const GROUP_EDGES = 'edges';
@@ -25,7 +25,7 @@ export type GroupName = typeof GROUP_NODES | typeof GROUP_EDGES;
  * that are first-class in the model rather than sidecar columns — the
  * id index, the hierarchy and the edge endpoints own them, and the
  * data paths test for them by these names.  Spelled once here;
- * `test/modules/string-keys.mjs` rejects a literal comparison elsewhere.
+ * `test/modules/string-keys.test.mjs` rejects a literal comparison elsewhere.
  */
 export const DATA_ID = 'id';
 export const DATA_PARENT = 'parent';
@@ -597,7 +597,7 @@ export const unpackArrowShape = (packed: number, shift: number): number => {
  * the mirror, the tween paths and the worker protocol all name a column
  * through this table; the string values are still what crosses the
  * wire and what `COLUMN_SPECS` is keyed by, and `ColumnId` is derived
- * from the table so the two cannot drift.  `test/modules/string-keys.mjs`
+ * from the table so the two cannot drift.  `test/modules/string-keys.test.mjs`
  * rejects a column-id literal anywhere else under `src/`.
  *
  * The comment on each member is the column's backing format and its
@@ -967,7 +967,7 @@ export const columnSpecsForGroup = (group: GroupName): ColumnSpec[] => {
  * behind `GraphStore.replicateEdgeStyle`, which is why the split lives
  * here beside `COLUMN_SPECS` rather than in the style engine: adding a
  * column is what forces the classification, and
- * `test/bulk-style-apply.mjs` fails until a new edge column appears in
+ * `test/bulk-style-apply.test.mjs` fails until a new edge column appears in
  * one list or the other.
  */
 export const EDGE_PER_ELEMENT_COLUMNS: readonly ColumnId[] = [

@@ -52,7 +52,7 @@ export const DIVERGENCES = [
   // end-to-end on a real unbundled-bezier endpoint rather than at the
   // leaf.
   //
-  // `test/curve-geometry.mjs`'s twin measures the same tier directly
+  // `test/curve-geometry.test.mjs`'s twin measures the same tier directly
   // against v3's `polygonIntersectLine` and reports 8.453 model px worst
   // case for a 40x24 triangle; this scene reads 8.462 at the end of an
   // edge.  Two independent tiers agreeing to a hundredth of a pixel is

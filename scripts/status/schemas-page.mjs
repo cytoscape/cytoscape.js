@@ -2,7 +2,7 @@
 //
 // The one place a human sees each schema beside the fixture documents it was
 // run against: the page renders every document under `schemas/` (and copies
-// it for download), with the validation run `test/modules/schemas.mjs`
+// it for download), with the validation run `test/modules/schemas.test.mjs`
 // asserts — the same `validationRun()` from `scripts/schemas.mjs`, so a
 // failure the page shows is a failure the gate shows.
 import { Buffer } from 'node:buffer';
@@ -126,7 +126,7 @@ export function planSchemas({ root }) {
   <p class="lede">The official JSON Schema (draft 2020-12) documents for the formats v4 takes as
   JSON — element definitions, the stylesheet, layout options and the options envelope — shipped in the
   package under <code>cytoscape/schemas/</code>. They are hand-written and gated against the running
-  library in both directions by <code>test/modules/schemas.mjs</code>; the table is that gate's
+  library in both directions by <code>test/modules/schemas.test.mjs</code>; the table is that gate's
   fixture run: every debug network's elements and sheets, and every layout run the harness makes.</p>
   <p>A document that validates is well-formed, not guaranteed to load: colour strings, data keys and
   mapper domains are judged by the library when the sheet compiles. The <code>$id</code> base

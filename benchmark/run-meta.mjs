@@ -8,7 +8,7 @@
 //
 // `meta.cpu`, `meta.arch` and `meta.runtime` keep their existing meaning and
 // spelling: they are mitata's (or render-bench's) own strings, and
-// `test/modules/benchmark-report.mjs` pins them.  `meta.machine` is the
+// `test/modules/benchmark-report.test.mjs` pins them.  `meta.machine` is the
 // structured superset beside them, not a replacement — every results file
 // written before this round still renders, which matters because the status
 // site re-renders every published run it finds.

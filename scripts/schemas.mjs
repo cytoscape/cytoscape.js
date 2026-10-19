@@ -1,7 +1,7 @@
 // Round 79: the official JSON schemas' harness — where they live, how they
 // load, and the fixture documents every one of them must accept.
 //
-// Shared by the gate (`test/modules/schemas.mjs`) and the status site's
+// Shared by the gate (`test/modules/schemas.test.mjs`) and the status site's
 // schemas page, so the page shows exactly the validation run the gate
 // asserts.  Nothing here ships: the schemas themselves are plain JSON under
 // `schemas/`, and the validator (ajv) is a devDependency the package never

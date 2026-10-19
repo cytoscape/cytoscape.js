@@ -701,7 +701,7 @@ export function runOnce(
   }
 
   if (executor === 'gpu') {
-    // the prefix is the contract (test/force-worker.mjs); the rest says
+    // the prefix is the contract (test/force-worker.test.mjs); the rest says
     // what this build could have hosted the run on (131.4)
     const caps = cy._caps;
 

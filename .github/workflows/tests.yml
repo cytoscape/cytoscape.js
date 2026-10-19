@@ -74,7 +74,7 @@ jobs:
   # Round 131: the headless build on Cloudflare's own runtime, `workerd`
   # (a devDependency, so `npm ci` fetches its platform binary).  Opt-in
   # the way `ci-bun` is: its own job, gating like it.  The
-  # Node tier's isolate smoke (`test/modules/isolate-smoke.mjs`) is the
+  # Node tier's isolate smoke (`test/modules/isolate-smoke.test.mjs`) is the
   # per-run gate that needs nothing installed; if workerd proves flaky on
   # runners, this drops to a release-time run and the record says so.
   ci-workerd:

@@ -4441,7 +4441,7 @@ test.describe('WebGPU renderer', () => {
     // the ratio but headless emulation never dispatches the matchMedia
     // change event (measured: `matches` flips, no event, 1 s), so the
     // listener link is pinned in part B instead, and headless-free in
-    // test/modules/renderer-resize.mjs.
+    // test/modules/renderer-resize.test.mjs.
     await makeReadyCy(page, RED_NODE_GRAPH); // pixelRatio unset ⇒ 'auto'
 
     const cdp = await page.context().newCDPSession(page);
@@ -10222,7 +10222,7 @@ test.describe('WebGPU renderer', () => {
   /*
   Round 89.3: the gestures drive the cursors, in a real browser.
 
-  The pure map is asserted exhaustively from Node (`test/pointer-cursors.mjs`);
+  The pure map is asserted exhaustively from Node (`test/pointer-cursors.test.mjs`);
   what only a browser can see is that the *writer* runs at every transition
   and, more to the point, restores at every gesture end.  Every assertion
   polls `canvas.style.cursor` — the hover pick is asynchronous and throttled

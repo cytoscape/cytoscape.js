@@ -15,7 +15,7 @@ Round 104: the two props label decluttering reads, headless.
   worker renderer receives it with every batch.
 
 The pass itself is renderer-local and is covered by
-test/modules/label-declutter.mjs (headless) and renderer.spec.js (the
+test/modules/label-declutter.test.mjs (headless) and renderer.spec.js (the
 pixels).
 */
 

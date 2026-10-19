@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
 
-// ported from the in-scope assertions of test/collection-traversing.mjs
+// ported from the in-scope assertions of test/collection-traversing.test.mjs
 describe('gpu/collection: traversing', function () {
   var cy;
 

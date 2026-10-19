@@ -18,7 +18,7 @@ tick; the CMPD excursion bound stays fresh through the parent's own
 materialization (the containment argument — see PLAN.md round 25).
 
 Ticks drive deterministically via cy._animations.tick(now), as in
-test/animation.mjs.
+test/animation.test.mjs.
 */
 
 describe('gpu/animation: geometry tweens (round 25)', function () {

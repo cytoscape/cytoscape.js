@@ -31,7 +31,7 @@
 //     case mappers through `withSelected`, and scale-mapped colours (a
 //     `then` cannot nest a mapper) through another channel — a border or an
 //     underlay, which is how real v3 apps solve the same problem.  A spec
-//     in `test/modules/debug-harness.mjs` selects an element under every
+//     in `test/modules/debug-harness.test.mjs` selects an element under every
 //     sheet and fails if nothing visible changes.
 
 var styles = (function () {
@@ -958,7 +958,7 @@ var styles = (function () {
   // below carries v3's four arrays verbatim (`v3/debug/init.js`).  The
   // constants in the edges block remain as the family defaults for any
   // other edge switched into those families.  Nothing is lost any more;
-  // `test/modules/debug-harness.mjs` pins the four edges' route points to
+  // `test/modules/debug-harness.test.mjs` pins the four edges' route points to
   // v3's values.
   function v3Default(elements, def) {
     var byId = function (map, fallback) {
@@ -1245,7 +1245,7 @@ var styles = (function () {
         // NOT `byData` here: its keys come from `Object.keys`, which turns a
         // boolean into the *string* 'true', so the clause would compare
         // `eq: 'true'` against a boolean `true` and never match.  The spec in
-        // `test/modules/debug-harness.mjs` caught exactly that on its first
+        // `test/modules/debug-harness.test.mjs` caught exactly that on its first
         // run — every edge read back `filled` while the fixture alternated.
         'target-arrow-fill': {
           case: [{ when: { data: 'hollow', eq: true }, then: 'hollow' }],

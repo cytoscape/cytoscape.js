@@ -4,7 +4,7 @@ the store, style, collections, the CPU algorithms, every layout,
 animation, the wire, the worker pool and the force sim worker.  No
 renderer, no pointer handler, no WebGPU code at all: the build for CI and
 for edge isolates (a Cloudflare Worker has no GPU, no `Worker`, and a
-script-size ceiling — `test/modules/bundle-size.mjs` gates this build's
+script-size ceiling — `test/modules/bundle-size.test.mjs` gates this build's
 minified artifact).
 
 What it does not carry is loud, never a silent fallback: a `container`
@@ -12,7 +12,7 @@ What it does not carry is loud, never a silent fallback: a `container`
 'cytoscape'`; an explicit `executor: 'gpu'`, on an algorithm or a force
 layout, rejects `this build has no GPU executors — import
 'cytoscape/headless-gpu' or 'cytoscape'`; `'auto'` simply finds no GPU
-lane.  `test/modules/import-graph.mjs` walks this file's imports and
+lane.  `test/modules/import-graph.test.mjs` walks this file's imports and
 fails if anything under `render/`, `interact/`, `gpu/`, an `algo-gpu-*`
 kernel or `gpu-lanes.mts` is reachable.
 */

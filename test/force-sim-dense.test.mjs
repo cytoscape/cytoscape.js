@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { boxes, mkSim, probe } from './lib/force-sim-fixtures.mjs';
 
-// Split from test/force-sim.mjs: this one case is a 3,000-node run of
+// Split from test/force-sim.test.mjs: this one case is a 3,000-node run of
 // ~650 ticks, 6 s alone and 30 s under the coverage that test:throws
 // collects, so in its own file it runs beside the rest rather than after
 // them.  The describe names match the original, so the test keeps its

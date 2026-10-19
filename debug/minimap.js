@@ -15,7 +15,7 @@
 //
 // The pure parts — the sheet, the clone's options and the extent
 // rectangle — are exported for the module suite, which runs them
-// headless against the real library (test/modules/minimap.mjs).
+// headless against the real library (test/modules/minimap.test.mjs).
 
 const minimap = (function () {
   /** The minimap's own sheet: a per-view style no shared store could have. */

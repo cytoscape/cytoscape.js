@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import cytoscape from '../src/index.mjs';
 
-// Split from test/force-layout.mjs so the two run in parallel: this
+// Split from test/force-layout.test.mjs so the two run in parallel: this
 // suite waits on a live run in real time, and as one file the pair was
 // the longest spec in test:js.
 

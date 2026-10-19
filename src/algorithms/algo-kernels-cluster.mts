@@ -27,7 +27,7 @@ centroid step keeps k-means moving; a NaN membership step reads as
 converged) — with one respelling: a square is `diff * diff` where the
 closure path says `Math.pow(diff, 2)`.  fdlibm's `pow`, which V8's
 `Math.pow` is, answers `x * x` for an exponent of exactly 2, so the two
-round identically; `test/algorithms-offload-clustering.mjs` pins it by
+round identically; `test/algorithms-offload-clustering.test.mjs` pins it by
 running the closure path (a custom function that *is* the named metric)
 against the kernel with `===` on every output.
 */

@@ -66,7 +66,7 @@ const DICT_COMPACT_FLOOR = 8;
  * has looked at them.  A single corrupt byte makes one an arbitrary u32,
  * and the unguarded `refs[ at - 1 ]++` below then inflates a plain array to
  * that length, after which the `reduce` that counts dead entries walks it.
- * Found by fuzzing (`test/soak/wire-fuzz.mjs`): one flipped byte took
+ * Found by fuzzing (`test/soak/wire-fuzz.test.mjs`): one flipped byte took
  * `cytoscape( { elements: buffer } )` from 0.6 ms to never returning, with
  * no error raised anywhere.
  *

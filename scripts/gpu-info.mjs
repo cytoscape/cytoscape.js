@@ -10,7 +10,7 @@
 // verdict an agent can act on without interpreting driver names.
 //
 // Structure follows `machine-info.mjs`: the classifier and report renderer
-// are pure and exported (spec'd in `test/modules/gpu-info.mjs`); the probes
+// are pure and exported (spec'd in `test/modules/gpu-info.test.mjs`); the probes
 // live behind the CLI, are time-boxed, and a failure is a reported fact, not
 // a crash.  Exit 0 means the question was answered (either verdict); exit 1
 // means the probe itself could not run, which is an environment problem to
@@ -109,7 +109,7 @@ export function renderGpuReport({ machine, adapter, probeError, ci }) {
 // The probe launches Chromium exactly as the Playwright harness does on this
 // platform (same WebGPU/Vulkan flags), asks for the default adapter, and
 // reports its identity.  That duplication of the flag list is deliberate and
-// pinned: `test/modules/gpu-info.mjs` asserts these flags stay a subset of
+// pinned: `test/modules/gpu-info.test.mjs` asserts these flags stay a subset of
 // what `playwright.config.js` passes, so the probe cannot drift into
 // answering for a browser nobody runs.
 export const PROBE_ARGS = [

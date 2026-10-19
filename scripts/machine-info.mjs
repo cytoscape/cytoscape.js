@@ -11,7 +11,7 @@
 //   1. **Parsers are pure and exported; probes are separate.**  Every `parseX`
 //      takes the text a command or a sysfs file produced and returns data.
 //      That is the only way to test the macOS and Windows paths from Linux,
-//      and the fixtures in `test/modules/machine-info.mjs` are verbatim
+//      and the fixtures in `test/modules/machine-info.test.mjs` are verbatim
 //      captures rather than hand-shaped approximations.
 //   2. **Nothing here throws, and nothing here blocks.**  Every probe is
 //      wrapped, every spawn is time-boxed, and a failure yields `null` for

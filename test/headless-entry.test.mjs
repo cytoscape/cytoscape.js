@@ -1,21 +1,26 @@
 import { expect } from 'chai';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import cytoscape from '../src/headless.mjs';
-import { gpuRuntime } from '../src/algorithms/gpu-registry.mjs';
 
-// Round 131: the `cytoscape/headless` entry, from source.  This file
-// imports that entry and nothing that registers a GPU runtime, so the
-// process sees exactly the build's registry (node:test runs each spec
-// file in its own process).  The built bundle gets the same checks from
-// the runtime smoke and the isolate smoke.
+// Round 131: the `cytoscape/headless` entry, from source.  The registry
+// checks run in a child process (test/lib/headless-registry-probe.mjs)
+// that imports this entry and nothing else: a runner that shares one
+// process between spec files — plain `bun test` does — has the full
+// build's GPU runtime registered by then.  The built bundle gets the same
+// checks from the runtime smoke and the isolate smoke.
+const PROBE = fileURLToPath(
+  new URL('./lib/headless-registry-probe.mjs', import.meta.url),
+);
+const probe = () =>
+  JSON.parse(
+    execFileSync(
+      process.execPath,
+      process.versions.bun == null ? ['--import', 'tsx', PROBE] : [PROBE],
+      { encoding: 'utf8' },
+    ),
+  );
 describe('cytoscape/headless (round 131)', function () {
-  var rejection = (promise) =>
-    promise.then(
-      () => {
-        throw new Error('expected the promise to reject');
-      },
-      (err) => err,
-    );
-
   var NO_RENDERER = "this build has no renderer — import 'cytoscape'";
   var NO_GPU =
     "this build has no GPU executors — import 'cytoscape/headless-gpu' or " +
@@ -51,13 +56,13 @@ describe('cytoscape/headless (round 131)', function () {
   });
 
   it('registers no GPU runtime', function () {
-    expect(gpuRuntime()).to.equal(null);
+    expect(probe().gpuRuntime).to.equal(null);
   });
 
   it("a container throws the build's message before any work", function () {
     // before any work: a payload that would itself throw during ingest
     // must not win over the container error (the full build's rule,
-    // test/core-api.mjs)
+    // test/core-api.test.mjs)
     var badEdge = [{ group: 'edges', data: { id: 'e' } }];
 
     expect(() => cytoscape({ container: {}, elements: badEdge })).to.throw(
@@ -78,17 +83,11 @@ describe('cytoscape/headless (round 131)', function () {
     expect(cy.container()).to.equal(null);
   });
 
-  it("an explicit 'gpu' algorithm rejects with the build's message; 'auto' runs", async function () {
-    var cy = cytoscape({
-      elements: [{ data: { id: 'a' } }, { data: { id: 'b' } }],
-    });
-    var err = await rejection(cy.elements().pageRank({ executor: 'gpu' }));
+  it("an explicit 'gpu' algorithm rejects with the build's message; 'auto' runs", function () {
+    var result = probe();
 
-    expect(err.message).to.equal(NO_GPU);
-
-    var ranks = await cy.elements().pageRank({ executor: 'auto' });
-
-    expect(ranks.rank(cy.$id('a'))).to.be.closeTo(0.5, 1e-9);
+    expect(result.gpuMessage).to.equal(NO_GPU);
+    expect(result.autoRank).to.be.closeTo(0.5, 1e-9);
   });
 
   it("an explicit force 'gpu' names the build", function () {

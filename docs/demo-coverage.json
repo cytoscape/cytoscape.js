@@ -583,8 +583,8 @@
       "label": "algorithms-search-paths",
       "family": "algorithms-search-paths",
       "widget": "algorithm explorer",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -593,8 +593,8 @@
       "label": "algorithms-topology",
       "family": "algorithms-topology",
       "widget": "algorithm explorer",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -603,8 +603,8 @@
       "label": "algorithms-centrality",
       "family": "algorithms-centrality",
       "widget": "algorithm explorer",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -613,8 +613,8 @@
       "label": "algorithms-clustering",
       "family": "algorithms-clustering",
       "widget": "algorithm explorer",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -623,8 +623,8 @@
       "label": "algorithms-similarity-diffusion-motifs",
       "family": "algorithms-similarity-diffusion-motifs",
       "widget": "algorithm explorer",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -633,8 +633,8 @@
       "label": "async-executor-comparison-cancellation",
       "family": "async-executor-comparison-cancellation",
       "widget": "CPU comparison and repeatable async cancellation",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -643,8 +643,8 @@
       "label": "query-selection-topology-inspection",
       "family": "query-selection-topology-inspection",
       "widget": "structured query and element inspector",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -653,8 +653,8 @@
       "label": "animation-transitions",
       "family": "animation-transitions",
       "widget": "play/pause/resume/reverse/stop/progress and sequence",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -663,8 +663,8 @@
       "label": "patch-data-reparent-batch",
       "family": "patch-data-reparent-batch",
       "widget": "deterministic patch, reparent, batch, reset",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -673,8 +673,8 @@
       "label": "serialize-load-cancel",
       "family": "serialize-load-cancel",
       "widget": "serialize/load comparison and cancellable progressive load",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -683,8 +683,8 @@
       "label": "clone-follow-dirty-stream",
       "family": "clone-follow-dirty-stream",
       "widget": "headless following clone and applied state readout",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -693,8 +693,8 @@
       "label": "gesture-picking-events",
       "family": "gesture-picking-events",
       "widget": "live gesture log, CPU nodeAt and async GPU pick",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -703,8 +703,8 @@
       "label": "image-export",
       "family": "image-export",
       "widget": "PNG/JPEG preview and download",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -713,8 +713,8 @@
       "label": "renderer-host-lifecycle",
       "family": "renderer-host-lifecycle",
       "widget": "renderer host selector, readiness, stats, mount lifecycle",
-      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
-      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs",
+      "behaviorSpec": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
+      "evidence": "feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs",
       "source": "workflow coverage"
     },
     {
@@ -723,8 +723,8 @@
       "label": "headless-runtimes",
       "family": "headless-runtimes",
       "widget": "headless entry and runtime contracts",
-      "behaviorSpec": "test/headless-entry.mjs; test/runtimes/smoke.mjs; test/runtimes/smoke-checks.mjs (automated entry and runtime contracts; no renderer UI)",
-      "evidence": "test/headless-entry.mjs; test/runtimes/smoke.mjs; test/runtimes/smoke-checks.mjs (automated entry and runtime contracts; no renderer UI)",
+      "behaviorSpec": "test/headless-entry.test.mjs; test/runtimes/smoke.mjs; test/runtimes/smoke-checks.mjs (automated entry and runtime contracts; no renderer UI)",
+      "evidence": "test/headless-entry.test.mjs; test/runtimes/smoke.mjs; test/runtimes/smoke-checks.mjs (automated entry and runtime contracts; no renderer UI)",
       "source": "workflow coverage",
       "manualRouteReason": "automated behavior or contract has no interactive renderer route"
     },
@@ -745,8 +745,8 @@
       "label": "style-schemas",
       "family": "style-schemas",
       "widget": "schema validation",
-      "behaviorSpec": "test/modules/schemas.mjs (automated schema/source parity; this API-contract family has no interactive widget)",
-      "evidence": "test/modules/schemas.mjs (automated schema/source parity; this API-contract family has no interactive widget)",
+      "behaviorSpec": "test/modules/schemas.test.mjs (automated schema/source parity; this API-contract family has no interactive widget)",
+      "evidence": "test/modules/schemas.test.mjs (automated schema/source parity; this API-contract family has no interactive widget)",
       "source": "workflow coverage",
       "manualRouteReason": "automated behavior or contract has no interactive renderer route"
     },
@@ -756,8 +756,8 @@
       "label": "distribution-packaging",
       "family": "distribution-packaging",
       "widget": "package and bundle validation",
-      "behaviorSpec": "test/modules/packaging.mjs; test/modules/bundle-size.mjs (automated npm package contents and bundle-size contracts)",
-      "evidence": "test/modules/packaging.mjs; test/modules/bundle-size.mjs (automated npm package contents and bundle-size contracts)",
+      "behaviorSpec": "test/modules/packaging.test.mjs; test/modules/bundle-size.test.mjs (automated npm package contents and bundle-size contracts)",
+      "evidence": "test/modules/packaging.test.mjs; test/modules/bundle-size.test.mjs (automated npm package contents and bundle-size contracts)",
       "source": "workflow coverage",
       "manualRouteReason": "automated behavior or contract has no interactive renderer route"
     },
@@ -800,8 +800,8 @@
       "label": "layout-callback-recipes",
       "family": "layout-callback-recipes",
       "widget": "built-in layout transform / ready / stop callback recipe",
-      "behaviorSpec": "debug/index.html?network=workflows&scene=layouts&layout=preset; test/modules/feature-workflows.mjs; playwright-tests/feature-workflows-renderer.spec.js; debug/layout-options.js; test/modules/layout-options-panel.mjs (layout transform, ready, and stop callbacks run through cy.layout; the JSON options panel explicitly excludes function values)",
-      "evidence": "debug/index.html?network=workflows&scene=layouts&layout=preset; test/modules/feature-workflows.mjs; playwright-tests/feature-workflows-renderer.spec.js; debug/layout-options.js; test/modules/layout-options-panel.mjs (layout transform, ready, and stop callbacks run through cy.layout; the JSON options panel explicitly excludes function values)",
+      "behaviorSpec": "debug/index.html?network=workflows&scene=layouts&layout=preset; test/modules/feature-workflows.test.mjs; playwright-tests/feature-workflows-renderer.spec.js; debug/layout-options.js; test/modules/layout-options-panel.test.mjs (layout transform, ready, and stop callbacks run through cy.layout; the JSON options panel explicitly excludes function values)",
+      "evidence": "debug/index.html?network=workflows&scene=layouts&layout=preset; test/modules/feature-workflows.test.mjs; playwright-tests/feature-workflows-renderer.spec.js; debug/layout-options.js; test/modules/layout-options-panel.test.mjs (layout transform, ready, and stop callbacks run through cy.layout; the JSON options panel explicitly excludes function values)",
       "source": "workflow coverage"
     },
     {
@@ -810,8 +810,8 @@
       "label": "model-dirty-consumers",
       "family": "model-dirty-consumers",
       "widget": "following clone consumes the changed model patch",
-      "behaviorSpec": "debug/index.html?network=workflows&scene=mutation&layout=preset; playwright-tests/feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs; test/clone.mjs (source data mutation causes a clone patch event and applied state comparison)",
-      "evidence": "debug/index.html?network=workflows&scene=mutation&layout=preset; playwright-tests/feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs; test/clone.mjs (source data mutation causes a clone patch event and applied state comparison)",
+      "behaviorSpec": "debug/index.html?network=workflows&scene=mutation&layout=preset; playwright-tests/feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs; test/clone.test.mjs (source data mutation causes a clone patch event and applied state comparison)",
+      "evidence": "debug/index.html?network=workflows&scene=mutation&layout=preset; playwright-tests/feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs; test/clone.test.mjs (source data mutation causes a clone patch event and applied state comparison)",
       "source": "workflow coverage"
     }
   ],
@@ -1007,7 +1007,7 @@
       "feature-emphasis-declutter-labelDeclutter-none nodes/text-max-width": "Every label in the emphasis fixture fits within the 86 px limit or has an explicit newline; the limit does not change its wrapping (debug/feature-scenes-compounds.js).",
       "feature-emphasis-declutter nodes/label-priority": "The overlapping pair keeps its settled high-priority incumbent when reset makes the ranks tie; label-declutter’s incumbent hysteresis prevents a pixel change (src/render/label-declutter.mts:658-676).",
       "feature-emphasis-declutter nodes/text-max-width": "Every emphasis caption fits within 86 px or uses an explicit newline, so removing the maximum does not change the rendered line breaks (debug/feature-scenes-compounds.js).",
-      "feature-images-layers nodes/background-image-crossorigin": "The compared images are data URLs, so changing request credentials does not change decoded pixels; request-option behavior is covered by test/image-registry.mjs.",
+      "feature-images-layers nodes/background-image-crossorigin": "The compared images are data URLs, so changing request credentials does not change decoded pixels; request-option behavior is covered by test/image-registry.test.mjs.",
       "feature-labels-font-keywords-fontStyle-italic nodes/font-weight": "This URL state selects Open Sans italic at weight 400; resetting weight to normal keeps the same weight-400 italic face among the four pinned font assets (debug/style.css:1-4).",
       "feature-labels-font-keywords-fontStyle-oblique nodes/font-weight": "This URL state selects Open Sans oblique at weight 400; resetting weight to normal keeps the same weight-400 oblique face among the four pinned font assets (debug/style.css:1-4).",
       "feature-labels-font-keywords-fontWeight-100 nodes/font-weight": "The pinned Open Sans assets provide weight 400 and 700; CSS font matching selects the same 400 face for requested weight 100 and reset value normal (debug/style.css:1-4).",
@@ -1016,10 +1016,10 @@
       "feature-labels-font-keywords-fontWeight-500 nodes/font-weight": "The pinned Open Sans assets provide weight 400 and 700; CSS font matching selects the same 400 face for requested weight 500 and reset value normal (debug/style.css:1-4).",
       "feature-labels-font-keywords-fontWeight-lighter nodes/font-weight": "The pinned Open Sans assets provide weight 400 and 700; relative lighter from the 400 base selects the same 400 face as reset value normal (debug/style.css:1-4).",
       "feature-labels-font-keywords nodes/font-weight": "The fixture authors weight 400, which selects the same pinned Open Sans regular face as the default keyword normal (debug/style.css:1-4).",
-      "feature-labels-nodes nodes/events": "Pointer transparency changes pick answers, not pixels; the render pass still draws the labels (src/render/cull.mts:251-253,342; test/events-prop.mjs:33-38).",
+      "feature-labels-nodes nodes/events": "Pointer transparency changes pick answers, not pixels; the render pass still draws the labels (src/render/cull.mts:251-253,342; test/events-prop.test.mjs:33-38).",
       "feature-labels-nodes nodes/label-priority": "The six label samples occupy separate cells and their label rectangles do not overlap, so changing priority cannot alter culling order (debug/feature-scenes-labels.js).",
-      "feature-labels-nodes nodes/min-zoomed-font-size": "The fitted screenshot stays above the authored 12 px floor, so resetting to 0 does not hide this label at the static capture zoom; zoom-out behavior is covered by playwright-tests/renderer.spec.js:9240 and test/min-zoomed-font-size.mjs (threshold: src/render/label-layer.mts:355-360).",
-      "feature-labels-nodes nodes/text-events": "Label-box hit testing changes CPU pick routing, not pixels; the labels are still drawn (src/cpu-pick.mts:167-176; test/text-events.mjs:58-82).",
+      "feature-labels-nodes nodes/min-zoomed-font-size": "The fitted screenshot stays above the authored 12 px floor, so resetting to 0 does not hide this label at the static capture zoom; zoom-out behavior is covered by playwright-tests/renderer.spec.js:9240 and test/min-zoomed-font-size.test.mjs (threshold: src/render/label-layer.mts:355-360).",
+      "feature-labels-nodes nodes/text-events": "Label-box hit testing changes CPU pick routing, not pixels; the labels are still drawn (src/cpu-pick.mts:167-176; test/text-events.test.mjs:58-82).",
       "feature-paint-layers nodes/text-max-width": "The layer captions use explicit line breaks and each line fits inside the authored 138 px maximum (debug/feature-scenes-paint.js).",
       "feature-shapes-underlays nodes/text-max-width": "Each underlay sample has a short two-line shape caption that fits within the authored 125 px maximum (debug/feature-scenes-paint.js).",
       "label-border-styles edges/mid-source-arrow-width": "Mid heads are always filled and width only strokes hollow heads; v4 never renders a hollow mid head (src/README.md:8241-8250; PLAN.md item 21).",
@@ -11476,7 +11476,7 @@
               "target": "image-2",
               "value": "use-credentials",
               "alternate": "anonymous",
-              "exception": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs."
+              "exception": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.test.mjs."
             }
           ]
         }
@@ -11508,7 +11508,7 @@
               "target": "image-1",
               "value": "null",
               "alternate": "anonymous",
-              "exception": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs."
+              "exception": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.test.mjs."
             }
           ]
         }
@@ -15169,7 +15169,7 @@
         "sourceRefs": [
           "src/style/apply-prop.mts:832-840"
         ],
-        "rejectionTest": "test/modules/feature-scenes.mjs rejects node autorotate and accepts edge autorotate",
+        "rejectionTest": "test/modules/feature-scenes.test.mjs rejects node autorotate and accepts edge autorotate",
         "validRoutes": [
           "debug/index.html?network=features&scene=labels&view=nodes",
           "debug/index.html?network=features&scene=labels&view=edges"

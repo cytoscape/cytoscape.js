@@ -7,7 +7,7 @@ graph the harness draws as its `plan-deps` scene.
   npm run plan:index            write both
   npm run plan:index -- --check exit nonzero if either is out of date
 
-`test/modules/plan-record.mjs` runs the same comparison, so an index or a
+`test/modules/plan-record.test.mjs` runs the same comparison, so an index or a
 graph that drifts from the files fails the build rather than misleading a
 reader.
 */

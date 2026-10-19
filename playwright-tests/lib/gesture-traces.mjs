@@ -11,7 +11,7 @@ Playwright replayer (`trace-replay.mjs`) and the spec (`gestures.spec.js`)
 need to compare runs: the hosts a trace runs on, the event vocabulary it
 records and how that log is normalized, the numeric comparator, and the
 recorded v3 divergences.  None of it touches a browser, so the Node tier
-(`test/modules/gesture-traces.mjs`) holds the scripts, the records and
+(`test/modules/gesture-traces.test.mjs`) holds the scripts, the records and
 the comparator to each other without one.
 
 **How a run is compared.**  A trace is cut into phases by its `mark`

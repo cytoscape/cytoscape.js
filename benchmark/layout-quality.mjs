@@ -44,7 +44,7 @@ being killed.  A hung engine is a *recorded* `timeout` row, not a
 stalled sweep.
 
 The reference engines are devDependencies; `src/` never imports them
-(`test/modules/import-graph.mjs` guards that boundary).
+(`test/modules/import-graph.test.mjs` guards that boundary).
 */
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'node:fs';

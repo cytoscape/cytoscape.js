@@ -1,0 +1,5 @@
+[test]
+# `bun test` runs every spec under test/ (*.test.mjs) with the shared
+# describe/it shim; scripts/runtime-test-tier.mjs is the Node-parity gate
+root = "test"
+preload = ["./test/lib/bun-test-setup.mjs"]

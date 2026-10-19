@@ -1,7 +1,7 @@
 import { audit, mentions } from '../../scripts/bench-coverage.mjs';
 import { expect } from 'chai';
 
-// Round 33.12.  The precedent is test/modules/throw-coverage.mjs: a
+// Round 33.12.  The precedent is test/modules/throw-coverage.test.mjs: a
 // tool's own matcher gets specs, because a matcher that silently stops
 // matching reads as a clean bill of health.  What is pinned here is
 // mostly the audit's *limits* — it over- and under-detects by design,

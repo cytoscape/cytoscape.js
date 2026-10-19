@@ -138,7 +138,7 @@ export class StyleEngine {
    * How many edge runs have taken the round-67.2 bulk route.
    *
    * Internal, and not a statistic anyone needs at runtime — it exists so
-   * `test/bulk-style-apply.mjs` can assert that the route *ran*.  Without
+   * `test/bulk-style-apply.test.mjs` can assert that the route *ran*.  Without
    * it a comparison against the per-element route passes just as well
    * when the gate declined, which is exactly what the first version of
    * that spec did: its fixture mapped `curve-style` and `label`, neither

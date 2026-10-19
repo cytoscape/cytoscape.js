@@ -146,7 +146,7 @@ describe('gpu/style-getters', function () {
 
     // rounds 6/29.3 pinned the setter forms as throws; round 63 brought
     // the bypass back (the `bypasses` sheet section + the v3 sugar), so
-    // the setter works now — behaviour owned by test/style-bypass.mjs
+    // the setter works now — behaviour owned by test/style-bypass.test.mjs
     it('the setter forms set bypasses since round 63', function () {
       cy.$id('a').style('width', 99);
       expect(cy.$id('a').style('width')).to.equal(99);

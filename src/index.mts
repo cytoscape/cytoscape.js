@@ -168,7 +168,7 @@ cytoscape.GpuUnfitError = GpuUnfitError;
 ).__forceWorkerStats__ = _forceWorkerStats;
 
 // the algorithm worker's source text (round 74.2), attached the same
-// way: `test/modules/algo-worker-body.mjs` pulls it out of each built
+// way: `test/modules/algo-worker-body.test.mjs` pulls it out of each built
 // bundle and evaluates it in a bare scope, which is the one place the
 // "self-contained body" claim can actually break
 (

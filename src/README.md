@@ -475,7 +475,7 @@ taxi went **exact** — because the round's new randomized soundness
 sweep caught, on its first run, a forced-direction taxi overshooting
 any node-half margin by its turn.  Fit zoom on the compound fixture:
 0.607 → 0.822.  The sweep is a standing gate now
-(`test/modules/bounds-sweep.mjs`); the compound-loop section below
+(`test/modules/bounds-sweep.test.mjs`); the compound-loop section below
 carries the formulation.  **Round 92 (2026-08-28, raised by the
 maintainer) finished the move from conservative to exact**: the
 compound-loop and weight-extrapolated terms 54 had kept conservative
@@ -635,7 +635,7 @@ shader over every allocated slot.
   build v3.
 
   Round 149's generated ledger is `docs/demo-coverage.json`, produced by
-  `scripts/demo-coverage.mjs` and checked by `test/modules/demo-coverage.mjs`.
+  `scripts/demo-coverage.mjs` and checked by `test/modules/demo-coverage.test.mjs`.
   It lists 31 visual views, 55 canonical feature states, 83 source records and
   68 runnable URLs. It accounts for all 220 style properties and 325 of 326
   recursive schema property/value combinations. The one schema-permitted
@@ -721,7 +721,7 @@ shader over every allocated slot.
   problem read as "the binary networks are broken".  A fatal message is
   sticky, too; the stats overlay had been erasing it twice a second.
 
-  `test/modules/debug-harness.mjs` and the Round 149 scene/workflow suites
+  `test/modules/debug-harness.test.mjs` and the Round 149 scene/workflow suites
   provide harness coverage: every fixture exists at the path the page fetches,
   every sheet compiles against that fixture's real data, the compound
   fixture lays out into disjoint parent boxes, the event log reads
@@ -830,7 +830,7 @@ v3's method **aliases** are kept throughout (`each`/`forEach`,
 …): 84 of them across the core and collection (83 through round 29;
 `gc` joined in 39.3), each a `declare` in the
 class body plus a separate prototype assignment.  Since round 29.1 the
-whole surface is pinned by a table in `test/aliases.mjs` that
+whole surface is pinned by a table in `test/aliases.test.mjs` that
 asserts alias-target identity and cross-checks itself against the
 sources in both directions — the type declaration alone would keep the
 typecheck green if a wiring line were deleted.
@@ -952,7 +952,7 @@ a kernel to win — and an explicit `executor: 'gpu'` on them rejects,
 pointing at the dense form.
 
 **Checked against independent implementations** (2026-10-19):
-`test/algorithms-reference.mjs` runs the algorithms above on seeded
+`test/algorithms-reference.test.mjs` runs the algorithms above on seeded
 fixture graphs (weighted, directed, disconnected, multigraph,
 negative-weight; 30+ nodes) and compares with what NetworkX 3.7, SciPy
 and NumPy compute, recorded once in `test/fixtures/algorithm-references.json`
@@ -1025,7 +1025,7 @@ closure path, on the calling thread, because it is called inside the
 loop.  The reference's own change of path is bit-neutral, recorded
 two ways: every result digest at n = 1024 / 5120, four metrics, is
 identical before and after (the `algorithms-gpu` feature fixture), and
-`test/algorithms-offload-clustering.mjs` asserts the kernel under a
+`test/algorithms-offload-clustering.test.mjs` asserts the kernel under a
 metric's name `===` the closure path under a function that *is* that
 metric.  It is also faster, because the closure path spawned every
 cluster's collection every iteration and rebuilt each cluster in a
@@ -1125,7 +1125,7 @@ have no v4 counterpart for the same reason.
 has none).  The outermost `startBatch()`/`endBatch()` pair is a
 transaction, and the core fires **`batchstart`** and **`batchend`**
 around it — the hooks an app's undo stack records against.  The
-contract, each clause pinned in `test/batch.mjs` with its control:
+contract, each clause pinned in `test/batch.test.mjs` with its control:
 
 - **Nesting: the outermost pair only.**  Only the outermost close
   flushes, so only it is an observable boundary; an inner pair is part
@@ -1947,7 +1947,7 @@ where none can be constructed; `'gpu'` throws at start where no
 integrator is available.  The worker's
 trajectory is **bit-identical** to the in-thread sim's — the same
 class, the same inputs cloned — on the plain, the compound and the
-constrained fixtures (`test/force-worker.mjs`, asserted with `===`);
+constrained fixtures (`test/force-worker.test.mjs`, asserted with `===`);
 a live run streams its frames through the layout's own write-back,
 an infinite run's verbs (a drag, a pin, a reheat, a wake) are messages,
 `stop()` / `cancel()` / `destroy()` propagate, one worker serves a
@@ -2110,7 +2110,7 @@ round records carry the histories.
   restores the shallowest, so the pass can never return a deeper field
   than it was given (on the real 25k field with the expansion withheld
   it restores the fortieth stress round over the closing sweeps).  The
-  quality suite's crammed 3k row and `test/modules/force-separation.mjs`
+  quality suite's crammed 3k row and `test/modules/force-separation.test.mjs`
   gate it.  Pinned nodes are obstacles
   throughout, the body-box component re-pack follows.  The one
   post-pass in the layout portfolio (the round-114 decision against a
@@ -2581,7 +2581,7 @@ calls made deliberately rather than by accretion:
   `debug/spiral-layout.js`, rewritten in 114.7 over exactly those
   members so it animates and avoids overlap) ships in `debug`
   (`?layout=spiral`), the module suite runs it headless, and the
-  contract-conformance specs in `test/layout-contract.mjs` are the
+  contract-conformance specs in `test/layout-contract.test.mjs` are the
   template external authors can crib.
   **The contract's types ship since round 45**: `LayoutContext`,
   `LayoutImpl` and `CustomLayout` are exported from the entry point, so
@@ -2604,7 +2604,7 @@ it.
   `cursorFor( { gesture, hover, pointerType }, setting )` returns a CSS
   cursor keyword, and writes nothing.  That is what makes every cell of
   gesture x hover x pointer type assertable from Node, where there is no
-  canvas — `test/pointer-cursors.mjs`.
+  canvas — `test/pointer-cursors.test.mjs`.
 - **The defaults**: `pointer` over any interactive element, `grab` over a
   node the drag predicate accepts, `grabbing` from the pointerdown of a
   pan or grab press (not from the tap-threshold flip — the feedback is
@@ -2702,7 +2702,7 @@ before it was built.
   control (filter forced false: the round-10 late-font spec times out;
   filter forced true: the unrelated-font spec re-shapes; size watch
   off: the orphan spec; ready belt off: the at-rest spec) — and by
-  `test/modules/font-watch.mjs`.
+  `test/modules/font-watch.test.mjs`.
 - **Iterable collections (75.3).**  `Collection.prototype[
   Symbol.iterator ]` yields the interned singleton handles off the
   cached dense array (`_arr()`), so `[ ...eles ][ 0 ] === eles[ 0 ]` and
@@ -2737,7 +2737,7 @@ before it was built.
   the viewport at dpr 1 — the answer a default renderer gives at dpr 1.
   With a renderer mounted it is the renderer's own pick (its dpr and
   thresholds), which no longer waits for the device: the scan reads
-  only the store and the viewport.  Specs: `test/node-at.mjs` (headless;
+  only the store and the viewport.  Specs: `test/node-at.test.mjs` (headless;
   its slanted-outline spec failed with the shape test swapped for the
   bounding box, the round-27 control) and the renderer project's 75.4
   spec (a hit, the topmost of an overlap agreeing with `cy.pick`, a
@@ -2763,9 +2763,9 @@ before it was built.
   drag-from-element panning toggle — already expressible with the
   per-element `pannable`/`panify()`, `autoungrabify` and the default
   that a press on an undraggable node pans.  Specs: the accessor and the
-  decision table in `test/interaction-options.mjs` (control: the
+  decision table in `test/interaction-options.test.mjs` (control: the
   pan/modifier branches swapped), the migration guide's claim in
-  `test/modules/migration-guide.mjs`, and four renderer-project specs on
+  `test/modules/migration-guide.test.mjs`, and four renderer-project specs on
   a scrollable page (controls: `preventDefault()` moved back first fails
   the zoom-disabled, `'modifier-zoom'` and `'pan'` specs; the swapped
   branches fail the two mode specs).  The debug harness has a
@@ -2799,7 +2799,7 @@ before it was built.
   `visibility: hidden` (with its edge), null on destroy — controls: the
   args read at offset 0 (`indexCount`) fail both count specs (7/3 read
   as 12/198), and every group treated as dispatched reads 8 nodes for 7
-  — plus `test/viewport-counts.mjs` (headless null) and a worker-host
+  — plus `test/viewport-counts.test.mjs` (headless null) and a worker-host
   spec.
 
 ## Design decisions (v4 API direction)
@@ -2901,7 +2901,7 @@ each is deliberate, not a pass-1 deferral:
     `other._refs is not iterable`, a silent `same() === false`, or — for
     `cy.on('tap', 'node', cb)` — a TypeError raised *inside the emitter
     on the next tap*, which is both late and somewhere else.  The whole
-    ledger of removals is pinned by `test/decided-drops.mjs`.
+    ledger of removals is pinned by `test/decided-drops.test.mjs`.
 - **The matcher IR is the contract, not a syntax.**  `matcher.mts`
   compiles a query to per-group `(mask, want)` flag tests answered by
   one columnar scan (`GraphStore.scanRefsInto`) — no element handles, no
@@ -2934,7 +2934,7 @@ each is deliberate, not a pass-1 deferral:
   *values* (`'round-rectangle'`, `'match-line'`) are not in the table:
   the shape and arrow vocabularies already map through their id
   tables, and a value is what a user writes, not what the engine
-  spells.  `test/modules/string-keys.mjs` holds the line: it scans
+  spells.  `test/modules/string-keys.test.mjs` holds the line: it scans
   `src/` for a column-id literal, a data-key comparison or a
   hyphenated property literal or a group-name literal outside its
   declaration, with a control per rule and the walk's size pinned.  The price: the minified bundle
@@ -3459,7 +3459,7 @@ each is deliberate, not a pass-1 deferral:
     `settleGpuAll` settled without releasing either; and a reparent
     mid-tween (14.11) now *demotes* the device's tweens to the CPU
     rather than settling them, so the tween runs on to its targets.
-    Pinned in `test/layout-tween.mjs` on both executors (the CPU path
+    Pinned in `test/layout-tween.test.mjs` on both executors (the CPU path
     and a mock sink).
   - **Colors tween in OKLab**, matching what color mappers already do by
     default — one perceptual color model across the library rather than a
@@ -3848,7 +3848,7 @@ each is deliberate, not a pass-1 deferral:
     inscribed ellipse) rather than v3's exact per-shape intersections
     — a recorded deviation, exact for the default ellipse nodes.
     **Round 55 measured it** rather than leaving it as prose, in two
-    independent places that agree: `test/curve-geometry.mjs` twins the
+    independent places that agree: `test/curve-geometry.test.mjs` twins the
     offsets directly against v3's `intersectLineEllipse`,
     `polygonIntersectLine` and `roundRectangleIntersectLine`, and the
     `shapes` scene in `playwright-tests/routing.spec.js` measures the
@@ -4054,7 +4054,7 @@ each is deliberate, not a pass-1 deferral:
     once per invocation on the GPU by the two entry points that
     subdivide.  The dash coordinate accumulates the same polyline's
     chord lengths, so dashes follow the map by construction — pinned
-    by the arc-length spec in `test/curve-routes.mjs`; mid-arrows
+    by the arc-length spec in `test/curve-routes.test.mjs`; mid-arrows
     anchor through the analytic route midpoint and never read the
     map.  The 93.2 residual — a many-point round route (5+
     rounded corners is 11+ pieces) kept ~3 chords per arc even
@@ -4812,7 +4812,7 @@ The calls taken in the round:
   order, left alone rather than made emphasis-dependent.
 - `viewportCounts()` sums both tiers (the partition is exact).
 
-Controls: `test/emphasis.mjs` counts the per-element work of a hover
+Controls: `test/emphasis.test.mjs` counts the per-element work of a hover
 change at two graph sizes ten times apart and asserts it equal (a
 counted probe, not a timing — `node:test` runs files concurrently); the
 control, the dim-bit spelling, grows 11.1× under the same probe.  In the
@@ -5147,7 +5147,7 @@ Instead:
   animation handle, the layout contract, the public
   style/wire/columnar surface) and an internal tier.  Round 26 took
   the surface from **46% overall** (43% public, 55% internal) to
-  **100% in both tiers**, so `test/jsdoc-coverage.mjs`
+  **100% in both tiers**, so `test/jsdoc-coverage.test.mjs`
   gates the simplest possible rule: **no file in `src` may have
   an undocumented public member**, and the failure message names
   it.  Overload *signatures* each carry their own block; the
@@ -5207,7 +5207,7 @@ Instead:
   The fifth design sitting (2026-08-04) took both
   calls, and this one ratchets: `auditReturnTags()` prints the tally
   under the coverage report, `--verbose` lists any miss, and
-  `test/jsdoc-coverage.mjs` fails the build on a miss or on the
+  `test/jsdoc-coverage.test.mjs` fails the build on a miss or on the
   tally falling below its ratchet (276 at round 36's completion, 279
   today).  The argument that moved it is that these
   comments ship as `.d.ts` hover text whether or not the docs
@@ -5259,7 +5259,7 @@ and 37.1.
   being documented for the next maintainer and being published in the API
   reference are different questions.
 - **Validated against the shipped declaration, not against the sources it
-  was generated from.**  `test/docs-generate.mjs` checks the model against
+  was generated from.**  `test/docs-generate.test.mjs` checks the model against
   `dist/cytoscape.d.ts` — a different artifact, from a different tool, and
   the thing a consumer actually holds — in both directions: a phantom
   entry sends a reader to a method that does not ship, and a dropped one
@@ -5316,8 +5316,8 @@ and reports which the Node suite reaches, the same way
   same three classifications; round 41's emitter added one Node-run
   site, and round 48.3's fuzzing added five more — the guards it
   needed for corrupt dictionary indices, packed-id blob lengths and
-  data-key counts, each specced deterministically in `test/wire.mjs`
-  because this gate measures `test/*.mjs` and cannot see a guard
+  data-key counts, each specced deterministically in `test/wire.test.mjs`
+  because this gate measures `test/*.test.mjs` and cannot see a guard
   reachable only from `test/soak/`.  Round 30 read 13 browser-only and 2
   unreachable, and pinned six of the browser tier (the export guards,
   30.2); round 36.4 finished that tier by **specs for four and
@@ -5350,7 +5350,7 @@ and reports which the Node suite reaches, the same way
 - **Node reads the exact probe now, not lcov** (2026-10-19), as Bun
   already did: `test/lib/node-throw-coverage-setup.mjs` instruments every
   `throw new` in `src` as it loads and logs the sites that fire, in the
-  main thread and in workers (`test/modules/node-throw-probe.mjs` checks
+  main thread and in workers (`test/modules/node-throw-probe.test.mjs` checks
   each realm).  `test:throws` went from 93 s to 25 s — the coverage
   counters made the force sims ~5x slower, and Node then spent ~40 s
   building the report — and it reads one site more exactly:
@@ -5609,7 +5609,7 @@ to 48–110 ns (2.3×)**, the worst property is 2.6× faster and the
 earliest few are ~15 ns slower — and on the aggregate a whole-object
 `style()` is **1.27× faster on a node and 1.48× on an edge**, edges
 gaining more because their properties sat at the back of the switch.
-Equivalence is pinned by `test/style-readback-all.mjs`, which reads
+Equivalence is pinned by `test/style-readback-all.test.mjs`, which reads
 every one of the 153 properties on a styled node and a styled edge.
 
 The write path's `applyProp` is a 147-case switch of the same shape and
@@ -6011,7 +6011,7 @@ The contract:
 - **What is guaranteed**: every element drawn is correct — its data,
   style and position are the ones the finished load will have — and
   completeness arrives; the chunked end state is columns-equal to the
-  monolithic load of the same payload (`test/load.mjs`, from every form
+  monolithic load of the same payload (`test/load.test.mjs`, from every form
   and both chunk shapes, with its control).
 
 **Measured** (i9-9900K, Node 24.18, AMD RX 580 via Chromium/Vulkan,
@@ -6180,7 +6180,7 @@ the wire — which is GC placement, not the payload.)  The identity patch
   serialize 0.29 / 2.1 / 24 ms and patch 0.26 / 1.8 / 23 ms at 1k / 10k /
   100k elements.
 
-**Controls** (`test/patch.mjs`): the identity patch from each form (empty
+**Controls** (`test/patch.test.mjs`): the identity patch from each form (empty
 diff, zero element events, zero dirty spans, zero mapper spans) against
 the same payload with one value perturbed; the listener census (each
 event once, all inside the batch, the summary once after it) against a
@@ -6313,7 +6313,7 @@ process pairs, 1.42 → 1.48 µs median (pairwise −11% to +4%: zero within
 this row's run-to-run spread of 1.25–1.77 µs).  With a second consumer
 registered the same drain plus its take is ~0.3–0.4 µs more.
 
-Controls (`test/dirty-consumers.mjs`): two raw `takeDelta()` calls — the
+Controls (`test/dirty-consumers.test.mjs`): two raw `takeDelta()` calls — the
 second reader starves; two consumers at different cadences (every step,
 every third step) each keeping a byte mirror of every `COLUMN_SPECS`
 column and the curve blob from their own deltas over a seeded 400-step
@@ -6335,7 +6335,7 @@ throw, no dangling callback — red with the destroy hook removed).
 buffer, **through the same entry** (`core._caps` into the factory's
 `createCore`), so a clone of a `cytoscape/headless` instance has no
 renderer either.  What each source form carries of an element, measured
-by `test/clone.mjs`'s carriage spec rather than asserted:
+by `test/clone.test.mjs`'s carriage spec rather than asserted:
 
 | | ids, data, positions, parents, endpoints | `selected` / `selectable` | `locked` / `grabbable` / `pannable` | bypasses |
 | --- | :-: | :-: | :-: | :-: |
@@ -6389,7 +6389,7 @@ loop, specced and priced there.  The rules:
 - **Lifetime**: a follow link is on both cores' `_follows`; `destroy()` of
   either stops it (the timer cleared, the consumer disposed).
 
-Controls (`test/clone.mjs`): equivalence — every element `json()` and
+Controls (`test/clone.test.mjs`): equivalence — every element `json()` and
 every `COLUMN_SPECS` column id by id — against a source changed after the
 clone, which both comparisons reject; the carriage table; the follow of
 adds, removes, moves, mapped and unwatched data writes, a reparent, a
@@ -6450,7 +6450,7 @@ main view there.  Driven on em-web (569 nodes, 6,899 edges) through the
 harness's hardware adapter: the clone took 57 ms, moving 40 nodes on the
 main view produced one sync (`~40`, nothing added or removed), and zooming
 the main view moved only the rectangle.  The pure half is
-`test/modules/minimap.mjs` (headless, against the library); the renderer
+`test/modules/minimap.test.mjs` (headless, against the library); the renderer
 project's "a following clone renders its own sheet in its own container"
 spec checks two live canvases on one page — the clone's lime node at its
 own viewport, the main view's red one, the clone's node moving after a
@@ -6531,7 +6531,7 @@ after.
 `cy.style().update()` (re-snapshot the live extents) is still the
 whole-sheet pass, and so is the first sheet an instance applies.  The
 diff can be switched off per instance with the internal
-`_styleEngine.sheetDiff = false`, which is what `test/sheet-diff.mjs`
+`_styleEngine.sheetDiff = false`, which is what `test/sheet-diff.test.mjs`
 compares it against: every narrow-writer prop, each clause above, and
 sixty alternating replaces, with a control per clause recorded in the
 round.
@@ -6587,7 +6587,7 @@ asynchronous.  Instead the tree is **shake-clean by structure**:
   host.  The types lower tiers need live in them — `ForceHostLike` in
   `layout/force-host.mts`, the glyph types in `label-types.mts`,
   `EDGE_PICK_BIT` in `contract.mts`.
-- **The tier walk** (`test/modules/import-graph.mjs`) follows every
+- **The tier walk** (`test/modules/import-graph.test.mjs`) follows every
   import from each entry — type imports included, by design, so no type
   checker is in the loop — and fails if `cytoscape/headless` reaches
   anything under `render/`, `interact/`, `gpu/`, an `algo-gpu-*` kernel
@@ -6649,14 +6649,14 @@ back undefined.  So every bundle config sets `treeshake:
 the package field; `true` does not), and a packaging spec pins it.
 Do not "fix" either half.
 
-**The gates.**  `test/modules/bundle-size.mjs`: each headless minified
+**The gates.**  `test/modules/bundle-size.test.mjs`: each headless minified
 artifact under a **1,000,000-raw-byte edge budget** (the maintainer's
 stated Cloudflare Worker ceiling; the assertion names the budget, not
 the vendor, because vendor limits move — Cloudflare's current published
 limits were reported as 3 MB free / 10 MB paid, compressed), plus a raw
 and gzip ratchet per slim artifact at landing + ~10% — the number that
 does the work, since a tier leak adds tens of kilobytes at once.
-`test/modules/isolate-smoke.mjs`: the headless minified ESM in a
+`test/modules/isolate-smoke.test.mjs`: the headless minified ESM in a
 WinterTC-shaped `node:vm` isolate (no `Worker`, `document`, `window`,
 `process`, `navigator.gpu`, `URL.createObjectURL`), the cross-runtime
 checks there, and `'auto'` shown to have run on the calling thread.
@@ -6692,7 +6692,7 @@ the inherited convention rather than a gap: v3 tracks all six of its
 its first release build runs (round 50).  Nothing under `dist/` is
 gitignored.
 
-`test/modules/packaging.mjs` gates the chain
+`test/modules/packaging.test.mjs` gates the chain
 **rolldown outputs → `dist:copy` → the manifest → the tarball**, which
 is hand-maintained at every link.  It asks npm for the real file list
 rather than re-implementing `.npmignore` — a denylist, so every new
@@ -6857,7 +6857,7 @@ declaration is the contract and the schema follows it.
 **Hand-written, and gated.**  The types are vacuous exactly where a
 schema is valuable (`StyleProps` is `Record<string, StylePropValue>`),
 so the schemas are hand-maintained documents rather than generated ones,
-and `test/modules/schemas.mjs` holds them to the running library:
+and `test/modules/schemas.test.mjs` holds them to the running library:
 every debug network's elements, every sheet in `debug/styles.js`, every
 layout run the harness makes and `cy.json()`'s output validate; paired
 probes run one payload through the library and the schema and require
@@ -6904,7 +6904,7 @@ while requiring the destroyed source instance to be collected.
 
 The runtime-clean invariant from round 98 remains: no non-relative import
 specifiers under `src/`, including `node:*`, `bun:*`, `deno:*` or bare
-packages. `test/modules/import-graph.mjs` enforces it. The headless path uses
+packages. `test/modules/import-graph.test.mjs` enforces it. The headless path uses
 web-platform primitives such as typed arrays, TextEncoder/TextDecoder,
 queueMicrotask and performance.now().
 
@@ -6979,7 +6979,7 @@ What the rows mean in practice:
   default fits all of it by a wide margin.  The
   headless bundle (567,858 bytes minified) is far inside Cloudflare's
   published 64 MiB script limit and Vercel's 1 MB-gzipped Hobby limit;
-  `test/modules/bundle-size.mjs`'s 1,000,000-byte budget stays the gate.
+  `test/modules/bundle-size.test.mjs`'s 1,000,000-byte budget stays the gate.
 - **Electron on Linux: WebGPU is the app's decision.**  Out of the box
   (Wayland) the renderer finds no adapter and `cytoscape()` rejects with
   the named message; with `--use-angle=vulkan --enable-features=Vulkan`
@@ -7060,7 +7060,7 @@ round-52 representation stays, and gains:
   identifier naming a module-level number — `${WG}`, `${SHAPE_SHIFT}u` —
   with `String(value)`, exactly what the runtime join produced, so the
   minifier sees text there and collapses around it.  324 sites in the
-  full build.  `test/modules/const-inline.mjs` evaluates every inlined
+  full build.  `test/modules/const-inline.test.mjs` evaluates every inlined
   shader module and compares its exported strings with the original's.
 - **A `glsl` tag**, minified under GLSL ES 3.00's lexical rules (block
   comments do not nest; a preprocessor line keeps its newline and its
@@ -7069,7 +7069,7 @@ round-52 representation stays, and gains:
   blocks, `switch` and `uintBitsToFloat` and renames uniform-struct
   members, so it was not taken.
 
-Verification is layered (`test/modules/wgsl-minify.mjs`): unit specs pin
+Verification is layered (`test/modules/wgsl-minify.test.mjs`): unit specs pin
 the contract with the plan's own control (a transform that does *not*
 treat `${}` as opaque must mangle the fixture, and does); a token-stream
 audit runs all 110 tagged literals — the 32 files found by scanning the
@@ -7339,8 +7339,8 @@ storage-buffer limit; 24-bit chart packing is no longer a practical cap.
   shape, not a feature it can draw without, so it has no degradation
   step; it is reached at ~1M nodes with 8-point custom polygons.
 
-Specs: `test/record-ref.mjs` pins image references at their real boundary;
-`test/modules/chart-record.mjs` pins chart word addressing, raw color bits,
+Specs: `test/record-ref.test.mjs` pins image references at their real boundary;
+`test/modules/chart-record.test.mjs` pins chart word addressing, raw color bits,
 validity, bar-domain metadata, and compaction.
 
 ## First-frame cost: deferred pipelines (round 53)
@@ -7395,7 +7395,7 @@ Two notes for anyone changing this.
   where `FLAG_CURVED` is written and never goes back, so a graph that
   curves an edge once holds the curved edge and curved arrow pipelines for
   its lifetime.  Recompiling costs more than holding them, and the gate is
-  read once per frame.  `test/curve-stream-gate.mjs` pins which curve
+  read once per frame.  `test/curve-stream-gate.test.mjs` pins which curve
   styles reach the curved stream — `haystack` and `straight-triangle` do
   not, and neither does `bezier` until a parallel pair bundles.
 
@@ -7453,7 +7453,7 @@ or worker-side WebGPU; there is no silent same-thread fallback.
 Verified: the same scene exported through both hosts diffs **exact-zero**
 on the pinned adapter, and mutation/viewport/pick/export/label-dims
 round trips are spec'd (`playwright-tests/worker-renderer.spec.js`,
-`test/modules/worker-renderer.mjs` — the protocol crossing a real
+`test/modules/worker-renderer.test.mjs` — the protocol crossing a real
 structuredClone).
 
 **The force integrator runs in the worker** (round 129.2, closing the
@@ -7653,7 +7653,7 @@ specifically, because v4 also says "unsupported" for an invalid keyword —
 a first pass matching the word alone reported `shape` and
 `source-arrow-fill` as dropped.
 
-`test/modules/migration-guide.mjs` keeps the table honest: every property
+`test/modules/migration-guide.test.mjs` keeps the table honest: every property
 it names as dropped must still be rejected, every replacement it offers
 must still compile, and the defaults it tells readers to re-check must
 still be what it says.
@@ -8029,7 +8029,7 @@ fragment premium is **unmeasurable at scene level** on real hardware
   strokes (round 88.2), each instance at its own depth so an edge's
   overlapping quads blend once — the underlay's band above EDGE_Z, the
   overlay's under it, both above NODE_Z, which
-  `test/modules/edge-layer-depth.mjs` pins.
+  `test/modules/edge-layer-depth.test.mjs` pins.
 
   The round-14 compound split took the batch route
   instead of a rank: parent bodies draw in their own pre-edge stream and
@@ -8805,7 +8805,7 @@ it here in round 57.4.*
   concern; its one remaining act is release-time and belongs to round
   50 — the first release build must actually commit the five `dist/`
   bundles, and `pre_release_test.sh` should run
-  `test/modules/packaging.mjs` after `npm run dist`, where the
+  `test/modules/packaging.test.mjs` after `npm run dist`, where the
   "do these files exist" half is meaningful.  **45** (the docs
   generator) is complete, and it unblocks **46**, the docs site, which
   now has its input rather than a plan for one.  **47** (the migration
@@ -8935,7 +8935,7 @@ it here in round 57.4.*
   before it reached the core, and the page read as "v4 can't style".
   Now hand-authored sheets per fixture (the real enrichmentmap.org style
   among them), two genuinely compound graphs, the v3 page's control
-  sections, and `test/modules/debug-harness.mjs` — `debug/`'s first test.
+  sections, and `test/modules/debug-harness.test.mjs` — `debug/`'s first test.
 
   The round also fixed the background-grab indicator, which had never
   followed the cursor (see the core-theming notes above).
@@ -9019,7 +9019,7 @@ it here in round 57.4.*
   import of v3, as the round-41 plan assumed: five generic utility
   modules remain (`math`, `types`, `util/colors`, `util/position`,
   `util/sort`), now a maintained allowlist in
-  `test/modules/import-graph.mjs` and a round-42 call.
+  `test/modules/import-graph.test.mjs` and a round-42 call.
   (`@param` reads **240/240** today — 239 when round 57.2 landed, not
   232: the gate had never seen a member whose parameters *wrapped*, and
   adopting a formatter made five of them visible at once; round 52's

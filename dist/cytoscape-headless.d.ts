@@ -200,7 +200,7 @@ declare class ImageRegistry {
  * The two element groups (round 127.6): the discriminant every
  * per-group table, column, index and event path branches on, and the
  * `group` field of an element definition.  Spelled once here;
- * `test/modules/string-keys.mjs` rejects the literal elsewhere.
+ * `test/modules/string-keys.test.mjs` rejects the literal elsewhere.
  */
 declare const GROUP_NODES = "nodes";
 declare const GROUP_EDGES = "edges";
@@ -210,7 +210,7 @@ type GroupName = typeof GROUP_NODES | typeof GROUP_EDGES;
  * the mirror, the tween paths and the worker protocol all name a column
  * through this table; the string values are still what crosses the
  * wire and what `COLUMN_SPECS` is keyed by, and `ColumnId` is derived
- * from the table so the two cannot drift.  `test/modules/string-keys.mjs`
+ * from the table so the two cannot drift.  `test/modules/string-keys.test.mjs`
  * rejects a column-id literal anywhere else under `src/`.
  *
  * The comment on each member is the column's backing format and its
@@ -7864,7 +7864,7 @@ declare class StyleEngine {
    * How many edge runs have taken the round-67.2 bulk route.
    *
    * Internal, and not a statistic anyone needs at runtime — it exists so
-   * `test/bulk-style-apply.mjs` can assert that the route *ran*.  Without
+   * `test/bulk-style-apply.test.mjs` can assert that the route *ran*.  Without
    * it a comparison against the per-element route passes just as well
    * when the gate declined, which is exactly what the first version of
    * that spec did: its fixture mapped `curve-style` and `label`, neither

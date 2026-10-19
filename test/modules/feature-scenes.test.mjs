@@ -1155,7 +1155,7 @@ describe('round 149 visual feature scenes', function () {
       'src/style/apply-prop.mts:832-840',
     );
     expect(semanticException.rejectionTest).to.include(
-      'test/modules/feature-scenes.mjs',
+      'test/modules/feature-scenes.test.mjs',
     );
     expect(semanticException.validRoutes).to.include.members([
       'debug/index.html?network=features&scene=labels&view=nodes',

@@ -207,7 +207,7 @@ export const UNREACHABLE = {
     'non-positive edge span invariant — ranking always leaves every ' +
     'edge a span of at least its minLen (longest-path enforces it, the ' +
     'simplex preserves feasibility), so no public input reaches a ' +
-    'zero-span edge; test/modules/layout-flow-internals.mjs fires it ' +
+    'zero-span edge; test/modules/layout-flow-internals.test.mjs fires it ' +
     'directly with a hand-made ranking so the message stays asserted',
 };
 
@@ -215,7 +215,7 @@ export const UNREACHABLE = {
 // moves**.  Round 34 inserted two methods into graph-store.mts and the
 // SHAPE_MASK entry silently stopped matching, which surfaced as this
 // script reporting a Node-reachable dead site and as a failing spec in
-// test/modules/throw-coverage.mjs — the right way round, but worth
+// test/modules/throw-coverage.test.mjs — the right way round, but worth
 // knowing: after moving code, re-run this script rather than assuming
 // the classification survived.  Since 37.1 the gate says so directly:
 // an entry that no longer names a throw site fails the build in its own
@@ -234,7 +234,7 @@ export const UNREACHABLE = {
  *
  * How this list was calibrated, and why it is one entry long: of the 14 throw
  * sites under BROWSER_ONLY, exactly two read as covered, and one of those
- * (`GlyphBuffer.set`) genuinely is — `test/label-render.mjs` drives it
+ * (`GlyphBuffer.set`) genuinely is — `test/label-render.test.mjs` drives it
  * with a mock device. The other is this. Treat the tally as a lower bound on
  * dead sites, not an exact count.
  *
@@ -331,7 +331,7 @@ const collectNodeProbe = () => {
         './test/node-test-setup.mjs',
         '--test-reporter=dot',
         '--test',
-        'test/!(types-*|node-test-setup|quiet-reporter).mjs',
+        'test/*.test.mjs',
       ],
       {
         cwd: ROOT,
@@ -378,11 +378,7 @@ const collectBunCoverage = () => {
 
   try {
     const specs = readdirSync(join(ROOT, 'test'))
-      .filter((name) => name.endsWith('.mjs'))
-      .filter(
-        (name) =>
-          !/^(?:types-.*|node-test-setup|quiet-reporter)\.mjs$/.test(name),
-      )
+      .filter((name) => name.endsWith('.test.mjs'))
       .sort();
     mkdirSync(wrapperDir, { recursive: true });
     mkdirSync(coverageDir, { recursive: true });
@@ -505,8 +501,12 @@ const collectBunCoverage = () => {
         join('test', specs[index]),
       ]),
     );
+    // the repo bunfig.toml preloads the shim, which imports src before
+    // the probe's plugin registers: these runs set their own preloads
+    const scriptedConfig = `--config=${join(ROOT, 'test', 'lib', 'bunfig.scripted.toml')}`;
     const baseArgs = [
       'test',
+      scriptedConfig,
       '--isolate',
       `--preload=${join(ROOT, 'test', 'lib', 'bun-test-setup.mjs')}`,
       '--reporter=junit',
@@ -540,6 +540,7 @@ const collectBunCoverage = () => {
 
     const probeArgs = [
       'test',
+      scriptedConfig,
       '--isolate',
       `--preload=${join(ROOT, 'test', 'lib', 'bun-throw-coverage-setup.mjs')}`,
       `--preload=${join(ROOT, 'test', 'lib', 'bun-test-setup.mjs')}`,

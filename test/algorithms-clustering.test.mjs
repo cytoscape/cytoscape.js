@@ -564,7 +564,7 @@ describe('gpu/algorithms: clustering', function () {
       // the middle of the first blob comes first, so it is the exemplar
       // at index 0: v3 dropped its members and shifted every later
       // node's assignment a slot (found against a NumPy reference — see
-      // test/algorithms-reference.mjs)
+      // test/algorithms-reference.test.mjs)
       var blob = (id, v) => ({ data: { id, v } });
       var cy2 = cytoscape({
         elements: [

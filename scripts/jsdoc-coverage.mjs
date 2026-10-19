@@ -11,7 +11,7 @@
 // the next maintainer and carries a ratcheting floor.
 //
 // Run directly (`node scripts/jsdoc-coverage.mjs [--verbose]`) for a report;
-// `test/jsdoc-coverage.mjs` imports `audit()` and enforces the thresholds.
+// `test/jsdoc-coverage.test.mjs` imports `audit()` and enforces the thresholds.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -207,7 +207,7 @@ export const BANNER_RE = /^\s*\/\/ -- (.+?) --\s*$/;
 
 // A pure alias: `declare gc: this['compact'];`. Invisible to MEMBER_RE (the
 // name it would capture is `declare`), which is exactly why the alias surface
-// needed its own table in test/aliases.mjs — and why the docs generator needs
+// needed its own table in test/aliases.test.mjs — and why the docs generator needs
 // them from here rather than re-deriving them.
 const ALIAS_RE =
   /^ {2}declare\s+([A-Za-z_$][\w$]*)\s*:\s*this\[\s*'([^']+)'\s*\]/;

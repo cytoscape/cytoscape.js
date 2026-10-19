@@ -6,7 +6,7 @@ channels, readers and defaults by these; `animation.mts` its tween
 channels; the collection its bulk-write list.  The strings are the
 public spelling (`style('background-color')` is unchanged), so the
 table is the engine's own census rather than a second vocabulary, and
-`test/modules/string-keys.mjs` rejects a property literal anywhere else
+`test/modules/string-keys.test.mjs` rejects a property literal anywhere else
 under `src/`.
 
 The list is alphabetical within a family and the families are in

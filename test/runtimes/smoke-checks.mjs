@@ -5,7 +5,7 @@ through `smoke.mjs`, a WinterTC-shaped `node:vm` isolate through
 `isolate.mjs`, and Cloudflare's own runtime through `workerd-main.mjs`.
 **No imports at all**: this module is loaded as-is inside an isolate and
 inside workerd, where there is no `node:` anything to import
-(`test/modules/runtime-smoke.mjs` lints it).  See `smoke.mjs`'s header for
+(`test/modules/runtime-smoke.test.mjs` lints it).  See `smoke.mjs`'s header for
 what the checks cover and why they assert on values.
 */
 

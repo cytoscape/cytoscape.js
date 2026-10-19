@@ -1,4 +1,4 @@
-// Shared by test/force-sim.mjs and test/force-sim-dense.mjs.
+// Shared by test/force-sim.test.mjs and test/force-sim-dense.test.mjs.
 import {
   ForceSim,
   seedPositions,

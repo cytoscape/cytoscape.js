@@ -204,6 +204,14 @@ describe('status markdown: documented paths', () => {
     // `.mts`.  Without this, every source path in every document reads broken.
     expect(resolveRepoPath('src/style.mjs', ROOT)).to.equal('src/style.mts');
     expect(resolveRepoPath('src/style.mts', ROOT)).to.equal('src/style.mts');
+    // the record cites specs by their names before the *.test.mjs rename
+    expect(resolveRepoPath('test/wire.mjs', ROOT)).to.equal(
+      'test/wire.test.mjs',
+    );
+    expect(resolveRepoPath('test/modules/schemas.mjs', ROOT)).to.equal(
+      'test/modules/schemas.test.mjs',
+    );
+    expect(resolveRepoPath('test/lib/nope.mjs', ROOT)).to.equal(null);
   });
 
   it('links a path that resolves, at the build commit', () => {

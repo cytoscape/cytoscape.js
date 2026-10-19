@@ -96,105 +96,105 @@
       scene: 'algorithms',
       widget: 'algorithm explorer',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'algorithms-topology',
       scene: 'algorithms',
       widget: 'algorithm explorer',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'algorithms-centrality',
       scene: 'algorithms',
       widget: 'algorithm explorer',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'algorithms-clustering',
       scene: 'algorithms',
       widget: 'algorithm explorer',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'algorithms-similarity-diffusion-motifs',
       scene: 'algorithms',
       widget: 'algorithm explorer',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'async-executor-comparison-cancellation',
       scene: 'algorithms',
       widget: 'CPU comparison and repeatable async cancellation',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'query-selection-topology-inspection',
       scene: 'inspector',
       widget: 'structured query and element inspector',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'animation-transitions',
       scene: 'animation',
       widget: 'play/pause/resume/reverse/stop/progress and sequence',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'patch-data-reparent-batch',
       scene: 'mutation',
       widget: 'deterministic patch, reparent, batch, reset',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'serialize-load-cancel',
       scene: 'mutation',
       widget: 'serialize/load comparison and cancellable progressive load',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'clone-follow-dirty-stream',
       scene: 'mutation',
       widget: 'headless following clone and applied state readout',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'gesture-picking-events',
       scene: 'gestures',
       widget: 'live gesture log, CPU nodeAt and async GPU pick',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'image-export',
       scene: 'export',
       widget: 'PNG/JPEG preview and download',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'renderer-host-lifecycle',
       scene: 'runtime',
       widget: 'renderer host selector, readiness, stats, mount lifecycle',
       evidence:
-        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs',
+        'feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs',
     },
     {
       family: 'headless-runtimes',
       scene: null,
       widget: 'headless entry and runtime contracts',
       evidence:
-        'test/headless-entry.mjs; test/runtimes/smoke.mjs; test/runtimes/smoke-checks.mjs (automated entry and runtime contracts; no renderer UI)',
+        'test/headless-entry.test.mjs; test/runtimes/smoke.mjs; test/runtimes/smoke-checks.mjs (automated entry and runtime contracts; no renderer UI)',
     },
     {
       family: 'type-declarations',
@@ -208,14 +208,14 @@
       scene: null,
       widget: 'schema validation',
       evidence:
-        'test/modules/schemas.mjs (automated schema/source parity; this API-contract family has no interactive widget)',
+        'test/modules/schemas.test.mjs (automated schema/source parity; this API-contract family has no interactive widget)',
     },
     {
       family: 'distribution-packaging',
       scene: null,
       widget: 'package and bundle validation',
       evidence:
-        'test/modules/packaging.mjs; test/modules/bundle-size.mjs (automated npm package contents and bundle-size contracts)',
+        'test/modules/packaging.test.mjs; test/modules/bundle-size.test.mjs (automated npm package contents and bundle-size contracts)',
     },
     {
       family: 'benchmark-recipes',
@@ -243,14 +243,14 @@
       scene: 'layouts',
       widget: 'built-in layout transform / ready / stop callback recipe',
       evidence:
-        'debug/index.html?network=workflows&scene=layouts&layout=preset; test/modules/feature-workflows.mjs; playwright-tests/feature-workflows-renderer.spec.js; debug/layout-options.js; test/modules/layout-options-panel.mjs (layout transform, ready, and stop callbacks run through cy.layout; the JSON options panel explicitly excludes function values)',
+        'debug/index.html?network=workflows&scene=layouts&layout=preset; test/modules/feature-workflows.test.mjs; playwright-tests/feature-workflows-renderer.spec.js; debug/layout-options.js; test/modules/layout-options-panel.test.mjs (layout transform, ready, and stop callbacks run through cy.layout; the JSON options panel explicitly excludes function values)',
     },
     {
       family: 'model-dirty-consumers',
       scene: 'mutation',
       widget: 'following clone consumes the changed model patch',
       evidence:
-        'debug/index.html?network=workflows&scene=mutation&layout=preset; playwright-tests/feature-workflows-renderer.spec.js; test/modules/feature-workflows.mjs; test/clone.mjs (source data mutation causes a clone patch event and applied state comparison)',
+        'debug/index.html?network=workflows&scene=mutation&layout=preset; playwright-tests/feature-workflows-renderer.spec.js; test/modules/feature-workflows.test.mjs; test/clone.test.mjs (source data mutation causes a clone patch event and applied state comparison)',
     },
   ];
   const algorithms = root.featureWorkflowAlgorithms;

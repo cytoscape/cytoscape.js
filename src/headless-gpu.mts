@@ -11,7 +11,7 @@ compute device; `'auto'` stays on the CPU paths (the MIGRATING.md
 contract: a headless `'auto'` force run never waits on a device), so the
 GPU host is reached only by an explicit `'gpu'`.  The algorithms' `'auto'`
 takes the GPU lane where an adapter exists and the input clears the
-family's crossover, as in the full build.  `test/modules/import-graph.mjs`
+family's crossover, as in the full build.  `test/modules/import-graph.test.mjs`
 walks this file's imports and fails if anything under `render/` or
 `interact/` is reachable.
 */

@@ -57,7 +57,7 @@ export function markupRefs(html) {
 /**
  * The URLs `debug/init.js` will fetch, read out of the **emitted**
  * `networks.js` — so the generated patch is what is exercised, not the source
- * file.  Same technique as `test/modules/debug-harness.mjs`.
+ * file.  Same technique as `test/modules/debug-harness.test.mjs`.
  */
 export function networkRefs(networksSource, wireManifestSource = null) {
   const ctx = createContext({ module: undefined, window: {} });

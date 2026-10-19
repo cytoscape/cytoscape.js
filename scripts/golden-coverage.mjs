@@ -36,7 +36,7 @@
 // value at all — a property that reads back a value derived from
 // another (`UNMOVABLE`).
 //
-// The Node gate (`test/modules/golden-coverage.mjs`) pins the counts, so
+// The Node gate (`test/modules/golden-coverage.test.mjs`) pins the counts, so
 // a golden that adds coverage lowers a number consciously and a scene
 // edit that drops coverage cannot pass quietly.
 
@@ -475,7 +475,7 @@ export const INTENDED_DECORATION = {
   'feature-emphasis-declutter nodes/text-max-width':
     'Every emphasis caption fits within 86 px or uses an explicit newline, so removing the maximum does not change the rendered line breaks (debug/feature-scenes-compounds.js).',
   'feature-images-layers nodes/background-image-crossorigin':
-    'The compared images are data URLs, so changing request credentials does not change decoded pixels; request-option behavior is covered by test/image-registry.mjs.',
+    'The compared images are data URLs, so changing request credentials does not change decoded pixels; request-option behavior is covered by test/image-registry.test.mjs.',
   'feature-labels-font-keywords-fontStyle-italic nodes/font-weight':
     'This URL state selects Open Sans italic at weight 400; resetting weight to normal keeps the same weight-400 italic face among the four pinned font assets (debug/style.css:1-4).',
   'feature-labels-font-keywords-fontStyle-oblique nodes/font-weight':
@@ -493,13 +493,13 @@ export const INTENDED_DECORATION = {
   'feature-labels-font-keywords nodes/font-weight':
     'The fixture authors weight 400, which selects the same pinned Open Sans regular face as the default keyword normal (debug/style.css:1-4).',
   'feature-labels-nodes nodes/events':
-    'Pointer transparency changes pick answers, not pixels; the render pass still draws the labels (src/render/cull.mts:251-253,342; test/events-prop.mjs:33-38).',
+    'Pointer transparency changes pick answers, not pixels; the render pass still draws the labels (src/render/cull.mts:251-253,342; test/events-prop.test.mjs:33-38).',
   'feature-labels-nodes nodes/label-priority':
     'The six label samples occupy separate cells and their label rectangles do not overlap, so changing priority cannot alter culling order (debug/feature-scenes-labels.js).',
   'feature-labels-nodes nodes/min-zoomed-font-size':
-    'The fitted screenshot stays above the authored 12 px floor, so resetting to 0 does not hide this label at the static capture zoom; zoom-out behavior is covered by playwright-tests/renderer.spec.js:9240 and test/min-zoomed-font-size.mjs (threshold: src/render/label-layer.mts:355-360).',
+    'The fitted screenshot stays above the authored 12 px floor, so resetting to 0 does not hide this label at the static capture zoom; zoom-out behavior is covered by playwright-tests/renderer.spec.js:9240 and test/min-zoomed-font-size.test.mjs (threshold: src/render/label-layer.mts:355-360).',
   'feature-labels-nodes nodes/text-events':
-    'Label-box hit testing changes CPU pick routing, not pixels; the labels are still drawn (src/cpu-pick.mts:167-176; test/text-events.mjs:58-82).',
+    'Label-box hit testing changes CPU pick routing, not pixels; the labels are still drawn (src/cpu-pick.mts:167-176; test/text-events.test.mjs:58-82).',
   'feature-paint-layers nodes/text-max-width':
     'The layer captions use explicit line breaks and each line fits inside the authored 138 px maximum (debug/feature-scenes-paint.js).',
   'feature-shapes-underlays nodes/text-max-width':

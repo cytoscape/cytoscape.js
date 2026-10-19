@@ -65,7 +65,7 @@ agent that breaks it gets a red test instead of a silent drift.
 
 - **Why it helps:** an agent picks the narrowest verification for its change
   without reading anything else, and loads the deep notes only when relevant.
-- **Held by:** `test/modules/agent-docs.mjs` (see §5.1).
+- **Held by:** `test/modules/agent-docs.test.mjs` (see §5.1).
 
 ### 1.3 The topic notes, `docs/agents/*.md`
 
@@ -105,7 +105,7 @@ was lost.  Each opens with a title and a "read this before…" sentence.
 
 ### 2.1 A byte budget on `AGENTS.md`
 
-- **What:** `test/modules/agent-docs.mjs` caps `AGENTS.md` at **16 KiB**.  The
+- **What:** `test/modules/agent-docs.test.mjs` caps `AGENTS.md` at **16 KiB**.  The
   spec's header records why: it had grown to 62,818 bytes (~15.7k tokens),
   and "an agent fixing a typo in a benchmark comment read the golden-image
   tolerance history, the SwiftShader worker ratio and a Fedora `libjpeg.so.8`
@@ -159,7 +159,7 @@ parity question is one targeted search, not a site crawl.
 - **Why it helps:** a cheap whole-picture check an agent can run after every
   edit.
 
-### 3.2 One spec file: `npm run -s test:js:one -- test/<f>.mjs`
+### 3.2 One spec file: `npm run -s test:js:one -- test/<f>.test.mjs`
 
 - **What:** the tier's own invocation minus the glob, with the
   `describe`/`it` shim preloaded.  Accepts `--test-name-pattern`.
@@ -171,7 +171,7 @@ parity question is one targeted search, not a site crawl.
 
 | Script | What it runs |
 | --- | --- |
-| `test:js` | public-behaviour specs in `test/*.mjs` |
+| `test:js` | public-behaviour specs in `test/*.test.mjs` |
 | `test:modules` | internal + tooling specs in `test/modules/` (builds first) |
 | `test:soak` | leaks, churn, wire fuzzing, multi-instance isolation, `--expose-gc` |
 | `test:throws` | throw-site coverage gate |
@@ -235,7 +235,7 @@ no v3 install so an accidental dependency fails loudly.
     nested `run-s` child, so a composite is zero bytes end to end.
 - **Deliberate limits:** the loud twins remain for humans, hang diagnosis
   and CI (whose logs are the record); `:debug` scripts have no quiet twin.
-- **Held by:** `test/modules/quiet-scripts.mjs` — every twin must equal its
+- **Held by:** `test/modules/quiet-scripts.test.mjs` — every twin must equal its
   loud command modulo the reporter flag or `quiet-run` prefix, every
   `*:quiet` must be registered, and every composite step must resolve to a
   quiet script.  The pairs cannot drift.
@@ -247,7 +247,7 @@ no v3 install so an accidental dependency fails loudly.
 The repo turns "please remember to…" into failing tests.  An agent does not
 need to know a convention to be told when it breaks one.
 
-### 5.1 Agent docs — `test/modules/agent-docs.mjs`
+### 5.1 Agent docs — `test/modules/agent-docs.test.mjs`
 
 `AGENTS.md` within budget; every note linked from it and every link resolves;
 **every path named in `AGENTS.md` and the notes resolves on disk** (round 42's
@@ -256,7 +256,7 @@ allowlist of quoted historical spellings that must *not* resolve; **every npm
 script named exists**; the verification scripts an agent is meant to run are
 actually routed; each note opens with a title and a reason to read it.
 
-### 5.2 The record — `test/modules/plan-record.mjs`
+### 5.2 The record — `test/modules/plan-record.test.mjs`
 
 Filename shape `YYYY-MM-DD-NN-rndRRRR-kind-slug.md`, contiguous `NN` per date;
 headings must not repeat what the filename says; every file starts with its
@@ -266,13 +266,13 @@ and a round can't be both `plan` and `landed`; the derived landed/planned
 table is published; every section has a `**Depends on:**` line naming only
 *earlier* nodes; `debug/network-plan.json` is current.
 
-### 5.3 Module boundaries — `test/modules/import-graph.mjs`
+### 5.3 Module boundaries — `test/modules/import-graph.test.mjs`
 
 Nothing under `src/` imports outside `src/`; a slim entry
 (`src/headless.mts`, `src/headless-gpu.mts`) must not reach a higher tier,
 type imports included.
 
-### 5.4 String vocabularies — `test/modules/string-keys.mjs`
+### 5.4 String vocabularies — `test/modules/string-keys.test.mjs`
 
 Column ids, style property names, reserved data keys and group names must be
 the constants (`COL.*`, `PROP.*`, `DATA_*`, `GROUP_*`), never literals, under
@@ -281,13 +281,13 @@ and **pins how many files it walked** so a scanner that stops early can't pass.
 
 ### 5.5 Docs on the source
 
-- `test/jsdoc-coverage.mjs` + `scripts/jsdoc-coverage.mjs` — every public
+- `test/jsdoc-coverage.test.mjs` + `scripts/jsdoc-coverage.mjs` — every public
   member documented; `@throws` required where the body throws, `@param` where
   it takes arguments, `@returns` gated.
-- `test/modules/jsdoc-returns.mjs`, `jsdoc-stranded.mjs` (report-only
+- `test/modules/jsdoc-returns.test.mjs`, `jsdoc-stranded.mjs` (report-only
   stranded-block detector), `internal-tag.mjs` (`@internal` stripping from the
   `.d.ts`).
-- `test/docs-generate.mjs` — the API model generator against the shipped
+- `test/docs-generate.test.mjs` — the API model generator against the shipped
   declaration.
 
 ### 5.6 Error contract — `npm run test:throws`
@@ -300,19 +300,19 @@ and **pins how many files it walked** so a scanner that stops early can't pass.
 
 | Spec | Holds |
 | --- | --- |
-| `test/modules/schemas.mjs` | hand-written `schemas/*.json` both ways against `PROP`, the compiler and `public-types.mts` — a new style property/layout option/factory option fails until it is in the schema |
-| `test/modules/feature-inventory.mjs` | `docs/features.csv` coverage against the generated API and style registries |
-| `test/modules/migration-guide.mjs` | `MIGRATING.md`'s property table against the running library |
-| `test/modules/layout-options-panel.mjs` | the debug page's options table against every layout option interface |
-| `test/modules/gesture-inventory.mjs` | every emitted gesture event is inventoried; cited spec titles exist |
-| `test/modules/gesture-traces.mjs` | trace scripts, records, inventory and comparator agree |
-| `test/modules/golden-coverage.mjs` | pins how many style properties no golden exercises |
-| `test/modules/bundle-size.mjs` | slim-build size budget and per-artifact ratchet |
-| `test/modules/packaging.mjs` | what `npm pack` ships, and that the manifest points at real files |
-| `test/modules/debug-harness.mjs` | every debug fixture exists at the fetched path; every sheet compiles against its data |
-| `test/modules/runtime-smoke.mjs` | the cross-runtime smoke never soft-skips; its controls fail |
-| `test/modules/status-site.mjs` | the status site's intended output |
-| `test/modules/wgsl-minify.mjs`, `wgsl-identifiers.mjs`, `const-inline.mjs` | the shader build transforms |
+| `test/modules/schemas.test.mjs` | hand-written `schemas/*.json` both ways against `PROP`, the compiler and `public-types.mts` — a new style property/layout option/factory option fails until it is in the schema |
+| `test/modules/feature-inventory.test.mjs` | `docs/features.csv` coverage against the generated API and style registries |
+| `test/modules/migration-guide.test.mjs` | `MIGRATING.md`'s property table against the running library |
+| `test/modules/layout-options-panel.test.mjs` | the debug page's options table against every layout option interface |
+| `test/modules/gesture-inventory.test.mjs` | every emitted gesture event is inventoried; cited spec titles exist |
+| `test/modules/gesture-traces.test.mjs` | trace scripts, records, inventory and comparator agree |
+| `test/modules/golden-coverage.test.mjs` | pins how many style properties no golden exercises |
+| `test/modules/bundle-size.test.mjs` | slim-build size budget and per-artifact ratchet |
+| `test/modules/packaging.test.mjs` | what `npm pack` ships, and that the manifest points at real files |
+| `test/modules/debug-harness.test.mjs` | every debug fixture exists at the fetched path; every sheet compiles against its data |
+| `test/modules/runtime-smoke.test.mjs` | the cross-runtime smoke never soft-skips; its controls fail |
+| `test/modules/status-site.test.mjs` | the status site's intended output |
+| `test/modules/wgsl-minify.test.mjs`, `wgsl-identifiers.mjs`, `const-inline.mjs` | the shader build transforms |
 
 ### 5.8 Lint and format are tools, not taste
 
@@ -442,7 +442,7 @@ broken, and watch it fail.*  Specific rules an agent inherits:
 - A leak gate measures reachability (`WeakRef` + `--expose-gc`), not bytes.
 - Headless layout specs must set `headlessWidth/Height` to the page they stand
   in for.
-- Layout changes go through `test/layout-quality.mjs` first, whose overlap rows
+- Layout changes go through `test/layout-quality.test.mjs` first, whose overlap rows
   each carry a red control.
 - Mid-flight browser assertions poll for state; they don't sleep to an offset.
 - Pin each guard deterministically in `test/`, not only via a fuzzer.
@@ -554,7 +554,7 @@ cross-commit comparison with frozen v3 rows as a noise control.  An agent's
   equivalent).
 - **`.npmignore`** excludes `.claude` with the reason (a 352 MB abandoned
   worktree), plus `AGENTS.md`, `CLAUDE.md`, `PLAN.md`, `plan/`, `docs/`;
-  `test/modules/packaging.mjs` gates the pack contents.
+  `test/modules/packaging.test.mjs` gates the pack contents.
 - **`.claude/settings.local.json`** sets the Concise output style.
 - **Worktree cleanup** is a closing-sweep rule (§8).
 - **Commit trailers** link each agent commit to its session.

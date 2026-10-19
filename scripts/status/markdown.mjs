@@ -86,7 +86,7 @@ const GLOB = /[*?]|\/$/;
  *
  * A heuristic ("skip anything that looks historical") cannot draw that line,
  * so this is an allowlist on round 37.1's terms — maintained, and checked in
- * both directions by `test/modules/status-site.mjs`:
+ * both directions by `test/modules/status-site.test.mjs`:
  *
  *   - an entry no document mentions any more **fails**, so a spelling that
  *     is edited out takes its exemption with it;
@@ -124,7 +124,7 @@ export const HISTORICAL_PATHS = {
  * out its files is more checkable, not less, so these are exempt from the
  * unresolved-path warning — but on the same maintained-allowlist terms as
  * `HISTORICAL_PATHS`, checked in both directions by
- * `test/modules/status-site.mjs`:
+ * `test/modules/status-site.test.mjs`:
  *
  *   - an entry no document mentions any more **fails** (the plan was
  *     edited; the exemption goes with it);
@@ -159,7 +159,7 @@ export const PLANNED_PATHS = {
   'src/algorithms/algo-gpu-bundling.mts':
     'planned by round 83 (GPU edge bundling)',
   // round 85 (the layouts round) began landing 2026-08-31: its
-  // src/layout/radial.mts and test/layout-radial.mjs entries left this
+  // src/layout/radial.mts and test/layout-radial.test.mjs entries left this
   // list when the files began resolving — the documented lifecycle.
   // round 87 (layout mechanics) began landing 2026-08-31: its
   // src/layout/pack.mts entry left this list when the file began
@@ -227,9 +227,19 @@ export function buildToc(tokens, seen, { maxDepth = 3 } = {}) {
     }));
 }
 
-/** Resolve a documented path against the tree, honouring `.mjs` -> `.mts`. */
+/**
+ * Resolve a documented path against the tree, honouring `.mjs` -> `.mts`
+ * and a spec's rename to `*.test.mjs` (2026-10-19, so `bun test` and
+ * `node --test` discover the specs): the record cites the old names.
+ */
 export function resolveRepoPath(path, root) {
-  const candidates = [path, path.replace(/\.mjs$/, '.mts')];
+  const candidates = [
+    path,
+    path.replace(/\.mjs$/, '.mts'),
+    ...(/^test\/(?:(?:modules|soak)\/)?[^/]+(?<!\.test)\.mjs$/.test(path)
+      ? [path.replace(/\.mjs$/, '.test.mjs')]
+      : []),
+  ];
 
   for (const c of candidates) {
     if (existsSync(join(root, c))) {

@@ -3,7 +3,7 @@
 // Fixture conversion and the in-page generators (round 43).
 //
 // Split out of init.js so the same code can be exercised outside the browser —
-// `test/modules/debug-harness.mjs` compiles every network's sheet against its
+// `test/modules/debug-harness.test.mjs` compiles every network's sheet against its
 // real fixture, which is the check that would have caught both the round-42
 // path breakage and a style property the engine no longer accepts.
 

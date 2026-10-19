@@ -23,7 +23,7 @@ values (the diff restores them), so sync reads during a transition-delay
 report the pre-restyle state — CSS's rule.
 
 Ticks drive deterministically via cy._animations.tick(now), as in
-test/animation.mjs.
+test/animation.test.mjs.
 */
 
 describe('gpu/style: transitions (round 24.1)', function () {

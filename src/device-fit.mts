@@ -21,7 +21,7 @@ rejected, every frame, silently.  Two changes close that:
   class) with the store untouched.
 
 Pure and GPU-free: the core imports this, and the core tier reaches no
-device code (`test/modules/import-graph.mjs`).
+device code (`test/modules/import-graph.test.mjs`).
 */
 
 /** The subset of `GPUSupportedLimits` the fit checks read. */

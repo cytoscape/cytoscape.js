@@ -418,7 +418,7 @@
         "sourceRefs": [
           "src/style/apply-prop.mts:832-840"
         ],
-        "rejectionTest": "test/modules/feature-scenes.mjs rejects node autorotate and accepts edge autorotate",
+        "rejectionTest": "test/modules/feature-scenes.test.mjs rejects node autorotate and accepts edge autorotate",
         "validRoutes": [
           "debug/index.html?network=features&scene=labels&view=nodes",
           "debug/index.html?network=features&scene=labels&view=edges"

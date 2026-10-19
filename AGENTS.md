@@ -35,9 +35,9 @@ deleting a word of them.
   v3-vs-v4 pixel-parity harness run against it.  **Do not change it**
   unless the task says v3; see `v3/AGENTS.md`.
 - Nothing under `src/` imports outside `src/`, and a spec enforces that
-  (`test/modules/import-graph.mjs`).
+  (`test/modules/import-graph.test.mjs`).
 - **`schemas/` holds the shipped JSON schemas** (round 79), hand-written
-  and gated both ways by `test/modules/schemas.mjs`: a new style
+  and gated both ways by `test/modules/schemas.test.mjs`: a new style
   property, layout option or factory option goes into its schema too.
 - **`src/README.md` is v4's maintained scope / deviations / design
   decisions doc**, and **`PLAN.md` plus `plan/` is the
@@ -72,7 +72,7 @@ deleting a word of them.
   three entries (round 131): `./src/index.mjs` into UMD, minified UMD,
   CJS, ESM and minified ESM; `./src/headless.mjs` and
   `./src/headless-gpu.mjs` into ESM, minified ESM and CJS.  A slim entry
-  must not reach a higher tier — `test/modules/import-graph.mjs` walks
+  must not reach a higher tier — `test/modules/import-graph.test.mjs` walks
   it.  v3 has its own `v3/rolldown.config.mjs`.
 - **The bundles ship minified WGSL**, so a shader literal carries the
   `wgsl` tag and never holds an interpolation inside a comment —
@@ -80,7 +80,7 @@ deleting a word of them.
 - **Column ids, style property names, the reserved data keys and the
   group names are constants** — `COL.NODE_POSITION`,
   `PROP.BACKGROUND_COLOR`, `DATA_SOURCE`, `GROUP_NODES` — never the
-  literal under `src/`; `test/modules/string-keys.mjs` rejects it
+  literal under `src/`; `test/modules/string-keys.test.mjs` rejects it
   (round 127).
 - **Library source of truth is `src/`.**  `build/` and `dist/` are updated
   only via the project scripts.
@@ -97,14 +97,15 @@ composite is zero bytes end to end.  A green `test:node` was ~3,800 lines
 of context; its quiet twin is 0.  The loud originals remain for humans
 watching progress, for debugging (a quiet run shows nothing until it
 finishes — diagnose a hang by rerunning the loud twin) and for CI, whose
-logs are the record.  `test/modules/quiet-scripts.mjs` enforces that each
+logs are the record.  `test/modules/quiet-scripts.test.mjs` enforces that each
 twin is the loud command modulo the reporter flag, so the pairs cannot
 drift.
 
 | Command | Time | What it is |
 | --- | --: | --- |
 | `npm run -s verify` | ~9 s | typecheck + lint + `test:js` — **the inner loop** |
-| `npm run -s test:js:one -- test/<f>.mjs` | — | one spec file, with the shim preloaded |
+| `npm run -s test:js:one -- test/<f>.test.mjs` | — | one spec file, with the shim preloaded |
+| `bun test --parallel` | ~20 s | every spec (`test/**/*.test.mjs`) under Bun; plain `bun test` works too, in one process (~90 s) |
 | `npm run -s test:node:quiet` | ~90 s | the gate before handing work back |
 | `npm run -s test:bun:quiet` | — | public, module/packaging and soak parity under Bun, plus Bun throws coverage |
 | `npm run -s test:quiet` | minutes | the Node tier plus Playwright (the quiet `npm test`) |
@@ -193,5 +194,5 @@ that covers what you are touching — the routing table above says which.
 - [`docs/agents/documentation.md`](docs/agents/documentation.md) — the
   JSDoc gates and the records.
 
-`test/modules/agent-docs.mjs` gates this file's size, every path it names,
+`test/modules/agent-docs.test.mjs` gates this file's size, every path it names,
 and the links between it and the notes.

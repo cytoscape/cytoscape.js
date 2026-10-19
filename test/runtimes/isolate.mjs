@@ -14,7 +14,7 @@ into the same context), plus the one property an isolate adds: with no
 worker platform, `executor: 'auto'` runs on the calling thread.
 
 This is the gate that runs on every Node-tier run
-(`test/modules/isolate-smoke.mjs`); `test:runtimes:workerd` runs the same
+(`test/modules/isolate-smoke.test.mjs`); `test:runtimes:workerd` runs the same
 checks on the real runtime.  The exit code is the contract, and the
 dict-as-array control must fail here too.
 */

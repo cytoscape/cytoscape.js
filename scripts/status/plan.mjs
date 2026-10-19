@@ -95,9 +95,9 @@ export function minifiedSize(path) {
  * The harness mirror.
  *
  * Two files in the copy differ from the source, and that list is closed —
- * `test/modules/status-site.mjs` diffs `index.html` and fails on a third edit.
+ * `test/modules/status-site.test.mjs` diffs `index.html` and fails on a third edit.
  * Everything else is byte-for-byte, because a transform applied to a copy is
- * invisible to `test/modules/debug-harness.mjs`.
+ * invisible to `test/modules/debug-harness.test.mjs`.
  */
 export function planDebug({ root, networks, wireEnabled = true }) {
   const ops = [];

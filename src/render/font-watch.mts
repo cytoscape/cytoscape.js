@@ -7,7 +7,7 @@ face finished loading was drawn from the fallback face and stays cached,
 so the renderer re-rasters when a face loads — and since a re-raster
 clears the atlas, the shaping memo and every glyph run, it should happen
 only for a face the atlas actually names.  These are the pure halves of
-that decision, exported for `test/modules/font-watch.mjs`; the wiring
+that decision, exported for `test/modules/font-watch.test.mjs`; the wiring
 lives in `renderer/fonts.mts`.
 
 Measured in Chromium (2026-09-28): a `loadingdone` event's `fontfaces`

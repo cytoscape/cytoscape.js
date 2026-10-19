@@ -371,7 +371,7 @@ describe('algorithms: the workers executor (round 74)', function () {
 
       // pageRank and weighted closeness rejected here through round
       // 128; since 129.1 an explicit 'workers' runs their offload lane
-      // (test/algorithms-offload.mjs pins that they ran on a worker)
+      // (test/algorithms-offload.test.mjs pins that they ran on a worker)
       const ranks = await cy.elements().pageRank({ executor: 'workers' });
 
       expect(ranks.rank(cy.nodes()[0])).to.be.a('number');
@@ -634,7 +634,7 @@ describe('algorithms: the workers executor (round 74)', function () {
           'navigator',
         );
         _resetAlgoGpu();
-        // a working adapter, as test/algorithms-executor.mjs stubs it
+        // a working adapter, as test/algorithms-executor.test.mjs stubs it
         Object.defineProperty(globalThis, 'navigator', {
           value: {
             gpu: {

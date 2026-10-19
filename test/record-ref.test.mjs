@@ -12,7 +12,7 @@ could use a wrong record. These specs pin the store's saturation and
 readback, the compaction rewrite, and the renderer's degradation at the
 real boundary. Chart references now use offset+1 in a u32 word, with the
 count in the chart header (round 80.1); their mixed record and bit-exact
-color contract lives in `test/modules/chart-record.mjs`.
+color contract lives in `test/modules/chart-record.test.mjs`.
 */
 
 const N_IMAGES = 254;

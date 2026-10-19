@@ -20,7 +20,7 @@ inflated a plain refcount array to that length and reduced over it —
 `cytoscape( { elements: buffer } )` went from 0.6 ms to never returning,
 with no error raised anywhere. Fixed in `DataStore.ingestColumn`, where both
 branches already walk every index so the guard is free; pinned
-deterministically in `test/wire.mjs`, and left here as the search that finds
+deterministically in `test/wire.test.mjs`, and left here as the search that finds
 the next one.
 
 Determinism matters for a fuzzer that gates a build: the mutations come from

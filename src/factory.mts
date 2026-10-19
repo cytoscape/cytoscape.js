@@ -18,7 +18,7 @@ types and docs, not another refactor.
 Every edge is loud (the guard-nothing-triggers rule): a build with no
 renderer given a `container` throws its `noRendererMessage` at the point
 the full build's WebGPU check throws, before `_bulkAdd` (an ingest error
-must not win over the container error, `test/core-api.mjs`), and
+must not win over the container error, `test/core-api.test.mjs`), and
 `cy.mount()` throws the same (`core/lifecycle.mts`).
 */
 

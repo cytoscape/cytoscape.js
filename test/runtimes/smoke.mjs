@@ -10,7 +10,7 @@ the bundles requires (`node:module` and `node:url` for the
 CJS require; Node and Bun provide both) and its own checks, which
 live in `smoke-checks.mjs` since round 131 so the isolate and workerd
 hosts run them too — anything more and this file silently becomes a
-fourth test tier with its own compat needs.  `test/modules/runtime-smoke.mjs`
+fourth test tier with its own compat needs.  `test/modules/runtime-smoke.test.mjs`
 lints exactly that, enumerates the npm scripts that wrap this file
 (`test:runtimes:node` / `:bun`, each `run-s build …` so a stale
 bundle cannot pass for a fresh one), and runs the Node controls.

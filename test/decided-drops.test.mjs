@@ -95,7 +95,7 @@ describe('gpu/decided drops (29.3)', function () {
       // graph and the first node of another packed identically: `same()`
       // answered *true*, `intersection()` returned everything,
       // `difference()` returned nothing, and `union()` silently dropped the
-      // other graph's elements. `test/soak/isolation.mjs` covers the whole
+      // other graph's elements. `test/soak/isolation.test.mjs` covers the whole
       // surface; this pins the throw where the coverage gate can see it.
       const other = graph();
       const a = cy.$id('a');
@@ -449,7 +449,7 @@ describe('gpu/decided drops (29.3)', function () {
     // 63 reverses that decided drop: `ele.style( name, value )` works
     // again, as sugar over the stylesheet's `bypasses` section — the
     // behaviour (and its precedence, export and removal semantics) is
-    // pinned in test/style-bypass.mjs, and the ledger entry is item 25.
+    // pinned in test/style-bypass.test.mjs, and the ledger entry is item 25.
     it('per-element style bypass returned in round 63 (the setter form works)', function () {
       cy.$id('a').style('background-color', 'red');
       expect(cy.$id('a').style('background-color')).to.equal('rgb(255,0,0)');

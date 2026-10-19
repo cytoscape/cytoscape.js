@@ -909,7 +909,7 @@
                 'The autorotate keyword is edge-only; node text-rotation takes numeric radians (src/style/apply-prop.mts:832-840). The valid edge example is kept in the labels/edges scene.',
               sourceRefs: ['src/style/apply-prop.mts:832-840'],
               rejectionTest:
-                'test/modules/feature-scenes.mjs rejects node autorotate and accepts edge autorotate',
+                'test/modules/feature-scenes.test.mjs rejects node autorotate and accepts edge autorotate',
               validRoutes: [
                 'debug/index.html?network=features&scene=labels&view=nodes',
                 'debug/index.html?network=features&scene=labels&view=edges',
@@ -1378,7 +1378,7 @@
               value: 'null',
               alternate: 'anonymous',
               reason:
-                'All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs.',
+                'All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.test.mjs.',
             },
             {
               group: 'nodes',
@@ -1387,7 +1387,7 @@
               value: 'use-credentials',
               alternate: 'anonymous',
               reason:
-                'All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs.',
+                'All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.test.mjs.',
             },
           ],
         ),

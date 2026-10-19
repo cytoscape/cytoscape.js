@@ -8,7 +8,7 @@ import { ForceSim, defaultForceParams } from '../../src/layout/force-sim.mjs';
 // never settling (the projection's own corrections keep maxDisp hot),
 // project-then-fold can converge while violated (the last tick would
 // end unprojected).  The public option surface and its throws are
-// covered in test/force-constraints.mjs.
+// covered in test/force-constraints.test.mjs.
 
 const ring = (n) => {
   const edges = [];

@@ -8,7 +8,7 @@ Run once, by hand, when a fixture graph or a reference changes:
 
 It writes test/fixtures/algorithm-references.json: the fixture graphs, and
 per algorithm the values an independent implementation computes on them.
-test/algorithms-reference.mjs builds the same graphs in v4 and compares.
+test/algorithms-reference.test.mjs builds the same graphs in v4 and compares.
 The specs never run Python; the JSON is the checked-in record.
 
 Each reference is chosen to compute *v4's* definition, which is v3's where

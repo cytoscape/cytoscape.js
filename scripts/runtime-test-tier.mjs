@@ -17,10 +17,11 @@ const SUITES = {
   modules: join(ROOT, 'test', 'modules'),
   soak: join(ROOT, 'test', 'soak'),
 };
-const PUBLIC_EXCLUSIONS = /^(?:types-.*|node-test-setup|quiet-reporter)\.mjs$/;
 const NODE_REPORTER = join(ROOT, 'scripts', 'node-test-events-reporter.mjs');
 const NODE_PRELOAD = join(ROOT, 'test', 'node-test-setup.mjs');
 const BUN_PRELOAD = join(ROOT, 'test', 'lib', 'bun-test-setup.mjs');
+// keeps the repo bunfig.toml (plain `bun test`'s preload) out of the run
+const BUN_CONFIG = join(ROOT, 'test', 'lib', 'bunfig.scripted.toml');
 const FILE_PROCESS_TIMEOUT_MS = 15 * 60 * 1000;
 const CAPTURE_LIMIT = 64 * 1024 * 1024;
 const activeChildren = new Set();
@@ -96,11 +97,9 @@ const discoverFiles = async (suite) => {
     const entries = await readdir(dir, { withFileTypes: true });
 
     for (const entry of entries) {
-      if (!entry.isFile() || !entry.name.endsWith('.mjs')) {
-        continue;
-      }
-
-      if (name === 'public' && PUBLIC_EXCLUSIONS.test(entry.name)) {
+      // specs are *.test.mjs, the names `bun test` and `node --test`
+      // discover on their own
+      if (!entry.isFile() || !entry.name.endsWith('.test.mjs')) {
         continue;
       }
 
@@ -362,6 +361,7 @@ const runBun = async (files) => {
 
     const args = [
       'test',
+      `--config=${BUN_CONFIG}`,
       '--isolate',
       `--preload=${BUN_PRELOAD}`,
       '--reporter=junit',

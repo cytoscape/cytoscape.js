@@ -1,0 +1,3 @@
+# bun test runs started by scripts set their own preloads; this empty config
+# keeps the repo bunfig.toml (whose shim preload would load src modules
+# before a probe plugin registers) out of them

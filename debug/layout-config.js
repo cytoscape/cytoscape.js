@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 
 // The layout section's pure parts (round 114.7), split out of layout.js
-// and init.js so `test/modules/debug-harness.mjs` can exercise the same
+// and init.js so `test/modules/debug-harness.test.mjs` can exercise the same
 // code without a DOM: which curve style suits which layout, the load
 // snapshot Preset restores, how the two force checkboxes spell the
 // run, and the hover panel's size gate.

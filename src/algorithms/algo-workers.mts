@@ -20,7 +20,7 @@ a Blob URL — so every single-file bundle (five for the full entry, three
 per slim entry since round 131) stays single-file and no
 bundler is asked to know about a worker.  The preamble defines a no-op
 `__name` because tsx wraps closure creation in one (the AGENTS
-hot-path lesson); `test/modules/algo-worker-body.mjs` is the tripwire
+hot-path lesson); `test/modules/algo-worker-body.test.mjs` is the tripwire
 for any other helper a transpiler might sneak into the body.
 
 Determinism, designed honestly (74's fact 5): the range partition is a

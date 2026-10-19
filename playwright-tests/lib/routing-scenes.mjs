@@ -230,7 +230,7 @@ const segments = () => {
  * R4 — the boundary-approximation tier, measured.
  *
  * v4 treats round-rectangles as their box and every polygon as its
- * inscribed ellipse (`src/curve-geometry.mts`).  `test/curve-geometry.mjs`
+ * inscribed ellipse (`src/curve-geometry.mts`).  `test/curve-geometry.test.mjs`
  * now measures that at the leaf; this scene measures what it costs at the
  * end of a real edge, which is the number an application sees.
  */

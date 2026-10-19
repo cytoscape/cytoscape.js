@@ -353,7 +353,7 @@
         "target": "image-1",
         "value": "null",
         "alternate": "anonymous",
-        "reason": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs."
+        "reason": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.test.mjs."
       },
       {
         "group": "nodes",
@@ -361,7 +361,7 @@
         "target": "image-2",
         "value": "use-credentials",
         "alternate": "anonymous",
-        "reason": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.mjs."
+        "reason": "All image sources are data URLs and make no network request, so request credentials cannot change pixels here. Fetch-policy behavior is exercised in test/image-registry.test.mjs."
       }
     ]
   }

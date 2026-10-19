@@ -103,7 +103,7 @@ function requireWireLib(root) {
 
 /**
  * `debug/fixtures.js`'s exports, loaded the way
- * `test/modules/debug-harness.mjs` loads them: it is a plain browser script
+ * `test/modules/debug-harness.test.mjs` loads them: it is a plain browser script
  * declaring a global, not a module.
  */
 export function harnessFixtures(root) {

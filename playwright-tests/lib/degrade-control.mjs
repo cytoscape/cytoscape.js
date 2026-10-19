@@ -20,7 +20,7 @@ It runs inside the golden pass, from `checkGolden`, when
 `DEGRADE_CONTROL=1` is set — after the PNG and the coverage record have
 both matched, on the same live scene — and writes one record per golden
 to `playwright-tests/golden-degrade/<name>.json`.  The Node tier
-(`scripts/golden-coverage.mjs`, gated by `test/modules/golden-coverage.mjs`)
+(`scripts/golden-coverage.mjs`, gated by `test/modules/golden-coverage.test.mjs`)
 reads them: a record that no longer covers exactly its golden's
 exercised pairs is stale, and the counts are pinned.
 

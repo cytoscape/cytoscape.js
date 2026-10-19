@@ -41,7 +41,7 @@ Two things make the split safe rather than merely tidy:
    status site still publishes one continuous "Development record" page.
 
 The section index is generated (`scripts/plan-index.mjs` -> `plan/INDEX.md`)
-and gated (`test/modules/plan-record.mjs`), so it cannot drift from the files.
+and gated (`test/modules/plan-record.test.mjs`), so it cannot drift from the files.
 */
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';

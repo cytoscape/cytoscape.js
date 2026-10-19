@@ -30,7 +30,7 @@
 //     `ani` and `layout` and not its internal renderer or style classes)
 //     rather than inventing a rule.
 //
-// Validation is not this file's job either: `test/docs-generate.mjs`
+// Validation is not this file's job either: `test/docs-generate.test.mjs`
 // cross-checks the output against the *shipped* declaration, which is the
 // artifact a consumer actually holds.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -68,7 +68,7 @@ export const NAMESPACES = {
 /**
  * Where a documented class ships under a different name in the declaration:
  * `AnimationHandleImpl` implements — and is typed to consumers as — the
- * `AnimationHandle` interface.  `test/docs-generate.mjs` reads this for its
+ * `AnimationHandle` interface.  `test/docs-generate.test.mjs` reads this for its
  * cross-check.
  */
 export const DTS_NAMES = {

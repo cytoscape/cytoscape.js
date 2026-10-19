@@ -813,7 +813,7 @@ describe('status site: what the builder needs', function () {
     // the *test* suite (benchmark/graph.mjs -> v3/src/test.mjs -> heap), and if
     // the status build ever acquired that dependency the deploy would fail with
     // a module-not-found nobody would connect to this.  Measured, not asserted:
-    // the precedent is `test/modules/import-graph.mjs`.
+    // the precedent is `test/modules/import-graph.test.mjs`.
     const seen = new Set();
 
     const walk = (file) => {

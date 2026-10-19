@@ -9,7 +9,7 @@ import {
 /*
 Round 45: the docs generator's parser, against fixtures.
 
-The precedent is `test/modules/throw-coverage.mjs` and its siblings — a
+The precedent is `test/modules/throw-coverage.test.mjs` and its siblings — a
 tool's parser gets a fixture rather than trust, because a scanner that
 silently stops matching reads exactly like a clean tree.
 

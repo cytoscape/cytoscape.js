@@ -9,7 +9,7 @@ import cytoscape from '../src/index.mjs';
 // since 129.3 as revisited in 131, bit-identical to in-thread — so a
 // headless run is deterministic under a seed, read at promise():
 // what these specs pin.  The projection maths itself is pinned at the sim level in
-// test/modules/force-constraints.mjs.
+// test/modules/force-constraints.test.mjs.
 
 describe('gpu/layout: force constraints (round 85.2)', function () {
   var cy;

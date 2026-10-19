@@ -10,13 +10,13 @@ Most entry points already normalized (`resolveConst`, the getter memo,
 the transition and animation parsers, the compound and core splitters);
 this file is what pins that as a contract rather than a coincidence,
 across the whole readable surface at once.  The styled fixtures are
-copies of `test/style-readback-all.mjs`'s (importing a spec file would
+copies of `test/style-readback-all.test.mjs`'s (importing a spec file would
 re-register its suites under this file's run) — drift between the
 copies is harmless, because each file asserts against the live engine
 rather than against the other.
 
 The bypasses section and `removeStyle` take both spellings too —
-pinned beside their behaviour in `test/style-bypass.mjs` (the camel
+pinned beside their behaviour in `test/style-bypass.test.mjs` (the camel
 section entry, and a dash-set prop removed via its camel spelling).
 */
 

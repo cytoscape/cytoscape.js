@@ -9,7 +9,7 @@
 //
 // Structure: `buildPlan()` decides what the site contains and is pure (stat
 // calls only); `executePlan()` is the only thing that writes.  That split is
-// what lets `test/modules/status-site.mjs` check the *intended* output without
+// what lets `test/modules/status-site.test.mjs` check the *intended* output without
 // copying 48 MiB of fixtures first.
 //
 // Options:

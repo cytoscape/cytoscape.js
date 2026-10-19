@@ -8,7 +8,7 @@ package, a devDependency) on a free local port, fetches the smoke worker
 (`workerd-main.mjs`), and exits by the answer: `ok <n>` passes; anything
 else fails with the worker's own message.  The dict-as-array control runs
 in the same process against the same server and must fail, so a worker
-that passes vacuously cannot.  `test/modules/isolate-smoke.mjs` is the
+that passes vacuously cannot.  `test/modules/isolate-smoke.test.mjs` is the
 per-run gate that needs nothing installed; this is the real runtime, in
 CI's `ci-workerd` job and by hand.
 */

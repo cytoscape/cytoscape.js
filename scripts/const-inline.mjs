@@ -9,7 +9,7 @@ minifier mangles `COL` but never `.NODE_POSITION`, so each reference
 shipped longer than the literal it replaced, and the tables shipped
 besides.  This transform puts the literal back in the *bundle* while the
 source keeps the constant, so the gate that keeps the literals out of
-`src/` (`test/modules/string-keys.mjs`) and the bundle size both hold.
+`src/` (`test/modules/string-keys.test.mjs`) and the bundle size both hold.
 
 Two rewrites, both on the module's AST (rolldown's oxc parser), never on
 its text by pattern:

@@ -4,7 +4,7 @@
 // needs no library.  `graph.mjs` imports both v3 and v4 to build its
 // `makeV3` / `makeGpu` factories, so anything importing it evaluates both
 // libraries — and `bench-run.mjs` wants only `N`.  That pulled v3's whole
-// dependency tree into `test/modules/benchmark-report.mjs`, a spec about
+// dependency tree into `test/modules/benchmark-report.test.mjs`, a spec about
 // rendering an HTML report, which then needed v3's `heap` installed to
 // read the number 2000.
 //

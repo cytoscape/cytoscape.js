@@ -69,7 +69,7 @@ describe('manual demo coverage ledger', function () {
       'src/style/apply-prop.mts:832-840',
     );
     expect(unsupported.semanticException.rejectionTest).to.include(
-      'test/modules/feature-scenes.mjs',
+      'test/modules/feature-scenes.test.mjs',
     );
     expect(unsupported.semanticException.validRoutes).to.have.length(2);
     expect(report.counts.keywordKinds).to.have.property(

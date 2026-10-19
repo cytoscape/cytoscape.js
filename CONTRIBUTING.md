@@ -58,8 +58,8 @@ If your change is a bugfix, please add a test that would fail without your fix. 
 
 | tier | command | what it covers |
 |---|---|---|
-| unit | `npm run test:js` | `test/*.mjs` — the public API and the algorithms |
-| internal | `npm run test:modules` | `test/modules/*.mjs` — internals and repository tooling |
+| unit | `npm run test:js` | `test/*.test.mjs` — the public API and the algorithms |
+| internal | `npm run test:modules` | `test/modules/*.test.mjs` — internals and repository tooling |
 | robustness | `npm run test:soak` | leaks, churn, wire fuzzing, multi-instance isolation |
 | guards | `npm run test:throws` | every `throw` in `src/` is reached by some spec |
 | browser | `npm run test:playwright` | the renderer, visual goldens, v3-vs-v4 parity |

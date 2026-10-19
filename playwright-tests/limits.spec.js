@@ -24,8 +24,8 @@ Two instruments, both installed in the page before the instance exists:
   (the probe's `--inject`, item 36's first measurement).
 
 The Node half — the growth rule, the message, every add path, the store
-unchanged — is `test/gpu-fit.mjs`; the ledger's counting is
-`test/modules/gpu-ledger.mjs`.
+unchanged — is `test/gpu-fit.test.mjs`; the ledger's counting is
+`test/modules/gpu-ledger.test.mjs`.
 */
 
 const PAGE = 'http://127.0.0.1:3333/playwright-page/index.html';

@@ -16,7 +16,7 @@ That carriage is what shapes every line:
     the globals; a reference to anything outside it is a
     ReferenceError at the first job that reaches it.  Helpers a kernel
     needs (MCL's expand / inflate / convergence test, AP's exemplar
-    scan) are inner functions.  `test/modules/algo-worker-body.mjs`
+    scan) are inner functions.  `test/modules/algo-worker-body.test.mjs`
     evaluates the pool's complete source — body and kernels — in a
     bare scope from the built ESM, the built UMD and under tsx.
   - **ES2018-plain**, as the body: the bundles are transpiled to that

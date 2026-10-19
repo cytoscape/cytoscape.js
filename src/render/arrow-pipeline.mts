@@ -7,6 +7,7 @@ import type { ColumnMirror } from './column-mirror.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 import { COL } from '../contract.mjs';
+import { lazyRenderPipeline } from './lazy-pipeline.mjs';
 
 /**
  * Edge arrowheads: one quad per visible edge per enabled end, reusing
@@ -31,9 +32,9 @@ const ARROW_COLUMNS: ColumnId[] = [
 
 export class ArrowPipeline {
   private pipeline: GPURenderPipeline;
-  private midPipeline: GPURenderPipeline;
-  private pickPipeline: GPURenderPipeline;
-  private midPickPipeline: GPURenderPipeline;
+  private midPipeline: () => GPURenderPipeline;
+  private pickPipeline: () => GPURenderPipeline;
+  private midPickPipeline: () => GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   private endUniforms: [GPUBuffer, GPUBuffer, GPUBuffer, GPUBuffer]; // [tgt, src, midTgt, midSrc]
@@ -159,7 +160,7 @@ export class ArrowPipeline {
       },
     });
 
-    this.midPipeline = device.createRenderPipeline({
+    this.midPipeline = lazyRenderPipeline(device, {
       label: 'cy-gpu:arrow-mid-pipeline',
       layout,
       vertex: { module, entryPoint: 'vsMidArrow' },
@@ -179,7 +180,7 @@ export class ArrowPipeline {
     // the pick twins (57.10): same vertex shaders, id-writing fragment,
     // r32uint target, and (round 105) the pick depth: the head writes its
     // SDF distance, so a nearer stroke beats it and its interior beats all
-    this.pickPipeline = device.createRenderPipeline({
+    this.pickPipeline = lazyRenderPipeline(device, {
       label: 'cy-gpu:arrow-pick-pipeline',
       layout,
       vertex: { module, entryPoint: 'vsArrow' },
@@ -192,7 +193,7 @@ export class ArrowPipeline {
       depthStencil: PICK_DEPTH_STENCIL, // round 105: nearest-wins
     });
 
-    this.midPickPipeline = device.createRenderPipeline({
+    this.midPickPipeline = lazyRenderPipeline(device, {
       label: 'cy-gpu:arrow-mid-pick-pipeline',
       layout,
       vertex: { module, entryPoint: 'vsMidArrow' },
@@ -303,7 +304,7 @@ export class ArrowPipeline {
 
     const groups = this.ensureBindGroups(device, uniform, mirror);
 
-    pass.setPipeline(pick ? this.pickPipeline : this.pipeline);
+    pass.setPipeline(pick ? this.pickPipeline() : this.pipeline);
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');
 
@@ -336,7 +337,7 @@ export class ArrowPipeline {
 
     const groups = this.ensureBindGroups(device, uniform, mirror);
 
-    pass.setPipeline(pick ? this.midPickPipeline : this.midPipeline);
+    pass.setPipeline(pick ? this.midPickPipeline() : this.midPipeline());
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');
 

@@ -194,7 +194,7 @@ export const UNREACHABLE = {
     'column spec/group mismatch — an internal invariant; every caller ' +
     'passes a ColumnId the mirror was built from, and no public input ' +
     'chooses the id',
-  'src/render/gpu-tween.mts:499':
+  'src/render/gpu-tween.mts:502':
     'geometry write-kind invariant — barred one layer up by the ' +
     'all-or-nothing eligibility rule (round 25.1), which keeps a lane/' +
     'padding/fontSize write off the device by refusing the whole ' +

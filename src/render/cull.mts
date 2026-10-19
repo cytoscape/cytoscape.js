@@ -1,6 +1,7 @@
 import { wgsl } from '../gpu/wgsl.mjs';
 import { COMMON, GLYPH_STRUCT } from './shaders.mjs';
 import { BUFFER_USAGE, SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
+import { lazyComputePipeline } from './lazy-pipeline.mjs';
 
 /*
 GPU culling: per group (nodes, edges, glyphs) a compute pre-pass compacts
@@ -686,11 +687,13 @@ export class CullKernels {
   /** per kind, the compute bind group layout: frame + meta uniforms, the
    * kind's INPUT_COUNTS storage inputs, then wgCounts/wgOffsets/visible */
   cullLayouts: Record<CullKind, GPUBindGroupLayout>;
-  /** per kind, the csCount dispatch — survivors per 256-slot workgroup */
-  countPipelines: Record<CullKind, GPUComputePipeline>;
+  /** per kind, the csCount dispatch — survivors per 256-slot workgroup;
+   * built on the kind's first encode (a scene with no labels never
+   * compiles the glyph kernels) */
+  countPipelines: Record<CullKind, () => GPUComputePipeline>;
   /** per kind, the csScatter dispatch — writes the visible list; must be
    * dispatched after that kind's count and scan */
-  scatterPipelines: Record<CullKind, GPUComputePipeline>;
+  scatterPipelines: Record<CullKind, () => GPUComputePipeline>;
   /** bind group layout for the kind-independent scan dispatch */
   scanLayout: GPUBindGroupLayout;
   /** the single csScan pipeline, shared by every kind: prefix-scans the
@@ -698,8 +701,8 @@ export class CullKernels {
   scanPipeline: GPUComputePipeline;
 
   /**
-   * Compiles a count and a scatter pipeline for every CullKind plus the
-   * one shared scan pipeline, and creates the @group(1) layout the render
+   * Prepares a count and a scatter pipeline for every CullKind (each
+   * compiled on first use) plus the one shared scan pipeline, and creates the @group(1) layout the render
    * pipelines are built against.  Expensive enough to be a one-per-device
    * object: every CulledGroup and every render pipeline shares one
    * instance, and pipelines must be built from *this* visibleLayout for
@@ -731,8 +734,8 @@ export class CullKernels {
     });
 
     this.cullLayouts = {} as Record<CullKind, GPUBindGroupLayout>;
-    this.countPipelines = {} as Record<CullKind, GPUComputePipeline>;
-    this.scatterPipelines = {} as Record<CullKind, GPUComputePipeline>;
+    this.countPipelines = {} as Record<CullKind, () => GPUComputePipeline>;
+    this.scatterPipelines = {} as Record<CullKind, () => GPUComputePipeline>;
 
     for (const kind of [
       'node',
@@ -775,12 +778,12 @@ export class CullKernels {
       });
 
       this.cullLayouts[kind] = layout;
-      this.countPipelines[kind] = device.createComputePipeline({
+      this.countPipelines[kind] = lazyComputePipeline(device, {
         label: `cy-gpu:${kind}-cull-count`,
         layout: pipelineLayout,
         compute: { module, entryPoint: 'csCount' },
       });
-      this.scatterPipelines[kind] = device.createComputePipeline({
+      this.scatterPipelines[kind] = lazyComputePipeline(device, {
         label: `cy-gpu:${kind}-cull-scatter`,
         layout: pipelineLayout,
         compute: { module, entryPoint: 'csScatter' },
@@ -1016,7 +1019,7 @@ export class CulledGroup {
 
     this.encodes++;
 
-    pass.setPipeline(this.kernels.countPipelines[kind]);
+    pass.setPipeline(this.kernels.countPipelines[kind]());
     pass.setBindGroup(0, this.cullBind);
     pass.dispatchWorkgroups(numWg);
 
@@ -1024,7 +1027,7 @@ export class CulledGroup {
     pass.setBindGroup(0, this.scanBind);
     pass.dispatchWorkgroups(1);
 
-    pass.setPipeline(this.kernels.scatterPipelines[kind]);
+    pass.setPipeline(this.kernels.scatterPipelines[kind]());
     pass.setBindGroup(0, this.cullBind);
     pass.dispatchWorkgroups(numWg);
   }

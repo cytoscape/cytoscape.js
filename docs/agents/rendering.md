@@ -5,6 +5,10 @@ the debug harness draws.  The recurring lesson is that a renderer defect
 looks plausible — a graph with no labels still renders — so the harness and
 the fixtures need their own controls.
 
+## Pipelines compile on first use
+
+- **A pipeline a scene may never draw is built on first use** (`src/render/lazy-pipeline.mts`).  Every created pipeline compiles when the first frame submits, drawn or not, and on SwiftShader — the adapter the visual goldens pin — that is 0.1–1 s each: the pick, casing, layer and mid-arrow variants, the per-kind cull kernels and the tween/mapper kernels were ~60% of a curved scene's first frame, in every visual test.  Deferring them took `--project=visual` from 5:09 to 3:50 on a 16-thread box.  A new variant pipeline goes behind `lazyRenderPipeline`/`lazyComputePipeline`; `test/modules/lazy-pipelines.mjs` pins the existing ones.
+
 ## WGSL ships minified
 
 - **The bundles ship minified WGSL, not the shader text as written** (round 52).  Multi-line WGSL literals carry the `wgsl` template tag (`src/gpu/wgsl.mts`; identity at runtime) and `scripts/wgsl-minify.mjs` strips comments/whitespace at build time with `${...}` kept byte-for-byte opaque — so when adding a shader, tag the literal, and never put an interpolation inside a WGSL comment (a build error; spell the name in prose).  The transform runs in dev builds too, deliberately: Playwright exercises the same transform that ships.

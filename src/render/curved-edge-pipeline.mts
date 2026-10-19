@@ -9,6 +9,7 @@ import { PAIRED_ARGS_OFFSET } from './cull.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 import { COL } from '../contract.mjs';
+import { lazyRenderPipeline } from './lazy-pipeline.mjs';
 
 /**
  * Curved-edge render + picking pipelines (round 12a): one instance per
@@ -43,12 +44,12 @@ const FRAGMENT_COLUMNS: ColumnId[] = [
 
 export class CurvedEdgePipeline {
   private pipeline: GPURenderPipeline;
-  private pickPipeline: GPURenderPipeline;
+  private pickPipeline: () => GPURenderPipeline;
   /** the layer strokes (round 13 A2), one per layer since round 88 */
-  private underlayPipeline: GPURenderPipeline;
-  private overlayPipeline: GPURenderPipeline;
+  private underlayPipeline: () => GPURenderPipeline;
+  private overlayPipeline: () => GPURenderPipeline;
   /** the paired casing-then-line draw (round 124.4) */
-  private casedPipeline: GPURenderPipeline;
+  private casedPipeline: () => GPURenderPipeline;
   private layerBindLayout: GPUBindGroupLayout;
   /** the cased draw's layout: the fused vertex set plus the paint set */
   private casedBindLayout: GPUBindGroupLayout;
@@ -241,7 +242,7 @@ export class CurvedEdgePipeline {
       },
     });
 
-    this.pickPipeline = device.createRenderPipeline({
+    this.pickPipeline = lazyRenderPipeline(device, {
       label: 'cy-gpu:curved-edge-pick-pipeline',
       layout,
       vertex: { module, entryPoint: 'vsCurvedEdge' },
@@ -261,7 +262,7 @@ export class CurvedEdgePipeline {
     // earlier quad of it already drew: v3's stroke-once compositing,
     // with separate edges still blending over each other
     const layerPipeline = (label: string, entryPoint: string) =>
-      device.createRenderPipeline({
+      lazyRenderPipeline(device, {
         label,
         layout: layerLayout,
         vertex: { module, entryPoint },
@@ -287,7 +288,7 @@ export class CurvedEdgePipeline {
       'vsCurvedOverlay',
     );
 
-    this.casedPipeline = device.createRenderPipeline({
+    this.casedPipeline = lazyRenderPipeline(device, {
       label: 'cy-gpu:curved-edge-cased-pipeline',
       layout: casedLayout,
       vertex: { module, entryPoint: 'vsCurvedCased' },
@@ -423,7 +424,7 @@ export class CurvedEdgePipeline {
       return;
     }
 
-    pass.setPipeline(pick ? this.pickPipeline : this.pipeline);
+    pass.setPipeline(pick ? this.pickPipeline() : this.pipeline);
     pass.setBindGroup(0, this.ensureBindGroup(device, uniform, mirror));
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.stripIndex, 'uint16');
@@ -455,7 +456,7 @@ export class CurvedEdgePipeline {
       return;
     }
 
-    pass.setPipeline(this.casedPipeline);
+    pass.setPipeline(this.casedPipeline());
     pass.setBindGroup(
       0,
       this.ensureBindGroup(device, uniform, mirror, 'cased'),
@@ -483,7 +484,9 @@ export class CurvedEdgePipeline {
     }
 
     pass.setPipeline(
-      layer === COL.EDGE_OVERLAY ? this.overlayPipeline : this.underlayPipeline,
+      layer === COL.EDGE_OVERLAY
+        ? this.overlayPipeline()
+        : this.underlayPipeline(),
     );
     pass.setBindGroup(0, this.ensureBindGroup(device, uniform, mirror, layer));
     pass.setBindGroup(1, cull.visibleBindGroup());

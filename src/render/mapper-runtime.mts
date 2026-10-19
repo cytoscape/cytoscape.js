@@ -6,6 +6,7 @@ import {
   MAX_PROGRAMS,
 } from './mapper-shaders.mjs';
 import { BUFFER_USAGE, SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
+import { lazyComputePipeline } from './lazy-pipeline.mjs';
 import type { GroupName, ColumnId } from '../contract.mjs';
 import type { DataStore } from '../store/data-store.mjs';
 import type {
@@ -746,7 +747,8 @@ export class MapperRuntime {
   private engine: PaintSource;
   private mirror: EvalMirror;
   private layouts: Record<GroupName, GPUBindGroupLayout>;
-  private pipelines: Record<GroupName, GPUComputePipeline>;
+  /** per group, built on that group's first eval dispatch */
+  private pipelines: Record<GroupName, () => GPUComputePipeline>;
   private states: Record<GroupName, GroupState>;
   private lastVersion = -1;
   private destroyed = false;
@@ -756,8 +758,9 @@ export class MapperRuntime {
    * and info buffers.  No mapper is configured yet: the runtime is
    * inert (active() false, encode() a no-op) until the first update()
    * observes a new `engine.paintVersion` and packs the programs, so
-   * constructing it on a graph with no data mappers costs two pipelines
-   * and nothing more.  All four collaborators are held by reference.
+   * constructing it on a graph with no data mappers costs two layouts
+   * and nothing more — each group's pipeline compiles on its first
+   * dispatch.  All four collaborators are held by reference.
    *
    * @param device — the device (or narrow mock) that owns the pipelines
    * and every per-group buffer
@@ -821,10 +824,10 @@ export class MapperRuntime {
       nodes: layoutFor(GROUP_NODES),
       edges: layoutFor(GROUP_EDGES),
     };
-    this.pipelines = {} as Record<GroupName, GPUComputePipeline>;
+    this.pipelines = {} as Record<GroupName, () => GPUComputePipeline>;
 
     for (const group of GROUPS) {
-      this.pipelines[group] = device.createComputePipeline({
+      this.pipelines[group] = lazyComputePipeline(device, {
         label: `cy-gpu:${group}-mapper-eval`,
         layout: device.createPipelineLayout({
           bindGroupLayouts: [this.layouts[group]],
@@ -1032,7 +1035,7 @@ export class MapperRuntime {
 
       this.ensureBindGroup(group);
 
-      pass.setPipeline(this.pipelines[group]);
+      pass.setPipeline(this.pipelines[group]());
       pass.setBindGroup(0, state.bindGroup as GPUBindGroup);
       pass.dispatchWorkgroups(Math.ceil(count / WG_SIZE));
       this.dispatches++;

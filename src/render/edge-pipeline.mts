@@ -8,6 +8,7 @@ import { PAIRED_ARGS_OFFSET } from './cull.mjs';
 import type { CulledGroup } from './cull.mjs';
 import type { ColumnId } from '../contract.mjs';
 import { COL } from '../contract.mjs';
+import { lazyRenderPipeline } from './lazy-pipeline.mjs';
 
 /**
  * Storage-buffer bindings 1..9 (0 is the Frame uniform).  The edge vertex
@@ -44,13 +45,13 @@ const EDGE_COLUMNS: { id: ColumnId; stages: number }[] = [
 /** Edge render + picking pipelines (screen-space extruded quads). */
 export class EdgePipeline {
   private pipeline: GPURenderPipeline;
-  private pickPipeline: GPURenderPipeline;
+  private pickPipeline: () => GPURenderPipeline;
   /** the layer strokes (round 13 A2), one per layer since round 88.3:
    * the overlay spans the gap-shortened path, the underlay the draw trim */
-  private underlayPipeline: GPURenderPipeline;
-  private overlayPipeline: GPURenderPipeline;
+  private underlayPipeline: () => GPURenderPipeline;
+  private overlayPipeline: () => GPURenderPipeline;
   /** the paired casing-then-line draw (round 124.4) */
-  private casedPipeline: GPURenderPipeline;
+  private casedPipeline: () => GPURenderPipeline;
   private bindLayout: GPUBindGroupLayout;
   private quadIndex: GPUBuffer;
   /** one cached bind group per uniform buffer (render frame vs pick frame) */
@@ -140,7 +141,7 @@ export class EdgePipeline {
       },
     });
 
-    this.pickPipeline = device.createRenderPipeline({
+    this.pickPipeline = lazyRenderPipeline(device, {
       label: 'cy-gpu:edge-pick-pipeline',
       layout,
       vertex: { module, entryPoint: 'vsEdge' },
@@ -157,7 +158,7 @@ export class EdgePipeline {
     // with its own vertex entry point (the two span different lengths —
     // round 88.3) and its record column at the last binding
     const layerPipeline = (label: string, entryPoint: string) =>
-      device.createRenderPipeline({
+      lazyRenderPipeline(device, {
         label,
         layout,
         vertex: { module, entryPoint },
@@ -185,7 +186,7 @@ export class EdgePipeline {
 
     // the per-edge casing draw (round 124.4): the scene shader over two
     // instances per edge, edge.casing bound as the layer record
-    this.casedPipeline = device.createRenderPipeline({
+    this.casedPipeline = lazyRenderPipeline(device, {
       label: 'cy-gpu:edge-cased-pipeline',
       layout,
       vertex: { module, entryPoint: 'vsEdgeCased' },
@@ -289,7 +290,7 @@ export class EdgePipeline {
       return;
     }
 
-    pass.setPipeline(pick ? this.pickPipeline : this.pipeline);
+    pass.setPipeline(pick ? this.pickPipeline() : this.pipeline);
     pass.setBindGroup(0, this.ensureBindGroup(device, uniform, mirror));
     pass.setBindGroup(1, cull.visibleBindGroup());
     pass.setIndexBuffer(this.quadIndex, 'uint16');
@@ -322,7 +323,7 @@ export class EdgePipeline {
       return;
     }
 
-    pass.setPipeline(this.casedPipeline);
+    pass.setPipeline(this.casedPipeline());
     pass.setBindGroup(
       0,
       this.ensureBindGroup(device, uniform, mirror, COL.EDGE_CASING),
@@ -349,7 +350,9 @@ export class EdgePipeline {
     }
 
     pass.setPipeline(
-      layer === COL.EDGE_OVERLAY ? this.overlayPipeline : this.underlayPipeline,
+      layer === COL.EDGE_OVERLAY
+        ? this.overlayPipeline()
+        : this.underlayPipeline(),
     );
     pass.setBindGroup(0, this.ensureBindGroup(device, uniform, mirror, layer));
     pass.setBindGroup(1, cull.visibleBindGroup());

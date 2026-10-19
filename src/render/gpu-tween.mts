@@ -5,6 +5,7 @@ import { EASING_KIND } from '../easing.mjs';
 import type { EasingProgram } from '../easing.mjs';
 import { OKLAB_TO_SRGB_WGSL } from './mapper-shaders.mjs';
 import { BUFFER_USAGE, SHADER_STAGE } from '../gpu/webgpu-constants.mjs';
+import { lazyComputePipeline } from './lazy-pipeline.mjs';
 
 /*
 GPU tween runtime: evaluates animations on-device so a running animation
@@ -338,7 +339,8 @@ export class GpuTweenRuntime {
   private columnBuffer: (id: ColumnId) => GPUBuffer;
   private mirrorVersion: () => number;
   private layout: GPUBindGroupLayout;
-  private pipelines: Record<GpuWriteKind, GPUComputePipeline>;
+  /** per kind, built on that kind's first tween */
+  private pipelines: Record<GpuWriteKind, () => GPUComputePipeline>;
   private batches = new Map<number, Batch>();
   /**
    * Round 144: per owned column, how many live batch entries tween each
@@ -353,7 +355,8 @@ export class GpuTweenRuntime {
 
   /**
    * Builds the one shared bind group layout, a pipeline per write kind
-   * and the dummy progression buffer.  The mirror is reached through two
+   * (each compiled on that kind's first dispatch) and the dummy
+   * progression buffer.  The mirror is reached through two
    * callbacks rather than held directly, so a column buffer realloc is
    * observed lazily at encode time — `mirrorVersion` must change on every
    * realloc, or a batch would keep dispatching into a destroyed buffer.
@@ -419,7 +422,7 @@ export class GpuTweenRuntime {
     this.pipelines = Object.fromEntries(
       KINDS.map((kind) => [
         kind,
-        device.createComputePipeline({
+        lazyComputePipeline(device, {
           label: `cy-gpu:tween-${kind}`,
           layout: pipelineLayout,
           compute: {
@@ -431,7 +434,7 @@ export class GpuTweenRuntime {
           },
         }),
       ]),
-    ) as Record<GpuWriteKind, GPUComputePipeline>;
+    ) as Record<GpuWriteKind, () => GPUComputePipeline>;
   }
 
   /** Whether any batch is registered.  Registration, not the clock,
@@ -776,7 +779,7 @@ export class GpuTweenRuntime {
           c.bindVersion = version;
         }
 
-        pass.setPipeline(this.pipelines[c.kind]);
+        pass.setPipeline(this.pipelines[c.kind]());
         pass.setBindGroup(0, c.bindGroup);
         pass.dispatchWorkgroups(Math.ceil(c.count / WG_SIZE));
       }

@@ -951,6 +951,23 @@ diffusion are CPU-only by design — O(E) sparse walks with nothing for
 a kernel to win — and an explicit `executor: 'gpu'` on them rejects,
 pointing at the dense form.
 
+**Checked against independent implementations** (2026-10-19):
+`test/algorithms-reference.mjs` runs the algorithms above on seeded
+fixture graphs (weighted, directed, disconnected, multigraph,
+negative-weight; 30+ nodes) and compares with what NetworkX 3.7, SciPy
+and NumPy compute, recorded once in `test/fixtures/algorithm-references.json`
+by `scripts/algorithm-references.py`.  The references compute v4's
+definitions where those keep v3's: PageRank's `dampingFactor` d is the
+textbook α = 1/(2 − d) (v3 leaves d off the link term), undirected
+betweenness is not halved, closeness is measured from the node, and
+`bellmanFord` never relaxes back over the edge that reached a node, so
+an undirected negative edge is not a negative cycle (its references are
+directed).  The comparison found three defects inherited from v3, fixed:
+`affinityPropagation` dropped the members of an exemplar at index 0 and
+shifted later assignments; `median()`, behind its `preference:
+'median'`, read one past the middle; and `hopcroftTarjanBiconnected`
+lost a parallel edge that was a node's only link.
+
 Graph walks are slot-native over the
 CSR adjacency; the attribute-space clustering algorithms work on
 handles as v3 does.  v3 option/result shapes are kept, except that

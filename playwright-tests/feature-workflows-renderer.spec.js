@@ -494,23 +494,42 @@ test('animation transition and gesture controls change live state and event prop
   const playTransition = controls.getByRole('button', {
     name: 'Play transition + position/width tween',
   });
+  const stopAndRestore = async () => {
+    await controls.getByRole('button', { name: 'Stop in place' }).click();
+    await controls
+      .getByRole('button', { name: 'Restore captured geometry/style' })
+      .click();
+  };
+  // A 700 ms transition is in the 0.42–0.58 window for ~110 ms, and one
+  // poll (a SwiftShader screenshot) can take longer than that on a loaded
+  // machine, stepping over it.  A miss replays the transition, up to
+  // three plays, rather than widening the window the easing comparison
+  // relies on.
   const sampleAtMidFlight = async (read, what) => {
-    const deadline = Date.now() + 8000;
     let sample;
 
-    do {
-      await page.screenshot();
-      sample = await read();
-      if (sample.progress == null) {
-        throw new Error(
-          `Animation progress control missing for ${what}: ${JSON.stringify(sample)}`,
-        );
+    for (let play = 0; play < 3; play++) {
+      if (play > 0) {
+        await stopAndRestore();
+        await playTransition.click();
       }
-      if (sample.progress >= 0.42 && sample.progress <= 0.58) return sample;
-    } while (Date.now() < deadline);
+
+      const deadline = Date.now() + 8000;
+
+      do {
+        await page.screenshot();
+        sample = await read();
+        if (sample.progress == null) {
+          throw new Error(
+            `Animation progress control missing for ${what}: ${JSON.stringify(sample)}`,
+          );
+        }
+        if (sample.progress >= 0.42 && sample.progress <= 0.58) return sample;
+      } while (Date.now() < deadline);
+    }
 
     throw new Error(
-      `No mid-flight sample for ${what}: ${JSON.stringify(sample)}`,
+      `No mid-flight sample for ${what} in three plays: ${JSON.stringify(sample)}`,
     );
   };
   const sampleWidthAtMidFlight = async (easingName) => {

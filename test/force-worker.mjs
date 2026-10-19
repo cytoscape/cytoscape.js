@@ -290,12 +290,18 @@ describe('layout: the force simulation on a worker (round 129.3)', function () {
 
         // stop() ends the run: the promise resolves within a frame
         layout.stop();
+        // a cleared watchdog: a pending 5 s timer holds the process open
+        let watchdog;
+
         await Promise.race([
           layout.promise(),
-          wait(5000).then(() => {
-            throw new Error('stop() left the worker run pending');
+          new Promise((_, reject) => {
+            watchdog = setTimeout(
+              () => reject(new Error('stop() left the worker run pending')),
+              5000,
+            );
           }),
-        ]);
+        ]).finally(() => clearTimeout(watchdog));
         cy.destroy();
       },
     );

@@ -123,12 +123,19 @@ describe('soak: the force sim worker (round 129.3)', () => {
 
     // the run closes (its worker is gone): the promise settles rather
     // than hanging — resolved, with the positions as last seen
+    // a watchdog that is cleared, not raced: a pending 5 s timer held the
+    // process open ~4 s past its last test
+    let watchdog;
+
     await Promise.race([
       open.promise(),
-      tick(5000).then(() => {
-        throw new Error('the reset left the run pending');
+      new Promise((_, reject) => {
+        watchdog = setTimeout(
+          () => reject(new Error('the reset left the run pending')),
+          5000,
+        );
       }),
-    ]);
+    ]).finally(() => clearTimeout(watchdog));
 
     const next = cy.layout({
       name: 'force',

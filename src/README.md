@@ -5330,6 +5330,16 @@ and reports which the Node suite reaches, the same way
   own source-mapped lcov instead.  And function-level (`FN`/`FNDA`)
   records misattribute one-line arrow functions badly enough to be
   useless, so nothing reads them.
+- **Node reads the exact probe now, not lcov** (2026-10-19), as Bun
+  already did: `test/lib/node-throw-coverage-setup.mjs` instruments every
+  `throw new` in `src` as it loads and logs the sites that fire, in the
+  main thread and in workers (`test/modules/node-throw-probe.mjs` checks
+  each realm).  `test:throws` went from 93 s to 25 s — the coverage
+  counters made the force sims ~5x slower, and Node then spent ~40 s
+  building the report — and it reads one site more exactly:
+  `worker-renderer.mts:110`, which lcov credited with the enclosing
+  function's 158 runs, is never hit (it is browser-only, so the gate was
+  unaffected).  `--lcov <file>` still reads a report the old way.
 - **The tool measured its own error, and says so.**  Line-level data
   attributes the body of a module-level arrow const to the
   module-evaluation count, so one guard (`exportScale` in

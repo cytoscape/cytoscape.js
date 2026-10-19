@@ -34,6 +34,10 @@
 //      functions badly enough to be useless. Nothing here reads them.
 //
 // Usage:
+// Since 2026-10-19 the Node gate, like Bun's, reads an exact AST probe of
+// the throw sites (collectNodeProbe) rather than lcov — 93 s -> 25 s, and
+// exact where line data was not.  The lcov reading survives as --lcov.
+//
 //   node scripts/throw-coverage.mjs                       # Node suite
 //   node scripts/throw-coverage.mjs --runtime=bun         # Bun suite
 //   node scripts/throw-coverage.mjs --verbose             # list dead/unknown
@@ -296,29 +300,65 @@ const validateThrowSiteMap = (records) => {
   }
 };
 
-/** Collect source-mapped line counts by running the Node suite under coverage. */
-const collectNodeLcov = () => {
-  const dir = mkdtempSync(join(tmpdir(), 'throw-cov-'));
-  const out = join(dir, 'cov.lcov');
+/**
+ * Collect exact throw-site hits by running the Node suite once with every
+ * src throw instrumented (test/lib/node-throw-coverage-setup.mjs).  Faster
+ * than the lcov run it replaced by the coverage itself (block counters made
+ * the force sims ~5x slower) and by Node's ~40 s single-threaded report.
+ */
+const collectNodeProbe = () => {
+  const dir = mkdtempSync(join(tmpdir(), 'throw-probe-'));
+  const probeLogPath = join(dir, 'throw-probe.jsonl');
+  const manifestPath = join(dir, 'throw-sites.json');
 
   try {
+    const siteRecords = throwSiteRecords();
+    validateThrowSiteMap(siteRecords);
+    const expectedSites = siteRecords.map(
+      ({ file, line }) => `${file}:${line}`,
+    );
+    writeFileSync(manifestPath, JSON.stringify(expectedSites));
+    writeFileSync(probeLogPath, '');
+
     execFileSync(
       process.execPath,
       [
         '--import',
+        './test/lib/node-throw-coverage-setup.mjs',
+        '--import',
         'tsx',
         '--import',
         './test/node-test-setup.mjs',
-        '--enable-source-maps',
-        '--experimental-test-coverage',
-        '--test-reporter=lcov',
-        `--test-reporter-destination=${out}`,
+        '--test-reporter=dot',
         '--test',
         'test/!(types-*|node-test-setup|quiet-reporter).mjs',
       ],
-      { cwd: ROOT, stdio: ['ignore', 'ignore', 'inherit'] },
+      {
+        cwd: ROOT,
+        stdio: ['ignore', 'ignore', 'inherit'],
+        env: {
+          ...process.env,
+          CY_THROW_PROBE_LOG: probeLogPath,
+          CY_THROW_SITE_MANIFEST: manifestPath,
+        },
+      },
     );
-    return readFileSync(out, 'utf8');
+
+    const probe = parseThrowProbeLog(
+      readFileSync(probeLogPath, 'utf8'),
+      expectedSites,
+    );
+
+    if ((probe.ready.get('main') ?? 0) === 0) {
+      throw new Error('Node throw probe did not initialize in the test realm');
+    }
+    if ((probe.ready.get('worker') ?? 0) === 0) {
+      throw new Error(
+        'Node public suite spawned no worker with the throw probe installed',
+      );
+    }
+
+    return probe;
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -748,13 +788,9 @@ export function audit(lcovText, runtime = 'Node', probe = null) {
   if (!['Node', 'Bun'].includes(runtime)) {
     throw new Error(`unknown coverage runtime ${runtime}`);
   }
-  if (probe != null && runtime !== 'Bun') {
-    throw new Error('the exact throw-site probe is only valid for Bun');
-  }
-
-  if (lcovText == null) {
+  if (lcovText == null && probe == null) {
     if (runtime === 'Node') {
-      lcovText = collectNodeLcov();
+      probe = collectNodeProbe();
     } else {
       const collected = collectBunCoverage();
       lcovText = collected.lcovText;
@@ -762,7 +798,9 @@ export function audit(lcovText, runtime = 'Node', probe = null) {
     }
   }
 
-  const perFile = parseLcov(lcovText);
+  // the Node probe run collects no lcov; the native columns read null
+  const hasLcov = lcovText != null;
+  const perFile = parseLcov(lcovText ?? '');
   const sources = gpuFiles();
   const instrumentedSources = sources.filter(
     (file) => perFile.get(file)?.size > 0,
@@ -773,8 +811,8 @@ export function audit(lcovText, runtime = 'Node', probe = null) {
   for (const { file, line, text } of probeSites) {
     const counts = perFile.get(file);
     const at = `${file}:${line}`;
-    // The exact probe is authoritative for Bun. Native LCOV is retained as
-    // independent evidence, but an LCOV count cannot stand in for execution
+    // The exact probe is authoritative when present. Native LCOV (Bun's,
+    // or a Node report passed with --lcov) is retained as independent evidence, but an LCOV count cannot stand in for execution
     // of this particular throw statement.
     const nativeCount = counts?.get(line);
     const instrumented = probe?.instrumented.has(at) ?? false;
@@ -839,10 +877,10 @@ export function audit(lcovText, runtime = 'Node', probe = null) {
     runtime,
     sites,
     sourceFiles: sources.length,
-    instrumentedSourceFiles: instrumentedSources.length,
-    missingSourceFiles: sources.filter(
-      (file) => !instrumentedSources.includes(file),
-    ),
+    instrumentedSourceFiles: hasLcov ? instrumentedSources.length : null,
+    missingSourceFiles: hasLcov
+      ? sources.filter((file) => !instrumentedSources.includes(file))
+      : [],
     covered: sites.filter((s) => s.covered === true).length,
     dead,
     unknown,
@@ -881,7 +919,7 @@ export function audit(lcovText, runtime = 'Node', probe = null) {
     instrumentedTestFiles: probe?.testFiles ?? null,
     workerProbeContexts: probe?.ready.get('worker') ?? null,
     nativeCoverage:
-      probe == null
+      probe == null || !hasLcov
         ? null
         : {
             covered: sites.filter((s) => s.nativeCovered === true).length,
@@ -991,19 +1029,27 @@ if (
   );
 
   console.log(`throw sites in src: ${result.sites.length}`);
-  console.log(
-    `  source files with lcov: ${result.instrumentedSourceFiles}/${result.sourceFiles} (${result.missingSourceFiles.length} missing)`,
-  );
-  if (result.probeInstrumentedSites != null) {
+  if (result.instrumentedSourceFiles != null) {
+    console.log(
+      `  source files with lcov: ${result.instrumentedSourceFiles}/${result.sourceFiles} (${result.missingSourceFiles.length} missing)`,
+    );
+  }
+  if (result.bunVersion != null) {
     console.log(
       `  Bun ${result.bunVersion}: ${result.instrumentedTestIdentities} test identities across ${result.instrumentedTestFiles} files; instrumented/uninstrumented outcomes match`,
     );
+  }
+  if (result.probeInstrumentedSites != null) {
     console.log(
-      `  exact Bun probe: ${result.probeHitSites} hit sites; ${result.probeInstrumentedSites} instrumented; ${result.probeMissingSites} sites without loaded source; ${result.probeInstrumentedSourceFiles} source files instrumented`,
+      `  exact ${runtime} probe: ${result.probeHitSites} hit sites; ${result.probeInstrumentedSites} instrumented; ${result.probeMissingSites} sites without loaded source; ${result.probeInstrumentedSourceFiles} source files instrumented`,
     );
-    console.log(`  Bun worker probe contexts: ${result.workerProbeContexts}`);
     console.log(
-      `  native Bun LCOV: ${result.nativeCoverage.covered} positive throw lines; ${result.nativeCoverage.dead.length} dead reachable; ${result.nativeCoverage.unknown.length} unknown reachable`,
+      `  ${runtime} worker probe contexts: ${result.workerProbeContexts}`,
+    );
+  }
+  if (result.nativeCoverage != null) {
+    console.log(
+      `  native ${runtime} LCOV: ${result.nativeCoverage.covered} positive throw lines; ${result.nativeCoverage.dead.length} dead reachable; ${result.nativeCoverage.unknown.length} unknown reachable`,
     );
     console.log(
       `  exact hits without positive native LCOV: ${result.nativeCoverage.probeHitsNotNativeCovered.length}`,

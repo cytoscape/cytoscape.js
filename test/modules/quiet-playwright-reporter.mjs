@@ -8,9 +8,17 @@ the Node tier, where spinning a real browser suite up to red is not.
 The write sink is injected, so nothing here touches process.stdout.
 */
 
-const makeTest = ({ outcome = 'expected', retries = 0, id = 't1' } = {}) => ({
+const makeTest = ({
+  outcome = 'expected',
+  expectedStatus = 'passed',
+  results = [],
+  retries = 0,
+  id = 't1',
+} = {}) => ({
   id,
   retries,
+  expectedStatus,
+  results,
   outcome: () => outcome,
   titlePath: () => ['', 'renderer', 'renderer.spec.js', 'draws the node'],
   location: { file: 'playwright-tests/renderer.spec.js', line: 12, column: 3 },
@@ -113,5 +121,81 @@ describe('quiet Playwright reporter', () => {
     });
 
     expect(written.join('')).to.include('worker crashed');
+  });
+
+  it('reports a test that passes on every configured retry', () => {
+    const { reporter, written } = record();
+    const results = [0, 1, 2].map((retry) =>
+      makeResult({ status: 'passed', retry }),
+    );
+    const test = makeTest({
+      outcome: 'unexpected',
+      expectedStatus: 'failed',
+      results,
+      retries: 2,
+    });
+
+    reporter.onBegin({}, { allTests: () => [test] });
+    for (const result of results) {
+      reporter.onTestEnd(test, result);
+    }
+    reporter.onEnd();
+
+    const output = written.join('');
+
+    expect(output).to.include('Unexpected pass:');
+    expect(output).to.include('renderer > renderer.spec.js > draws the node');
+    expect(output).to.include('playwright-tests/renderer.spec.js:12:3');
+    expect(output).to.include("Expected status 'failed'");
+    expect(output).to.include('3 of 3 attempt(s) passed');
+  });
+
+  it('reports an unexpected pass even if execution ends before all retries', () => {
+    const { reporter, written } = record();
+    const result = makeResult({ status: 'passed' });
+    const test = makeTest({
+      outcome: 'unexpected',
+      expectedStatus: 'failed',
+      results: [result],
+      retries: 2,
+    });
+
+    reporter.onBegin({}, { allTests: () => [test] });
+    reporter.onTestEnd(test, result);
+    reporter.onEnd();
+
+    expect(written.join('')).to.include('1 of 1 attempt(s) passed');
+  });
+
+  it('keeps flaky unexpected passes silent', () => {
+    const { reporter, written } = record();
+    const test = makeTest({
+      outcome: 'flaky',
+      expectedStatus: 'failed',
+      results: [
+        makeResult({ status: 'passed' }),
+        makeResult({ status: 'failed' }),
+      ],
+      retries: 1,
+    });
+
+    reporter.onBegin({}, { allTests: () => [test] });
+    reporter.onEnd();
+
+    expect(written.join('')).to.equal('');
+  });
+
+  it('keeps an expected failure silent', () => {
+    const { reporter, written } = record();
+    const test = makeTest({
+      outcome: 'expected',
+      expectedStatus: 'failed',
+      results: [makeResult({ status: 'failed' })],
+    });
+
+    reporter.onBegin({}, { allTests: () => [test] });
+    reporter.onEnd();
+
+    expect(written.join('')).to.equal('');
   });
 });

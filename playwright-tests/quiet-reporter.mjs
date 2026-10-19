@@ -14,6 +14,11 @@ export default class QuietReporter {
   constructor({ write = (text) => process.stdout.write(text) } = {}) {
     this.write = write;
     this.outputByTest = new Map();
+    this.suite = null;
+  }
+
+  onBegin(_config, suite) {
+    this.suite = suite;
   }
 
   bufferOutput(test, chunk) {
@@ -60,6 +65,34 @@ export default class QuietReporter {
     this.write(
       `✖ ${title} (${file}:${line}:${column})\n${errors}\n${output}\n`,
     );
+  }
+
+  onEnd() {
+    for (const test of this.suite?.allTests?.() ?? []) {
+      const results = test.results ?? [];
+      const passedAttempts = results.filter(
+        (result) => result.status === 'passed',
+      ).length;
+
+      if (
+        test.expectedStatus !== 'failed' ||
+        test.outcome() !== 'unexpected' ||
+        passedAttempts === 0
+      ) {
+        continue;
+      }
+
+      const { file, line, column } = test.location;
+      const title = test
+        .titlePath()
+        .filter((part) => part !== '')
+        .join(' > ');
+
+      this.write(
+        `✖ Unexpected pass: ${title} (${file}:${line}:${column})\n` +
+          `Expected status 'failed', but ${passedAttempts} of ${results.length} attempt(s) passed.\n`,
+      );
+    }
   }
 
   /** A worker-level error has no test to fail; it always prints. */

@@ -44,9 +44,19 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 // hooks because the golden gallery comparison reads and diffs every PNG, which
 // exceeds Bun's 5 s default test timeout when repeated for each assertion.
 const defaultPlan = buildPlan({ root: ROOT, gzip: false });
+// only the docs part emits the documented-path warnings this plan is
+// read for; skipping the rest takes it from ~12 s to ~1 s
 const planWithoutFixtures = buildPlan({
   root: ROOT,
-  skip: new Set(['fixtures']),
+  gzip: false,
+  skip: new Set([
+    'fixtures',
+    'debug',
+    'api',
+    'benchmark',
+    'schemas',
+    'goldens',
+  ]),
 });
 
 const goldenNameDiff = (expected, actual) => {

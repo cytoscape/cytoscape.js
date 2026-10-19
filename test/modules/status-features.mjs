@@ -18,10 +18,21 @@ import {
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const CSV = readFileSync(join(ROOT, 'docs/features.csv'), 'utf8');
 const rows = readInventory(ROOT, CSV);
-// The status planner reads and diffs the complete golden inventory. Keep its
-// immutable result outside the per-test timeout; the CSV assertions below
-// still inspect the same generated page and files.
-const statusPlan = buildPlan({ root: ROOT, gzip: false });
+// The features page and CSV are emitted whatever is skipped, so plan
+// only them and the documents that link to them: the full plan also decodes and diffs every golden PNG, ~12 s
+// that these specs never read.
+const statusPlan = buildPlan({
+  root: ROOT,
+  gzip: false,
+  skip: new Set([
+    'fixtures',
+    'debug',
+    'api',
+    'benchmark',
+    'schemas',
+    'goldens',
+  ]),
+});
 
 describe('feature status page', () => {
   it('escapes authored data in table cells and filter options', () => {

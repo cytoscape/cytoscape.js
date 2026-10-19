@@ -560,6 +560,34 @@ describe('gpu/algorithms: clustering', function () {
       expect(clusterOf('a1')).to.not.equal(clusterOf('b1'));
     });
 
+    it('keeps the members of an exemplar at index 0', async function () {
+      // the middle of the first blob comes first, so it is the exemplar
+      // at index 0: v3 dropped its members and shifted every later
+      // node's assignment a slot (found against a NumPy reference — see
+      // test/algorithms-reference.mjs)
+      var blob = (id, v) => ({ data: { id, v } });
+      var cy2 = cytoscape({
+        elements: [
+          blob('a2', 1.1),
+          blob('a1', 1.0),
+          blob('a3', 1.2),
+          blob('b2', 8.1),
+          blob('b1', 8.0),
+          blob('b3', 8.2),
+        ],
+      });
+      var clusters = await cy2
+        .elements()
+        .affinityPropagation({ ...opts(), preference: -1, executor: 'cpu' });
+
+      expect(
+        clusters.map((c) => c.map((n) => n.id()).sort()).sort(),
+      ).to.deep.equal([
+        ['a1', 'a2', 'a3'],
+        ['b1', 'b2', 'b3'],
+      ]);
+    });
+
     it('validates damping and preference like v3 (as rejections)', async function () {
       var dampingErr = await rejection(
         cy.elements().affinityPropagation({ ...opts(), damping: 1.5 }),

@@ -95,9 +95,10 @@ const assignClusters = (
       }
     }
 
-    if (index > 0) {
-      clusters.push(index);
-    }
+    // index 0 is an exemplar like any other: v3 tested `index > 0` and
+    // pushed, so node 0's members vanished and every later node's
+    // assignment shifted down a slot
+    clusters[i] = index;
   }
 
   for (let ei = 0; ei < exemplars.length; ei++) {

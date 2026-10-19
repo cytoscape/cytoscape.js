@@ -173,13 +173,16 @@ export const median = (
     }
   }
 
-  let len = arr.length;
-  let mid = Math.floor(len / 2);
+  // the median of the finite values, which sort after the `off` holes
+  // (v3 read one slot past the middle for an odd count, so
+  // median([1, 2, 3, 4, 5]) was 4 — found against a NumPy reference)
+  const len = arr.length - off;
+  const mid = off + Math.floor(len / 2);
 
   if (len % 2 !== 0) {
-    return arr[mid + 1 + off];
+    return arr[mid];
   } else {
-    return (arr[mid - 1 + off] + arr[mid + off]) / 2;
+    return (arr[mid - 1] + arr[mid]) / 2;
   }
 };
 

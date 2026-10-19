@@ -3300,12 +3300,14 @@ export class Collection<
    * picks where the power method runs; 'cpu' is the reproducible
    * reference.
    *
-   * @param options — `{ dampingFactor, precision, iterations, executor }`
+   * @param options — `{ dampingFactor, precision, iterations, executor }`;
+   *   `dampingFactor` is the textbook α in (0, 1], default 0.85 (v3's
+   *   d was α = 1/(2 − d), default 0.8)
    * @returns a promise of `{ rank }`, a per-node accessor
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
-   *   unavailable in this environment
+   * @throws if `executor` or `dampingFactor` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable in this environment
    */
   pageRank(options?: PageRankOptions): AlgoRun<PageRankResult> {
     return this._cy._trackRun(pageRankImpl(this, options));

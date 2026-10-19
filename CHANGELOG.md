@@ -748,6 +748,13 @@ that compile and then behave differently.
   could hang a load or take tens of seconds before erroring; each now throws
   a contract error naming the field.
 
+- **`pageRank`'s `dampingFactor` is the textbook α**, default 0.85.  v3's d
+  left the damping off the link term, so it behaved as α = 1/(2 − d) — its
+  default 0.8 was α ≈ 0.833 — and ranks matched no other implementation at
+  the same number.  Ranks change for every call; to reproduce a v3 run, pass
+  `dampingFactor: 1 / (2 − d)`.  A value outside (0, 1], or not a number,
+  throws `TypeError`.
+
 ### Removed
 
 - Deno runtime support, probes, npm test scripts and CI jobs (round 99).

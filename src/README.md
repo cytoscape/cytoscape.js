@@ -957,9 +957,7 @@ fixture graphs (weighted, directed, disconnected, multigraph,
 negative-weight; 30+ nodes) and compares with what NetworkX 3.7, SciPy
 and NumPy compute, recorded once in `test/fixtures/algorithm-references.json`
 by `scripts/algorithm-references.py`.  The references compute v4's
-definitions where those keep v3's: PageRank's `dampingFactor` d is the
-textbook α = 1/(2 − d) (v3 leaves d off the link term), undirected
-betweenness is not halved, closeness is measured from the node, and
+definitions where those keep v3's: undirected betweenness is not halved, closeness is measured from the node, and
 `bellmanFord` never relaxes back over the edge that reached a node, so
 an undirected negative edge is not a negative cycle (its references are
 directed).  The comparison found three defects inherited from v3, fixed:
@@ -7766,6 +7764,17 @@ fragment premium is **unmeasurable at scene level** on real hardware
 > Everything in this section is a decision, not a backlog item.  (The
 > two entries that once said otherwise are both closed: the arrow `gap`
 > landed in round 56, and `border-style` / `outline-style` in round 38.)
+
+- **`pageRank`'s `dampingFactor` is the textbook α, default 0.85**
+  (2026-10-19).  v3 built M = P + (1 − d)/n·J — the damping on the
+  teleport but not on the links — which, after the per-iteration
+  normalization, is standard PageRank at α = 1/(2 − d): its default 0.8
+  was α ≈ 0.833, and `dampingFactor: 0` gave α = 0.5 rather than uniform
+  ranks.  The NetworkX comparison
+  (`test/algorithms-reference.test.mjs`) made the mismatch visible.  v4
+  divides the textbook matrix by α instead (`buildPageRankSparse`), so
+  neither kernel changed; 0 is rejected because of that division, and so
+  is anything above 1.  A v3 run is reproduced by passing 1/(2 − d).
 
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over

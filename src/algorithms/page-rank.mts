@@ -28,6 +28,10 @@ export const PAGE_RANK_OFFLOAD_MIN_N = 32768;
 export const PAGE_RANK_GPU_MIN_N = Infinity;
 
 export interface PageRankOptions {
+  /**
+   * the probability of following an out-edge rather than teleporting —
+   * the textbook α, in (0, 1] (default 0.85)
+   */
   dampingFactor?: number;
   precision?: number;
   iterations?: number;
@@ -48,13 +52,17 @@ export interface PageRankResult {
  * @param coll — the calling collection
  * @param options — as `pageRank`, plus `executor`
  * @returns a promise of the `{ rank }` accessor
- * @throws if `executor` is not 'cpu', 'gpu' or 'auto'
+ * @throws if `executor` is not 'cpu', 'gpu' or 'auto', or
+ *   `dampingFactor` is outside (0, 1]
  */
 export const pageRankAsync = (
   coll: Collection,
   options: PageRankOptions = {},
 ): AlgoRun<PageRankResult> => {
   const executor = resolveExecutor(options.executor);
+
+  resolvePageRankDamping(options);
+
   const n = subgraph(coll).nodeSlots.length;
 
   // 'auto' never routes pageRank to the GPU (65.10; re-measured in
@@ -128,6 +136,30 @@ export const pageRankLane = (
 };
 
 /**
+ * The damping α — the probability of following an out-edge — with its
+ * default.  The textbook definition since 2026-10-19: v3's d left α off
+ * the link term, which made it α = 1/(2 − d), so v3's default 0.8 was
+ * α ≈ 0.833.  0 is excluded because the iteration divides by it (see
+ * `buildPageRankSparse`).
+ *
+ * @param options — the caller's options
+ * @returns α
+ * @throws if the value is not a number in (0, 1]
+ */
+export const resolvePageRankDamping = (options: PageRankOptions): number => {
+  const d = options.dampingFactor ?? 0.85;
+
+  if (typeof d !== 'number' || !(d > 0 && d <= 1)) {
+    throw new TypeError(
+      '`dampingFactor` must be greater than 0 and at most 1 — got ' +
+        String(options.dampingFactor),
+    );
+  }
+
+  return d;
+};
+
+/**
  * The sparse transition structure both executors iterate on (round
  * 65.10 for the CPU, 72.1 for the GPU): dense-index (source, target)
  * pairs with the weight column-normalized by the source's out-weight,
@@ -135,6 +167,12 @@ export const pageRankLane = (
  * dense form gave a uniform 1/n column.  Loops are excluded and edges
  * outside the collection ignored, exactly as the dense build did, so
  * the two executors agree within the parity suite's tolerances.
+ *
+ * The textbook matrix is M = α·P + α·D/n + (1 − α)/n·J (P the
+ * normalized links, D the dangling columns).  Every iterate is
+ * sum-normalized, so M/α has the same iterates; the kernels apply the
+ * links and dangling mass unscaled and carry the teleport as
+ * (1 − α)/(α·n) in `additionalProb`.
  *
  * @param coll — the calling collection
  * @param options — the caller's options (weight, dampingFactor)
@@ -154,12 +192,12 @@ export const buildPageRankSparse = (
   dangling: Int32Array;
   additionalProb: number;
 } => {
-  const dampingFactor = options.dampingFactor ?? 0.8;
+  const dampingFactor = resolvePageRankDamping(options);
   const view = subgraph(coll);
   const { endpoints, index, nodeSlots } = view;
   const weightOf = weightAt(view, options.weight);
   const n = nodeSlots.length;
-  const additionalProb = (1 - dampingFactor) / n;
+  const additionalProb = (1 - dampingFactor) / (dampingFactor * n);
 
   const m = view.edgeSlots.length;
   const srcs = new Int32Array(m);
@@ -240,8 +278,11 @@ export const pageRankResultFrom = (
  * **sparsely** since round 65.10: the dense form multiplied an n×n
  * matrix per iteration where the matrix is structurally
  *
- *   M[t][s] = w_ts / colSum[s] + (1−d)/n        (s has out-edges)
- *   M[t][s] = 1/n + (1−d)/n                      (s dangling)
+ *   M[t][s] = w_ts / colSum[s] + (1−α)/(α·n)    (s has out-edges)
+ *   M[t][s] = 1/n + (1−α)/(α·n)                  (s dangling)
+ *
+ * (the textbook matrix divided by α, which the per-iteration
+ * normalization makes equivalent — see `buildPageRankSparse`)
  *
  * so temp = M·v decomposes into an O(E) edge gather plus two rank-1
  * terms (the damping teleport over Σv and the dangling mass over

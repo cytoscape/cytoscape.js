@@ -13,8 +13,7 @@ The specs never run Python; the JSON is the checked-in record.
 
 Each reference is chosen to compute *v4's* definition, which is v3's where
 the two differ from a textbook — every such mapping is noted at its call
-(e.g. PageRank's damping d is NetworkX's alpha = 1 / (2 - d); undirected
-betweenness is NetworkX's doubled).  Where no library computes v4's exact
+(e.g. undirected betweenness is NetworkX's doubled).  Where no library computes v4's exact
 definition (SimRank's fixed point, random walk with an absorbing sink,
 Markov clustering, affinity propagation) the reference is a short NumPy
 transcription of the published algorithm, not of v4's code.
@@ -269,16 +268,16 @@ def structure(G, refs):
 
 
 def centralities(G, refs):
-    # PageRank: v4's dampingFactor d puts no d on the link term (v3's
-    # M = P + (1 - d) / n * J), which is standard PageRank at alpha = 1/(2 - d).
-    # It is always directed: an undirected graph's edges count source ->
+    # PageRank: v4's dampingFactor is NetworkX's alpha (v3's d was
+    # alpha = 1/(2 - d); v4 took the textbook definition).  It is always
+    # directed: an undirected graph's edges count source ->
     # target as stored, so the reference reads the edge list as a digraph
     for name, weighted in (('karate', False), ('wd', False), ('wd', True)):
         g = G[name]
         D = nx_graph({**g, 'directed': True}, multi=True)
-        for d in (0.8, 0.5):
+        for d in (0.85, 0.5):
             pr = nx.pagerank(D,
-                             alpha=1 / (2 - d), weight='w' if weighted else None,
+                             alpha=d, weight='w' if weighted else None,
                              tol=1e-15, max_iter=10000)
             refs['pageRank'][f'{name}{"-w" if weighted else ""}-d{d}'] = per_node(g, pr)
 

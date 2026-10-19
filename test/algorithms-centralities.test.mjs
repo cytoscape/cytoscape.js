@@ -66,6 +66,40 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(Math.abs(sum - 1)).to.be.below(0.0001);
   });
 
+  it('eles.pageRank(): dampingFactor is the textbook α (default 0.85)', async function () {
+    // a → b, b dangling: r_a = (1 − α)/2 + α·r_b/2 and r_a + r_b = 1
+    // give r_a = 1/(2 + α).  v3's d was α = 1/(2 − d): 0.3497 at 0.85.
+    var pair = cytoscape({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+      ],
+    });
+    var rankOfA = async (opts) =>
+      (
+        await pair
+          .elements()
+          .pageRank({ precision: 1e-30, iterations: 1000, ...opts })
+      ).rank(pair.$id('a'));
+
+    expect(await rankOfA({})).to.be.closeTo(1 / 2.85, 1e-12);
+    expect(await rankOfA({ dampingFactor: 0.5 })).to.be.closeTo(0.4, 1e-12);
+    expect(await rankOfA({ dampingFactor: 1 })).to.be.closeTo(1 / 3, 1e-12);
+  });
+
+  it('eles.pageRank(): validates dampingFactor synchronously', function () {
+    for (var bad of [0, -0.1, 1.5, NaN, '0.8']) {
+      expect(() => cy.elements().pageRank({ dampingFactor: bad })).to.throw(
+        TypeError,
+        /dampingFactor/,
+      );
+    }
+
+    // control: the bounds' inside edge runs
+    expect(() => cy.elements().pageRank({ dampingFactor: 1 })).not.to.throw();
+  });
+
   it('eles.degreeCentrality() unweighted undirected (alpha 0 and 1 agree)', function () {
     for (var alpha of [0, 1]) {
       var res = dcOf({ directed: false, alpha });

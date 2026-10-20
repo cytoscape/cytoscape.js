@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { advanceClock, pinClock } from './lib/clock.mjs';
 
 const PAGE = 'http://127.0.0.1:3333/debug/index.html';
 
@@ -37,44 +38,6 @@ const openWorkflow = async (page, scene) => {
     .poll(() => page.evaluate(() => Boolean(window.cy?.nodes().length)))
     .toBe(true);
 };
-
-/*
-Pin the page's animation clock.  Animations read performance.now()
-(src/animation/manager.mts), so with it held a tween stands still at the
-instant the spec chooses, and advancing it lands exactly mid-flight or
-at the end — no wall-clock waits, and no window for a loaded machine to
-step over (this spec spent ~38 s waiting on real time before).
-*/
-const pinClock = (page) =>
-  page.evaluate(() => {
-    let at = performance.now();
-
-    performance.now = () => at;
-    window.__clock = {
-      advance: (ms) => {
-        at += ms;
-      },
-      release: () => {
-        delete performance.now;
-      },
-    };
-  });
-
-/**
- * Move the pinned clock on, between frames: two before, so an animation
- * just played has taken its start time (its first step reads the clock),
- * and two after, so the animations have stepped to the new instant.
- */
-const advanceClock = (page, ms) =>
-  page.evaluate(async (ms) => {
-    const frame = () => new Promise((r) => requestAnimationFrame(r));
-
-    await frame();
-    await frame();
-    window.__clock.advance(ms);
-    await frame();
-    await frame();
-  }, ms);
 
 test('workflow selector routes to every canonical panel', async ({ page }) => {
   test.slow();

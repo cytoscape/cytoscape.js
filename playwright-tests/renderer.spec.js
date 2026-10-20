@@ -1,5 +1,6 @@
 import { test, expect } from './lib/shared-page.mjs';
 import { decodePng, diffPngs, writeDiffArtifacts } from './lib/image-diff.mjs';
+import { advanceClock, pinClock } from './lib/clock.mjs';
 
 /*
 WebGPU prototype specs.  Run under the 'webgpu' Playwright project
@@ -117,6 +118,11 @@ const pixelAt = async (page, x, y) => {
  * specs intermittent under load, and it got worse the busier the machine was
  * (round 53).
  *
+ * The specs that sample one tween at chosen instants pin the clock
+ * instead (`lib/clock.mjs`): with performance.now() held, the tween
+ * stands still until advanced, so each sample lands at an exact fraction
+ * and no wall time is spent.  The polls below remain for the rest.
+ *
  * Polling asserts the stronger and more honest thing: that the animation
  * *reaches* the state.
  *
@@ -131,7 +137,7 @@ const pixelAt = async (page, x, y) => {
  * What keeps each of these honest is that the state cannot be observed at
  * rest.  For most of them the predicate itself cannot: a settled node does
  * not sit 35px past its target, a settled box covers x+95, a settled line
- * hides its casing.  For the four paint specs the end colour *does* satisfy
+ * hides its casing.  For the two paint specs the end colour *does* satisfy
  * the predicate, and the assertion that follows the poll is what discriminates
  * — a stale CPU column, or green leading red on the OKLab path.  Keep that
  * pairing when editing one.
@@ -6163,7 +6169,9 @@ test.describe('WebGPU renderer', () => {
 
     // a restyle triggers the transition — an all-paint preset offloads
     // to the GPU tween kernels, so pixels move while the CPU column
-    // holds the pre-restyle value (the motion-staleness rule)
+    // holds the pre-restyle value (the motion-staleness rule).  The clock
+    // is pinned (clock.mjs), so the samples below land at exact instants
+    await pinClock(page);
     await page.evaluate(
       (t) =>
         window.cy.style({
@@ -6178,39 +6186,30 @@ test.describe('WebGPU renderer', () => {
       TRANSITION,
     );
 
-    // visibly off blue — settled yellow satisfies this pair too, and the
-    // OKLab check below (green leads red; yellow has them equal) is what
+    // halfway: visibly off blue — settled yellow satisfies this pair too,
+    // and the OKLab check (green leads red; yellow has them equal) is what
     // rules it out
-    const mid = await untilMidFlight(
-      page,
-      () => pixelAt(page, center.x, center.y),
-      (px) => px[0] > 30 && px[2] < 245,
-      { timeout: 6000, what: 'the paint moving off blue' },
-    );
+    await advanceClock(page, 1000);
+
+    const mid = await pixelAt(page, center.x, center.y);
+
+    expect(mid[0]).toBeGreaterThan(30);
+    expect(mid[2]).toBeLessThan(245);
     expect(mid[1]).toBeGreaterThan(mid[0]); // ...through OKLab (green leads red)
 
     expect(
       await page.evaluate(() => window.cy.$id('a').style('background-color')),
     ).toBe('rgb(0,0,255)');
 
-    // completion settles the exact resolved end state onto the CPU.  Polled
-    // rather than slept: the mid-flight wait above ends when the tween
-    // reaches its state, not at a fixed offset, so there is no fixed
-    // remainder left to sleep — and the assertion is about the end state
-    // arriving, not about when.
-    await expect
-      .poll(
-        () =>
-          page.evaluate(() => ({
-            colour: window.cy.$id('a').style('background-color'),
-            animated: window.cy.$id('a').animated(),
-          })),
-        {
-          timeout: 5000,
-          message: 'the transition settles on the resolved end state',
-        },
-      )
-      .toEqual({ colour: 'rgb(255,255,0)', animated: false });
+    // completion settles the exact resolved end state onto the CPU
+    await advanceClock(page, 1100);
+
+    expect(
+      await page.evaluate(() => ({
+        colour: window.cy.$id('a').style('background-color'),
+        animated: window.cy.$id('a').animated(),
+      })),
+    ).toEqual({ colour: 'rgb(255,255,0)', animated: false });
 
     await waitFrames(page);
 
@@ -6256,29 +6255,26 @@ test.describe('WebGPU renderer', () => {
       0, 0, 255,
     ]);
 
+    await pinClock(page);
     await page.evaluate(() => window.cy.$id('a').data('w', 1));
 
-    // tweening, not snapped — a snap lands on yellow, which the OKLab check
-    // below rejects (green leads red on the path; yellow has them equal)
-    const mid = await untilMidFlight(
-      page,
-      () => pixelAt(page, center.x, center.y),
-      (px) => px[0] > 30 && px[2] < 245,
-      { timeout: 6000, what: 'the mapped channel tweening' },
-    );
+    // halfway: tweening, not snapped — a snap lands on yellow, which the
+    // OKLab check rejects (green leads red on the path; yellow has them
+    // equal)
+    await advanceClock(page, 1000);
+
+    const mid = await pixelAt(page, center.x, center.y);
+
+    expect(mid[0]).toBeGreaterThan(30);
+    expect(mid[2]).toBeLessThan(245);
     expect(mid[1]).toBeGreaterThan(mid[0]);
 
-    // the settled end state is the mapper's resolved value at w=1 — polled,
-    // for the reason the style-transition spec above records
-    await expect
-      .poll(
-        () => page.evaluate(() => window.cy.$id('a').style('background-color')),
-        {
-          timeout: 5000,
-          message: "the transition settles on the mapper's value at w=1",
-        },
-      )
-      .toBe('rgb(255,255,0)');
+    // the settled end state is the mapper's resolved value at w=1
+    await advanceClock(page, 1100);
+
+    expect(
+      await page.evaluate(() => window.cy.$id('a').style('background-color')),
+    ).toBe('rgb(255,255,0)');
 
     await waitFrames(page);
 
@@ -6322,28 +6318,23 @@ test.describe('WebGPU renderer', () => {
       200,
     );
 
+    await pinClock(page);
     await page.evaluate((b) => window.cy.style({ nodes: b }), block(200));
 
-    // mid-flight the box has grown past x+40 but not to its target half-width
-    // yet: half = 20 + 80t, so the window is t ∈ (0.25, 0.94) of the 2000ms
-    // transition.  Both ends come out of *one* row read, so they are the same
-    // instant rather than two screenshots apart, and 1700 < 1875 keeps the
-    // upper bound a real constraint.
-    await untilMidFlight(
-      page,
-      async () => {
-        const row = await clipPixels(
-          page,
-          Math.round(center.x + 40),
-          Math.round(center.y),
-          56,
-        );
+    // halfway the box has grown past x+40 but not to its target half-width
+    // yet: half = 20 + 80t = 60 at t = 0.5.  Both ends come out of *one*
+    // row read
+    await advanceClock(page, 1000);
 
-        return row == null ? null : { inner: row[1], outer: row[55 * 4 + 1] };
-      },
-      (px) => px != null && px.inner < 80 && px.outer > 200,
-      { timeout: 6000, what: 'the box past x+40 but short of x+95' },
+    const row = await clipPixels(
+      page,
+      Math.round(center.x + 40),
+      Math.round(center.y),
+      56,
     );
+
+    expect(row[1]).toBeLessThan(80);
+    expect(row[55 * 4 + 1]).toBeGreaterThan(200);
 
     // geometry tweens are never stale: the sync read is the mid-flight
     // value (unlike a leased paint transition, which holds pre-restyle);
@@ -6362,13 +6353,10 @@ test.describe('WebGPU renderer', () => {
     // the hanging label re-anchors in step (-w/2 at text-halign left)
     expect(midState.anchorX).toBeCloseTo(-midState.width / 2, 3);
 
-    // settled — polled, for the reason the style-transition spec records
-    await expect
-      .poll(() => page.evaluate(() => window.cy.$id('a').width()), {
-        timeout: 5000,
-        message: 'the width transition settles on 200',
-      })
-      .toBe(200);
+    // settled
+    await advanceClock(page, 1100);
+
+    expect(await page.evaluate(() => window.cy.$id('a').width())).toBe(200);
 
     await waitFrames(page);
 
@@ -6415,27 +6403,22 @@ test.describe('WebGPU renderer', () => {
       200,
     );
 
+    await pinClock(page);
     await page.evaluate((b) => window.cy.style({ edges: b }), block(30));
 
     // mid-flight, y+8 sits in the black casing band while the line is
     // still short of it — casing half (w+6)/2 > 8 while line half
-    // w/2 < 8, i.e. w ∈ (10, 16): a ~640ms window under the linear
-    // 3s tween.  Only a riding stroke ever puts casing pixels here.
-    //
-    // This one polled before the rest of the file did, but it gave up the
-    // moment it saw the red line — so a late first sample, which is exactly
-    // what a loaded software rasterizer produces, failed it outright.  Poll
-    // to the bound instead: a genuinely missed window still fails, and it
-    // fails with the pixel it last saw.
-    await untilMidFlight(
-      page,
-      () => pixelAt(page, center.x, center.y + 8),
-      (px) => px[0] < 80 && px[1] < 80,
-      { timeout: 6000, what: 'the casing band riding over y+8' },
-    );
+    // w/2 < 8, i.e. w ∈ (10, 16), t ∈ (0.29, 0.5) of the linear 3 s
+    // tween; t = 0.4 is w = 13.2.  Only a riding stroke ever puts casing
+    // pixels here.
+    await advanceClock(page, 1200);
 
-    await page.waitForTimeout(3200);
-    await waitFrames(page);
+    const mid = await pixelAt(page, center.x, center.y + 8);
+
+    expect(mid[0]).toBeLessThan(80);
+    expect(mid[1]).toBeLessThan(80);
+
+    await advanceClock(page, 1900);
 
     // settled: the line itself (half 15) covers y+8 in red
     const end = await pixelAt(page, center.x, center.y + 8);
@@ -6473,43 +6456,23 @@ test.describe('WebGPU renderer', () => {
     past the target half a perceptual duration in — and the curve is flat
     around that peak, so a wide sampling window still lands well past 1.
     */
-    await page.evaluate(() => {
-      window.__springStart = performance.now();
+    await pinClock(page);
+    await page.evaluate(() =>
       window.cy.$id('a').animate({
         position: { x: 0, y: 0 },
         duration: 2000,
         easing: 'spring(0.7)',
-      });
-    });
-    // 35px past the target: only an overshoot puts the node here, and the
-    // settled node (half-width 20, centred on the target) never does — so
-    // this cannot pass by sampling after the ringing decays
-    await untilMidFlight(
-      page,
-      () => pixelAt(page, center.x + 35, center.y),
-      (px) => px[1] < 80,
-      { timeout: 6000, what: 'the node overshooting 35px past the target' },
+      }),
     );
+    // at the first peak, 35px past the target: only an overshoot puts the
+    // node here, and the settled node (half-width 20, centred on the
+    // target) never does
+    await advanceClock(page, 1000);
+    expect((await pixelAt(page, center.x + 35, center.y))[1]).toBeLessThan(80);
 
-    // it also runs past its perceptual duration while the ringing decays.
-    // Anchored to the animation's own start rather than to whenever the
-    // overshoot poll above returned: 2200ms is past the 2000ms perceptual
-    // duration, and drifting later would land after the ringing has decayed
-    // and assert nothing.
-    await page.evaluate(
-      () =>
-        new Promise((resolve) => {
-          const wait = () => {
-            if (performance.now() - window.__springStart >= 2200) {
-              resolve();
-            } else {
-              requestAnimationFrame(wait);
-            }
-          };
-
-          wait();
-        }),
-    );
+    // it also runs past its perceptual duration while the ringing decays:
+    // 2200ms is past the 2000ms perceptual duration
+    await advanceClock(page, 1200);
 
     expect(await page.evaluate(() => window.cy.$id('a').animated())).toBe(true);
 
@@ -6551,19 +6514,16 @@ test.describe('WebGPU renderer', () => {
 
     // ease-in-expo is ~0.03 of the way at 40% of the time; linear would be at
     // 0.4, which is 76px further along — far more than the node is wide.
-    // The sample must land before ~70% of the time, when even expo has
-    // carried the node off x = -95; over 2 s that left ~600 ms for the
-    // wait's round-trips and a loaded CI runner overran it, so the tween
-    // is 6 s and the sample still at 40%
+    // The clock is pinned, so the sample lands at exactly 40%
+    await pinClock(page);
     await page.evaluate(() =>
       window.cy.$id('a').animate({
         position: { x: 100, y: 0 },
-        duration: 6000,
+        duration: 2000,
         easing: 'ease-in-expo',
       }),
     );
-    await page.waitForTimeout(2400);
-    await waitFrames(page);
+    await advanceClock(page, 800);
 
     expect((await pixelAt(page, center.x - 95, center.y))[1]).toBeLessThan(80);
     expect((await pixelAt(page, center.x - 20, center.y))[1]).toBeGreaterThan(
@@ -7736,6 +7696,7 @@ test.describe('WebGPU renderer', () => {
     // a slow linear tween: at export time the node is somewhere between the
     // endpoints — the export must show it there (the lease's stale CPU
     // position would put it at the start)
+    await pinClock(page);
     await page.evaluate(() =>
       window.cy.$id('a').animate({
         position: { x: 200, y: 0 },
@@ -7743,24 +7704,18 @@ test.describe('WebGPU renderer', () => {
         easing: 'linear',
       }),
     );
-    // not at the start any more, and covering the midpoint: the 120px body
-    // over a 400px trip gives a window of t ∈ (0.35, 0.65), which the settled
-    // node at +200 does not satisfy — so this cannot pass at rest
-    await untilMidFlight(
-      page,
-      async () =>
-        (
-          await pngAndSample(page, {}, [
-            [center.x - 200, center.y],
-            [center.x, center.y],
-          ])
-        ).pixels,
-      (px) => px[0][3] === 0 && px[1][0] > 200,
-      {
-        timeout: 8000,
-        what: 'the export showing the node off the start and over the midpoint',
-      },
-    );
+    // halfway: not at the start any more, and covering the midpoint (the
+    // 120px body over a 400px trip covers it for t ∈ (0.35, 0.65)), which
+    // the settled node at +200 does not satisfy
+    await advanceClock(page, 2000);
+
+    const { pixels } = await pngAndSample(page, {}, [
+      [center.x - 200, center.y],
+      [center.x, center.y],
+    ]);
+
+    expect(pixels[0][3]).toBe(0);
+    expect(pixels[1][0]).toBeGreaterThan(200);
 
     await page.evaluate(() => window.cy.$id('a').stop(true, true));
   });

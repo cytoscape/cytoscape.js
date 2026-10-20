@@ -12,11 +12,11 @@ to playwright-page/index.html or parity.html, when the page is already there, re
 in place instead of navigating —
 
 - every instance `cytoscape()` (or the parity page's `cytoscapeV3()`)
-  made is destroyed, and the DOM nodes,
-  attributes and window globals the last spec added are removed;
-- methods it stubbed on `console`, `navigator`, `navigator.gpu`, `document` or
-  the canvas, GPU and Worker prototypes are put back, and the page is
-  scrolled to the top;
+  made is destroyed, and the DOM nodes, attributes and window globals
+  the last spec added are removed;
+- methods it stubbed on `console`, `performance` (a pinned clock),
+  `navigator`, `navigator.gpu`, `document` or the canvas, GPU and
+  Worker prototypes are put back, and the page is scrolled to the top;
 - the listeners, routes and init scripts it registered on the Page are
   dropped.
 
@@ -73,6 +73,7 @@ const install = () => {
   const guarded = [
     window,
     console,
+    performance, // a pinned clock (clock.mjs)
     navigator,
     navigator.gpu,
     document,

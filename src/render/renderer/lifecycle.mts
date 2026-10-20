@@ -10,7 +10,7 @@ import { emptyGpuStats } from '../../gpu/gpu-ledger.mjs';
 /**
  * Tear the renderer down: unsubscribe every listener and timer, reject
  * any pending image export, destroy every owned GPU object and finally
- * the device itself, and remove the canvas from the DOM.  Idempotent,
+ * release its view of the shared device, and remove the canvas from the DOM.  Idempotent,
  * and safe to call before `ready` resolves — the in-flight init sees
  * the destroyed flag and abandons.
  *
@@ -91,7 +91,9 @@ export function destroy(rd: Renderer): void {
   rd.exportEmphasisTier?.uniform.destroy();
   rd.emphasisVeil?.destroy();
   rd.labelGate?.buffer.destroy();
-  rd.exportPacker = null; // its pipeline dies with the device below
+  rd.exportPacker = null;
+  // releases this renderer's view; the shared device and its cached
+  // pipelines stay for the realm's other and next instances
   rd.device?.destroy();
 
   if (rd.canvas instanceof HTMLCanvasElement) {

@@ -492,6 +492,12 @@ that compile and then behave differently.
 
 ### Changed
 
+- **Renderers in one page (or worker) share a WebGPU device and its
+  compiled pipelines.**  A second instance's first frame no longer
+  recompiles every shader (~3.4 s to ~0.1 s on SwiftShader).
+  `stats().gpu` still counts one instance's allocations; a device loss
+  now reaches every instance in the realm, and each recovers as before.
+
 - Completed worker betweenness runs release their source graph even when a
   caller retains the result or settled algorithm handle. Queue recovery,
   cancellation, weight evaluation and numeric results retain their contracts.

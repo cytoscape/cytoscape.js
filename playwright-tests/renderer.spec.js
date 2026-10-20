@@ -1964,6 +1964,79 @@ test.describe('WebGPU renderer', () => {
     expect(moved[1]).toBeLessThan(100);
   });
 
+  test('instances share one device and its pipelines; stats, teardown and loss stay correct', async ({
+    page,
+  }) => {
+    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
+
+    const out = await page.evaluate(async () => {
+      const box = () => {
+        const el = document.createElement('div');
+
+        el.style.cssText = 'position:absolute;width:200px;height:150px';
+        document.body.appendChild(el);
+
+        return el;
+      };
+      const make = async (color) => {
+        const cy = cytoscape({
+          container: box(),
+          elements: [{ data: { id: 'a' } }],
+          style: { nodes: { 'background-color': color } },
+        });
+
+        await cy.ready;
+        await cy.viewportCounts();
+
+        return cy;
+      };
+      const code = '@compute @workgroup_size(1) fn main() {}';
+
+      const a = await make('red');
+      const b = await make('blue');
+      const before = b.stats().gpu.liveBytes;
+      const lost = [];
+
+      a.on('devicelost', () => lost.push('a'));
+      b.on('devicelost', () => lost.push('b'));
+
+      const sameModule =
+        a.renderer().device.createShaderModule({ code }) ===
+        b.renderer().device.createShaderModule({ code });
+      const ownLedgers = a.renderer().ledger !== b.renderer().ledger;
+
+      // tearing one down leaves the other drawing, its figures unchanged
+      a.destroy();
+      b.$id('a').style('background-color', 'green');
+      await b.viewportCounts();
+
+      const afterDestroy = {
+        liveBytes: b.stats().gpu.liveBytes,
+        png: (await b.png()).length > 0,
+      };
+
+      // a loss reaches every instance on the device
+      const c = await make('black');
+
+      c.on('devicelost', () => lost.push('c'));
+      b.renderer()._debugLoseDevice();
+      await new Promise((r) => setTimeout(r, 500));
+
+      return {
+        sameModule,
+        ownLedgers,
+        before,
+        afterDestroy,
+        lost: lost.sort(),
+      };
+    });
+
+    expect(out.sameModule).toBe(true);
+    expect(out.ownLedgers).toBe(true);
+    expect(out.afterDestroy).toEqual({ liveBytes: out.before, png: true });
+    expect(out.lost).toEqual(['b', 'c']);
+  });
+
   test('pointer re-emits + the tap family (round 17.1)', async ({ page }) => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
 

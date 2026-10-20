@@ -8757,6 +8757,17 @@ fragment premium is **unmeasurable at scene level** on real hardware
   `devicerestored`.  If a loss lands while a recovery is in flight, or
   the device can't be re-acquired, the instance goes headless-dead and
   emits `error` (the previous behavior).
+- **Renderers share one device per realm** (`src/gpu-context.mts`).
+  The first renderer acquires it; later ones get a view of it, and its
+  shader modules, layouts, samplers and pipelines are cached by
+  descriptor, so a second instance builds no pipeline the first already
+  built — on SwiftShader that was ~3.4 s of every instance's first
+  frame, now ~0.1 s.  A view keeps the GPU ledger's wraps to itself
+  (`stats().gpu` is still per instance), and `destroy()` releases the
+  view, not the device, which outlives its last renderer.  The cost is
+  shared fate: one device loss reaches every instance in the realm
+  (each re-mounts, as above), and their allocations draw on one
+  device's memory.
 
 ## Follow-up hooks
 

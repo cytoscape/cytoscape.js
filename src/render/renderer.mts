@@ -1,3 +1,4 @@
+import { loseDevice } from '../gpu-context.mjs';
 import { ColumnMirror } from './column-mirror.mjs';
 import { CulledGroup, CullKernels } from './cull.mjs';
 import type { EmphasisVeil } from './emphasis-veil.mjs';
@@ -564,15 +565,17 @@ export class Renderer {
     this.schedule();
   }
 
-  /** Test hook: destroy the device out from under the renderer (a real loss). */
+  /** Test hook: destroy the shared device out from under the renderer — and every other renderer in the realm (a real loss). */
   _debugLoseDevice(): void {
-    this.device?.destroy();
+    if (this.device != null) {
+      loseDevice(this.device);
+    }
   }
 
   /**
    * Tear the renderer down: unsubscribe every listener and timer, reject
    * any pending image export, destroy every owned GPU object and finally
-   * the device itself, and remove the canvas from the DOM.  Idempotent,
+   * release its view of the shared device, and remove the canvas from the DOM.  Idempotent,
    * and safe to call before `ready` resolves — the in-flight init sees
    * the destroyed flag and abandons.
    *

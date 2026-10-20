@@ -38,6 +38,44 @@ const openWorkflow = async (page, scene) => {
     .toBe(true);
 };
 
+/*
+Pin the page's animation clock.  Animations read performance.now()
+(src/animation/manager.mts), so with it held a tween stands still at the
+instant the spec chooses, and advancing it lands exactly mid-flight or
+at the end — no wall-clock waits, and no window for a loaded machine to
+step over (this spec spent ~38 s waiting on real time before).
+*/
+const pinClock = (page) =>
+  page.evaluate(() => {
+    let at = performance.now();
+
+    performance.now = () => at;
+    window.__clock = {
+      advance: (ms) => {
+        at += ms;
+      },
+      release: () => {
+        delete performance.now;
+      },
+    };
+  });
+
+/**
+ * Move the pinned clock on, between frames: two before, so an animation
+ * just played has taken its start time (its first step reads the clock),
+ * and two after, so the animations have stepped to the new instant.
+ */
+const advanceClock = (page, ms) =>
+  page.evaluate(async (ms) => {
+    const frame = () => new Promise((r) => requestAnimationFrame(r));
+
+    await frame();
+    await frame();
+    window.__clock.advance(ms);
+    await frame();
+    await frame();
+  }, ms);
+
 test('workflow selector routes to every canonical panel', async ({ page }) => {
   test.slow();
   await openWorkflow(page, 'algorithms');
@@ -415,6 +453,7 @@ test('animation transition and gesture controls change live state and event prop
     initial.x +
     Number(await controls.getByLabel('Move by (model px)').inputValue());
 
+  await pinClock(page);
   await controls.getByLabel('Duration (ms)').fill('6000');
   await expect
     .poll(() =>
@@ -426,6 +465,7 @@ test('animation transition and gesture controls change live state and event prop
   await controls
     .getByRole('button', { name: 'Play transition + position/width tween' })
     .click();
+  await advanceClock(page, 3000);
   let inFlightSample = null;
   await expect
     .poll(
@@ -494,43 +534,24 @@ test('animation transition and gesture controls change live state and event prop
   const playTransition = controls.getByRole('button', {
     name: 'Play transition + position/width tween',
   });
-  const stopAndRestore = async () => {
-    await controls.getByRole('button', { name: 'Stop in place' }).click();
-    await controls
-      .getByRole('button', { name: 'Restore captured geometry/style' })
-      .click();
-  };
-  // A 700 ms transition is in the 0.42–0.58 window for ~110 ms, and one
-  // poll (a SwiftShader screenshot) can take longer than that on a loaded
-  // machine, stepping over it.  A miss replays the transition, up to
-  // three plays, rather than widening the window the easing comparison
-  // relies on.
+  // with the clock pinned, half the duration lands at progress 0.5
+  // exactly; the window is the assertion, not a tolerance for sampling
+  let duration = 2400;
   const sampleAtMidFlight = async (read, what) => {
-    let sample;
+    await advanceClock(page, duration / 2);
 
-    for (let play = 0; play < 3; play++) {
-      if (play > 0) {
-        await stopAndRestore();
-        await playTransition.click();
-      }
+    const sample = await read();
 
-      const deadline = Date.now() + 8000;
-
-      do {
-        await page.screenshot();
-        sample = await read();
-        if (sample.progress == null) {
-          throw new Error(
-            `Animation progress control missing for ${what}: ${JSON.stringify(sample)}`,
-          );
-        }
-        if (sample.progress >= 0.42 && sample.progress <= 0.58) return sample;
-      } while (Date.now() < deadline);
+    if (sample.progress == null) {
+      throw new Error(
+        `Animation progress control missing for ${what}: ${JSON.stringify(sample)}`,
+      );
     }
 
-    throw new Error(
-      `No mid-flight sample for ${what} in three plays: ${JSON.stringify(sample)}`,
-    );
+    expect(sample.progress, `${what} mid-flight`).toBeGreaterThanOrEqual(0.42);
+    expect(sample.progress, `${what} mid-flight`).toBeLessThanOrEqual(0.58);
+
+    return sample;
   };
   const sampleWidthAtMidFlight = async (easingName) => {
     await easingControl.selectOption(easingName);
@@ -562,6 +583,7 @@ test('animation transition and gesture controls change live state and event prop
   expect(easeOutWidth).toBeLessThan(90);
 
   await controls.getByLabel('Duration (ms)').fill('700');
+  duration = 700;
   const timingFunctions = await page.evaluate(
     () => window.featureWorkflows.timingFunctions,
   );
@@ -637,6 +659,7 @@ test('animation transition and gesture controls change live state and event prop
       `${timing} node/edge transition`,
     );
     const middleColors = { node: middle.node, edge: middle.edge };
+    await advanceClock(page, duration);
     await expect
       .poll(() =>
         page.evaluate(() => [
@@ -693,6 +716,7 @@ test('animation transition and gesture controls change live state and event prop
     transitionProgress.linear.edge,
   );
 
+  await page.evaluate(() => window.__clock.release());
   await page.goto(`${PAGE}?network=workflows&scene=gestures&layout=preset`);
   await expect(page.locator('#contextual-title')).toHaveText(
     'Gestures and events',

@@ -8,10 +8,11 @@ frame.  This `test` keeps a worker's page alive across its specs, so
 only the worker's first spec pays it.
 
 It is a drop-in for `@playwright/test`'s: a spec's own `page.goto(url)`
-to playwright-page/index.html, when the page is already there, resets it
+to playwright-page/index.html or parity.html, when the page is already there, resets it
 in place instead of navigating —
 
-- every instance `cytoscape()` made is destroyed, and the DOM nodes,
+- every instance `cytoscape()` (or the parity page's `cytoscapeV3()`)
+  made is destroyed, and the DOM nodes,
   attributes and window globals the last spec added are removed;
 - methods it stubbed on `console`, `navigator`, `navigator.gpu`, `document` or
   the canvas, GPU and Worker prototypes are put back, and the page is
@@ -31,27 +32,31 @@ page is never handed on.
 
 import { test as base, expect } from '@playwright/test';
 
-/** The pages a reset knows how to return to: the plain spec page. */
-const RESETTABLE = /\/playwright-page\/index\.html$/;
+/** The pages a reset knows how to return to: the spec and parity pages. */
+const RESETTABLE = /\/playwright-page\/(index|parity)\.html$/;
 
 /** Installed after each real navigation: the snapshot a reset returns to. */
 const install = () => {
-  const orig = window.cytoscape;
   const instances = [];
 
-  if (typeof orig !== 'function') {
+  if (typeof window.cytoscape !== 'function') {
     return; // not a Cytoscape page: nothing to reset to
   }
 
-  window.cytoscape = new Proxy(orig, {
-    apply(target, self, args) {
-      const cy = Reflect.apply(target, self, args);
+  // v4, and on the parity page v3 beside it
+  for (const name of ['cytoscape', 'cytoscapeV3']) {
+    if (typeof window[name] === 'function') {
+      window[name] = new Proxy(window[name], {
+        apply(target, self, args) {
+          const cy = Reflect.apply(target, self, args);
 
-      instances.push(cy);
+          instances.push(cy);
 
-      return cy;
-    },
-  });
+          return cy;
+        },
+      });
+    }
+  }
 
   const nodes = new Set(document.querySelectorAll('*'));
   const attrs = new Map(

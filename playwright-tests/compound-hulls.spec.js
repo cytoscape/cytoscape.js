@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './lib/shared-page.mjs';
 
 const PAGE =
   process.env.CY_HULL_TEST_URL ||

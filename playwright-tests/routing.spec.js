@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './lib/shared-page.mjs';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { SCENES } from './lib/routing-scenes.mjs';

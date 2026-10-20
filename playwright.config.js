@@ -172,13 +172,12 @@ export default defineConfig({
     },
 
     /*
-     * Visual regression specs: golden diffs plus the live v3-vs-v4 parity
-     * diffs.  Pinned to the SwiftShader software adapter so the
-     * rasterization — and therefore the checked-in goldens — is
-     * deterministic across machines (a hardware adapter would produce
-     * per-GPU AA differences).  Regenerate goldens with UPDATE_GOLDENS=1.
-     *
-     * The parity half additionally needs v3's UMD bundle, built from the
+     * Visual regression specs: the golden diffs.  Pinned to the SwiftShader
+     * software adapter so the rasterization — and therefore the checked-in
+     * goldens — is deterministic across machines (a hardware adapter would
+     * produce per-GPU AA differences).  Regenerate goldens with
+     * UPDATE_GOLDENS=1.  The live v3-vs-v4 parity half of visual.spec.js
+     * runs in `parity`, below; it needs v3's UMD bundle, built from the
      * v3/ subproject: `cd v3 && npm install && npm run build:umd`.  The
      * specs fail with that instruction rather than skipping, so a missing
      * baseline cannot read as a pass.
@@ -189,13 +188,12 @@ export default defineConfig({
      * numerically through their public accessors.  It carries no
      * `hasAdapter` skip, deliberately, so it keeps running on machines
      * where the golden and parity halves cannot.
-     *
-     * `bundles.spec.js` (round 105) joins for the same page: which member
-     * of a 30-wide bundle a pointer resolves to, in both libraries.
      */
     {
       name: 'visual',
-      testMatch: /(visual|routing|gestures|bundles)\.spec\.js/,
+      testMatch: /(visual|routing)\.spec\.js/,
+      // the parity half runs in `parity`, below
+      grepInvert: /v3-vs-v4 render parity/,
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chromium',
@@ -206,6 +204,39 @@ export default defineConfig({
             ...linuxVulkanCompositingArgs,
             ...gpuDebugArgs,
             '--use-webgpu-adapter=swiftshader',
+          ],
+        },
+      },
+    },
+    /*
+     * The specs that need a GPU but no deterministic pixels, on whatever
+     * adapter the machine has (the renderer project's flags): the v3-vs-v4
+     * parity half of visual.spec.js, whose two images come from the same
+     * run, gestures.spec.js (round 142), which reads no pixels — only
+     * GPU picks — and bundles.spec.js (round 105), whose picks are held to
+     * analytic nearest-member answers with a per-texel tolerance.  On a GPU-less CI runner this is SwiftShader as before; on
+     * a machine with a GPU it moves ~650 worker-seconds of SwiftShader JIT
+     * off the shared CPU (measured 2026-10-19 on an RX 580: the 56 parity
+     * tests 8.9 s against ~430 worker-seconds, gestures 10 s against 26).
+     * The goldens stay in `visual`, pinned.
+     */
+    {
+      name: 'parity',
+      testMatch: [
+        /visual\.spec\.js/,
+        /gestures\.spec\.js/,
+        /bundles\.spec\.js/,
+      ],
+      grep: /gestures\.spec|bundles\.spec|v3-vs-v4 render parity/,
+      use: {
+        ...devices['Desktop Chrome'],
+        channel: 'chromium',
+        launchOptions: {
+          args: [
+            '--enable-unsafe-webgpu',
+            '--enable-unsafe-swiftshader',
+            ...linuxVulkanCompositingArgs,
+            ...gpuDebugArgs,
           ],
         },
       },

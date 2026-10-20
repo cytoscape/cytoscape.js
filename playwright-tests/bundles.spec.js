@@ -36,6 +36,10 @@ So a probe may differ where two members are within DIST_TOL of equally
 near, or where the nearest sits within DIST_TOL of the halo's edge — and
 only there.  Probes are taken at texel centres (x + 0.5) on both sides.
 
+It runs in the `parity` project, on the machine's own adapter: the
+tolerance argument above is per texel and holds on any rasterizer
+(3/3 green on an RX 580, 2026-10-19, as on SwiftShader).
+
 Control (run once, 2026-09-29, SwiftShader): with PICK_DEPTH_STENCIL's
 compare set to 'always' — the old last-draw-wins — 'the bezier bundle'
 fails with 122 of its 273 probes wrong outside the tolerance and 'the

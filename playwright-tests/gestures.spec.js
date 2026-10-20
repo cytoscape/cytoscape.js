@@ -40,8 +40,9 @@ with `UPDATE_GESTURE_TRACES=1 npx playwright test gestures -g webgpu`
 No pixels are read, but the v4 hosts need a GPU: the hover and edge
 picks are GPU picks.  They soft-skip without an adapter, as every
 renderer spec does; the v3 half needs none and never skips.  The spec
-rides the `visual` project, which pins SwiftShader and already builds
-both bundles for this page.
+rides the `parity` project: the machine's own adapter, since no pixel is
+read (SwiftShader on a GPU-less runner; ~2.5× faster where there is a
+GPU), with both bundles built for this page.
 */
 
 const UPDATE = !!process.env.UPDATE_GESTURE_TRACES;

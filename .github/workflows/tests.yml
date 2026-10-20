@@ -93,7 +93,7 @@ jobs:
       run: node test/runtimes/workerd.mjs
 
   # v4's browser tier, one job per Playwright project.  Each installs only
-  # the browser it drives; only `visual` needs v3's bundle.
+  # the browser it drives; only `visual` and `parity` need v3's bundle.
   ci-browser:
     runs-on: ubuntu-latest
     # see the note on `ci-node` above
@@ -107,6 +107,8 @@ jobs:
           browser: webkit
         - project: visual
           browser: chromium
+        - project: parity
+          browser: chromium
     name: ci-browser (${{ matrix.project }})
     steps:
     - uses: actions/checkout@v6
@@ -115,12 +117,13 @@ jobs:
         node-version-file: .nvmrc
     - name: Install dependencies
       run: npm ci
-    # The v3-vs-v4 parity diffs in the `visual` project render both renderers
-    # in one page, so they need v3's UMD bundle from the v3/ subproject.  The
+    # The v3-vs-v4 parity diffs and gesture traces in the `parity` project
+    # render both libraries in one page, so they need v3's UMD bundle from
+    # the v3/ subproject (`visual`'s routing and bundle specs do too).  The
     # specs fail with this instruction rather than skipping (round 42), so a
     # missing baseline cannot read as a pass.
     - name: Build the v3 comparison baseline
-      if: matrix.project == 'visual'
+      if: matrix.project == 'visual' || matrix.project == 'parity'
       run: npm ci && npm run build:umd
       working-directory: v3
     - name: Install Playwright Browsers

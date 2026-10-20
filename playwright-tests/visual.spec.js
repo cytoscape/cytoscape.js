@@ -43,6 +43,8 @@ Visual regression specs for the WebGPU prototype, in two families:
 - **v3-vs-v4 parity**: the same fixture rendered by the classic canvas
   renderer and the GPU prototype in the same run, diffed with a tolerance
   (both images come from this machine, so determinism is a non-issue).
+  Runs in the `parity` project, on the machine's own adapter rather than
+  SwiftShader (playwright.config.js); `--project=visual` runs the goldens.
   The renderers differ by design in anti-aliasing (SDF vs canvas-2D), so
   parity asserts placement/color agreement, not pixel identity.
 */

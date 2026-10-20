@@ -106,7 +106,7 @@ drift.
 | `npm run -s verify` | ~9 s | typecheck + lint + `test:js` — **the inner loop** |
 | `npm run -s test:js:one -- test/<f>.test.mjs` | — | one spec file, with the shim preloaded |
 | `bun test --parallel` | ~20 s | every spec (`test/**/*.test.mjs`) under Bun; plain `bun test` works too, in one process (~90 s) |
-| `npm run -s test:node:quiet` | ~90 s | the gate before handing work back |
+| `npm run -s test:node:quiet` | ~50 s | the gate before handing work back |
 | `npm run -s test:bun:quiet` | — | public, module/packaging and soak parity under Bun, plus Bun throws coverage |
 | `npm run -s test:quiet` | minutes | the Node tier plus Playwright (the quiet `npm test`) |
 | `npm run build` | ~1 s | all bundles; only needed when changing the build |

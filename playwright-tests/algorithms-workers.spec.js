@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './lib/shared-page.mjs';
 
 /*
 Round 74.4: the `'workers'` executor in a real browser.

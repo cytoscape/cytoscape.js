@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './lib/shared-page.mjs';
 import { decodePng } from './lib/image-diff.mjs';
 
 const PAGE =

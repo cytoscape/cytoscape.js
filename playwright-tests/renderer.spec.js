@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './lib/shared-page.mjs';
 import { decodePng, diffPngs, writeDiffArtifacts } from './lib/image-diff.mjs';
 
 /*
@@ -7017,7 +7017,10 @@ test.describe('WebGPU renderer', () => {
     // the README's own headline for the headless/rendered boundary, and
     // the state a blocklisted or software-less machine is really in — no
     // stub can produce it on a box that has an adapter, so the adapter is
-    // taken away rather than the environment faked
+    // taken away rather than the environment faked.  A fresh realm: one
+    // that already holds the shared device never asks for an adapter again
+    await page.reload();
+
     const message = await page.evaluate(async () => {
       const real = navigator.gpu.requestAdapter.bind(navigator.gpu);
 

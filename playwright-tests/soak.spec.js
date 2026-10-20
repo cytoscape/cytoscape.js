@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './lib/shared-page.mjs';
 import { soakInPage, trend } from './lib/renderer-soak.mjs';
 
 /*

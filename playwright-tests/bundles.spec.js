@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './lib/shared-page.mjs';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -28,7 +28,9 @@ now resolves nearest-wins as v3 does (`src/render/picking.mts`).  One
 spec per outcome: agreement with v3 on the bezier bundle, agreement with
 its own geometry on the haystack bundle (v3 and v4 place haystack lines
 at different pseudo-random angles, so there each is held to its own
-nearest), and stability.
+nearest), and stability — each once per transect (TRANSECTS), so the
+nine run side by side rather than three in series (the stability spec
+alone was 16 s).
 
 **Where a disagreement is allowed.**  The GPU answers per texel, at the
 texel centre, from interpolated distances; the reference is analytic.
@@ -44,7 +46,10 @@ Control (run once, 2026-09-29, SwiftShader): with PICK_DEPTH_STENCIL's
 compare set to 'always' — the old last-draw-wins — 'the bezier bundle'
 fails with 122 of its 273 probes wrong outside the tolerance and 'the
 haystack bundle' with 8; the stability spec stays green (the old answer
-was stable too — which is why it is its own spec).
+was stable too — which is why it is its own spec).  Rerun on the
+per-transect split (2026-10-20): the bezier spec fails at both ends
+(the middle has no contested probe to get wrong), the haystack spec at
+all three transects, and stability stays green.
 */
 
 const PARITY_PAGE = 'http://127.0.0.1:3333/playwright-page/parity.html';
@@ -68,15 +73,28 @@ const hasAdapter = async (page) =>
   });
 
 /**
+ * The transects across the bundle: near the source end (where the
+ * members converge), the middle, and near the target end.  Each is its
+ * own spec, so the three run side by side.  `contested` is the least
+ * number of its 91 probes inside more than one member's halo (measured
+ * 88 at each end; the middle, where the bundle fans out, has none and
+ * holds the open-space answers instead).
+ */
+const TRANSECTS = [
+  { x: 100, where: 'source end', contested: 60 },
+  { x: 200, where: 'middle', contested: 0 },
+  { x: 300, where: 'target end', contested: 60 },
+];
+
+/**
  * Build the same 30-wide bundle in both libraries at zoom 1, pan 0, and
- * pick along transects across it: near the source end (where the members
- * converge), the middle, and near the target end.  Returns per probe the
- * v3 answer, the v4 answer (with the gesture's halos), and the two
+ * pick along one transect across it, every `step` px.  Returns per probe
+ * the v3 answer, the v4 answer (with the gesture's halos), and the two
  * nearest members by *each* library's own geometry.
  */
-const probeBundle = (page, curve) =>
+const probeBundle = (page, curve, X, step = 2) =>
   page.evaluate(
-    async ({ curve, members, width, pad }) => {
+    async ({ curve, members, width, pad, X, step }) => {
       const els = [
         { data: { id: 'a' }, position: { x: 60, y: 150 } },
         { data: { id: 'b' }, position: { x: 340, y: 150 } },
@@ -166,34 +184,32 @@ const probeBundle = (page, curve) =>
       const lines4 = polylines(cy4, 'v4');
       const probes = [];
 
-      for (const X of [100, 200, 300]) {
-        for (let y = 60; y <= 240; y += 2) {
-          // texel centres, both sides: the GPU rasters (x + 0.5, y + 0.5)
-          const cx = X + 0.5;
-          const cyy = y + 0.5;
-          const n3 = cy3.renderer().findNearestElement(cx, cyy, true, false);
-          const r = cy4._renderer;
+      for (let y = 60; y <= 240; y += step) {
+        // texel centres, both sides: the GPU rasters (x + 0.5, y + 0.5)
+        const cx = X + 0.5;
+        const cyy = y + 0.5;
+        const n3 = cy3.renderer().findNearestElement(cx, cyy, true, false);
+        const r = cy4._renderer;
 
-          r.picking.invalidateCache();
+        r.picking.invalidateCache();
 
-          const n4 = cy4._decodePick(
-            await r.pick(X, y, { edgePadPx: pad, nodePadPx: 2 }),
-          );
+        const n4 = cy4._decodePick(
+          await r.pick(X, y, { edgePadPx: pad, nodePadPx: 2 }),
+        );
 
-          probes.push({
-            x: X,
-            y,
-            v3: n3 != null && n3.isEdge() ? n3.id() : null,
-            v4: n4 != null && n4.isEdge() ? n4.id() : null,
-            near3: nearestTwo(lines3, cx, cyy),
-            near4: nearestTwo(lines4, cx, cyy),
-          });
-        }
+        probes.push({
+          x: X,
+          y,
+          v3: n3 != null && n3.isEdge() ? n3.id() : null,
+          v4: n4 != null && n4.isEdge() ? n4.id() : null,
+          near3: nearestTwo(lines3, cx, cyy),
+          near4: nearestTwo(lines4, cx, cyy),
+        });
       }
 
       return probes;
     },
-    { curve, members: MEMBERS, width: WIDTH, pad: EDGE_PAD },
+    { curve, members: MEMBERS, width: WIDTH, pad: EDGE_PAD, X, step },
   );
 
 /** The id a nearest-wins pick with the halo must answer, or undefined
@@ -239,76 +255,75 @@ test.describe('picking in a wide bundle (round 105)', () => {
     test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
   });
 
-  test('the bezier bundle: v4 resolves the nearest member, as v3 does', async ({
-    page,
-  }) => {
-    const probes = await probeBundle(page, 'bezier');
-    // the scene has to be the dense one it is named for: points where
-    // more than one member is inside the halo
-    const contested = probes.filter(
-      (p) => p.near4[1] != null && p.near4[1].d <= WIDTH / 2 + EDGE_PAD,
-    );
+  for (const { x: X, where, contested: least } of TRANSECTS) {
+    test(`the bezier bundle, ${where}: v4 resolves the nearest member, as v3 does`, async ({
+      page,
+    }) => {
+      const probes = await probeBundle(page, 'bezier', X);
+      // the scene has to be the dense one it is named for: points where
+      // more than one member is inside the halo
+      const contested = probes.filter(
+        (p) => p.near4[1] != null && p.near4[1].d <= WIDTH / 2 + EDGE_PAD,
+      );
 
-    expect(contested.length).toBeGreaterThan(60);
+      expect(contested.length).toBeGreaterThanOrEqual(least);
 
-    // v3 is the reference behaviour — hold the reference to itself first
-    expect(
-      disagreements(
-        probes,
-        (p) => p.v3,
-        (p) => p.near3,
-      ),
-    ).toEqual([]);
-    expect(
-      disagreements(
-        probes,
-        (p) => p.v4,
-        (p) => p.near4,
-      ),
-    ).toEqual([]);
+      // v3 is the reference behaviour — hold the reference to itself first
+      expect(
+        disagreements(
+          probes,
+          (p) => p.v3,
+          (p) => p.near3,
+        ),
+      ).toEqual([]);
+      expect(
+        disagreements(
+          probes,
+          (p) => p.v4,
+          (p) => p.near4,
+        ),
+      ).toEqual([]);
 
-    // and the two libraries' own answers, wherever neither is borderline
-    const cross = probes.filter((p) => {
-      const w3 = expected(p.near3);
-      const w4 = expected(p.near4);
+      // and the two libraries' own answers, wherever neither is borderline
+      const cross = probes.filter((p) => {
+        const w3 = expected(p.near3);
+        const w4 = expected(p.near4);
 
-      return w3 !== undefined && w4 !== undefined && p.v3 !== p.v4;
+        return w3 !== undefined && w4 !== undefined && p.v3 !== p.v4;
+      });
+
+      expect(cross).toEqual([]);
     });
 
-    expect(cross).toEqual([]);
-  });
+    test(`the haystack bundle, ${where}: each library resolves the nearest of its own lines`, async ({
+      page,
+    }) => {
+      const probes = await probeBundle(page, 'haystack', X);
+      const hits = probes.filter((p) => p.v4 != null);
 
-  test('the haystack bundle: each library resolves the nearest of its own lines', async ({
-    page,
-  }) => {
-    const probes = await probeBundle(page, 'haystack');
-    const hits = probes.filter((p) => p.v4 != null);
+      // haystack bundles are a sheaf inside the node's radius: the probes
+      // that hit must be many (16-17 per transect), and mostly contested
+      expect(hits.length).toBeGreaterThan(10);
+      expect(
+        disagreements(
+          probes,
+          (p) => p.v3,
+          (p) => p.near3,
+        ),
+      ).toEqual([]);
+      expect(
+        disagreements(
+          probes,
+          (p) => p.v4,
+          (p) => p.near4,
+        ),
+      ).toEqual([]);
+    });
 
-    // haystack bundles are a sheaf inside the node's radius: the probes
-    // that hit must be many, and mostly contested
-    expect(hits.length).toBeGreaterThan(20);
-    expect(
-      disagreements(
-        probes,
-        (p) => p.v3,
-        (p) => p.near3,
-      ),
-    ).toEqual([]);
-    expect(
-      disagreements(
-        probes,
-        (p) => p.v4,
-        (p) => p.near4,
-      ),
-    ).toEqual([]);
-  });
-
-  test('the answer is stable frame to frame', async ({ page }) => {
-    test.setTimeout(180_000);
-
-    const first = await probeBundle(page, 'bezier');
-    const again = await page.evaluate(
-      async (points) => {
+    test(`the answer is stable frame to frame, ${where}`, async ({ page }) => {
+      // every fourth probe of the transect
+      const first = await probeBundle(page, 'bezier', X, 8);
+      const again = await page.evaluate(async (points) => {
         const cy4 = window.cy4;
         const r = cy4._renderer;
         const out = [];
@@ -321,8 +336,8 @@ test.describe('picking in a wide bundle (round 105)', () => {
             // every answer is a new raster of a moved view
             cy4.panBy({ x: 7, y: -3 });
             await new Promise((res) => requestAnimationFrame(res));
+            // the pick draws its tile in the next frame, at the view put back
             cy4.panBy({ x: -7, y: 3 });
-            await new Promise((res) => requestAnimationFrame(res));
             r.picking.invalidateCache();
 
             const hit = cy4._decodePick(
@@ -336,16 +351,14 @@ test.describe('picking in a wide bundle (round 105)', () => {
         }
 
         return out;
-      },
-      first.filter((_, i) => i % 4 === 0),
-    );
+      }, first);
+      const changed = first.filter((p, i) =>
+        again[i].some((id) => id !== p.v4),
+      );
 
-    const sampled = first.filter((_, i) => i % 4 === 0);
-    const changed = sampled.filter((p, i) =>
-      again[i].some((id) => id !== p.v4),
-    );
-
-    expect(sampled.filter((p) => p.v4 != null).length).toBeGreaterThan(30);
-    expect(changed).toEqual([]);
-  });
+      // 23, 20 and 23 of the transects' 23 probes hit an edge
+      expect(first.filter((p) => p.v4 != null).length).toBeGreaterThan(15);
+      expect(changed).toEqual([]);
+    });
+  }
 });

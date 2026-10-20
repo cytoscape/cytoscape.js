@@ -191,6 +191,11 @@ export default defineConfig({
      */
     {
       name: 'visual',
+      // half the run's workers: each visual worker compiles every
+      // pipeline variant on SwiftShader once, so fewer workers is fewer
+      // duplicate compiles (measured 2026-10-20 at 8 workers: visual
+      // uncapped ~100 s, 4 ~90 s, 3 ~93 s, 2 ~101 s for the whole run)
+      workers: Math.max(1, Math.floor(workers / 2)),
       testMatch: /(visual|routing)\.spec\.js/,
       // the parity half runs in `parity`, below
       grepInvert: /v3-vs-v4 render parity/,

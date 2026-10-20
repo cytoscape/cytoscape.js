@@ -309,7 +309,7 @@ and **pins how many files it walked** so a scanner that stops early can't pass.
 | `test/modules/golden-coverage.test.mjs` | pins how many style properties no golden exercises |
 | `test/modules/bundle-size.test.mjs` | slim-build size budget and per-artifact ratchet |
 | `test/modules/packaging.test.mjs` | what `npm pack` ships, and that the manifest points at real files |
-| `test/modules/debug-harness.test.mjs` | every debug fixture exists at the fetched path; every sheet compiles against its data |
+| `test/modules/debug-harness*.test.mjs` | every debug fixture exists at the fetched path and every sheet compiles against its data (`-compile`); the harness's sheets, labels, wire round-trip, event log, toggles and layout section |
 | `test/modules/runtime-smoke.test.mjs` | the cross-runtime smoke never soft-skips; its controls fail |
 | `test/modules/status-site.test.mjs` | the status site's intended output |
 | `test/modules/wgsl-minify.test.mjs`, `wgsl-identifiers.mjs`, `const-inline.mjs` | the shader build transforms |

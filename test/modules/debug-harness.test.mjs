@@ -1,9 +1,20 @@
 import { expect } from 'chai';
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createContext, runInContext } from 'node:vm';
 import cytoscape from '../../src/index.mjs';
+import {
+  ROOT,
+  DEBUG,
+  loadGlobal,
+  networks,
+  fixtures,
+  styles,
+  loadError,
+  featureScenes,
+  elementsFor,
+  entries,
+} from '../lib/debug-harness-fixtures.mjs';
 
 /*
 Round 43: the debug harness, checked from Node.
@@ -32,115 +43,18 @@ browser nobody opened.
 
 What it deliberately does *not* check is how any of it looks.  That is what
 `npm run watch` is for.
+
+The fixture and compile checks, the long-label wrap and the binary wire
+round-trip live in `debug-harness-{compile,labels,wire}.test.mjs`, split
+out so the slowest blocks run on their own test threads; the loaders all
+four share are `test/lib/debug-harness-fixtures.mjs`.
 */
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(HERE, '../..');
-const DEBUG = join(ROOT, 'debug');
-const FEATURE_SCENE_SCRIPTS = [
-  'feature-scenes-paint',
-  'feature-scenes-graph',
-  'feature-scenes-labels',
-  'feature-scenes-charts',
-  'feature-scenes-compounds',
-  'feature-scenes',
-];
-
-/** Load one of the harness's browser globals as a script. */
-const loadGlobal = (name) => {
-  // the harness's export hook is `if( module && module.exports )`, so the
-  // placeholder has to be truthy
-  // TextDecoder is a browser global the harness uses to decode packed ids;
-  // a bare vm context does not have it, and its absence looks like a code bug
-  const ctx = createContext({ module: { exports: {} }, console, TextDecoder });
-  const scripts =
-    name === 'feature-scenes' ? FEATURE_SCENE_SCRIPTS : [`${name}`];
-
-  for (const script of scripts) {
-    runInContext(readFileSync(join(DEBUG, `${script}.js`), 'utf8'), ctx);
-  }
-
-  return ctx.module.exports;
-};
-
-const networks = loadGlobal('networks');
-const fixtures = loadGlobal('fixtures');
-const styles = loadGlobal('styles');
-const loadError = loadGlobal('load-error');
-const featureScenes = loadGlobal('feature-scenes');
-
-/** The path the browser would fetch, resolved against the repo root. */
-const fixturePath = (url) => resolve(DEBUG, url);
-
-/** A network's elements, from disk or from the generator. */
-const elementsFor = (id, def) => {
-  if (def.featureScenes) {
-    const family = featureScenes.catalog[0];
-
-    return featureScenes.create(family.id, family.views[0].id).elements;
-  }
-
-  if (def.generated) {
-    // the generators are random; a small size keeps the spec quick and still
-    // exercises every branch (parents, nesting, compound loops)
-    return fixtures.generate(def.generated, '200x400');
-  }
-
-  const json = JSON.parse(readFileSync(fixturePath(def.url), 'utf8'));
-
-  return fixtures.derive(def.derive, fixtures.toGpuElements(json.elements));
-};
-
 describe('debug harness (round 43)', function () {
-  const entries = Object.entries(networks);
-
   it('offers a non-trivial set of networks', function () {
     // the guard every audit here carries: a loader that stops finding networks
     // must not read as "all networks fine"
     expect(entries.length).to.be.at.least(6);
-  });
-
-  describe('every fixture resolves', function () {
-    for (const [id, def] of entries) {
-      if (def.generated || def.featureScenes) {
-        continue;
-      }
-
-      it(`${id} -> ${def.url}`, function () {
-        expect(
-          existsSync(fixturePath(def.url)),
-          `${def.url} does not exist; the page will 404 and render nothing`,
-        ).to.equal(true);
-      });
-    }
-  });
-
-  describe('every sheet compiles against its own fixture', function () {
-    for (const [id, def] of entries) {
-      it(id, { timeout: 120000 }, function () {
-        if (def.featureScenes) {
-          return;
-        }
-
-        const elements = elementsFor(id, def);
-
-        for (const kind of styles.kinds) {
-          const sheet = styles.sheet(kind, id, elements, def);
-
-          // headless: no container, so this is the model + style engine only
-          const cy = cytoscape({
-            elements: { nodes: elements.nodes, edges: elements.edges },
-            style: sheet,
-          });
-
-          expect(
-            cy.nodes().length,
-            `${id}/${kind} loaded no nodes`,
-          ).to.be.at.least(1);
-          cy.destroy();
-        }
-      });
-    }
   });
 
   describe('curated feature scene sheets (round 149)', function () {
@@ -195,206 +109,6 @@ describe('debug harness (round 43)', function () {
       });
       expect(new Set(degrees).size).to.be.greaterThan(1);
       cy.destroy();
-    });
-  });
-
-  describe('long labels wrap (round 114)', function () {
-    /* A sheet is written against its fixture's data, and the label text is
-       part of that data: reactome's pathway names run to 91 characters and
-       npm-deps' package paths to 45 with no whitespace, and both drew as a
-       single line across their neighbours until 114.  The property: any
-       fetched network whose labels are long at the 90th percentile has a
-       sheet that wraps them, with a width and — for paths — a break rule
-       that works without spaces. */
-    const LONG = 20;
-
-    for (const [id, def] of entries) {
-      if (def.generated || def.featureScenes) {
-        continue;
-      }
-
-      it(
-        `${id}: a sheet for long labels wraps them`,
-        { timeout: 120000 },
-        function () {
-          const elements = elementsFor(id, def);
-          const key = def.labelKey || 'id';
-          const lengths = elements.nodes
-            .map((n) => String(n.data[key] ?? '').length)
-            .sort((a, b) => a - b);
-          const p90 = lengths[Math.floor((lengths.length - 1) * 0.9)];
-          const sheet = styles.sheet('production', id, elements, def);
-
-          if (p90 <= LONG) {
-            return; // short labels: a single line is right
-          }
-
-          expect(
-            sheet.nodes['text-wrap'],
-            `${id}: p90 label ${p90} chars`,
-          ).to.equal('wrap');
-          expect(sheet.nodes['text-max-width'], `${id}: no wrap width`).to.be.a(
-            'number',
-          );
-
-          // a label with no whitespace at all cannot fold at whitespace:
-          // when that is what most long labels are (package paths), the
-          // sheet needs the anywhere rule; a gene-set name or two among
-          // sentences does not
-          const long = elements.nodes
-            .map((n) => String(n.data[key] ?? ''))
-            .filter((text) => text.length > LONG);
-          const unbreakable =
-            long.filter((text) => !/\s/.test(text)).length > long.length / 2;
-
-          if (unbreakable) {
-            expect(
-              sheet.nodes['text-overflow-wrap'],
-              `${id}: paths need anywhere`,
-            ).to.equal('anywhere');
-          }
-        },
-      );
-    }
-
-    it('control: the property is data-driven — em-desktop and reactome are the long ones', function () {
-      const long = entries
-        .filter(([, def]) => !def.generated)
-        .filter(([id, def]) => {
-          const elements = elementsFor(id, def);
-          const key = def.labelKey || 'id';
-          const lengths = elements.nodes
-            .map((n) => String(n.data[key] ?? '').length)
-            .sort((a, b) => a - b);
-
-          return lengths[Math.floor((lengths.length - 1) * 0.9)] > LONG;
-        })
-        .map(([id]) => id)
-        .sort();
-
-      expect(long).to.include.members(['em-desktop', 'npm-deps', 'reactome']);
-      expect(long).to.not.include('ndex-large');
-    });
-  });
-
-  describe('the binary wire form round-trips (round 46.5)', function () {
-    // The status build ships each fixture as v4's binary wire format rather
-    // than JSON — 102.5 MiB becomes 37.5 MiB, which is what puts every fixture
-    // under Cloudflare Pages' 25 MiB cap and removes the off-site bucket.  The
-    // page then reads it through `fixtures.fromColumnar`.
-    //
-    // This is the spec that makes that safe: an encoding that silently drops a
-    // column would render a *plausible* graph with no labels and no colours,
-    // and nothing else would notice.  A first version of `fromColumnar` did
-    // exactly that — it read dictionary columns as if they were arrays, so
-    // every string column came back `undefined` on every fixture.
-    //
-    // Control: reading `col[ i ]` for a dict column instead of
-    // `col.dict[ col.indices[ i ] - 1 ]` fails 'every data column survives'
-    // on all four fixtures.
-
-    const roundTrip = (elements) =>
-      fixtures.fromColumnar(
-        cytoscape.deserializeElements(
-          cytoscape.serializeElements(cytoscape.toColumnarElements(elements)),
-        ),
-      );
-
-    const norm = (v) =>
-      Array.isArray(v) ? v.join('') : v == null ? undefined : String(v);
-
-    for (const [id, def] of entries) {
-      if (def.generated || def.featureScenes || def.derive != null) {
-        continue;
-      }
-
-      it(`${id}: every data column survives`, { timeout: 180000 }, function () {
-        const before = elementsFor(id, def);
-        const after = roundTrip(before);
-
-        expect(after.nodes.length, 'node count changed').to.equal(
-          before.nodes.length,
-        );
-        expect(after.edges.length, 'edge count changed').to.equal(
-          before.edges.length,
-        );
-        expect(after.hasPositions).to.equal(before.hasPositions);
-
-        // compare a sample rather than all 465k edges: the columns are
-        // uniform, so a mismatch shows up in the first few of each kind
-        const sample = (a, b, kind) => {
-          for (let i = 0; i < Math.min(25, a.length); i++) {
-            const keys = new Set([
-              ...Object.keys(a[i].data),
-              ...Object.keys(b[i].data),
-            ]);
-
-            for (const k of keys) {
-              expect(
-                norm(b[i].data[k]),
-                `${kind}[${i}].${k} did not survive`,
-              ).to.equal(norm(a[i].data[k]));
-            }
-          }
-        };
-
-        sample(before.nodes, after.nodes, 'node');
-        sample(before.edges, after.edges, 'edge');
-
-        // and the whole-column check that a 25-element sample could miss: no
-        // column may come back empty for *every* element
-        const columns = new Set(
-          before.nodes.flatMap((n) => Object.keys(n.data)),
-        );
-
-        for (const k of columns) {
-          const presentBefore = before.nodes.some((n) => n.data[k] != null);
-          const presentAfter = after.nodes.some((n) => n.data[k] != null);
-
-          expect(
-            presentAfter,
-            `node column "${k}" is empty after the round trip`,
-          ).to.equal(presentBefore);
-        }
-      });
-    }
-
-    it('positions survive within f32 precision', function () {
-      // the wire format stores positions as f32, so this is a tolerance check
-      // rather than an equality one — and the tolerance has to be relative,
-      // since these fixtures lay out over tens of thousands of units
-      const def = networks['em-web'];
-      const before = elementsFor('em-web', def);
-      const after = roundTrip(before);
-
-      for (let i = 0; i < before.nodes.length; i++) {
-        const a = before.nodes[i].position;
-        const b = after.nodes[i].position;
-
-        expect(Math.abs(a.x - b.x)).to.be.at.most(
-          Math.max(1e-3, Math.abs(a.x) * 1e-6),
-        );
-        expect(Math.abs(a.y - b.y)).to.be.at.most(
-          Math.max(1e-3, Math.abs(a.y) * 1e-6),
-        );
-      }
-    });
-
-    it('edge endpoints survive, which are indices on the wire and ids in the page', function () {
-      // sources/targets are stored as node *indices*; getting the mapping wrong
-      // would rewire the graph while keeping every count identical
-      const def = networks['white-matter'];
-      const before = elementsFor('white-matter', def);
-      const after = roundTrip(before);
-
-      for (let i = 0; i < Math.min(200, before.edges.length); i++) {
-        expect(after.edges[i].data.source).to.equal(
-          before.edges[i].data.source,
-        );
-        expect(after.edges[i].data.target).to.equal(
-          before.edges[i].data.target,
-        );
-      }
     });
   });
 

@@ -42,6 +42,13 @@
 //   node scripts/throw-coverage.mjs --runtime=bun         # Bun suite
 //   node scripts/throw-coverage.mjs --verbose             # list dead/unknown
 //   node scripts/throw-coverage.mjs --lcov cov.lcov       # reuse a report
+//   node scripts/throw-coverage.mjs --show-tests [--quiet]
+//
+// --show-tests makes the probe run the public tier itself: its specs report
+// as `test:js` does (spec, or test/quiet-reporter.mjs under --quiet, which
+// also holds the summary back unless the gate fails), so `test:node` runs
+// test/*.test.mjs once, instrumented, rather than once plain for test:js
+// and again for this gate (2026-10-19: ~17 s of a ~70 s tier).
 import { Buffer } from 'node:buffer';
 import { execFileSync } from 'node:child_process';
 import {
@@ -306,6 +313,10 @@ const validateThrowSiteMap = (records) => {
  * than the lcov run it replaced by the coverage itself (block counters made
  * the force sims ~5x slower) and by Node's ~40 s single-threaded report.
  */
+// how the Node probe run reports its specs: null discards them (the gate
+// alone), or a --test-reporter for --show-tests
+let probeTestReporter = null;
+
 const collectNodeProbe = () => {
   const dir = mkdtempSync(join(tmpdir(), 'throw-probe-'));
   const probeLogPath = join(dir, 'throw-probe.jsonl');
@@ -320,29 +331,40 @@ const collectNodeProbe = () => {
     writeFileSync(manifestPath, JSON.stringify(expectedSites));
     writeFileSync(probeLogPath, '');
 
-    execFileSync(
-      process.execPath,
-      [
-        '--import',
-        './test/lib/node-throw-coverage-setup.mjs',
-        '--import',
-        'tsx',
-        '--import',
-        './test/node-test-setup.mjs',
-        '--test-reporter=dot',
-        '--test',
-        'test/*.test.mjs',
-      ],
-      {
-        cwd: ROOT,
-        stdio: ['ignore', 'ignore', 'inherit'],
-        env: {
-          ...process.env,
-          CY_THROW_PROBE_LOG: probeLogPath,
-          CY_THROW_SITE_MANIFEST: manifestPath,
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          '--import',
+          './test/lib/node-throw-coverage-setup.mjs',
+          '--import',
+          'tsx',
+          '--import',
+          './test/node-test-setup.mjs',
+          `--test-reporter=${probeTestReporter ?? 'dot'}`,
+          '--test',
+          'test/*.test.mjs',
+        ],
+        {
+          cwd: ROOT,
+          stdio: [
+            'ignore',
+            probeTestReporter == null ? 'ignore' : 'inherit',
+            'inherit',
+          ],
+          env: {
+            ...process.env,
+            CY_THROW_PROBE_LOG: probeLogPath,
+            CY_THROW_SITE_MANIFEST: manifestPath,
+          },
         },
-      },
-    );
+      );
+    } catch (error) {
+      // under --show-tests the reporter has already said which spec
+      // failed; the gate's own stack would only bury it
+      if (probeTestReporter == null) throw error;
+      process.exit(1);
+    }
 
     const probe = parseThrowProbeLog(
       readFileSync(probeLogPath, 'utf8'),
@@ -994,6 +1016,7 @@ if (
 ) {
   let runtime = 'Node';
   let lcovPath = null;
+  let quiet = false;
 
   const args = process.argv.slice(2);
 
@@ -1001,6 +1024,16 @@ if (
     const arg = args[i];
 
     if (arg === '--verbose') {
+      continue;
+    }
+
+    if (arg === '--show-tests') {
+      probeTestReporter ??= 'spec';
+      continue;
+    }
+
+    if (arg === '--quiet') {
+      quiet = true;
       continue;
     }
 
@@ -1022,6 +1055,23 @@ if (
     } else {
       throw new Error(`unknown argument ${arg}`);
     }
+  }
+
+  if (quiet && probeTestReporter == null) {
+    throw new Error('--quiet only applies with --show-tests');
+  }
+
+  if (probeTestReporter != null && runtime !== 'Node') {
+    throw new Error('--show-tests reports the Node probe run only');
+  }
+
+  // a green quiet run prints nothing: the summary is held for a failure
+  const held = [];
+  const log = console.log;
+
+  if (quiet) {
+    probeTestReporter = './test/quiet-reporter.mjs';
+    console.log = (...line) => held.push(line);
   }
 
   const result = audit(
@@ -1108,7 +1158,11 @@ if (
 
   const failures = gateFailures(result);
 
+  console.log = log;
+
   if (failures.length > 0) {
+    for (const line of held) console.log(...line);
+
     console.error(`\nthrow-coverage gate failed (${failures.length}):`);
 
     for (const f of failures) {

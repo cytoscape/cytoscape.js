@@ -76,6 +76,7 @@ const EXPECTED_TWINS = [
   'typecheck:quiet',
   'verify:quiet',
   'test:js:quiet',
+  'test:js:throws:quiet',
   'test:modules:quiet',
   'test:modules:run:quiet',
   'test:soak:quiet',

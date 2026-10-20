@@ -111,7 +111,8 @@ export function planGoldens({ root }) {
     .map((f) => {
       const name = basename(f, '.png');
       const title = titles.get(name);
-      const reference = PNG.sync.read(readFileSync(join(dir, f)));
+      const referenceBytes = readFileSync(join(dir, f));
+      const reference = PNG.sync.read(referenceBytes);
       const currentPath = join(currentDir, f);
       let comparison = null;
       let current = null;
@@ -124,7 +125,14 @@ export function planGoldens({ root }) {
           : {};
 
         testedAt = metadata.testedAt ?? null;
-        current = PNG.sync.read(readFileSync(currentPath));
+        const currentBytes = readFileSync(currentPath);
+
+        // a passing golden's capture is the same file, byte for byte (most
+        // of them, on a green run): its decode is the reference's, which
+        // nothing below mutates
+        current = currentBytes.equals(referenceBytes)
+          ? reference
+          : PNG.sync.read(currentBytes);
         comparison = goldenComparison(current, reference, {
           threshold: metadata.threshold ?? 0,
         });

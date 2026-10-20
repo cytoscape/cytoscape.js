@@ -62,7 +62,9 @@ export function diffPngs(actual, expected, { threshold = 0.1 } = {}) {
 export function goldenComparison(actual, expected, { threshold = 0 } = {}) {
   const width = Math.max(actual.width, expected.width);
   const height = Math.max(actual.height, expected.height);
+  // read-only below, so an image already at the padded size is used as is
   const pad = (source) => {
+    if (source.width === width && source.height === height) return source;
     const target = new PNG({ width, height });
     PNG.bitblt(source, target, 0, 0, source.width, source.height, 0, 0);
     return target;
@@ -77,7 +79,7 @@ export function goldenComparison(actual, expected, { threshold = 0 } = {}) {
   const sizeChanged =
     actual.width !== expected.width || actual.height !== expected.height;
 
-  for (let y = 0; y < height; y++) {
+  for (let y = 0; sizeChanged && y < height; y++) {
     for (let x = 0; x < width; x++) {
       const inNow = x < actual.width && y < actual.height;
       const inGold = x < expected.width && y < expected.height;
@@ -91,8 +93,17 @@ export function goldenComparison(actual, expected, { threshold = 0 } = {}) {
   }
 
   const diff = new PNG({ width, height });
+  const out = diff.data;
+  // one pixel's bytes, written in place: a per-pixel array literal was
+  // most of a status build's golden page (2026-10-19)
+  const paint = (i, r, g, b) => {
+    out[i] = r;
+    out[i + 1] = g;
+    out[i + 2] = b;
+    out[i + 3] = 255;
+  };
 
-  for (let i = 0; i < diff.data.length; i += 4) {
+  for (let i = 0; i < out.length; i += 4) {
     const alpha = now.data[i + 3] / 255;
     const luminance =
       0.2126 * now.data[i] +
@@ -101,7 +112,7 @@ export function goldenComparison(actual, expected, { threshold = 0 } = {}) {
     const gray = Math.round(
       28 + (luminance * alpha + 255 * (1 - alpha)) * 0.18,
     );
-    diff.data.set([gray, gray, gray, 255], i);
+    paint(i, gray, gray, gray);
   }
 
   // Paint halos first, then exact pixels, so nearby halos never obscure ink.
@@ -115,7 +126,7 @@ export function goldenComparison(actual, expected, { threshold = 0 } = {}) {
           const hy = y + dy;
 
           if (hx >= 0 && hx < width && hy >= 0 && hy < height) {
-            diff.data.set([130, 20, 150, 255], (hy * width + hx) * 4);
+            paint((hy * width + hx) * 4, 130, 20, 150);
           }
         }
       }
@@ -123,7 +134,7 @@ export function goldenComparison(actual, expected, { threshold = 0 } = {}) {
   }
 
   for (let i = 0; i < mask.data.length; i += 4) {
-    if (mask.data[i + 3] !== 0) diff.data.set([255, 0, 255, 255], i);
+    if (mask.data[i + 3] !== 0) paint(i, 255, 0, 255);
   }
 
   return { mismatched, diff, sizeChanged };

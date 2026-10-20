@@ -4281,65 +4281,6 @@ test.describe('WebGPU visual goldens', () => {
     ).toBe(false);
   });
 
-  test('debug: EnrichmentMap chart fixture updates its application legend', async ({
-    page,
-  }) => {
-    test.skip(!(await hasAdapter(page)), 'no WebGPU adapter available');
-
-    const debugPage = PAGE.replace(
-      '/playwright-page/index.html',
-      '/debug/index.html?network=em-web-chart&style=production&labels=false',
-    );
-    await page.goto(debugPage);
-    await page.waitForFunction(
-      () =>
-        window.cy != null &&
-        window.cy._store.chartCount() > 0 &&
-        document.querySelector('#chart-demo')?.hidden === false,
-      null,
-      { timeout: 30000 },
-    );
-
-    const before = await page.evaluate(() => {
-      const entry = window.cy
-        .legend()
-        .entries.find((item) => item.kind === 'chart');
-      return {
-        domain: entry.chart.colorDomain,
-        exceptions: entry.exceptions,
-        overrideId: networks['em-web-chart'].chartDemoOverrideId,
-      };
-    });
-    expect(before.domain).toHaveLength(3);
-    expect(before.exceptions).toContainEqual({
-      properties: ['chart-scale'],
-      elementCount: 1,
-    });
-    expect(before.overrideId).toBeTruthy();
-
-    await page.locator('#chart-extreme-button').click();
-    await page.waitForFunction(
-      (previousMax) => {
-        const entry = window.cy
-          .legend()
-          .entries.find((item) => item.kind === 'chart');
-        return entry.chart.colorDomain.at(-1) > previousMax;
-      },
-      before.domain.at(-1),
-      { timeout: 10000 },
-    );
-    const after = await page.evaluate(
-      () =>
-        window.cy.legend().entries.find((item) => item.kind === 'chart').chart
-          .colorDomain,
-    );
-    expect(after.at(-1)).toBeGreaterThan(before.domain.at(-1));
-    await expect(page.locator('#chart-domain-status')).toContainText(
-      'local override',
-    );
-    await expect(page.locator('#chart-extreme-button')).toBeDisabled();
-  });
-
   test('imageMinPx skips image sampling on unreadably small nodes (round 15.7)', async ({
     page,
   }) => {

@@ -31,7 +31,6 @@ const openWorkflow = async (page, scene) => {
     'no WebGPU adapter available for the renderer workflow',
   );
 
-  await page.waitForLoadState('networkidle');
   await expect(page.locator('#contextual-tools')).toBeVisible();
   await expect(page.locator('#contextual-controls')).not.toBeEmpty();
   await expect
@@ -402,21 +401,61 @@ test('mutation controls compare persistence, await clone sync, and restore the a
   expect(await streamIdsAfterRestore()).toEqual([]);
 });
 
-test('animation transition and gesture controls change live state and event propagation', async ({
+/** The animation scene, its clock pinned (clock.mjs), and its controls. */
+const openAnimation = async (page) => {
+  await openWorkflow(page, 'animation');
+  await pinClock(page);
+
+  const controls = page.locator('#contextual-controls');
+
+  return {
+    controls,
+    animationProgress: controls.getByRole('progressbar', {
+      name: 'Read-only progress',
+    }),
+    easingControl: controls.getByLabel('Transition timing function'),
+    playTransition: controls.getByRole('button', {
+      name: 'Play transition + position/width tween',
+    }),
+  };
+};
+
+/**
+ * With the clock pinned, half the duration lands at progress 0.5
+ * exactly; the window is the assertion, not a tolerance for sampling.
+ */
+const sampleAtMidFlight = async (page, duration, read, what) => {
+  await advanceClock(page, duration / 2);
+
+  const sample = await read();
+
+  if (sample.progress == null) {
+    throw new Error(
+      `Animation progress control missing for ${what}: ${JSON.stringify(sample)}`,
+    );
+  }
+
+  expect(sample.progress, `${what} mid-flight`).toBeGreaterThanOrEqual(0.42);
+  expect(sample.progress, `${what} mid-flight`).toBeLessThanOrEqual(0.58);
+
+  return sample;
+};
+
+/** The timings compared with each other, in the first shard. */
+const REFERENCE_TIMINGS = ['linear', 'ease-in', 'ease-out'];
+
+/** The 26 timing functions run in this many specs, side by side. */
+const TIMING_SHARDS = 4;
+
+test('animation controls play a tween, sample it mid-flight, pick, stop and restore', async ({
   page,
 }) => {
-  test.slow();
-  await openWorkflow(page, 'animation');
-  const controls = page.locator('#contextual-controls');
-  const animationProgress = controls.getByRole('progressbar', {
-    name: 'Read-only progress',
-  });
+  const { controls, animationProgress } = await openAnimation(page);
   const initial = await page.evaluate(() => window.cy.$id('a').position());
   const targetX =
     initial.x +
     Number(await controls.getByLabel('Move by (model px)').inputValue());
 
-  await pinClock(page);
   await controls.getByLabel('Duration (ms)').fill('6000');
   await expect
     .poll(() =>
@@ -490,36 +529,22 @@ test('animation transition and gesture controls change live state and event prop
       }),
     )
     .toEqual(['none', 'none']);
+});
+
+test('animation easing controls shape the width tween: ease-out leads ease-in', async ({
+  page,
+}) => {
+  const { controls, animationProgress, easingControl, playTransition } =
+    await openAnimation(page);
 
   await controls.getByLabel('Duration (ms)').fill('2400');
   await controls.getByLabel('Target width (px)').fill('90');
-  const easingControl = controls.getByLabel('Transition timing function');
-  const playTransition = controls.getByRole('button', {
-    name: 'Play transition + position/width tween',
-  });
-  // with the clock pinned, half the duration lands at progress 0.5
-  // exactly; the window is the assertion, not a tolerance for sampling
-  let duration = 2400;
-  const sampleAtMidFlight = async (read, what) => {
-    await advanceClock(page, duration / 2);
-
-    const sample = await read();
-
-    if (sample.progress == null) {
-      throw new Error(
-        `Animation progress control missing for ${what}: ${JSON.stringify(sample)}`,
-      );
-    }
-
-    expect(sample.progress, `${what} mid-flight`).toBeGreaterThanOrEqual(0.42);
-    expect(sample.progress, `${what} mid-flight`).toBeLessThanOrEqual(0.58);
-
-    return sample;
-  };
   const sampleWidthAtMidFlight = async (easingName) => {
     await easingControl.selectOption(easingName);
     await playTransition.click();
     const midFlight = await sampleAtMidFlight(
+      page,
+      2400,
       () =>
         animationProgress.evaluate((element) => {
           return {
@@ -544,143 +569,183 @@ test('animation transition and gesture controls change live state and event prop
   expect(easeInWidth).toBeGreaterThan(52);
   expect(easeOutWidth).toBeGreaterThan(easeInWidth);
   expect(easeOutWidth).toBeLessThan(90);
+});
 
-  await controls.getByLabel('Duration (ms)').fill('700');
-  duration = 700;
-  const timingFunctions = await page.evaluate(
-    () => window.featureWorkflows.timingFunctions,
-  );
-  expect(timingFunctions).toHaveLength(26);
-  const rgb = (value) =>
-    Array.isArray(value)
-      ? value
-          .slice(0, 3)
-          .map((channel) => (channel <= 1 ? channel * 255 : channel))
-      : value
-          .match(/[\d.]+/g)
-          .slice(0, 3)
-          .map(Number);
-  const progressRatio = (startValue, middleValue, endValue) => {
-    const startChannels = rgb(startValue);
-    const middleChannels = rgb(middleValue);
-    const endChannels = rgb(endValue);
-    const vector = endChannels.map(
-      (value, index) => value - startChannels[index],
-    );
-    const moved = middleChannels.map(
-      (value, index) => value - startChannels[index],
-    );
-    const denominator = vector.reduce((sum, value) => sum + value * value, 0);
+for (let index = 0; index < TIMING_SHARDS; index++) {
+  test(`animation transitions ease node and edge paint mid-flight (timing shard ${index + 1}/${TIMING_SHARDS})`, async ({
+    page,
+  }) => {
+    const { controls, animationProgress, easingControl, playTransition } =
+      await openAnimation(page);
 
-    return (
-      vector.reduce((sum, value, index) => sum + value * moved[index], 0) /
-      denominator
+    await controls.getByLabel('Duration (ms)').fill('700');
+    const duration = 700;
+    const timingFunctions = await page.evaluate(
+      () => window.featureWorkflows.timingFunctions,
     );
-  };
-  const transitionProgress = {};
-  for (const timing of timingFunctions) {
-    await easingControl.selectOption(timing);
-    await expect
-      .poll(() =>
-        page.evaluate(() =>
-          new URLSearchParams(location.search).get(
-            'workflowAnimationTimingFunction',
-          ),
-        ),
-      )
-      .toBe(timing);
-    const startColors = await page.evaluate(() => ({
-      node: window.cy.$id('a').style('background-color'),
-      edge: window.cy.$id('ab').style('line-color'),
-      nodeBorderWidth: window.cy.$id('a').numericStyle('border-width'),
-      edgeWidth: window.cy.$id('ab').numericStyle('width'),
-    }));
-    await playTransition.click();
-    const middle = await sampleAtMidFlight(
-      () =>
-        animationProgress.evaluate((progress) => {
-          return {
-            progress: Number(progress.value),
-            node: (() => {
-              const ref = window.cy._store.lookup('a');
-              const color = window.cy._store.column('node.fillColor');
-              return Array.from(color.subarray(ref.slot * 4, ref.slot * 4 + 3));
-            })(),
-            edge: (() => {
-              const ref = window.cy._store.lookup('ab');
-              const color = window.cy._store.column('edge.lineColor');
-              return Array.from(color.subarray(ref.slot * 4, ref.slot * 4 + 3));
-            })(),
-            nodeBorderWidth: window.cy.$id('a').numericStyle('border-width'),
-            edgeWidth: window.cy.$id('ab').numericStyle('width'),
-            url: location.href,
-            status: document.querySelector(
-              '#contextual-controls .feature-workflow-output',
-            )?.textContent,
-          };
-        }),
-      `${timing} node/edge transition`,
-    );
-    const middleColors = { node: middle.node, edge: middle.edge };
-    await advanceClock(page, duration);
-    await expect
-      .poll(() =>
-        page.evaluate(() => [
-          window.cy.$id('a').numericStyle('border-width'),
-          window.cy.$id('ab').numericStyle('width'),
-        ]),
-      )
-      .toEqual([6, 4]);
-    const state = await page.evaluate(() => ({
-      nodeColor: window.cy.$id('a').style('background-color'),
-      edgeColor: window.cy.$id('ab').style('line-color'),
-      nodeBorderWidth: window.cy.$id('a').numericStyle('border-width'),
-      edgeWidth: window.cy.$id('ab').numericStyle('width'),
-      nodeEasing: window.cy.$id('a').style('transition-timing-function'),
-      edgeEasing: window.cy.$id('ab').style('transition-timing-function'),
-    }));
-    expect(state.nodeEasing).toBe(timing);
-    expect(state.edgeEasing).toBe(timing);
-    expect(state.nodeColor).not.toBe(startColors.node);
-    expect(state.edgeColor).not.toBe(startColors.edge);
-    expect(middleColors.node).not.toBe(startColors.node);
-    expect(middleColors.node).not.toBe(state.nodeColor);
-    expect(middleColors.edge).not.toBe(startColors.edge);
-    expect(middleColors.edge).not.toBe(state.edgeColor);
-    expect(middle.nodeBorderWidth).toBeGreaterThan(startColors.nodeBorderWidth);
-    expect(middle.nodeBorderWidth).toBeLessThan(state.nodeBorderWidth);
-    expect(middle.edgeWidth).toBeGreaterThan(startColors.edgeWidth);
-    expect(middle.edgeWidth).toBeLessThan(state.edgeWidth);
-    transitionProgress[timing] = {
-      node: progressRatio(startColors.node, middleColors.node, state.nodeColor),
-      edge: progressRatio(startColors.edge, middleColors.edge, state.edgeColor),
+    expect(timingFunctions).toHaveLength(26);
+    expect(timingFunctions).toEqual(expect.arrayContaining(REFERENCE_TIMINGS));
+    const rgb = (value) =>
+      Array.isArray(value)
+        ? value
+            .slice(0, 3)
+            .map((channel) => (channel <= 1 ? channel * 255 : channel))
+        : value
+            .match(/[\d.]+/g)
+            .slice(0, 3)
+            .map(Number);
+    const progressRatio = (startValue, middleValue, endValue) => {
+      const startChannels = rgb(startValue);
+      const middleChannels = rgb(middleValue);
+      const endChannels = rgb(endValue);
+      const vector = endChannels.map(
+        (value, index) => value - startChannels[index],
+      );
+      const moved = middleChannels.map(
+        (value, index) => value - startChannels[index],
+      );
+      const denominator = vector.reduce((sum, value) => sum + value * value, 0);
+
+      return (
+        vector.reduce((sum, value, index) => sum + value * moved[index], 0) /
+        denominator
+      );
     };
-    expect(transitionProgress[timing].node).toBeGreaterThan(0);
-    expect(transitionProgress[timing].node).toBeLessThan(1);
-    expect(transitionProgress[timing].edge).toBeGreaterThan(0);
-    expect(transitionProgress[timing].edge).toBeLessThan(1);
-    await expect(
-      controls.locator('.feature-workflow-output').nth(1),
-    ).toContainText(`"transition-timing-function": "${timing}"`);
-    await controls
-      .getByRole('button', { name: 'Restore captured geometry/style' })
-      .click();
-  }
-  expect(transitionProgress['ease-in'].node).toBeLessThan(
-    transitionProgress.linear.node,
-  );
-  expect(transitionProgress['ease-out'].node).toBeGreaterThan(
-    transitionProgress.linear.node,
-  );
-  expect(transitionProgress['ease-in'].edge).toBeLessThan(
-    transitionProgress.linear.edge,
-  );
-  expect(transitionProgress['ease-out'].edge).toBeGreaterThan(
-    transitionProgress.linear.edge,
-  );
+    const transitionProgress = {};
+    const shard =
+      index === 0
+        ? REFERENCE_TIMINGS
+        : timingFunctions
+            .filter((t) => !REFERENCE_TIMINGS.includes(t))
+            .filter((_, i) => i % (TIMING_SHARDS - 1) === index - 1);
 
-  await page.evaluate(() => window.__clock.release());
-  await page.goto(`${PAGE}?network=workflows&scene=gestures&layout=preset`);
+    for (const timing of shard) {
+      await easingControl.selectOption(timing);
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            new URLSearchParams(location.search).get(
+              'workflowAnimationTimingFunction',
+            ),
+          ),
+        )
+        .toBe(timing);
+      const startColors = await page.evaluate(() => ({
+        node: window.cy.$id('a').style('background-color'),
+        edge: window.cy.$id('ab').style('line-color'),
+        nodeBorderWidth: window.cy.$id('a').numericStyle('border-width'),
+        edgeWidth: window.cy.$id('ab').numericStyle('width'),
+      }));
+      await playTransition.click();
+      const middle = await sampleAtMidFlight(
+        page,
+        duration,
+        () =>
+          animationProgress.evaluate((progress) => {
+            return {
+              progress: Number(progress.value),
+              node: (() => {
+                const ref = window.cy._store.lookup('a');
+                const color = window.cy._store.column('node.fillColor');
+                return Array.from(
+                  color.subarray(ref.slot * 4, ref.slot * 4 + 3),
+                );
+              })(),
+              edge: (() => {
+                const ref = window.cy._store.lookup('ab');
+                const color = window.cy._store.column('edge.lineColor');
+                return Array.from(
+                  color.subarray(ref.slot * 4, ref.slot * 4 + 3),
+                );
+              })(),
+              nodeBorderWidth: window.cy.$id('a').numericStyle('border-width'),
+              edgeWidth: window.cy.$id('ab').numericStyle('width'),
+              url: location.href,
+              status: document.querySelector(
+                '#contextual-controls .feature-workflow-output',
+              )?.textContent,
+            };
+          }),
+        `${timing} node/edge transition`,
+      );
+      const middleColors = { node: middle.node, edge: middle.edge };
+      await advanceClock(page, duration);
+      await expect
+        .poll(() =>
+          page.evaluate(() => [
+            window.cy.$id('a').numericStyle('border-width'),
+            window.cy.$id('ab').numericStyle('width'),
+          ]),
+        )
+        .toEqual([6, 4]);
+      const state = await page.evaluate(() => ({
+        nodeColor: window.cy.$id('a').style('background-color'),
+        edgeColor: window.cy.$id('ab').style('line-color'),
+        nodeBorderWidth: window.cy.$id('a').numericStyle('border-width'),
+        edgeWidth: window.cy.$id('ab').numericStyle('width'),
+        nodeEasing: window.cy.$id('a').style('transition-timing-function'),
+        edgeEasing: window.cy.$id('ab').style('transition-timing-function'),
+      }));
+      expect(state.nodeEasing).toBe(timing);
+      expect(state.edgeEasing).toBe(timing);
+      expect(state.nodeColor).not.toBe(startColors.node);
+      expect(state.edgeColor).not.toBe(startColors.edge);
+      expect(middleColors.node).not.toBe(startColors.node);
+      expect(middleColors.node).not.toBe(state.nodeColor);
+      expect(middleColors.edge).not.toBe(startColors.edge);
+      expect(middleColors.edge).not.toBe(state.edgeColor);
+      expect(middle.nodeBorderWidth).toBeGreaterThan(
+        startColors.nodeBorderWidth,
+      );
+      expect(middle.nodeBorderWidth).toBeLessThan(state.nodeBorderWidth);
+      expect(middle.edgeWidth).toBeGreaterThan(startColors.edgeWidth);
+      expect(middle.edgeWidth).toBeLessThan(state.edgeWidth);
+      transitionProgress[timing] = {
+        node: progressRatio(
+          startColors.node,
+          middleColors.node,
+          state.nodeColor,
+        ),
+        edge: progressRatio(
+          startColors.edge,
+          middleColors.edge,
+          state.edgeColor,
+        ),
+      };
+      expect(transitionProgress[timing].node).toBeGreaterThan(0);
+      expect(transitionProgress[timing].node).toBeLessThan(1);
+      expect(transitionProgress[timing].edge).toBeGreaterThan(0);
+      expect(transitionProgress[timing].edge).toBeLessThan(1);
+      await expect(
+        controls.locator('.feature-workflow-output').nth(1),
+      ).toContainText(`"transition-timing-function": "${timing}"`);
+      await controls
+        .getByRole('button', { name: 'Restore captured geometry/style' })
+        .click();
+    }
+    if (index !== 0) {
+      return;
+    }
+
+    expect(transitionProgress['ease-in'].node).toBeLessThan(
+      transitionProgress.linear.node,
+    );
+    expect(transitionProgress['ease-out'].node).toBeGreaterThan(
+      transitionProgress.linear.node,
+    );
+    expect(transitionProgress['ease-in'].edge).toBeLessThan(
+      transitionProgress.linear.edge,
+    );
+    expect(transitionProgress['ease-out'].edge).toBeGreaterThan(
+      transitionProgress.linear.edge,
+    );
+  });
+}
+
+test('gesture controls change thresholds, core styles and event propagation', async ({
+  page,
+}) => {
+  await openWorkflow(page, 'gestures');
   await expect(page.locator('#contextual-title')).toHaveText(
     'Gestures and events',
   );
@@ -802,6 +867,67 @@ test('animation transition and gesture controls change live state and event prop
   await expect(events).toContainText('child phase · a · stopPropagation()');
   await expect(events).not.toContainText('parent phase · a');
   await expect(events).not.toContainText('delegated core phase · a');
+});
+
+test('debug: EnrichmentMap chart fixture updates its application legend', async ({
+  page,
+}) => {
+  // a debug-page spec: it ran in the visual project until 2026-10-20,
+  // where its navigation away cost that worker its warm page
+  await page.goto(`${PAGE}?network=em-web-chart&style=production&labels=false`);
+  test.skip(
+    !(await page.evaluate(
+      async () => (await navigator.gpu?.requestAdapter()) != null,
+    )),
+    'no WebGPU adapter available',
+  );
+  await page.waitForFunction(
+    () =>
+      window.cy != null &&
+      window.cy._store.chartCount() > 0 &&
+      document.querySelector('#chart-demo')?.hidden === false,
+    null,
+    { timeout: 30000 },
+  );
+
+  const before = await page.evaluate(() => {
+    const entry = window.cy
+      .legend()
+      .entries.find((item) => item.kind === 'chart');
+    return {
+      domain: entry.chart.colorDomain,
+      exceptions: entry.exceptions,
+      overrideId: networks['em-web-chart'].chartDemoOverrideId,
+    };
+  });
+  expect(before.domain).toHaveLength(3);
+  expect(before.exceptions).toContainEqual({
+    properties: ['chart-scale'],
+    elementCount: 1,
+  });
+  expect(before.overrideId).toBeTruthy();
+
+  await page.locator('#chart-extreme-button').click();
+  await page.waitForFunction(
+    (previousMax) => {
+      const entry = window.cy
+        .legend()
+        .entries.find((item) => item.kind === 'chart');
+      return entry.chart.colorDomain.at(-1) > previousMax;
+    },
+    before.domain.at(-1),
+    { timeout: 10000 },
+  );
+  const after = await page.evaluate(
+    () =>
+      window.cy.legend().entries.find((item) => item.kind === 'chart').chart
+        .colorDomain,
+  );
+  expect(after.at(-1)).toBeGreaterThan(before.domain.at(-1));
+  await expect(page.locator('#chart-domain-status')).toContainText(
+    'local override',
+  );
+  await expect(page.locator('#chart-extreme-button')).toBeDisabled();
 });
 
 test('image export returns real image bytes and renderer panel reports host readiness and lifecycle', async ({

@@ -137,12 +137,11 @@ describe('feature status page', () => {
     expect(html).to.include('aria-current="page"');
     expect(html).to.include('/design.html');
     expect(html).to.include('src/core.mts#L');
-    expect(html).to.include(
-      'href="https://github.com/cytoscape/cytoscape.js/blob/v4/documentation/api-coverage.md#L142" title="documentation/api-coverage.md:142">Source</a>',
+    // pinned to the build's commit when git knows it, else the branch
+    expect(html).to.match(
+      /href="https:\/\/github\.com\/cytoscape\/cytoscape\.js\/blob\/(?:v4|[0-9a-f]{40})\/documentation\/api-coverage\.md#L142" title="documentation\/api-coverage\.md:142">Source<\/a>/,
     );
-    expect(html).not.to.include(
-      'href="/https://github.com/cytoscape/cytoscape.js/blob/v4/documentation/api-coverage.md',
-    );
+    expect(html).not.to.include('href="/https://github.com/');
     expect(html).to.include(
       'href="/migrating.html" title="MIGRATING.md">Record</a>',
     );

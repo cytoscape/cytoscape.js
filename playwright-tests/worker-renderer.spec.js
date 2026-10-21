@@ -980,13 +980,15 @@ test.describe('worker-hosted renderer (round 86.3)', () => {
       expect(result.same, "bit-identical to 'cpu'").toBe(true);
       // the main thread ticked through the run: a held thread counts
       // none (the item-51 reading of this fixture class: zero frames
-      // over 12.8 s), a free one about one tick per 5 ms.  A floor of 4
-      // assumed a run of 25 ms or more; with the pipelines shared it can
-      // land in ~20, at four free ticks
+      // over 12.8 s), a free one about one tick per 5 ms.  The floor is
+      // a quarter of that, rounded down, so it scales with the run: with
+      // the pipelines shared the run can land in 5 ms, before a 5 ms
+      // interval has fired once, and a short run asks for no ticks (that
+      // it was asynchronous at all is syncStill's to say, above)
       expect(
         result.ticks,
         `${result.ticks} timer ticks over ${result.wallMs.toFixed(0)} ms`,
-      ).toBeGreaterThanOrEqual(Math.max(1, result.wallMs / 20));
+      ).toBeGreaterThanOrEqual(Math.floor(result.wallMs / 20));
       await destroyCy(page);
     });
   }

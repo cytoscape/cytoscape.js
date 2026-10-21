@@ -194,7 +194,12 @@ describe('gpu/algorithms: clustering', function () {
     });
 
     it('returns the numerically correct clusters (random init, separated data)', async function () {
-      var results = await cy.elements().fuzzyCMeans(options);
+      // A near-uniform random membership starts both centroids near the
+      // mean, and 10 iterations then left ~0.15% of runs split top/bottom
+      // rather than left/right; 30 left none in 5,000.
+      var results = await cy
+        .elements()
+        .fuzzyCMeans({ ...options, maxIterations: 30 });
       var clusters = results.clusters;
 
       expect(clusters.length).to.equal(2);

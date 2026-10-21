@@ -3,6 +3,14 @@ import { advanceClock, pinClock } from './lib/clock.mjs';
 
 const PAGE = 'http://127.0.0.1:3333/debug/index.html';
 
+// Every test loads debug/index.html into a fresh page (the shared-page
+// fixture serves only playwright-page/), and on SwiftShader — CI's adapter —
+// each load pays the first frame's shader compile, ~4-10 s under parallel
+// load, before a panel answers.  Budget it rather than race it.
+const LOAD = 30000;
+
+test.beforeEach(() => test.slow());
+
 const openWorkflow = async (page, scene) => {
   // The developer's watch:sync server reloads pages when build/debug files
   // change. Stub only its client in this test page so it cannot navigate an
@@ -39,7 +47,6 @@ const openWorkflow = async (page, scene) => {
 };
 
 test('workflow selector routes to every canonical panel', async ({ page }) => {
-  test.slow();
   await openWorkflow(page, 'algorithms');
   const scenes = [
     ['algorithms', 'Algorithms', 'Operation'],
@@ -51,15 +58,21 @@ test('workflow selector routes to every canonical panel', async ({ page }) => {
     ['export', 'Image export', 'Format'],
     ['runtime', 'Renderer and lifecycle', 'Renderer host (reloads the page)'],
   ];
+  // a full navigation per scene
+  test.setTimeout(scenes.length * LOAD);
 
   for (const [scene, title, control] of scenes) {
     if (new URL(page.url()).searchParams.get('scene') !== scene) {
       await page.getByLabel('Workflow').selectOption(scene);
       await expect
-        .poll(() => new URL(page.url()).searchParams.get('scene'))
+        .poll(() => new URL(page.url()).searchParams.get('scene'), {
+          timeout: LOAD,
+        })
         .toBe(scene);
     }
-    await expect(page.locator('#contextual-title')).toHaveText(title);
+    await expect(page.locator('#contextual-title')).toHaveText(title, {
+      timeout: LOAD,
+    });
     if (control === 'Apply deterministic patch') {
       await expect(page.getByRole('button', { name: control })).toBeVisible();
     } else {
@@ -84,7 +97,7 @@ test('enables executor comparison after selecting a supported method and executo
   await expect(
     controls.locator('.feature-workflow-compare-summary'),
   ).toContainText('pageRank: CPU vs gpu — within tolerance', {
-    timeout: 15000,
+    timeout: LOAD,
   });
 });
 
@@ -130,7 +143,7 @@ test('algorithm controls use the chosen path IDs and report every leaf score', a
     await controls.getByRole('button', { name: 'Run algorithm' }).click();
     await expect(
       controls.locator('.feature-workflow-output').first(),
-    ).toContainText(`completed with executor '${lane}'`, { timeout: 15000 });
+    ).toContainText(`completed with executor '${lane}'`, { timeout: LOAD });
   }
   const result = controls.locator('.feature-workflow-output').nth(1);
   await expect(result).toContainText('x:');
@@ -427,7 +440,16 @@ const openAnimation = async (page) => {
 const sampleAtMidFlight = async (page, duration, read, what) => {
   await advanceClock(page, duration / 2);
 
-  const sample = await read();
+  // The panel's progress readout refreshes on a 20 ms real-time interval,
+  // which a loaded machine can starve past the frames advanceClock awaits;
+  // the clock is pinned, so waiting for it cannot move the tween.
+  let sample;
+
+  await expect
+    .poll(async () => (sample = await read()).progress, {
+      message: `${what} progress readout`,
+    })
+    .not.toBe(0);
 
   if (sample.progress == null) {
     throw new Error(
@@ -937,7 +959,7 @@ test('image export returns real image bytes and renderer panel reports host read
   const controls = page.locator('#contextual-controls');
   await controls.getByRole('button', { name: 'Render preview' }).click();
   await expect(controls.locator('img.feature-workflow-preview')).toBeVisible({
-    timeout: 15000,
+    timeout: LOAD,
   });
   await expect(
     controls.locator('.feature-workflow-output').first(),
@@ -957,7 +979,7 @@ test('image export returns real image bytes and renderer panel reports host read
   await controls.getByRole('button', { name: 'Render preview' }).click();
   await expect(
     controls.locator('.feature-workflow-output').first(),
-  ).toContainText('JPG', { timeout: 15000 });
+  ).toContainText('JPG', { timeout: LOAD });
   const exported = await preview.evaluate(async (image) => {
     const blob = await fetch(image.src).then((response) => response.blob());
     const bitmap = await createImageBitmap(blob);
@@ -996,7 +1018,7 @@ test('image export returns real image bytes and renderer panel reports host read
   await expect(runtime).toContainText('Actual host identity: not exposed');
   const runtimeStats = runtime.locator('.feature-workflow-output').nth(1);
   await expect(runtimeStats).toContainText(/Renderer ready; counts .*frames=/, {
-    timeout: 15000,
+    timeout: LOAD,
   });
   const lifecycle = runtime.getByRole('button', {
     name: 'Unmount / mount renderer',
@@ -1011,14 +1033,14 @@ test('image export returns real image bytes and renderer panel reports host read
   await lifecycle.click();
   await expect
     .poll(() => page.evaluate(() => window.cy.container() !== null), {
-      timeout: 15000,
+      timeout: LOAD,
     })
     .toBe(true);
   await expect(
     runtime.locator('.feature-workflow-output').first(),
-  ).toContainText('Renderer mounted and ready', { timeout: 15000 });
+  ).toContainText('Renderer mounted and ready', { timeout: LOAD });
   await expect(runtimeStats).toContainText(/Renderer ready; counts .*frames=/, {
-    timeout: 15000,
+    timeout: LOAD,
   });
 
   await runtime
@@ -1034,5 +1056,5 @@ test('image export returns real image bytes and renderer panel reports host read
   ).toContainText('Requested host: worker; renderer ready: yes');
   await expect(
     workerRuntime.locator('.feature-workflow-output').nth(1),
-  ).toContainText(/Renderer ready; counts .*frames=/, { timeout: 15000 });
+  ).toContainText(/Renderer ready; counts .*frames=/, { timeout: LOAD });
 });

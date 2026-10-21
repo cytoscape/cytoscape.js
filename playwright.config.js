@@ -56,21 +56,41 @@ const gpuDebugArgs = process.env.GPU_DEBUG
  * independent of runner-image Mesa churn.  CI-gated so local runs keep
  * using the real GPU.
  */
-if (process.platform === 'linux' && process.env.CI) {
+const swiftShaderIcd = (() => {
+  if (process.platform !== 'linux') return null;
   try {
     const icd = path.join(
       path.dirname(chromium.executablePath()),
       'vk_swiftshader_icd.json',
     );
 
-    if (fs.existsSync(icd)) {
-      process.env.VK_ICD_FILENAMES = icd; // legacy loader var
-      process.env.VK_DRIVER_FILES = icd;
-    }
+    return fs.existsSync(icd) ? icd : null;
   } catch {
     // no chromium install (e.g. listing tests); leave the env alone
+    return null;
   }
+})();
+
+if (swiftShaderIcd && process.env.CI) {
+  process.env.VK_ICD_FILENAMES = swiftShaderIcd; // legacy loader var
+  process.env.VK_DRIVER_FILES = swiftShaderIcd;
 }
+
+/*
+ * The visual goldens take the same pin on every Linux machine, not just CI.
+ * `--use-webgpu-adapter=swiftshader` pins only the WebGPU adapter; the
+ * page's 2D canvas — where an SVG background image is rastered before
+ * upload — composites on whatever Vulkan driver the loader finds, so on a
+ * box with a GPU its antialiasing moved two feature goldens by 104 and
+ * 1357 px against CI's capture.
+ */
+const visualEnv = swiftShaderIcd
+  ? {
+      ...process.env,
+      VK_ICD_FILENAMES: swiftShaderIcd,
+      VK_DRIVER_FILES: swiftShaderIcd,
+    }
+  : undefined;
 
 /*
  * Playwright's host-requirements check is Debian-specific: it maps the
@@ -210,6 +230,7 @@ export default defineConfig({
             ...gpuDebugArgs,
             '--use-webgpu-adapter=swiftshader',
           ],
+          env: visualEnv,
         },
       },
     },

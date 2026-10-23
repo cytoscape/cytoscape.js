@@ -20,7 +20,10 @@ export const valCmp = (fieldVal, operator, value) => {
     caseInsensitive = true;
   }
 
-  if( isFieldStr || isValStr || caseInsensitive ){
+  // substring operators always compare string representations, even for numbers
+  let isSubstrCmp = operator === '*=' || operator === '^=' || operator === '$=';
+
+  if( isFieldStr || isValStr || caseInsensitive || isSubstrCmp ){
     fieldStr = !isFieldStr && !isFieldNum ? '' : '' + fieldVal;
     valStr = '' + value;
   }

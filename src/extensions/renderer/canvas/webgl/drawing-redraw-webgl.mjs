@@ -496,7 +496,11 @@ function drawEle(r, index, ele) {
 }
 
 /**
- * Render one frame.
+ * Render one frame to the screen or to an offscreen picking framebuffer.
+ *
+ * @param {object} r The renderer instance.
+ * @param {object} [options] Render options.
+ * @param {object} renderTarget The render target (RENDER_TARGET.SCREEN or RENDER_TARGET.PICKING).
  */
 function renderWebgl(r, options, renderTarget) {
   let start;
@@ -554,8 +558,12 @@ function renderWebgl(r, options, renderTarget) {
       drawAtlases(r);
     }
 
-    r.data.canvasNeedsRedraw[r.NODE] = false;
-    r.data.canvasNeedsRedraw[r.DRAG] = false;
+    // Only clear screen canvas redraw flags when rendering to the screen.
+    // Offscreen picking passes should not clear screen redraw flags (#3536).
+    if(renderTarget.screen) {
+      r.data.canvasNeedsRedraw[r.NODE] = false;
+      r.data.canvasNeedsRedraw[r.DRAG] = false;
+    }
   }
 
   if(r.webglDebug) {

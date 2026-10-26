@@ -769,4 +769,62 @@ test.describe('Renderer', () => {
 
   }); // with layout
 
+  test.describe('animation', () => {
+
+    test('cy.animate() draws every frame without skipping frames (issue #3544)', async ({ page }) => {
+      const stats = await page.evaluate(async () => {
+        const cy = window.cy;
+        cy.elements().remove();
+        cy.add([
+          { data: { id: 'a' }, position: { x: 100, y: 100 } },
+          { data: { id: 'b' }, position: { x: 300, y: 200 } },
+          { data: { id: 'ab', source: 'a', target: 'b' } },
+        ]);
+
+        const DURATION = 500;
+        const FROM = { zoom: 1, pan: { x: 0, y: 0 } };
+        const TO = { zoom: 2, pan: { x: -150, y: -100 } };
+        const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+        function drawnImageHash() {
+          const canvas = document.querySelector('#cytoscape canvas[data-id="layer2-node"]');
+          const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+          let hash = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            hash = (hash * 31 + data[i] + 3 * data[i + 1] + 7 * data[i + 2] + 11 * data[i + 3]) | 0;
+          }
+          return hash;
+        }
+
+        cy.stop(true);
+        cy.viewport(FROM);
+        await frame();
+        await frame();
+
+        let previous = drawnImageHash();
+        let frames = 0;
+        let repeated = 0;
+        const t0 = performance.now();
+        cy.animate({ zoom: TO.zoom, pan: TO.pan, duration: DURATION, easing: 'linear' });
+
+        while (performance.now() - t0 < DURATION - 50) {
+          await frame();
+          const hash = drawnImageHash();
+          frames++;
+          if (hash === previous) {
+            repeated++;
+          }
+          previous = hash;
+        }
+
+        return { frames, repeated };
+      });
+
+      console.log('Measured:', stats);
+      expect(stats.frames).toBeGreaterThan(10);
+      expect(stats.repeated).toBeLessThanOrEqual(2);
+    });
+
+  }); // animation
+
 }); // renderer

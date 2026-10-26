@@ -35,11 +35,21 @@ BRp.beforeRender = function( fn, priority ){
   cbs.sort(function( a, b ){ return b.priority - a.priority; });
 };
 
-var beforeRenderCallbacks = function( r, willDraw, startTime ){
+var beforeRenderCallbacks = function( r, willDraw, startTime, minPriority, maxPriority ){
   var cbs = r.beforeRenderCallbacks;
 
   for( var i = 0; i < cbs.length; i++ ){
-    cbs[i].fn( willDraw, startTime );
+    var cb = cbs[i];
+
+    if( minPriority != null && cb.priority < minPriority ){
+      continue;
+    }
+
+    if( maxPriority != null && cb.priority > maxPriority ){
+      continue;
+    }
+
+    cb.fn( willDraw, startTime );
   }
 };
 
@@ -60,40 +70,47 @@ BRp.startRenderLoop = function(){
       // mid-batch, none of these should run
       // - pre frame hooks (calculations, texture caches, style, etc.)
       // - any drawing
-    } else if( r.requestedFrame && !r.skipFrame ){
-      beforeRenderCallbacks( r, true, requestTime );
-
-      var startTime = util.performanceNow();
-
-      r.render( r.renderOptions );
-
-      var endTime = r.lastDrawTime = util.performanceNow();
-
-      if( r.averageRedrawTime === undefined ){
-        r.averageRedrawTime = endTime - startTime;
-      }
-
-      if( r.redrawCount === undefined ){
-        r.redrawCount = 0;
-      }
-
-      r.redrawCount++;
-
-      if( r.redrawTotalTime === undefined ){
-        r.redrawTotalTime = 0;
-      }
-
-      var duration = endTime - startTime;
-
-      r.redrawTotalTime += duration;
-      r.lastRedrawTime = duration;
-
-      // use a weighted average with a bias from the previous average so we don't spike so easily
-      r.averageRedrawTime = r.averageRedrawTime / 2 + duration / 2;
-
-      r.requestedFrame = false;
     } else {
-      beforeRenderCallbacks( r, false, requestTime );
+      var animPriority = r.beforeRenderPriorities ? r.beforeRenderPriorities.animations : 400;
+
+      // step animations first so active animations request a redraw for this frame
+      beforeRenderCallbacks( r, r.requestedFrame && !r.skipFrame, requestTime, animPriority, null );
+
+      if( r.requestedFrame && !r.skipFrame ){
+        beforeRenderCallbacks( r, true, requestTime, null, animPriority - 1 );
+
+        var startTime = util.performanceNow();
+
+        r.render( r.renderOptions );
+
+        var endTime = r.lastDrawTime = util.performanceNow();
+
+        if( r.averageRedrawTime === undefined ){
+          r.averageRedrawTime = endTime - startTime;
+        }
+
+        if( r.redrawCount === undefined ){
+          r.redrawCount = 0;
+        }
+
+        r.redrawCount++;
+
+        if( r.redrawTotalTime === undefined ){
+          r.redrawTotalTime = 0;
+        }
+
+        var duration = endTime - startTime;
+
+        r.redrawTotalTime += duration;
+        r.lastRedrawTime = duration;
+
+        // use a weighted average with a bias from the previous average so we don't spike so easily
+        r.averageRedrawTime = r.averageRedrawTime / 2 + duration / 2;
+
+        r.requestedFrame = false;
+      } else {
+        beforeRenderCallbacks( r, false, requestTime, null, animPriority - 1 );
+      }
     }
 
     r.skipFrame = false;

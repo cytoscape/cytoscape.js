@@ -76,6 +76,26 @@ describe('Collection graph manipulation', function(){
       expect(emits).to.equal(1);
     });
 
+    it('should remove elements with ids that are Object.prototype keys', function(){
+      cy = cytoscape({
+        elements: [
+          { data: { id: 'constructor' } },
+          { data: { id: 'toString' } },
+          { data: { id: '__proto__' } },
+          { data: { id: 'hasOwnProperty', source: 'constructor', target: 'toString' } }
+        ]
+      });
+
+      cy.getElementById('constructor').remove();
+
+      expect( cy.getElementById('constructor') ).to.have.length(0);
+      expect( cy.getElementById('hasOwnProperty') ).to.have.length(0);
+
+      cy.elements().remove();
+
+      expect( cy.elements() ).to.have.length(0);
+    });
+
   });
 
   describe('ele.removed()', function(){

@@ -259,12 +259,14 @@ export const spectralSeed = (
       }
     }
 
-    // top-2 eigenpairs by power iteration + deflation, hash-seeded
-    const eig = (
-      deflate: Float64Array | null,
-    ): { v: Float64Array; lambda: number } => {
-      const v = new Float64Array(k);
-
+    // top-2 eigenpairs by power iteration + deflation, hash-seeded.
+    // Each call fills its own vector and returns the eigenvalue as a
+    // plain number: returned as `{ v, lambda }` objects, Node 24.18's
+    // V8 intermittently let the second call's `lambda` overwrite the
+    // first object's (measured in round 150 — 1.9e-10 for 489,888 read
+    // back after the deflated call, only under load), which dropped a
+    // path's seed to the scatter
+    const eig = (deflate: Float64Array | null, v: Float64Array): number => {
       for (let a = 0; a < k; a++) {
         v[a] = (((a + 1) * 2654435761) >>> 16) / 65536 - 0.5;
       }
@@ -304,7 +306,7 @@ export const spectralSeed = (
         norm = Math.sqrt(norm);
 
         if (norm < 1e-12) {
-          return { v, lambda: 0 };
+          return 0;
         }
 
         for (let a = 0; a < k; a++) {
@@ -314,22 +316,24 @@ export const spectralSeed = (
         lambda = norm;
       }
 
-      return { v, lambda };
+      return lambda;
     };
 
-    const e1 = eig(null);
-    const e2 = eig(e1.v);
+    const v1 = new Float64Array(k);
+    const lambda1 = eig(null, v1);
+    const v2 = new Float64Array(k);
+    const lambda2 = eig(v1, v2);
 
     // a dead spectrum keeps the scatter; a rank-1 spectrum is a
     // legitimate 1-D metric (a path!) and embeds on the first axis
     // alone, the jitter below providing the second dimension
-    if (e1.lambda < SEP * SEP * 0.01) {
+    if (lambda1 < SEP * SEP * 0.01) {
       continue;
     }
 
-    const oneD = e2.lambda < SEP * SEP * 1e-4;
-    const s1 = Math.sqrt(e1.lambda);
-    const s2 = oneD ? 1 : Math.sqrt(e2.lambda);
+    const oneD = lambda2 < SEP * SEP * 1e-4;
+    const s1 = Math.sqrt(lambda1);
+    const s2 = oneD ? 1 : Math.sqrt(lambda2);
 
     // pivot-distance column means (the LMDS out-of-sample formula)
     const dMean = new Float64Array(k);
@@ -357,8 +361,8 @@ export const spectralSeed = (
         const d = Math.max(0, dist[j][i]) * SEP;
         const diff = dMean[j] - d * d;
 
-        px += e1.v[j] * diff;
-        py += e2.v[j] * diff;
+        px += v1[j] * diff;
+        py += v2[j] * diff;
       }
 
       ex[i] = px / (2 * s1);

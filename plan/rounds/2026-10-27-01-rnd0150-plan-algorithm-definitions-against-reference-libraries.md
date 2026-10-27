@@ -135,3 +135,22 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   from a node alike, and with chords disabling the column fold fails
   it.  Controls: forcing `reverse` off fails the hand spec and the
   `wd` reference; restoring 1/Σd fails five.
+- **Item 5 landed (27 October).**  One `resolveNormalization(value,
+  allowed, method)` in `algo-shared.mts` validates every method's
+  `normalization` synchronously and rejects a value that does not
+  apply (Katz's `'size'`, the others' `'l2'`).  Degree divides by
+  n − 1 (a lone node scores 1, NetworkX's convention); betweenness's
+  `bcResultFrom` takes a plain `BcScale` (direction and normalization,
+  safe across the worker await) and divides by (n − 1)(n − 2), halved
+  undirected, leaving n ≤ 2 unscaled as NetworkX does; closeness
+  divides harmonic scores by n − 1 and passes classic ones through;
+  Katz divides by the L2 norm.  The NetworkX reference gained
+  `betweenness_centrality(normalized=True)`,
+  `katz_centrality(normalized=True)` and, for the first time, degree
+  centrality (`degree_centrality` and the in/out forms, on karate,
+  `wd` and the multigraph, plus the raw degrees `'max'` divides).
+  Closeness `'size'` has no NetworkX counterpart; a hand spec pins it,
+  and igraph's `harmonic_centrality(normalized = TRUE)` will check it
+  in the R reference.  Controls: perturbing each divisor fails eight
+  of the nine affected cases (the ninth is directed betweenness, which
+  the undirected-halving perturbation does not touch).

@@ -106,6 +106,15 @@ and 1,924,972 / 511,978 (raw / gzip, row order below). The new ceilings
 retain roughly 1% headroom and both minified edge artifacts stay below the
 1,000,000-byte budget.
 
+**Raised for round 150's algorithm options (2026-10-27, Node 24.18,
+rolldown 1.1.5).**  Closeness direction, the Wasserman–Faust form, the
+`normalization` options and their JSDoc (which the unminified builds
+keep) put the four unminified artifacts over their gzip rows: 1,789,986 /
+481,277; 1,789,925 / 481,267; 1,943,608 / 518,129; 1,943,547 / 518,116
+(raw / gzip, row order below).  Those rows go to about 1% over that
+landing, raw and gzip.  The minified artifacts measure 619,104 / 191,627
+and 698,456 / 210,350, inside their rows, which do not move.
+
 Needs the built bundles (`test:modules` builds first).
 */
 
@@ -118,11 +127,13 @@ export const EDGE_BUDGET = 1_000_000;
 export const RATCHET = {
   'cytoscape-headless.esm.min.mjs': { raw: 624_000, gzip: 194_000 },
   // round 138: gzip 451,000 -> 456,000 (see the header)
-  'cytoscape-headless.esm.mjs': { raw: 1_791_000, gzip: 480_000 },
-  'cytoscape-headless.cjs.js': { raw: 1_791_000, gzip: 480_000 },
+  // round 150: 1,791,000 / 480,000 -> 1,808,000 / 486,000 (see the header)
+  'cytoscape-headless.esm.mjs': { raw: 1_808_000, gzip: 486_000 },
+  'cytoscape-headless.cjs.js': { raw: 1_808_000, gzip: 486_000 },
   'cytoscape-headless-gpu.esm.min.mjs': { raw: 704_000, gzip: 213_000 },
-  'cytoscape-headless-gpu.esm.mjs': { raw: 1_945_000, gzip: 518_000 },
-  'cytoscape-headless-gpu.cjs.js': { raw: 1_945_000, gzip: 518_000 },
+  // round 150: 1,945,000 / 518,000 -> 1,963,000 / 523,000
+  'cytoscape-headless-gpu.esm.mjs': { raw: 1_963_000, gzip: 523_000 },
+  'cytoscape-headless-gpu.cjs.js': { raw: 1_963_000, gzip: 523_000 },
 };
 
 /** The minified headless artifacts the edge budget applies to. */

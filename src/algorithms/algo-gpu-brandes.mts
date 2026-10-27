@@ -35,6 +35,7 @@ import { WG } from './algo-gpu-dense.mjs';
 import { BATCH, NO_SOURCE, bfsForwardBatch, bfsPlan } from './algo-gpu-bfs.mjs';
 import {
   bcResultFrom,
+  bcScaleOf,
   buildBrandesNeighbors,
 } from './betweenness-centrality.mjs';
 import type {
@@ -158,7 +159,7 @@ export const betweennessCentralityGpu = async (
   const n = view.nodeSlots.length;
 
   if (n === 0) {
-    return bcResultFrom(view, [], 0, directed);
+    return bcResultFrom(view, [], 0, bcScaleOf(options));
   }
 
   const { neighbors } = buildBrandesNeighbors(view, directed);
@@ -221,5 +222,5 @@ export const betweennessCentralityGpu = async (
     }
   }
 
-  return bcResultFrom(view, cOut, max, directed);
+  return bcResultFrom(view, cOut, max, bcScaleOf(options));
 };

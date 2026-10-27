@@ -4636,6 +4636,14 @@ interface AffinityPropagationOptions {
 interface BetweennessCentralityOptions {
   weight?: WeightFn | null;
   directed?: boolean;
+  /**
+   * how `betweennessNormalized` scales (round 150): `'max'` (default)
+   * divides by the largest score, `'size'` by the number of pairs a
+   * node can sit between — (n − 1)(n − 2)/2 undirected, (n − 1)(n − 2)
+   * directed — as NetworkX's `normalized=True` and igraph's
+   * `normalized = TRUE` do
+   */
+  normalization?: 'max' | 'size';
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Weighted runs have no GPU path: 'auto' takes the worker pool
    * (round 74) from `WORKERS_MIN_N` nodes and an explicit 'gpu'
@@ -4667,6 +4675,14 @@ interface ClosenessCentralityOptions {
    * the r nodes reachable, (r/Σd)·(r/(n − 1)), 0 when none is
    */
   harmonic?: boolean;
+  /**
+   * read by `closenessCentralityNormalized` only (round 150): `'max'`
+   * (default) divides by the largest score; `'size'` divides a harmonic
+   * score by n − 1 (igraph's and graph-tool's normalized harmonic
+   * centrality) and leaves a classic one as is, (n − 1) already being
+   * in its formula
+   */
+  normalization?: 'max' | 'size';
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Read by the whole-collection `closenessCentralityNormalized` only —
    * the single-root `closenessCentrality` is a cheap Dijkstra walk and
@@ -4775,6 +4791,12 @@ interface KatzCentralityOptions {
   /** count incoming walks only */
   directed?: boolean;
   weight?: WeightFn;
+  /**
+   * how `katzNormalized` scales (round 150): `'max'` (default) divides
+   * by the largest score, `'l2'` by the scores' Euclidean norm —
+   * NetworkX's `katz_centrality(normalized=True)`
+   */
+  normalization?: 'max' | 'l2';
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Like `pageRank`, 'auto' stays on the sparse CPU iteration at
    * every measured size (`KATZ_GPU_MIN_N`); the GPU path serves an
@@ -4784,7 +4806,7 @@ interface KatzCentralityOptions {
 interface KatzCentralityResult {
   /** the node's converged walk sum, or undefined outside the collection */
   katz(node: Collection): number | undefined;
-  /** the same, normalized by the maximum */
+  /** the same, normalized by the maximum or the L2 norm */
   katzNormalized(node: Collection): number;
   /** British-spelling alias of `katzNormalized` */
   katzNormalised(node: Collection): number;
@@ -5027,6 +5049,12 @@ interface DegreeCentralityOptions {
   directed?: boolean;
   /** 0 = count degree, 1 = weight sum (Opsahl's generalized degree) */
   alpha?: number;
+  /**
+   * read by `degreeCentralityNormalized` only (round 150): `'max'`
+   * (default) divides by the largest degree, `'size'` by n − 1 —
+   * NetworkX's `degree_centrality` and igraph's `normalized = TRUE`
+   */
+  normalization?: 'max' | 'size';
 }
 interface UndirectedDegreeCentrality {
   degree: number;
@@ -7334,18 +7362,23 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
   dc: this['degreeCentrality'];
   /**
    * Compute each node's Opsahl generalized degree and normalize against the
-   * maximum in this collection. Directed in- and out-degree are normalized
+   * maximum in this collection (default) or, under `normalization:
+   * 'size'`, against n − 1 — NetworkX's `degree_centrality` and igraph's
+   * `normalized = TRUE` (round 150; a lone node scores 1, as in
+   * NetworkX). Directed in- and out-degree are normalized
    * independently. Nodes outside the collection's captured subgraph read as
    * zero.
    *
-   * @param options — `{ weight, alpha, directed }`; the shared option type
-   *   also allows `root`, which this all-node method ignores. `weight(edge)`
-   *   defaults to 1, `alpha` defaults to 0, and `directed` defaults to false
+   * @param options — `{ weight, alpha, directed, normalization }`; the
+   *   shared option type also allows `root`, which this all-node method
+   *   ignores. `weight(edge)` defaults to 1, `alpha` defaults to 0,
+   *   `directed` defaults to false and `normalization` to 'max'
    * @returns a `degree(node)` accessor, or `indegree(node)` and
    *   `outdegree(node)` accessors when directed. Each divides by its
-   *   corresponding maximum; results are in [0, 1] when weights and alpha
-   *   produce nonnegative finite degrees. These numeric constraints are not
-   *   validated.
+   *   corresponding maximum or by n − 1; under 'max' results are in
+   *   [0, 1] when weights and alpha produce nonnegative finite degrees.
+   *   These numeric constraints are not validated.
+   * @throws if `normalization` is neither 'max' nor 'size'
    */
   degreeCentralityNormalized(options?: DegreeCentralityOptions): DegreeCentralityNormalizedResult;
   dcn: this['degreeCentralityNormalized'];
@@ -7385,12 +7418,17 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * Each score is `closenessCentrality`'s for that node (the same
    * `harmonic` and `direction`), divided by the largest.
    *
-   * @param options — `{ weight, directed, direction, harmonic, executor }`
+   * `normalization: 'size'` divides a harmonic score by n − 1 instead,
+   * igraph's and graph-tool's normalized harmonic centrality, and leaves
+   * a classic score, which already carries n − 1, as is (round 150).
+   *
+   * @param options — `{ weight, directed, direction, harmonic,
+   *   normalization, executor }`
    * @returns a promise of a `closeness` accessor
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` or `direction` is invalid; rejects if
-   *   `executor: 'gpu'` or `'workers'` is unavailable in this environment, or `'workers'` is
+   * @throws if `executor`, `direction` or `normalization` is invalid;
+   *   rejects if `executor: 'gpu'` or `'workers'` is unavailable in this environment, or `'workers'` is
    *   asked of a weighted run
    */
   closenessCentralityNormalized(options?: ClosenessCentralityOptions): AlgoRun<ClosenessCentralityNormalizedResult>;
@@ -7411,13 +7449,19 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * the GPU first under 'auto', then the pool from 256 nodes where no
    * adapter fits.
    *
-   * @param options — `{ weight, directed, executor }`
+   * `betweennessNormalized` divides by the largest score, or under
+   * `normalization: 'size'` by the pairs a node can sit between —
+   * (n − 1)(n − 2)/2 undirected, (n − 1)(n − 2) directed — as
+   * NetworkX's `normalized=True` and igraph's `normalized = TRUE`
+   * (round 150).
+   *
+   * @param options — `{ weight, directed, normalization, executor }`
    * @returns a promise of the `{ betweenness, betweennessNormalized }`
    *   accessors
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
-   *   unavailable or the run is weighted
+   * @throws if `executor` or `normalization` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable or the run is weighted
    */
   betweennessCentrality(options?: BetweennessCentralityOptions): AlgoRun<BetweennessCentralityResult>;
   bc: this['betweennessCentrality'];
@@ -7428,15 +7472,18 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks where the iteration
    * runs; like `pageRank`, 'auto' always uses the sparse CPU iteration
    * and the GPU path serves an explicit 'gpu'.  v4-only — v3 has no
-   * counterpart.
+   * counterpart.  `katzNormalized` divides by the largest score, or by
+   * the scores' Euclidean norm under `normalization: 'l2'` — NetworkX's
+   * `normalized=True` (round 150).
    *
    * @param options — `{ alpha, beta, maxIterations, tolerance,
-   *   directed, weight, executor }`
+   *   directed, weight, normalization, executor }`
    * @returns a promise of the `{ katz, katzNormalized }` accessors
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor`, `alpha` or `beta` is invalid; rejects if
-   *   `executor: 'gpu'` is unavailable in this environment
+   * @throws if `executor`, `alpha`, `beta` or `normalization` is
+   *   invalid; rejects if `executor: 'gpu'` is unavailable in this
+   *   environment
    */
   katzCentrality(options?: KatzCentralityOptions): AlgoRun<KatzCentralityResult>;
   /**

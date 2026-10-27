@@ -327,9 +327,11 @@ def centralities(G, refs):
     for name, weighted in (('karate', False), ('wu', True), ('wd', True)):
         g = G[name]
         b = nx.betweenness_centrality(nx_graph(g), normalized=False, weight='w' if weighted else None)
+        bn = nx.betweenness_centrality(nx_graph(g), normalized=True, weight='w' if weighted else None)
         refs['betweennessCentrality'][name] = {
             'weighted': weighted,
             'betweenness': per_node(g, b),
+            'normalizedSize': per_node(g, bn),
         }
 
     # Katz at half the convergence radius
@@ -339,7 +341,28 @@ def centralities(G, refs):
         alpha = 0.5 / max(abs(np.linalg.eigvals(A)))
         k = nx.katz_centrality(nx_graph(g), alpha=alpha, beta=1.0, normalized=False,
                                weight='w', tol=1e-15, max_iter=100000)
-        refs['katzCentrality'][name] = {'alpha': finite(float(alpha)), 'katz': per_node(g, k)}
+        kl2 = nx.katz_centrality(nx_graph(g), alpha=alpha, beta=1.0, normalized=True,
+                                 weight='w', tol=1e-15, max_iter=100000)
+        refs['katzCentrality'][name] = {'alpha': finite(float(alpha)), 'katz': per_node(g, k),
+                                        'normalizedL2': per_node(g, kl2)}
+
+    # degree: the raw counts v4's 'max' divides, and NetworkX's
+    # degree_centrality, v4's normalization: 'size' (round 150)
+    for name in ('karate', 'wd', 'multi'):
+        g = G[name]
+        Gx = nx_graph(g, multi=True)
+        if g['directed']:
+            refs['degreeCentrality'][name] = {
+                'indegree': per_node(g, dict(Gx.in_degree())),
+                'outdegree': per_node(g, dict(Gx.out_degree())),
+                'indegreeSize': per_node(g, nx.in_degree_centrality(Gx)),
+                'outdegreeSize': per_node(g, nx.out_degree_centrality(Gx)),
+            }
+        else:
+            refs['degreeCentrality'][name] = {
+                'degree': per_node(g, dict(Gx.degree())),
+                'degreeSize': per_node(g, nx.degree_centrality(Gx)),
+            }
 
     for name in ('karate', 'wu'):
         g = G[name]
@@ -541,7 +564,7 @@ def main():
     G = {g['name']: g for g in graphs}
     points = blobs(rng)
     names = ['dijkstra', 'floydWarshall', 'bellmanFord', 'kruskal', 'tarjanStronglyConnected',
-             'hopcroftTarjanBiconnected', 'kargerStein', 'pageRank', 'closenessCentrality',
+             'hopcroftTarjanBiconnected', 'kargerStein', 'pageRank', 'degreeCentrality', 'closenessCentrality',
              'betweennessCentrality', 'katzCentrality', 'triangleCount', 'neighborhoodSimilarity',
              'simRank', 'randomWalkWithRestart', 'heatKernel', 'effectiveResistance',
              'motifCensus', 'hierarchicalClustering', 'kMeans', 'affinityPropagation',

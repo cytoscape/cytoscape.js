@@ -390,6 +390,21 @@ describe('algorithms against NetworkX / SciPy references', function () {
           1e-9,
           'betweenness',
         );
+
+        const sized = await eles.betweennessCentrality({
+          directed,
+          normalization: 'size',
+          ...(ref.weighted ? { weight } : {}),
+          ...cpu,
+        });
+
+        perNode(
+          g,
+          (id) => sized.betweennessNormalized(node(id)),
+          ref.normalizedSize,
+          1e-12,
+          "normalization: 'size'",
+        );
       });
     }
 
@@ -406,6 +421,55 @@ describe('algorithms against NetworkX / SciPy references', function () {
         });
 
         perNode(g, (id) => res.katz(node(id)), ref.katz, 1e-9, 'katz');
+
+        const l2 = await eles.katzCentrality({
+          alpha: ref.alpha,
+          directed,
+          weight,
+          tolerance: 1e-15,
+          maxIterations: 100000,
+          normalization: 'l2',
+          ...cpu,
+        });
+
+        perNode(
+          g,
+          (id) => l2.katzNormalized(node(id)),
+          ref.normalizedL2,
+          1e-9,
+          "normalization: 'l2'",
+        );
+      });
+    }
+
+    for (const [name, ref] of Object.entries(REF.degreeCentrality)) {
+      it(`degreeCentralityNormalized on ${name}, max and size`, function () {
+        const { g, eles, node, directed } = build(name);
+        const series = directed ? ['indegree', 'outdegree'] : ['degree'];
+        const byMax = eles.degreeCentralityNormalized({ directed });
+        const bySize = eles.degreeCentralityNormalized({
+          directed,
+          normalization: 'size',
+        });
+
+        for (const key of series) {
+          const max = Math.max(...g.nodes.map((id) => ref[key][id]));
+
+          perNode(
+            g,
+            (id) => byMax[key](node(id)),
+            Object.fromEntries(g.nodes.map((id) => [id, ref[key][id] / max])),
+            1e-12,
+            `${key} by max`,
+          );
+          perNode(
+            g,
+            (id) => bySize[key](node(id)),
+            ref[key + 'Size'],
+            1e-12,
+            `${key} by size`,
+          );
+        }
       });
     }
 

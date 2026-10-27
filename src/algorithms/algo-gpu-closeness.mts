@@ -167,7 +167,7 @@ export const closenessCentralityNormalizedGpu = async (
   assertFits(ctx, n * n * 4, 'closenessCentralityNormalized');
 
   if (n === 0) {
-    return closenessResultFrom(view, []);
+    return closenessResultFrom(view, [], options);
   }
 
   const { distBuf, nextBuf, dispatches, scratch } = fwRelaxPlan(
@@ -201,6 +201,7 @@ export const closenessCentralityNormalizedGpu = async (
   return closenessResultFrom(
     view,
     closenessesFromReadback(n, rowSums, rowReached, harmonic),
+    options,
   );
 };
 
@@ -336,7 +337,7 @@ export const closenessCentralityNormalizedBfsGpu = async (
   const n = view.nodeSlots.length;
 
   if (n === 0) {
-    return closenessResultFrom(view, []);
+    return closenessResultFrom(view, [], options);
   }
 
   const { neighbors } = buildBrandesNeighbors(view, directed, reverse);
@@ -371,5 +372,6 @@ export const closenessCentralityNormalizedBfsGpu = async (
   return closenessResultFrom(
     view,
     closenessesFromReadback(n, rowSums, rowReached, harmonic),
+    options,
   );
 };

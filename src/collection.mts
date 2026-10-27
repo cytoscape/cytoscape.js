@@ -3340,18 +3340,23 @@ export class Collection<
 
   /**
    * Compute each node's Opsahl generalized degree and normalize against the
-   * maximum in this collection. Directed in- and out-degree are normalized
+   * maximum in this collection (default) or, under `normalization:
+   * 'size'`, against n − 1 — NetworkX's `degree_centrality` and igraph's
+   * `normalized = TRUE` (round 150; a lone node scores 1, as in
+   * NetworkX). Directed in- and out-degree are normalized
    * independently. Nodes outside the collection's captured subgraph read as
    * zero.
    *
-   * @param options — `{ weight, alpha, directed }`; the shared option type
-   *   also allows `root`, which this all-node method ignores. `weight(edge)`
-   *   defaults to 1, `alpha` defaults to 0, and `directed` defaults to false
+   * @param options — `{ weight, alpha, directed, normalization }`; the
+   *   shared option type also allows `root`, which this all-node method
+   *   ignores. `weight(edge)` defaults to 1, `alpha` defaults to 0,
+   *   `directed` defaults to false and `normalization` to 'max'
    * @returns a `degree(node)` accessor, or `indegree(node)` and
    *   `outdegree(node)` accessors when directed. Each divides by its
-   *   corresponding maximum; results are in [0, 1] when weights and alpha
-   *   produce nonnegative finite degrees. These numeric constraints are not
-   *   validated.
+   *   corresponding maximum or by n − 1; under 'max' results are in
+   *   [0, 1] when weights and alpha produce nonnegative finite degrees.
+   *   These numeric constraints are not validated.
+   * @throws if `normalization` is neither 'max' nor 'size'
    */
   degreeCentralityNormalized(
     options?: DegreeCentralityOptions,
@@ -3401,12 +3406,17 @@ export class Collection<
    * Each score is `closenessCentrality`'s for that node (the same
    * `harmonic` and `direction`), divided by the largest.
    *
-   * @param options — `{ weight, directed, direction, harmonic, executor }`
+   * `normalization: 'size'` divides a harmonic score by n − 1 instead,
+   * igraph's and graph-tool's normalized harmonic centrality, and leaves
+   * a classic score, which already carries n − 1, as is (round 150).
+   *
+   * @param options — `{ weight, directed, direction, harmonic,
+   *   normalization, executor }`
    * @returns a promise of a `closeness` accessor
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` or `direction` is invalid; rejects if
-   *   `executor: 'gpu'` or `'workers'` is unavailable in this environment, or `'workers'` is
+   * @throws if `executor`, `direction` or `normalization` is invalid;
+   *   rejects if `executor: 'gpu'` or `'workers'` is unavailable in this environment, or `'workers'` is
    *   asked of a weighted run
    */
   closenessCentralityNormalized(
@@ -3433,13 +3443,19 @@ export class Collection<
    * the GPU first under 'auto', then the pool from 256 nodes where no
    * adapter fits.
    *
-   * @param options — `{ weight, directed, executor }`
+   * `betweennessNormalized` divides by the largest score, or under
+   * `normalization: 'size'` by the pairs a node can sit between —
+   * (n − 1)(n − 2)/2 undirected, (n − 1)(n − 2) directed — as
+   * NetworkX's `normalized=True` and igraph's `normalized = TRUE`
+   * (round 150).
+   *
+   * @param options — `{ weight, directed, normalization, executor }`
    * @returns a promise of the `{ betweenness, betweennessNormalized }`
    *   accessors
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
-   *   unavailable or the run is weighted
+   * @throws if `executor` or `normalization` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable or the run is weighted
    */
   betweennessCentrality(
     options?: BetweennessCentralityOptions,
@@ -3456,15 +3472,18 @@ export class Collection<
    * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks where the iteration
    * runs; like `pageRank`, 'auto' always uses the sparse CPU iteration
    * and the GPU path serves an explicit 'gpu'.  v4-only — v3 has no
-   * counterpart.
+   * counterpart.  `katzNormalized` divides by the largest score, or by
+   * the scores' Euclidean norm under `normalization: 'l2'` — NetworkX's
+   * `normalized=True` (round 150).
    *
    * @param options — `{ alpha, beta, maxIterations, tolerance,
-   *   directed, weight, executor }`
+   *   directed, weight, normalization, executor }`
    * @returns a promise of the `{ katz, katzNormalized }` accessors
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor`, `alpha` or `beta` is invalid; rejects if
-   *   `executor: 'gpu'` is unavailable in this environment
+   * @throws if `executor`, `alpha`, `beta` or `normalization` is
+   *   invalid; rejects if `executor: 'gpu'` is unavailable in this
+   *   environment
    */
   katzCentrality(
     options?: KatzCentralityOptions,

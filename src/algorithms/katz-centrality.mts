@@ -19,7 +19,12 @@ crossover sweep's call, spelled in `KATZ_GPU_MIN_N`.
 */
 
 import type { Collection } from '../collection.mjs';
-import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
+import {
+  subgraph,
+  firstNodeSlot,
+  weightAt,
+  resolveNormalization,
+} from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { inThread, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
@@ -56,6 +61,12 @@ export interface KatzCentralityOptions {
   /** count incoming walks only */
   directed?: boolean;
   weight?: WeightFn;
+  /**
+   * how `katzNormalized` scales (round 150): `'max'` (default) divides
+   * by the largest score, `'l2'` by the scores' Euclidean norm —
+   * NetworkX's `katz_centrality(normalized=True)`
+   */
+  normalization?: 'max' | 'l2';
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Like `pageRank`, 'auto' stays on the sparse CPU iteration at
    * every measured size (`KATZ_GPU_MIN_N`); the GPU path serves an
@@ -66,11 +77,27 @@ export interface KatzCentralityOptions {
 export interface KatzCentralityResult {
   /** the node's converged walk sum, or undefined outside the collection */
   katz(node: Collection): number | undefined;
-  /** the same, normalized by the maximum */
+  /** the same, normalized by the maximum or the L2 norm */
   katzNormalized(node: Collection): number;
   /** British-spelling alias of `katzNormalized` */
   katzNormalised(node: Collection): number;
 }
+
+/**
+ * The `normalization` `katzNormalized` uses, validated.
+ *
+ * @param options — the caller's options
+ * @returns 'max' or 'l2'
+ * @throws if the value is neither
+ */
+export const resolveKatzNormalization = (
+  options: KatzCentralityOptions,
+): 'max' | 'l2' =>
+  resolveNormalization(
+    options.normalization,
+    ['max', 'l2'] as const,
+    'katzCentrality',
+  );
 
 /**
  * Validate `alpha` and `beta` — called synchronously by the async
@@ -122,6 +149,7 @@ export const katzCentralityAsync = (
   const executor = resolveExecutor(options.executor);
 
   resolveKatzParams(options); // an invalid alpha/beta throws at the call site
+  resolveKatzNormalization(options);
 
   const n = subgraph(coll).nodeSlots.length;
 
@@ -184,7 +212,12 @@ export const katzLane = (
         },
       };
     },
-    wrap: (out) => katzResultFrom(view as SubgraphView, out.x as Float64Array),
+    wrap: (out) =>
+      katzResultFrom(
+        view as SubgraphView,
+        out.x as Float64Array,
+        resolveKatzNormalization(options),
+      ),
   };
 };
 
@@ -262,16 +295,26 @@ export const buildKatzSparse = (
  *
  * @param view — the subgraph view the matrix was built from
  * @param katzOf — the converged per-node walk sums
+ * @param normalization — what `katzNormalized` divides by
  * @returns the result object
  */
 export const katzResultFrom = (
   view: SubgraphView,
   katzOf: ArrayLike<number>,
+  normalization: 'max' | 'l2',
 ): KatzCentralityResult => {
   let max = 0;
 
   for (let i = 0; i < katzOf.length; i++) {
-    max = Math.max(max, katzOf[i]);
+    if (normalization === 'l2') {
+      max += katzOf[i] * katzOf[i];
+    } else {
+      max = Math.max(max, katzOf[i]);
+    }
+  }
+
+  if (normalization === 'l2') {
+    max = Math.sqrt(max);
   }
 
   const katz = (node: Collection): number | undefined => {

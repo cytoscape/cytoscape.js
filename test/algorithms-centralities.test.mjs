@@ -335,6 +335,82 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     path.destroy();
   });
 
+  it('normalization: each *Normalized method takes its own values (round 150)', async function () {
+    // a – b – c, undirected
+    var path = cytoscape({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 'bc', source: 'b', target: 'c' } },
+      ],
+    });
+    var eles = path.elements();
+    var b = path.$id('b');
+    var a = path.$id('a');
+
+    // closeness 'size': harmonic ÷ (n − 1) — a: (1 + 1/2)/2; classic is
+    // already (n − 1)/Σd — a: 2/3 — and passes through
+    var harmonicSize = await eles.closenessCentralityNormalized({
+      normalization: 'size',
+    });
+    var classicSize = await eles.closenessCentralityNormalized({
+      normalization: 'size',
+      harmonic: false,
+    });
+
+    expect(harmonicSize.closeness(a)).to.equal(0.75);
+    expect(harmonicSize.closeness(b)).to.equal(1);
+    expect(classicSize.closeness(a)).to.equal(2 / 3);
+    expect(classicSize.closeness(a)).to.equal(
+      eles.closenessCentrality({ root: a, harmonic: false }),
+    );
+
+    // degree 'size': ÷ (n − 1); betweenness 'size': ÷ (n − 1)(n − 2)/2
+    expect(
+      eles.degreeCentralityNormalized({ normalization: 'size' }).degree(a),
+    ).to.equal(0.5);
+    expect(
+      (
+        await eles.betweennessCentrality({ normalization: 'size' })
+      ).betweennessNormalized(b),
+    ).to.equal(1);
+
+    // NetworkX's edge cases: a lone node's degree centrality is 1, and
+    // betweenness on n ≤ 2 is left unscaled (0)
+    var lone = cytoscape({ elements: [{ data: { id: 'z' } }] });
+
+    expect(
+      lone
+        .elements()
+        .degreeCentralityNormalized({ normalization: 'size' })
+        .degree(lone.$id('z')),
+    ).to.equal(1);
+    expect(
+      (
+        await lone.elements().betweennessCentrality({ normalization: 'size' })
+      ).betweennessNormalized(lone.$id('z')),
+    ).to.equal(0);
+
+    // each method rejects the values it does not take, synchronously
+    for (var [call, bad] of [
+      [(o) => eles.degreeCentralityNormalized(o), 'l2'],
+      [(o) => eles.closenessCentralityNormalized(o), 'l2'],
+      [(o) => eles.betweennessCentrality(o), 'l2'],
+      [(o) => eles.katzCentrality(o), 'size'],
+      [(o) => eles.katzCentrality(o), 'nope'],
+    ]) {
+      expect(() => call({ normalization: bad }), bad).to.throw(
+        TypeError,
+        /normalization/,
+      );
+    }
+
+    path.destroy();
+    lone.destroy();
+  });
+
   it('closenessCentralityNormalized: the unweighted BFS path agrees with the FW route (72.3)', async function () {
     // an unweighted call walks a BFS per source; `weight: () => 1`
     // forces the Floyd–Warshall route over unit weights, whose

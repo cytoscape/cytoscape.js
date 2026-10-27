@@ -4,6 +4,7 @@ import {
   firstNodeSlotArg,
   weightAt,
   NodeHeap,
+  resolveNormalization,
 } from './algo-shared.mjs';
 import type { WeightFn } from './algo-shared.mjs';
 import { resolveExecutor, runAlgo, WORKERS_MIN_N } from './executor.mjs';
@@ -16,6 +17,14 @@ import type { AlgoWorkers } from './algo-workers.mjs';
 export interface BetweennessCentralityOptions {
   weight?: WeightFn | null;
   directed?: boolean;
+  /**
+   * how `betweennessNormalized` scales (round 150): `'max'` (default)
+   * divides by the largest score, `'size'` by the number of pairs a
+   * node can sit between — (n − 1)(n − 2)/2 undirected, (n − 1)(n − 2)
+   * directed — as NetworkX's `normalized=True` and igraph's
+   * `normalized = TRUE` do
+   */
+  normalization?: 'max' | 'size';
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Weighted runs have no GPU path: 'auto' takes the worker pool
    * (round 74) from `WORKERS_MIN_N` nodes and an explicit 'gpu'
@@ -51,6 +60,9 @@ export const betweennessCentralityAsync = (
   options: BetweennessCentralityOptions = {},
 ): AlgoRun<BetweennessCentralityResult> => {
   const executor = resolveExecutor(options.executor);
+
+  bcScaleOf(options); // an invalid normalization throws at the call site
+
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
   // A completed route can retain its lane callback; consume its Core-bearing
@@ -197,10 +209,10 @@ export const betweennessCentralityWorkers = (
   try {
     const n = input.view.nodeSlots.length;
     const index = input.view.index;
-    const directed = input.options.directed === true;
+    const scale = bcScaleOf(input.options);
     const { rowPtr, colIdx, w } = brandesCsr(
       input.view,
-      directed,
+      scale.directed,
       input.options.weight ?? undefined,
     );
 
@@ -208,7 +220,7 @@ export const betweennessCentralityWorkers = (
       pool,
       index,
       n,
-      directed,
+      scale,
       rowPtr,
       colIdx,
       w,
@@ -223,7 +235,7 @@ const runBetweennessWorkerSnapshot = async (
   pool: AlgoWorkers,
   index: Map<number, number>,
   n: number,
-  directed: boolean,
+  scale: BcScale,
   rowPtr: Int32Array,
   colIdx: Int32Array,
   w: Float64Array | null,
@@ -244,7 +256,7 @@ const runBetweennessWorkerSnapshot = async (
     }
   }
 
-  return bcResultFromIndex(index, C, max, directed);
+  return bcResultFromIndex(index, C, max, scale);
 };
 
 /**
@@ -335,30 +347,57 @@ export const buildBrandesNeighbors = (
  * by every executor.  Brandes' sweep from every source counts each
  * unordered pair of an undirected graph twice, once from either end, so
  * an undirected run halves the raw score (Brandes 2001, Freeman's
- * definition; round 150, #3543).  The normalized score is a ratio and
- * needs no halving.
+ * definition; round 150, #3543).  `betweennessNormalized` divides the
+ * score by the maximum (a ratio, so the halving cancels) or, under
+ * `normalization: 'size'`, by the pairs a node can sit between.
  *
  * @param view — the subgraph view
  * @param C — per-dense-index dependency sums
  * @param max — the maximum of `C`, for normalization
- * @param directed — whether the sweep followed edge direction
+ * @param scale — the run's direction and normalization (`bcScaleOf`)
  * @returns the result object
  */
 export const bcResultFrom = (
   view: ReturnType<typeof subgraph>,
   C: ArrayLike<number>,
   max: number,
-  directed: boolean,
-): BetweennessCentralityResult =>
-  bcResultFromIndex(view.index, C, max, directed);
+  scale: BcScale,
+): BetweennessCentralityResult => bcResultFromIndex(view.index, C, max, scale);
+
+/** What turns a run's dependency sums into its public scores. */
+export interface BcScale {
+  directed: boolean;
+  normalization: 'max' | 'size';
+}
+
+/**
+ * Resolve a run's `BcScale` from its options — plain values only, so
+ * it can cross a worker await without holding the caller's closures.
+ *
+ * @param options — the caller's options
+ * @returns the direction and normalization
+ * @throws if `normalization` is neither 'max' nor 'size'
+ */
+export const bcScaleOf = (options: BetweennessCentralityOptions): BcScale => ({
+  directed: options.directed === true,
+  normalization: resolveNormalization(
+    options.normalization,
+    ['max', 'size'] as const,
+    'betweennessCentrality',
+  ),
+});
 
 const bcResultFromIndex = (
   index: Map<number, number>,
   C: ArrayLike<number>,
   max: number,
-  directed: boolean,
+  { directed, normalization }: BcScale,
 ): BetweennessCentralityResult => {
-  const scale = directed ? 1 : 0.5;
+  const half = directed ? 1 : 0.5;
+  const n = index.size;
+  // 'size': the ordered (directed) or unordered pairs of the other
+  // n − 1 nodes; NetworkX leaves n ≤ 2 unscaled (every score is 0)
+  const pairs = n <= 2 ? 1 : ((n - 1) * (n - 2)) / (directed ? 1 : 2);
 
   const denseOf = (node: Collection): number | undefined => {
     const slot = firstNodeSlotArg(node, 'node');
@@ -370,17 +409,21 @@ const bcResultFromIndex = (
     betweenness(node: Collection): number | undefined {
       const i = denseOf(node);
 
-      return i == null ? undefined : C[i] * scale;
+      return i == null ? undefined : C[i] * half;
     },
 
     betweennessNormalized(node: Collection): number {
-      if (max === 0) {
+      const i = denseOf(node);
+
+      if (i == null) {
         return 0;
       }
 
-      const i = denseOf(node);
+      if (normalization === 'size') {
+        return (C[i] * half) / pairs;
+      }
 
-      return i == null ? 0 : C[i] / max;
+      return max === 0 ? 0 : C[i] / max;
     },
 
     betweennessNormalised(node: Collection): number {
@@ -489,5 +532,5 @@ export const betweennessCentrality = (
     }
   }
 
-  return bcResultFrom(view, C, max, directed);
+  return bcResultFrom(view, C, max, bcScaleOf(options));
 };

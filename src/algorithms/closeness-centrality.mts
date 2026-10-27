@@ -1,7 +1,12 @@
 import type { Collection } from '../collection.mjs';
 import { dijkstraDense } from './dijkstra.mjs';
 import { initFloydWarshall } from './floyd-warshall.mjs';
-import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
+import {
+  subgraph,
+  firstNodeSlot,
+  weightAt,
+  resolveNormalization,
+} from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, inThread, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
@@ -72,6 +77,14 @@ export interface ClosenessCentralityOptions {
    * the r nodes reachable, (r/Σd)·(r/(n − 1)), 0 when none is
    */
   harmonic?: boolean;
+  /**
+   * read by `closenessCentralityNormalized` only (round 150): `'max'`
+   * (default) divides by the largest score; `'size'` divides a harmonic
+   * score by n − 1 (igraph's and graph-tool's normalized harmonic
+   * centrality) and leaves a classic one as is, (n − 1) already being
+   * in its formula
+   */
+  normalization?: 'max' | 'size';
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Read by the whole-collection `closenessCentralityNormalized` only —
    * the single-root `closenessCentrality` is a cheap Dijkstra walk and
@@ -169,7 +182,9 @@ export const closenessCentralityNormalizedAsync = (
 ): AlgoRun<ClosenessCentralityNormalizedResult> => {
   const executor = resolveExecutor(options.executor);
 
-  closenessReverse(options); // an invalid direction throws at the call site
+  // an invalid direction or normalization throws at the call site
+  closenessReverse(options);
+  closenessNormalizationOf(options);
 
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
@@ -262,6 +277,7 @@ export const closenessWeightedLane = (
           harmonic,
           reverse,
         ),
+        options,
       ),
   };
 };
@@ -337,33 +353,60 @@ export const closenessOfRow = (
 };
 
 /**
+ * What `closenessCentralityNormalized` divides each score by, validated
+ * (round 150): the largest score (`'max'`, default) or, under
+ * `'size'`, n − 1 for harmonic scores — igraph's and graph-tool's
+ * normalized harmonic centrality, in [0, 1] — while a classic score is
+ * already scaled by n − 1 and passes through.
+ *
+ * @param options — the caller's options
+ * @returns 'max' or 'size'
+ * @throws if the value is neither
+ */
+export const closenessNormalizationOf = (
+  options: ClosenessCentralityOptions,
+): 'max' | 'size' =>
+  resolveNormalization(
+    options.normalization,
+    ['max', 'size'] as const,
+    'closenessCentralityNormalized',
+  );
+
+/**
  * Wrap per-node closeness scores as the public `{ closeness }`
- * accessor, normalized by the maximum — shared by both executors.
+ * accessor, normalized as `options` asks — shared by every executor.
  *
  * @param view — the subgraph view the scores were computed from
  * @param closenesses — one score per dense node index
+ * @param options — the caller's options (`harmonic`, `normalization`)
  * @returns the result object
  */
 export const closenessResultFrom = (
   view: SubgraphView,
   closenesses: ArrayLike<number>,
+  options: ClosenessCentralityOptions,
 ): ClosenessCentralityNormalizedResult => {
-  let maxCloseness = 0;
+  const n = closenesses.length;
+  let divisor = 0;
 
-  for (let i = 0; i < closenesses.length; i++) {
-    maxCloseness = Math.max(maxCloseness, closenesses[i]);
+  if (closenessNormalizationOf(options) === 'size') {
+    divisor = options.harmonic === false ? 1 : n - 1;
+  } else {
+    for (let i = 0; i < n; i++) {
+      divisor = Math.max(divisor, closenesses[i]);
+    }
   }
 
   return {
     closeness(node: Collection): number {
-      if (maxCloseness === 0) {
+      if (divisor <= 0) {
         return 0;
       }
 
       const slot = firstNodeSlot(view, node, 'node');
       const i = slot == null ? undefined : view.index.get(slot);
 
-      return i == null ? 0 : closenesses[i] / maxCloseness;
+      return i == null ? 0 : closenesses[i] / divisor;
     },
   };
 };
@@ -475,7 +518,7 @@ export const closenessCentralityNormalizedWorkers = async (
     }
   }
 
-  return closenessResultFrom(view, closenesses);
+  return closenessResultFrom(view, closenesses, options);
 };
 
 /**
@@ -497,6 +540,7 @@ export const closenessCentralityNormalized = (
     return closenessResultFrom(
       view,
       closenessRowsBfs(view, options.directed === true, harmonic, reverse),
+      options,
     );
   }
 

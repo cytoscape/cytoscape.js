@@ -8,6 +8,46 @@ import { GROUP_EDGES, GROUP_NODES, COL } from '../contract.mjs';
 export type WeightFn = (edge: Collection) => number;
 
 /**
+ * How a `*Normalized` score is scaled (round 150): `'max'` divides by
+ * the largest score, v4's (and v3's) default for every such method;
+ * `'size'` divides by the node-count bound NetworkX and igraph use for
+ * that measure; `'l2'` divides by the scores' Euclidean norm, as
+ * NetworkX normalizes Katz.  Each method accepts only its own values.
+ */
+export type Normalization = 'max' | 'size' | 'l2';
+
+/**
+ * Validate a `normalization` option against the values one method
+ * accepts.
+ *
+ * @param value — the caller's `normalization`
+ * @param allowed — the values this method accepts, the default first
+ * @param method — the method's name, for the message
+ * @returns the resolved value
+ * @throws if `value` is not one of `allowed`
+ */
+export const resolveNormalization = <T extends Normalization>(
+  value: unknown,
+  allowed: readonly T[],
+  method: string,
+): T => {
+  if (value === undefined) {
+    return allowed[0];
+  }
+
+  if (!(allowed as readonly unknown[]).includes(value)) {
+    throw new TypeError(
+      `\`normalization\` for ${method} must be ` +
+        allowed.map((v) => `'${v}'`).join(' or ') +
+        ' — got ' +
+        String(value),
+    );
+  }
+
+  return value as T;
+};
+
+/**
  * A slot-native view of the calling collection as a subgraph: the live node
  * slots in collection order with a dense [0, N) index, plus the live edge
  * slots (in collection order) and their membership set.  Algorithms walk the

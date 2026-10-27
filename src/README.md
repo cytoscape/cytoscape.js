@@ -7818,6 +7818,18 @@ fragment premium is **unmeasurable at scene level** on real hardware
   graph or folding the distance matrix's column.  The harmonic default
   is unchanged.
 
+**`normalization` on the `*Normalized` scores** (round 150).  Every
+`*Normalized` method divides by the collection's largest score, v3's
+rule, and still does by default.  NetworkX and igraph scale each
+measure its own way instead, so each method now takes the other
+library's scale as an option and rejects values that do not apply:
+`degreeCentralityNormalized` and `betweennessCentrality` take `'size'`
+(÷ n − 1, and ÷ (n − 1)(n − 2), halved when undirected);
+`closenessCentralityNormalized` takes `'size'` (harmonic ÷ n − 1, as
+igraph and graph-tool; classic already carries n − 1); and
+`katzCentrality` takes `'l2'` (÷ the Euclidean norm, NetworkX's
+`normalized=True`).
+
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over
   `cy.extent()` — the viewport in model coordinates — so the drawing

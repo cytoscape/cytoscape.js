@@ -30,6 +30,7 @@ import { csrFromTriplets, spmvDispatch, uploadCsr } from './algo-gpu-spmv.mjs';
 import {
   buildKatzSparse,
   katzResultFrom,
+  resolveKatzNormalization,
   resolveKatzParams,
 } from './katz-centrality.mjs';
 import type {
@@ -109,7 +110,7 @@ export const katzCentralityGpu = async (
   const { view, n, arcs, srcs, dsts, ws } = buildKatzSparse(coll, options);
 
   if (n === 0) {
-    return katzResultFrom(view, []);
+    return katzResultFrom(view, [], resolveKatzNormalization(options));
   }
 
   assertFits(ctx, Math.max(arcs, n) * 4, 'katzCentrality');
@@ -165,5 +166,5 @@ export const katzCentralityGpu = async (
     buffer.destroy();
   }
 
-  return katzResultFrom(view, out);
+  return katzResultFrom(view, out, resolveKatzNormalization(options));
 };

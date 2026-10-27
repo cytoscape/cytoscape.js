@@ -112,3 +112,26 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   fails the new spec and both undirected karate cases.  One `test:node` run failed `force-worker.test.mjs`'s bit-identical
   check; it passed alone three times and in the next full run, and
   touches no PageRank code.
+- **Items 3 and 4 landed (27 October).**  `direction: 'out' | 'in'`
+  (validated synchronously) reaches every lane through one switch:
+  `eachIncident`, `buildBrandesNeighbors` and `brandesCsr` take a
+  `reverse` flag that walks in-edges, which the single-root Dijkstra
+  (`dijkstraDense`, now shared with `dijkstra`), the CPU and worker BFS
+  and the GPU BFS use; Floyd–Warshall's CPU and GPU folds read the
+  column instead.  The classic form is one shared `closenessOfRow(sum,
+  reached, n, harmonic)`, so each lane now reports how many nodes it
+  reached: the worker range interleaves (sum, reached), and both WGSL
+  folds write a second `reached` buffer (a sum reduction in plain mode;
+  harmonic keeps its zero-distance mark).  The NetworkX reference calls
+  `closeness_centrality(wf_improved=True)` and `harmonic_centrality`
+  directly — reversed for `'out'`, as-is for `'in'` on the directed
+  graph — instead of the hand-written 1/Σd.  Specs: a hand-checked
+  directed path for both directions and modes on `cpu`, `workers`, BFS
+  and Floyd–Warshall, plus `direction` validation; the BFS-vs-FW and
+  disconnection specs now expect positive plain scores.  Browser: the
+  GPU parity specs gained both directions on both folds and pass on the
+  RX 580 (Chromium; WebKit skips WebGPU); the disconnection fixture
+  gained chords, because a bare directed ring sums distances to and
+  from a node alike, and with chords disabling the column fold fails
+  it.  Controls: forcing `reverse` off fails the hand spec and the
+  `wd` reference; restoring 1/Σd fails five.

@@ -265,6 +265,76 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     expect(res.closeness(a)).to.be.within(0.7, 0.8); // 3.33 / 4.5
   });
 
+  it('closenessCentrality: direction picks distances from or to the node (round 150)', async function () {
+    // a → b → c.  Out: a reaches b (1) and c (2), b reaches c; in: the
+    // mirror.  Classic is (r/Σd)·(r/(n − 1)) over the r reachable.
+    var path = cytoscape({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 'bc', source: 'b', target: 'c' } },
+      ],
+    });
+    var want = {
+      out: { harmonic: [1.5, 1, 0], classic: [2 / 3, 1 / 2, 0] },
+      in: { harmonic: [0, 1, 1.5], classic: [0, 1 / 2, 2 / 3] },
+    };
+    var ids = ['a', 'b', 'c'];
+
+    for (var direction of ['out', 'in']) {
+      for (var harmonic of [true, false]) {
+        var expected = want[direction][harmonic ? 'harmonic' : 'classic'];
+        var max = Math.max(...expected);
+        var opts = { directed: true, direction, harmonic };
+        var label = `${direction} harmonic=${harmonic}`;
+
+        expect(
+          ids.map((id) =>
+            path
+              .elements()
+              .closenessCentrality({ ...opts, root: path.$id(id) }),
+          ),
+          label,
+        ).to.eql(expected);
+
+        for (var executor of ['cpu', 'workers']) {
+          for (var weight of [undefined, () => 1]) {
+            var res = await path
+              .elements()
+              .closenessCentralityNormalized({ ...opts, executor, weight });
+
+            expect(
+              ids.map((id) => res.closeness(path.$id(id))),
+              `${label} ${executor} weighted=${weight != null}`,
+            ).to.eql(expected.map((v) => v / max));
+          }
+        }
+      }
+    }
+
+    // undirected, direction changes nothing
+    expect(
+      path
+        .elements()
+        .closenessCentrality({ root: path.$id('a'), direction: 'in' }),
+    ).to.equal(path.elements().closenessCentrality({ root: path.$id('a') }));
+
+    for (var bad of ['both', 1]) {
+      expect(() =>
+        path
+          .elements()
+          .closenessCentrality({ root: path.$id('a'), direction: bad }),
+      ).to.throw(TypeError, /direction/);
+      expect(() =>
+        path.elements().closenessCentralityNormalized({ direction: bad }),
+      ).to.throw(TypeError, /direction/);
+    }
+
+    path.destroy();
+  });
+
   it('closenessCentralityNormalized: the unweighted BFS path agrees with the FW route (72.3)', async function () {
     // an unweighted call walks a BFS per source; `weight: () => 1`
     // forces the Floyd–Warshall route over unit weights, whose
@@ -323,7 +393,9 @@ describe('gpu/algorithms: pageRank + centralities', function () {
           expect(nonZero).to.equal(n); // harmonic survives disconnection
         } else {
           expect(maxDelta, `plain directed=${directed}`).to.equal(0);
-          expect(nonZero).to.equal(0); // every node has an unreachable peer
+          // Wasserman–Faust (round 150): a node that reaches some of
+          // the others scores above 0 even with an unreachable peer
+          expect(nonZero).to.equal(n);
         }
       }
     }

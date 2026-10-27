@@ -783,7 +783,9 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
   }) => {
     const out = await page.evaluate(async () => {
       // two components: the unreachable pairs ride the sentinel band on
-      // the GPU, and a defect there moves plain-mode scores off 0
+      // the GPU, and plain mode's reached count (round 150's
+      // Wasserman–Faust form) must skip them.  Unit weights force the
+      // Floyd–Warshall fold, and a directed 'in' run folds its columns.
       const els = [];
 
       for (let i = 0; i < 40; i++) {
@@ -797,40 +799,71 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
         els.push({
           data: { source: 'n' + i, target: 'n' + (half + ((i + 1) % 20)) },
         });
+
+        // chords break the ring's symmetry, so distances to a node and
+        // from it differ (a bare directed ring sums both alike)
+        if (i % 7 === 0) {
+          els.push({
+            data: {
+              source: 'n' + i,
+              target: 'n' + (half + ((i * 3 + 5) % 20)),
+            },
+          });
+        }
       }
 
       const cy = cytoscape({ elements: els });
       const modes = {};
+      const unit = () => 1;
 
       for (const harmonic of [true, false]) {
-        const cpu = await cy
-          .elements()
-          .closenessCentralityNormalized({ harmonic, executor: 'cpu' });
-        const gpu = await cy
-          .elements()
-          .closenessCentralityNormalized({ harmonic, executor: 'gpu' });
-        let maxDelta = 0;
-        let gpuSum = 0;
+        for (const weight of [undefined, unit]) {
+          for (const [directed, direction] of [
+            [false, 'out'],
+            [true, 'out'],
+            [true, 'in'],
+          ]) {
+            const opts = { harmonic, weight, directed, direction };
+            const cpu = await cy
+              .elements()
+              .closenessCentralityNormalized({ ...opts, executor: 'cpu' });
+            const gpu = await cy
+              .elements()
+              .closenessCentralityNormalized({ ...opts, executor: 'gpu' });
+            let maxDelta = 0;
+            let gpuSum = 0;
 
-        cy.nodes().forEach((node) => {
-          maxDelta = Math.max(
-            maxDelta,
-            Math.abs(cpu.closeness(node) - gpu.closeness(node)),
-          );
-          gpuSum += gpu.closeness(node);
-        });
-        modes[harmonic ? 'harmonic' : 'plain'] = { maxDelta, gpuSum };
+            cy.nodes().forEach((node) => {
+              maxDelta = Math.max(
+                maxDelta,
+                Math.abs(cpu.closeness(node) - gpu.closeness(node)),
+              );
+              gpuSum += gpu.closeness(node);
+            });
+            modes[
+              `${harmonic ? 'harmonic' : 'plain'}-${weight ? 'fw' : 'bfs'}-` +
+                (directed ? direction : 'undirected')
+            ] = { maxDelta, gpuSum };
+          }
+        }
       }
 
       return modes;
     });
 
-    // harmonic scores survive disconnection; plain mode answers 0
-    // everywhere (every node has an unreachable peer) on BOTH sides
-    expect(out.harmonic.maxDelta).toBeLessThan(1e-4);
-    expect(out.harmonic.gpuSum).toBeGreaterThan(1);
-    expect(out.plain.maxDelta).toBe(0);
-    expect(out.plain.gpuSum).toBe(0);
+    // both modes survive disconnection (round 150: plain is
+    // Wasserman–Faust, no longer 0 everywhere); integer distances keep
+    // plain bit-equal across executors
+    expect(out['plain-fw-in'].gpuSum).not.toBe(out['plain-fw-out'].gpuSum);
+
+    for (const [key, row] of Object.entries(out)) {
+      expect(row.gpuSum, key).toBeGreaterThan(1);
+      if (key.startsWith('plain')) {
+        expect(row.maxDelta, key).toBe(0);
+      } else {
+        expect(row.maxDelta, key).toBeLessThan(1e-4);
+      }
+    }
   });
 
   test('closenessCentralityNormalized: the unweighted GPU BFS agrees across batches, modes and directions (72.3)', async ({
@@ -873,15 +906,21 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
       const cy = cytoscape({ elements: els });
       const rows = {};
 
-      for (const directed of [false, true]) {
+      for (const [directed, direction] of [
+        [false, 'out'],
+        [true, 'out'],
+        [true, 'in'],
+      ]) {
         for (const harmonic of [true, false]) {
           const cpu = await cy.elements().closenessCentralityNormalized({
             directed,
+            direction,
             harmonic,
             executor: 'cpu',
           });
           const gpu = await cy.elements().closenessCentralityNormalized({
             directed,
+            direction,
             harmonic,
             executor: 'gpu',
           });
@@ -896,7 +935,7 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
           });
 
           rows[
-            `${directed ? 'directed' : 'undirected'}-${harmonic ? 'harmonic' : 'plain'}`
+            `${directed ? direction : 'undirected'}-${harmonic ? 'harmonic' : 'plain'}`
           ] = { maxDelta, nonZero };
         }
       }
@@ -905,14 +944,13 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
     });
 
     for (const [key, row] of Object.entries(out)) {
-      // harmonic scores survive the disconnection; plain ones answer 0
-      // everywhere on both sides (every node has an unreachable peer)
+      // both modes survive the disconnection (round 150: plain is
+      // Wasserman–Faust); plain stays bit-equal on integer levels
+      expect(row.nonZero, key).toBe(300);
       if (key.endsWith('harmonic')) {
         expect(row.maxDelta, key).toBeLessThan(1e-4);
-        expect(row.nonZero, key).toBe(300);
       } else {
         expect(row.maxDelta, key).toBe(0);
-        expect(row.nonZero, key).toBe(0);
       }
     }
   });

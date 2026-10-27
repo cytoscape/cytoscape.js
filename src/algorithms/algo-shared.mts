@@ -94,16 +94,19 @@ export const subgraph = (coll: Collection): SubgraphView => {
 /**
  * Visit each subgraph edge incident to node slot `u` (skipping loops, edges
  * outside the collection, and edges whose far endpoint is outside it).
- * Directed: out-edges only; undirected: out then in.
+ * Directed: out-edges only, or in-edges only when `reverse` (a walk of
+ * the transposed graph — round 150's incoming closeness); undirected:
+ * out then in.
  */
 export const eachIncident = (
   view: SubgraphView,
   u: number,
   directed: boolean,
   cb: (edgeSlot: number, otherSlot: number) => void,
+  reverse = false,
 ): void => {
   const { store, endpoints, edgeIn, index } = view;
-  const out = store.adj.outEdges(u);
+  const out = directed && reverse ? [] : store.adj.outEdges(u);
 
   for (let i = 0; i < out.length; i++) {
     const e = out[i];
@@ -116,7 +119,7 @@ export const eachIncident = (
     cb(e, t);
   }
 
-  if (directed) {
+  if (directed && !reverse) {
     return;
   }
 

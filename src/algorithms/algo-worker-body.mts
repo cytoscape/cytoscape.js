@@ -325,7 +325,7 @@ export function algoWorkerBody(
     return C;
   };
 
-  // -- closeness row sums by BFS: `closenessRowSumsBfs`, per range ------
+  // -- closeness rows by BFS: `closenessRowsBfs`, per range -------------
   const closenessRange = (
     snap: ClosenessSnapshot,
     s0: number,
@@ -335,7 +335,8 @@ export function algoWorkerBody(
     const starts = snap.rowPtr;
     const entries = snap.colIdx;
     const harmonic = snap.harmonic;
-    const sums = new Float64Array(s1 - s0);
+    // (sum, reached) per source, interleaved
+    const sums = new Float64Array((s1 - s0) * 2);
     const dist = new Int32Array(n);
     const queue = new Int32Array(n);
 
@@ -365,7 +366,8 @@ export function algoWorkerBody(
         }
       }
 
-      sums[s - s0] = !harmonic && tail < n ? Infinity : sum;
+      sums[(s - s0) * 2] = sum;
+      sums[(s - s0) * 2 + 1] = tail - 1;
     }
 
     return sums;

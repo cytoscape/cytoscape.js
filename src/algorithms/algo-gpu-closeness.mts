@@ -14,11 +14,15 @@ folds each batch lane's distance row on the device — O(n·(n+E)) work
 where FW is O(n³), and a readback of n floats either way.
 
 Unreachable pairs ride the FW sentinel band; neither fold ever
-manufactures an Inf (the WGSL finite-math rule): a row that must read
-as infinite (plain mode with an unreachable pair, harmonic mode with a
-zero distance) writes the sentinel once, and the readback maps the
-band back before the shared final step and normalization run on the
-CPU.
+manufactures an Inf (the WGSL finite-math rule).  Each fold writes a
+row's sum over the reachable nodes and, in plain mode, how many there
+are (round 150: the classic form's Wasserman–Faust correction needs
+the count); a harmonic row with a zero distance, which the CPU sums to
+Infinity, writes the sentinel once, and the readback maps the band
+back before the shared final step (`closenessOfRow`) and
+normalization run on the CPU.  Incoming closeness (`direction: 'in'`)
+folds Floyd–Warshall's column instead of its row, and walks the BFS
+over the transposed neighbor lists.
 */
 
 import type { Collection } from '../collection.mjs';
@@ -40,30 +44,32 @@ import { initFloydWarshall } from './floyd-warshall.mjs';
 import { buildBrandesNeighbors } from './betweenness-centrality.mjs';
 import { subgraph } from './algo-shared.mjs';
 import {
-  closenessOfRowSum,
+  closenessOfRow,
   closenessResultFrom,
+  closenessReverse,
 } from './closeness-centrality.mjs';
 import type {
   ClosenessCentralityOptions,
   ClosenessCentralityNormalizedResult,
 } from './closeness-centrality.mjs';
 
-/** Fold each relaxed distance row into its closeness row sum — one
- * workgroup per row, lanes striding columns and tree-reducing, the
- * shape every row reduction here takes (the 65.8 occupancy rule).
- * p.r carries the mode (1 = harmonic, 0 = plain).  Harmonic sums 1/d
- * for reachable pairs (an unreachable pair contributes 0, as on the
- * CPU where 1/Infinity vanishes); plain sums d.  A row that the CPU
- * would sum to Infinity — plain with any unreachable pair, harmonic
- * with a zero distance — is *marked* via a second reduction and
- * written as the sentinel once, because summing sentinels could
- * overflow f32 and WGSL implementations may assume floats are
- * finite. */
+/** Fold each relaxed distance row (or column) into its closeness row
+ * sum — one workgroup per node, lanes striding the other index and
+ * tree-reducing, the shape every row reduction here takes (the 65.8
+ * occupancy rule).  p.r carries two flags: 1 = harmonic, 2 = fold the
+ * column (distances *to* the node, `direction: 'in'`).  Both modes
+ * skip unreachable pairs.  Plain sums d and counts the reachable
+ * nodes into `reached` (round 150's Wasserman–Faust form needs r);
+ * harmonic sums 1/d, and a row with a zero distance, which the CPU
+ * sums to Infinity, is *marked* by the second reduction and written as
+ * the sentinel once, because WGSL implementations may assume floats
+ * are finite. */
 const CLOSENESS_ROWS = wgsl`
 struct P { n : u32, r : f32 }
 @group(0) @binding(0) var<uniform> p : P;
 @group(0) @binding(1) var<storage, read> dist : array<f32>;
 @group(0) @binding(2) var<storage, read_write> sums : array<f32>;
+@group(0) @binding(3) var<storage, read_write> reached : array<f32>;
 
 var<workgroup> partial : array<f32, ${WG}>;
 
@@ -74,28 +80,27 @@ fn main(
 ) {
   let i = wid.x;
   let n = p.n;
-  let harmonic = p.r == 1.0;
+  let flags = u32(p.r);
+  let harmonic = (flags & 1u) == 1u;
+  let column = (flags & 2u) == 2u;
   var s = 0.0;
-  var marked = 0.0;
+  var c = 0.0;
 
   for (var j = lid.x; j < n; j = j + ${WG}u) {
     if (j == i) { continue; }
 
-    let d = dist[i * n + j];
+    let d = select(dist[i * n + j], dist[j * n + i], column);
 
-    if (harmonic) {
-      if (d < ${FINF_BAND}) {
+    if (d < ${FINF_BAND}) {
+      if (harmonic) {
         if (d <= 0.0) {
-          marked = 1.0;
+          c = 1.0;
         } else {
           s = s + 1.0 / d;
         }
-      }
-    } else {
-      if (d < ${FINF_BAND}) {
-        s = s + d;
       } else {
-        marked = 1.0;
+        s = s + d;
+        c = c + 1.0;
       }
     }
   }
@@ -113,21 +118,26 @@ fn main(
   let total = partial[0];
 
   // the barrier before reuse is load-bearing: every lane reads
-  // partial[0] before any lane overwrites it for the mark reduction
+  // partial[0] before any lane overwrites it for the second reduction
   workgroupBarrier();
 
-  partial[lid.x] = marked;
+  partial[lid.x] = c;
   workgroupBarrier();
 
+  // plain counts (a sum); harmonic marks (a max)
   for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
     if (lid.x < stride) {
-      partial[lid.x] = max(partial[lid.x], partial[lid.x + stride]);
+      let a = partial[lid.x];
+      let b = partial[lid.x + stride];
+
+      partial[lid.x] = select(a + b, max(a, b), harmonic);
     }
     workgroupBarrier();
   }
 
   if (lid.x == 0u) {
-    sums[i] = select(total, ${FINF}, partial[0] > 0.0);
+    sums[i] = select(total, ${FINF}, harmonic && partial[0] > 0.0);
+    reached[i] = partial[0];
   }
 }
 `;
@@ -151,6 +161,7 @@ export const closenessCentralityNormalizedGpu = async (
   options: ClosenessCentralityOptions = {},
 ): Promise<ClosenessCentralityNormalizedResult> => {
   const harmonic = options.harmonic !== false;
+  const reverse = closenessReverse(options);
   const { view, n, dist, next } = initFloydWarshall(coll, options);
 
   assertFits(ctx, n * n * 4, 'closenessCentralityNormalized');
@@ -167,42 +178,65 @@ export const closenessCentralityNormalizedGpu = async (
   );
 
   const sums = storageOf(ctx, n * 4);
-  const pRows = paramsNR(ctx, n, harmonic ? 1 : 0);
+  const reached = storageOf(ctx, n * 4);
+  const pRows = paramsNR(ctx, n, (harmonic ? 1 : 0) + (reverse ? 2 : 0));
   const rows = getPipeline(ctx, 'closeness-rows', CLOSENESS_ROWS);
 
   dispatches.push({
     pipeline: rows,
     // one workgroup per row
-    group: groupFor(ctx, rows, [pRows, distBuf, sums]),
+    group: groupFor(ctx, rows, [pRows, distBuf, sums, reached]),
     groups: [n],
   });
 
   submitPass(ctx, dispatches);
 
   const rowSums = new Float32Array(await readBack(ctx, sums, n * 4));
+  const rowReached = new Float32Array(await readBack(ctx, reached, n * 4));
 
-  for (const buffer of [distBuf, nextBuf, sums, pRows, ...scratch]) {
+  for (const buffer of [distBuf, nextBuf, sums, reached, pRows, ...scratch]) {
     buffer.destroy();
   }
 
+  return closenessResultFrom(
+    view,
+    closenessesFromReadback(n, rowSums, rowReached, harmonic),
+  );
+};
+
+/**
+ * Map the read-back row sums and reached counts through the shared
+ * final step — the sentinel band back to Infinity first.
+ *
+ * @param n — the node count
+ * @param rowSums — per-node sums
+ * @param rowReached — per-node reached counts (plain mode)
+ * @param harmonic — the mode
+ * @returns the scores, by dense index
+ */
+const closenessesFromReadback = (
+  n: number,
+  rowSums: Float32Array,
+  rowReached: Float32Array,
+  harmonic: boolean,
+): Float64Array => {
   const closenesses = new Float64Array(n);
 
   for (let i = 0; i < n; i++) {
     const sum = rowSums[i] >= FINF_BAND ? Infinity : rowSums[i];
 
-    closenesses[i] = closenessOfRowSum(sum, harmonic);
+    closenesses[i] = closenessOfRow(sum, rowReached[i], n, harmonic);
   }
 
-  return closenessResultFrom(view, closenesses);
+  return closenesses;
 };
 
 /** Fold one batch lane's BFS levels into its source's row sum — one
  * workgroup per lane, lanes striding the row and tree-reducing.
  * p.r carries the mode (1 = harmonic, 0 = plain).  A level of −1 is
- * unreached (harmonic contributes 0; plain marks the row infinite),
- * the source's own 0 is skipped, so a zero distance never reaches the
- * harmonic 1/d.  The marked rows write the sentinel once, as the FW
- * fold does. */
+ * unreached and skipped; the source's own 0 is skipped, so a zero
+ * distance never reaches the harmonic 1/d.  Plain also counts the
+ * reached nodes into `reached`, as the FW fold does (round 150). */
 const CLOSENESS_BFS_FOLD = wgsl`
 struct BP { n : u32, batch : u32 }
 struct P { n : u32, r : f32 }
@@ -211,6 +245,7 @@ struct P { n : u32, r : f32 }
 @group(0) @binding(2) var<storage, read> sources : array<u32>;
 @group(0) @binding(3) var<storage, read> d : array<i32>;
 @group(0) @binding(4) var<storage, read_write> sums : array<f32>;
+@group(0) @binding(5) var<storage, read_write> reached : array<f32>;
 
 var<workgroup> partial : array<f32, ${WG}>;
 
@@ -228,21 +263,21 @@ fn main(
   let n = bp.n;
   let harmonic = p.r == 1.0;
   var s = 0.0;
-  var marked = 0.0;
+  var c = 0.0;
 
   for (var w = lid.x; w < n; w = w + ${WG}u) {
     if (w == src) { continue; }
 
     let level = d[b * n + w];
 
-    if (level < 0) {
-      if (!harmonic) {
-        marked = 1.0;
+    if (level >= 0) {
+      if (harmonic) {
+        s = s + 1.0 / f32(level);
+      } else {
+        s = s + f32(level);
       }
-    } else if (harmonic) {
-      s = s + 1.0 / f32(level);
-    } else {
-      s = s + f32(level);
+
+      c = c + 1.0;
     }
   }
 
@@ -260,18 +295,19 @@ fn main(
 
   workgroupBarrier();
 
-  partial[lid.x] = marked;
+  partial[lid.x] = c;
   workgroupBarrier();
 
   for (var stride = ${WG / 2}u; stride > 0u; stride = stride >> 1u) {
     if (lid.x < stride) {
-      partial[lid.x] = max(partial[lid.x], partial[lid.x + stride]);
+      partial[lid.x] = partial[lid.x] + partial[lid.x + stride];
     }
     workgroupBarrier();
   }
 
   if (lid.x == 0u) {
-    sums[src] = select(total, ${FINF}, partial[0] > 0.0);
+    sums[src] = total;
+    reached[src] = partial[0];
   }
 }
 `;
@@ -295,6 +331,7 @@ export const closenessCentralityNormalizedBfsGpu = async (
 ): Promise<ClosenessCentralityNormalizedResult> => {
   const harmonic = options.harmonic !== false;
   const directed = options.directed === true;
+  const reverse = closenessReverse(options);
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
 
@@ -302,9 +339,10 @@ export const closenessCentralityNormalizedBfsGpu = async (
     return closenessResultFrom(view, []);
   }
 
-  const { neighbors } = buildBrandesNeighbors(view, directed);
+  const { neighbors } = buildBrandesNeighbors(view, directed, reverse);
   const plan = bfsPlan(ctx, neighbors, directed);
   const sums = storageOf(ctx, n * 4);
+  const reached = storageOf(ctx, n * 4);
   const pRows = paramsNR(ctx, n, harmonic ? 1 : 0);
   const fold = getPipeline(ctx, 'closeness-bfs-fold', CLOSENESS_BFS_FOLD);
   const foldGroup = groupFor(ctx, fold, [
@@ -313,6 +351,7 @@ export const closenessCentralityNormalizedBfsGpu = async (
     plan.sources,
     plan.d,
     sums,
+    reached,
   ]);
 
   for (let start = 0; start < n; start += BATCH) {
@@ -322,18 +361,15 @@ export const closenessCentralityNormalizedBfsGpu = async (
   }
 
   const rowSums = new Float32Array(await readBack(ctx, sums, n * 4));
+  const rowReached = new Float32Array(await readBack(ctx, reached, n * 4));
 
   plan.destroy();
   sums.destroy();
+  reached.destroy();
   pRows.destroy();
 
-  const closenesses = new Float64Array(n);
-
-  for (let i = 0; i < n; i++) {
-    const sum = rowSums[i] >= FINF_BAND ? Infinity : rowSums[i];
-
-    closenesses[i] = closenessOfRowSum(sum, harmonic);
-  }
-
-  return closenessResultFrom(view, closenesses);
+  return closenessResultFrom(
+    view,
+    closenessesFromReadback(n, rowSums, rowReached, harmonic),
+  );
 };

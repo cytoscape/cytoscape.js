@@ -275,7 +275,7 @@ describe('algorithms: the matrix families (round 69)', function () {
       ).to.throw(TypeError, /executor/);
     });
 
-    it('harmonic tolerates disconnection where plain answers 0', async function () {
+    it('harmonic and classic both tolerate disconnection', async function () {
       var dcy = cytoscape({
         elements: [
           { data: { id: 'a' } },
@@ -294,9 +294,10 @@ describe('algorithms: the matrix families (round 69)', function () {
         .elements()
         .closenessCentralityNormalized({ harmonic: false });
 
-      // every node has an unreachable peer, so every sum is infinite,
-      // every score 0, and the accessor's max-of-zero guard answers 0
-      expect(plain.closeness(dcy.$id('a'))).to.equal(0);
+      // Wasserman–Faust (round 150): a reaches r = 1 of n − 1 = 2 at
+      // Σd = 1, so (1/1)·(1/2) — the max; z reaches none and scores 0.
+      // v3's 1/Σd made every score 0 once any node was unreachable.
+      expect(plain.closeness(dcy.$id('a'))).to.equal(1);
       expect(plain.closeness(dcy.$id('z'))).to.equal(0);
     });
   });

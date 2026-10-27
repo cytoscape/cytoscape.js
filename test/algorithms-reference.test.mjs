@@ -325,10 +325,26 @@ describe('algorithms against NetworkX / SciPy references', function () {
     for (const [name, ref] of Object.entries(REF.closenessCentrality)) {
       it(`closenessCentrality on ${name}, harmonic and classic`, async function () {
         const { g, eles, node, directed } = build(name);
-        const opts = { directed, ...(ref.weighted ? { weight } : {}) };
 
-        for (const harmonic of [true, false]) {
-          const want = harmonic ? ref.harmonic : ref.classic;
+        for (const [harmonic, direction] of [
+          [true, 'out'],
+          [false, 'out'],
+          ...(directed
+            ? [
+                [true, 'in'],
+                [false, 'in'],
+              ]
+            : []),
+        ]) {
+          const opts = {
+            directed,
+            direction,
+            ...(ref.weighted ? { weight } : {}),
+          };
+          const suffix = direction === 'in' ? 'In' : '';
+          const want = harmonic
+            ? ref['harmonic' + suffix]
+            : ref['classic' + suffix];
           const max = Math.max(...g.nodes.map((id) => want[id]));
           const normalized = await eles.closenessCentralityNormalized({
             ...opts,
@@ -342,7 +358,7 @@ describe('algorithms against NetworkX / SciPy references', function () {
               eles.closenessCentrality({ ...opts, harmonic, root: node(id) }),
             want,
             1e-12,
-            harmonic ? 'harmonic' : 'classic',
+            (harmonic ? 'harmonic ' : 'classic ') + direction,
           );
           // normalised by the collection's maximum (0 when every score is)
           perNode(

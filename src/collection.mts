@@ -3363,11 +3363,20 @@ export class Collection<
   declare degreeCentralityNormalised: this['degreeCentralityNormalized'];
 
   /**
-   * Closeness centrality of one node — the reciprocal of its summed
-   * shortest-path distances to the rest of the collection.
+   * Closeness centrality of one node — how near it is, by shortest
+   * path, to the rest of the collection.  Harmonic (default): Σ 1/d,
+   * an unreachable node contributing 0.  `harmonic: false`: the classic
+   * (n − 1)/Σd, and over r reachable nodes the Wasserman–Faust
+   * (r/Σd)·(r/(n − 1)) — NetworkX's definition (round 150; v3's 1/Σd
+   * was n − 1 times smaller, and 0 once any node was unreachable).
+   * Directed runs sum distances from the node (`direction: 'out'`,
+   * default, as R igraph and graph-tool) or to it (`'in'`, as NetworkX
+   * and Neo4j GDS).
    *
-   * @param options — `{ root, weight, directed, harmonic }`
+   * @param options — `{ root, weight, directed, direction, harmonic }`
    * @returns the closeness score
+   * @throws if `root` is not a node of the collection, or `direction`
+   *   is neither 'out' nor 'in'
    */
   closenessCentrality(options?: ClosenessCentralityOptions): number {
     return closenessCentralityImpl(this, options);
@@ -3389,12 +3398,15 @@ export class Collection<
    * Floyd–Warshall, O(n³), and take the offload lane (round 129.1: one pool worker).  The single-root
    * `closenessCentrality` stays synchronous.
    *
-   * @param options — `{ weight, directed, harmonic, executor }`
+   * Each score is `closenessCentrality`'s for that node (the same
+   * `harmonic` and `direction`), divided by the largest.
+   *
+   * @param options — `{ weight, directed, direction, harmonic, executor }`
    * @returns a promise of a `closeness` accessor
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` or
-   *   `'workers'` is unavailable in this environment, or `'workers'` is
+   * @throws if `executor` or `direction` is invalid; rejects if
+   *   `executor: 'gpu'` or `'workers'` is unavailable in this environment, or `'workers'` is
    *   asked of a weighted run
    */
   closenessCentralityNormalized(

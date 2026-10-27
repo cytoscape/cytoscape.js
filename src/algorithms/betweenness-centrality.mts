@@ -129,14 +129,21 @@ export const BETWEENNESS_WEIGHTED_WORKERS_MIN_N = 128;
  * @param view — the subgraph view
  * @param directed — the traversal mode
  * @param weight — the caller's weight fn, or undefined for unit steps
+ * @param reverse — when directed, walk in-edges (see
+ *   `buildBrandesNeighbors`)
  * @returns `rowPtr` / `colIdx`, and `w` (one per entry) when weighted
  */
 export const brandesCsr = (
   view: ReturnType<typeof subgraph>,
   directed: boolean,
   weight: WeightFn | undefined,
+  reverse = false,
 ): { rowPtr: Int32Array; colIdx: Int32Array; w: Float64Array | null } => {
-  const { neighbors, neighborEdge } = buildBrandesNeighbors(view, directed);
+  const { neighbors, neighborEdge } = buildBrandesNeighbors(
+    view,
+    directed,
+    reverse,
+  );
   const n = view.nodeSlots.length;
   const rowPtr = new Int32Array(n + 1);
 
@@ -243,15 +250,19 @@ const runBetweennessWorkerSnapshot = async (
 /**
  * Build the deduped dense-index neighbor lists (plus one
  * representative edge slot per pair, for weights) both executors
- * traverse.  Directed: out-neighbors only; undirected: both sides.
+ * traverse.  Directed: out-neighbors only, or in-neighbors only when
+ * `reverse` (the transposed graph, for round 150's incoming
+ * closeness); undirected: both sides.
  *
  * @param view — the subgraph view
  * @param directed — the traversal mode
+ * @param reverse — when directed, list in-neighbors instead
  * @returns per-node neighbor and representative-edge lists
  */
 export const buildBrandesNeighbors = (
   view: ReturnType<typeof subgraph>,
   directed: boolean,
+  reverse = false,
 ): { neighbors: number[][]; neighborEdge: number[][] } => {
   const { store, endpoints, index, nodeSlots, edgeIn } = view;
   const n = nodeSlots.length;
@@ -294,16 +305,20 @@ export const buildBrandesNeighbors = (
       }
     };
 
-    const out = store.adj.outEdges(vSlot);
+    if (!(directed && reverse)) {
+      const out = store.adj.outEdges(vSlot);
 
-    for (let i = 0; i < out.length; i++) {
-      consider(out[i], endpoints[out[i] * 2 + 1], true);
+      for (let i = 0; i < out.length; i++) {
+        consider(out[i], endpoints[out[i] * 2 + 1], true);
+      }
     }
 
-    if (!directed) {
+    if (!directed || reverse) {
       const inn = store.adj.inEdges(vSlot);
 
       for (let i = 0; i < inn.length; i++) {
+        // reversed, every step is an in-edge, so the first one between
+        // the pair keeps the weight
         consider(inn[i], endpoints[inn[i] * 2], false);
       }
     }

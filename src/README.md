@@ -7805,6 +7805,18 @@ fragment premium is **unmeasurable at scene level** on real hardware
   NetworkX and igraph do.  `directed: true` reproduces v3.  The
   benchmark rows and stamped crossovers keep `directed: true`, the
   workload they were measured on.
+- **Classic closeness is NetworkX's, and a directed run picks its
+  direction** (round 150).  v3's `harmonic: false` was 1/Σd: (n − 1)
+  times smaller than the textbook (n − 1)/Σd (Freeman), and 0 for every
+  node once any node was unreachable.  v4 uses (n − 1)/Σd, and over the
+  r reachable nodes the Wasserman–Faust (r/Σd)·(r/(n − 1)) — NetworkX's
+  `closeness_centrality` default.  Directed runs sum distances *from*
+  the node, v3's direction and R igraph's and graph-tool's default; the
+  new `direction: 'in'` sums distances *to* it, as NetworkX, Neo4j GDS
+  and Boldi–Vigna do, and every lane (single root, BFS, workers,
+  Floyd–Warshall, both GPU folds) takes it by walking the transposed
+  graph or folding the distance matrix's column.  The harmonic default
+  is unchanged.
 
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over

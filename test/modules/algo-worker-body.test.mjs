@@ -124,8 +124,9 @@ const exercise = (port) => {
     snapshot: { kind: 'closeness', n: 4, rowPtr, colIdx, harmonic: true },
   });
   port.send({ type: 'job', id: 7, s0: 1, s1: 3 });
-  // node b: 1 + 1 + 1/2; node c: the same by symmetry
-  expect(Array.from(port.replies[6].out)).to.deep.equal([2.5, 2.5]);
+  // (sum, reached) per source since round 150: node b sums
+  // 1 + 1 + 1/2 over 3 reached; node c the same by symmetry
+  expect(Array.from(port.replies[6].out)).to.deep.equal([2.5, 3, 2.5, 3]);
 
   // a snapshot of an unknown kind fails loudly rather than answering
   // zeros

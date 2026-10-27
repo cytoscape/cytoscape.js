@@ -4654,7 +4654,18 @@ interface ClosenessCentralityOptions {
   root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
-  /** sum 1/d (default, tolerates disconnection) instead of 1/sum d */
+  /**
+   * which distances a directed run sums (round 150): `'out'` (default)
+   * from the node to the others — v3's, R igraph's `mode = "out"` and
+   * graph-tool's — or `'in'`, from the others to the node — NetworkX's,
+   * Neo4j GDS's and Boldi–Vigna's.  Ignored when undirected.
+   */
+  direction?: 'out' | 'in';
+  /**
+   * Σ 1/d (default, tolerates disconnection), or the classic
+   * (n − 1)/Σd with the Wasserman–Faust correction (round 150): over
+   * the r nodes reachable, (r/Σd)·(r/(n − 1)), 0 when none is
+   */
   harmonic?: boolean;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Read by the whole-collection `closenessCentralityNormalized` only —
@@ -7340,11 +7351,20 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
   dcn: this['degreeCentralityNormalized'];
   degreeCentralityNormalised: this['degreeCentralityNormalized'];
   /**
-   * Closeness centrality of one node — the reciprocal of its summed
-   * shortest-path distances to the rest of the collection.
+   * Closeness centrality of one node — how near it is, by shortest
+   * path, to the rest of the collection.  Harmonic (default): Σ 1/d,
+   * an unreachable node contributing 0.  `harmonic: false`: the classic
+   * (n − 1)/Σd, and over r reachable nodes the Wasserman–Faust
+   * (r/Σd)·(r/(n − 1)) — NetworkX's definition (round 150; v3's 1/Σd
+   * was n − 1 times smaller, and 0 once any node was unreachable).
+   * Directed runs sum distances from the node (`direction: 'out'`,
+   * default, as R igraph and graph-tool) or to it (`'in'`, as NetworkX
+   * and Neo4j GDS).
    *
-   * @param options — `{ root, weight, directed, harmonic }`
+   * @param options — `{ root, weight, directed, direction, harmonic }`
    * @returns the closeness score
+   * @throws if `root` is not a node of the collection, or `direction`
+   *   is neither 'out' nor 'in'
    */
   closenessCentrality(options?: ClosenessCentralityOptions): number;
   cc: this['closenessCentrality'];
@@ -7362,12 +7382,15 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * Floyd–Warshall, O(n³), and take the offload lane (round 129.1: one pool worker).  The single-root
    * `closenessCentrality` stays synchronous.
    *
-   * @param options — `{ weight, directed, harmonic, executor }`
+   * Each score is `closenessCentrality`'s for that node (the same
+   * `harmonic` and `direction`), divided by the largest.
+   *
+   * @param options — `{ weight, directed, direction, harmonic, executor }`
    * @returns a promise of a `closeness` accessor
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` or
-   *   `'workers'` is unavailable in this environment, or `'workers'` is
+   * @throws if `executor` or `direction` is invalid; rejects if
+   *   `executor: 'gpu'` or `'workers'` is unavailable in this environment, or `'workers'` is
    *   asked of a weighted run
    */
   closenessCentralityNormalized(options?: ClosenessCentralityOptions): AlgoRun<ClosenessCentralityNormalizedResult>;

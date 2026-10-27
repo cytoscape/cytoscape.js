@@ -306,21 +306,21 @@ def centralities(G, refs):
             key = f'{name}{"-dir" if as_digraph else ""}{"-w" if weighted else ""}-d{d}'
             refs['pageRank'][key] = per_node(g, pr)
 
-    # closeness from each node, harmonic (sum 1/d) and classic (1/sum d)
+    # closeness, harmonic (sum 1/d) and classic ((n-1)/sum d with the
+    # Wasserman-Faust correction, round 150), both NetworkX's own.
+    # NetworkX sums distances *to* the node; v4's default direction is
+    # from it, which is NetworkX on the reversed graph, and a directed
+    # graph also records v4's direction: 'in', NetworkX unreversed
     for name, weighted in (('karate', False), ('wu', True), ('wd', True), ('disc', True)):
         g = G[name]
         Gx = nx_graph(g, multi=True)
         w = 'w' if weighted else None
-        harmonic = nx.harmonic_centrality(Gx.reverse() if g['directed'] else Gx, distance=w)
-        classic = {}
-        for u in g['nodes']:
-            d = nx.single_source_dijkstra_path_length(Gx, u, weight=w or (lambda *_: 1))
-            classic[u] = 0.0 if len(d) < len(g['nodes']) else 1 / sum(d.values())
-        refs['closenessCentrality'][name] = {
-            'weighted': weighted,
-            'harmonic': per_node(g, harmonic),
-            'classic': per_node(g, classic),
-        }
+        ref = {'weighted': weighted}
+        for suffix, D in (('', Gx.reverse() if g['directed'] else Gx),
+                          *((('In', Gx),) if g['directed'] else ())):
+            ref['harmonic' + suffix] = per_node(g, nx.harmonic_centrality(D, distance=w))
+            ref['classic' + suffix] = per_node(g, nx.closeness_centrality(D, distance=w, wf_improved=True))
+        refs['closenessCentrality'][name] = ref
 
     # betweenness, NetworkX's unnormalized definition (round 150 halved
     # v4's undirected scores to it)

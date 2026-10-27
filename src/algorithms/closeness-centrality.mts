@@ -1,14 +1,13 @@
 import type { Collection } from '../collection.mjs';
-import { dijkstra } from './dijkstra.mjs';
+import { dijkstraDense } from './dijkstra.mjs';
 import { initFloydWarshall } from './floyd-warshall.mjs';
-import { subgraph, firstNodeSlot } from './algo-shared.mjs';
+import { subgraph, firstNodeSlot, weightAt } from './algo-shared.mjs';
 import type { SubgraphView, WeightFn } from './algo-shared.mjs';
 import { GPU_MIN_N, inThread, resolveExecutor, runAlgo } from './executor.mjs';
 import type { AlgoExecutor, OffloadLane } from './executor.mjs';
 import type { AlgoRun } from './cancel.mjs';
 import type { AlgoWorkers } from './algo-workers.mjs';
 import { gpuCall } from './gpu-registry.mjs';
-import { GROUP_NODES } from '../contract.mjs';
 import { brandesCsr } from './betweenness-centrality.mjs';
 import { FLOYD_WARSHALL_OFFLOAD_MIN_N } from './floyd-warshall.mjs';
 
@@ -60,7 +59,18 @@ export interface ClosenessCentralityOptions {
   root?: Collection | null;
   weight?: WeightFn;
   directed?: boolean;
-  /** sum 1/d (default, tolerates disconnection) instead of 1/sum d */
+  /**
+   * which distances a directed run sums (round 150): `'out'` (default)
+   * from the node to the others — v3's, R igraph's `mode = "out"` and
+   * graph-tool's — or `'in'`, from the others to the node — NetworkX's,
+   * Neo4j GDS's and Boldi–Vigna's.  Ignored when undirected.
+   */
+  direction?: 'out' | 'in';
+  /**
+   * Σ 1/d (default, tolerates disconnection), or the classic
+   * (n − 1)/Σd with the Wasserman–Faust correction (round 150): over
+   * the r nodes reachable, (r/Σd)·(r/(n − 1)), 0 when none is
+   */
   harmonic?: boolean;
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * Read by the whole-collection `closenessCentralityNormalized` only —
@@ -75,39 +85,68 @@ export interface ClosenessCentralityNormalizedResult {
   closeness(node: Collection): number;
 }
 
+/**
+ * Whether a run walks the transposed graph: a directed run asked for
+ * incoming distances.  Validates `direction`.
+ *
+ * @param options — the caller's options
+ * @returns true when the walk follows in-edges
+ * @throws if `direction` is neither 'out' nor 'in'
+ */
+export const closenessReverse = (
+  options: ClosenessCentralityOptions,
+): boolean => {
+  const direction = options.direction ?? 'out';
+
+  if (direction !== 'out' && direction !== 'in') {
+    throw new TypeError(
+      "`direction` must be 'out' or 'in' — got " + String(options.direction),
+    );
+  }
+
+  return options.directed === true && direction === 'in';
+};
+
 /** Closeness centrality of `root` within the calling collection. */
 export const closenessCentrality = (
   coll: Collection,
   options: ClosenessCentralityOptions = {},
 ): number => {
   const harmonic = options.harmonic !== false;
+  const reverse = closenessReverse(options);
   const view = subgraph(coll);
   const rootSlot = firstNodeSlot(view, options.root, 'root');
+  const root = rootSlot == null ? undefined : view.index.get(rootSlot);
 
-  if (rootSlot == null) {
-    throw new TypeError('closenessCentrality requires a `root` node');
+  if (root == null) {
+    throw new TypeError(
+      'closenessCentrality requires a `root` node in the calling collection',
+    );
   }
 
-  const di = dijkstra(coll, [
-    {
-      root: options.root as Collection,
-      weight: options.weight,
-      directed: options.directed,
-    },
-  ]);
-  let totalDistance = 0;
+  const { dist } = dijkstraDense(
+    view,
+    root,
+    weightAt(view, options.weight),
+    options.directed === true,
+    reverse,
+  );
+  const n = dist.length;
+  let sum = 0;
+  let reached = 0;
 
-  for (const slot of view.nodeSlots) {
-    if (slot === rootSlot) {
+  for (let j = 0; j < n; j++) {
+    const d = dist[j];
+
+    if (j === root || d === Infinity) {
       continue;
     }
 
-    const d = di.distanceTo(view.cy._ele(GROUP_NODES, slot)) as number;
-
-    totalDistance += harmonic ? 1 / d : d;
+    sum += harmonic ? 1 / d : d;
+    reached++;
   }
 
-  return harmonic ? totalDistance : 1 / totalDistance;
+  return closenessOfRow(sum, reached, n, harmonic);
 };
 
 /**
@@ -129,6 +168,9 @@ export const closenessCentralityNormalizedAsync = (
   options: ClosenessCentralityOptions = {},
 ): AlgoRun<ClosenessCentralityNormalizedResult> => {
   const executor = resolveExecutor(options.executor);
+
+  closenessReverse(options); // an invalid direction throws at the call site
+
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
 
@@ -195,6 +237,7 @@ export const closenessWeightedLane = (
   options: ClosenessCentralityOptions,
 ): OffloadLane<ClosenessCentralityNormalizedResult> => {
   const harmonic = options.harmonic !== false;
+  const reverse = closenessReverse(options);
   let view: SubgraphView | null = null;
 
   return {
@@ -217,6 +260,7 @@ export const closenessWeightedLane = (
           (view as SubgraphView).nodeSlots.length,
           out.dist as Float64Array,
           harmonic,
+          reverse,
         ),
       ),
   };
@@ -229,49 +273,68 @@ export const closenessWeightedLane = (
  *
  * @param n — the node count
  * @param dist — the row-major relaxed distances
- * @param harmonic — sum 1/d instead of 1/sum d
+ * @param harmonic — sum 1/d instead of the classic form
+ * @param reverse — fold column i (distances *to* i) instead of row i
  * @returns the scores, by dense index
  */
 export const closenessFromDistances = (
   n: number,
   dist: Float64Array,
   harmonic: boolean,
+  reverse = false,
 ): Float64Array => {
   const closenesses = new Float64Array(n);
 
   for (let i = 0; i < n; i++) {
     let sum = 0;
+    let reached = 0;
 
     for (let j = 0; j < n; j++) {
-      if (i === j) {
+      const d = reverse ? dist[j * n + i] : dist[i * n + j];
+
+      if (i === j || d === Infinity) {
         continue;
       }
 
-      const d = dist[i * n + j];
-
       sum += harmonic ? 1 / d : d;
+      reached++;
     }
 
-    closenesses[i] = closenessOfRowSum(sum, harmonic);
+    closenesses[i] = closenessOfRow(sum, reached, n, harmonic);
   }
 
   return closenesses;
 };
 
 /**
- * Fold one node's relaxed distance row into its closeness score:
- * harmonic sums 1/d (an unreachable pair contributes 0), plain sums d
- * and reciprocates (one unreachable pair makes the sum infinite and
- * the score 0).  Shared by the CPU reference and the GPU readback,
- * which hands the row sums computed on the device through the same
- * final step.
+ * Fold one node's reachable distances into its closeness score.
+ * Harmonic: Σ 1/d, where an unreachable node contributes nothing.
+ * Classic (round 150, NetworkX's definition): (n − 1)/Σd when every
+ * node is reachable, and over r reachable nodes the Wasserman–Faust
+ * form (r/Σd)·(r/(n − 1)), which scales a node that reaches few others
+ * down rather than to 0 — v3's 1/Σd gave 0 once any node was
+ * unreachable, and was (n − 1) times smaller otherwise.  Shared by
+ * every lane: the CPU and worker walks, Floyd–Warshall's fold and the
+ * GPU readback.
  *
- * @param sum — Σ over j≠i of (harmonic ? 1/d : d)
+ * @param sum — Σ over reachable j ≠ i of (harmonic ? 1/d : d)
+ * @param reached — how many j ≠ i are reachable
+ * @param n — the node count
  * @param harmonic — the mode
- * @returns the node's closeness score before max-normalization
+ * @returns the node's closeness score before normalization
  */
-export const closenessOfRowSum = (sum: number, harmonic: boolean): number =>
-  harmonic ? sum : 1 / sum;
+export const closenessOfRow = (
+  sum: number,
+  reached: number,
+  n: number,
+  harmonic: boolean,
+): number => {
+  if (harmonic) {
+    return sum;
+  }
+
+  return reached === 0 ? 0 : (reached / sum) * (reached / (n - 1));
+};
 
 /**
  * Wrap per-node closeness scores as the public `{ closeness }`
@@ -312,18 +375,21 @@ export const closenessResultFrom = (
  * as levels are assigned — O(n·(n + E)) where Floyd–Warshall is O(n³)
  * whatever the density.  Distances are exact integers, so plain-mode
  * sums are bit-identical to the FW route's and harmonic sums differ
- * only in f64 summation order.  A plain-mode row with an unreachable
- * node sums to Infinity, exactly as FW's Infinity entries do.
+ * only in f64 summation order.  Unreachable nodes are left out of the
+ * sum and counted out of `reached`, as FW's fold leaves out its
+ * Infinity entries.
  *
  * @param view — the subgraph view
  * @param directed — out-neighbors only, or both sides
  * @param harmonic — the mode
- * @returns Σ over j≠i of (harmonic ? 1/d : d), per dense index
+ * @param reverse — when directed, walk in-edges (distances to the node)
+ * @returns the scores, by dense index
  */
-export const closenessRowSumsBfs = (
+export const closenessRowsBfs = (
   view: SubgraphView,
   directed: boolean,
   harmonic: boolean,
+  reverse = false,
 ): Float64Array => {
   const n = view.nodeSlots.length;
   // flattened to CSR once (the snapshot the workers lane clones): the
@@ -333,8 +399,9 @@ export const closenessRowSumsBfs = (
     view,
     directed,
     undefined,
+    reverse,
   );
-  const sums = new Float64Array(n);
+  const closenesses = new Float64Array(n);
   const dist = new Int32Array(n);
   const queue = new Int32Array(n);
 
@@ -364,18 +431,17 @@ export const closenessRowSumsBfs = (
       }
     }
 
-    // plain mode: one unreachable node makes the row's sum infinite
-    sums[s] = !harmonic && tail < n ? Infinity : sum;
+    closenesses[s] = closenessOfRow(sum, tail - 1, n, harmonic);
   }
 
-  return sums;
+  return closenesses;
 };
 
 /**
  * The workers lane (round 74): the same BFS per source, one contiguous
- * source range per job; each row sum is computed whole by one worker
- * in the reference's operation order, so the scores are bit-identical
- * to `'cpu'`.
+ * source range per job; each row's sum and reached count are computed
+ * whole by one worker in the reference's operation order, so the
+ * scores are bit-identical to `'cpu'`.
  *
  * @param pool — the acquired worker pool
  * @param view — the subgraph view
@@ -393,6 +459,7 @@ export const closenessCentralityNormalizedWorkers = async (
     view,
     options.directed === true,
     undefined,
+    closenessReverse(options),
   );
   const parts = await pool.run(
     { kind: 'closeness', n, rowPtr, colIdx, harmonic },
@@ -401,9 +468,10 @@ export const closenessCentralityNormalizedWorkers = async (
   const closenesses = new Float64Array(n);
   let at = 0;
 
+  // each part interleaves (sum, reached) per source
   for (const part of parts) {
-    for (let i = 0; i < part.length; i++) {
-      closenesses[at++] = closenessOfRowSum(part[i], harmonic);
+    for (let i = 0; i < part.length; i += 2) {
+      closenesses[at++] = closenessOfRow(part[i], part[i + 1], n, harmonic);
     }
   }
 
@@ -421,17 +489,15 @@ export const closenessCentralityNormalized = (
   options: ClosenessCentralityOptions = {},
 ): ClosenessCentralityNormalizedResult => {
   const harmonic = options.harmonic !== false;
+  const reverse = closenessReverse(options);
 
   if (options.weight == null) {
     const view = subgraph(coll);
-    const sums = closenessRowSumsBfs(view, options.directed === true, harmonic);
-    const closenesses = new Float64Array(sums.length);
 
-    for (let i = 0; i < sums.length; i++) {
-      closenesses[i] = closenessOfRowSum(sums[i], harmonic);
-    }
-
-    return closenessResultFrom(view, closenesses);
+    return closenessResultFrom(
+      view,
+      closenessRowsBfs(view, options.directed === true, harmonic, reverse),
+    );
   }
 
   return inThread(closenessWeightedLane(coll, options));

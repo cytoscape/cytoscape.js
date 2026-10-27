@@ -7840,6 +7840,16 @@ the Laplacian from 1/w for callers who want its numbers;
 `commuteTime`'s volume sums conductances either way.  Pairs in
 different components still answer Infinity, where NetworkX raises.
 
+- **`hierarchicalClustering`'s threshold keeps a merge at exactly
+  `threshold`** (round 150).  v3 merged while the closest pair was
+  strictly nearer than `threshold`, and its JSDoc said "farther apart
+  than", which described neither.  SciPy's `fcluster(criterion =
+  'distance')` and R's `cutree(h =)` keep a merge at height t, and v4
+  now does too, in both merge loops (the named-linkage kernel and the
+  per-pair closure path).  Results differ only when a merge distance
+  equals the threshold exactly — rare on real-valued attributes, common
+  on integer ones.
+
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over
   `cy.extent()` — the viewport in model coordinates — so the drawing

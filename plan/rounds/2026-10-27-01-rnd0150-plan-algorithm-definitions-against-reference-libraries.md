@@ -167,3 +167,16 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   ignoring `weightAs` fails all three cases.  The GPU parity spec is
   unweighted, so it cannot see the option; the GPU lane builds its
   system through the same function.
+- **Item 7 landed (27 October).**  Both merge loops — the
+  named-linkage kernel (`algo-kernels-cluster.mts`) and the per-pair
+  closure path (`hierarchicalRun`) — stop at `min > threshold`, or when
+  no pair is left (an Infinity minimum, which the default threshold of
+  Infinity would otherwise never stop on).  The SciPy reference drops
+  its `t − 1e-12` shim, and since the real-valued blobs never land on
+  a threshold, it gained `GRID_POINTS`: integer points whose merges
+  sit exactly on t = 1, 2, 3, for all three linkages (nine cases,
+  shipped in the fixture as `gridPoints`).  A hand spec pins a tie at
+  threshold 1 through both loops (a named linkage and an unnamed
+  per-pair one; a custom *distance* still runs the kernel).  Controls:
+  restoring `>=` in either loop fails that loop's case, and in the
+  kernel six of the nine grid cases.

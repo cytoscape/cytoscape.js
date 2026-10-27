@@ -3784,9 +3784,12 @@ export class Collection<
    * worker for a named `distance` and a 'min' / 'max' / 'mean'
    * `linkage`.  A custom `distance` function or a per-pair linkage
    * consults the metric inside the run, on the calling thread, and
-   * 'workers' rejects them.
+   * 'workers' rejects them.  Threshold mode merges every closest pair
+   * at most `threshold` apart, a merge at exactly `threshold` included,
+   * as SciPy's `fcluster` and R's `cutree` (round 150; v3 stopped
+   * there).
    *
-   * @param options — `{ attributes, distance, linkage, mode,
+   * @param options — `{ attributes, distance, linkage, mode, threshold,
    *   dendrogramDepth, executor }`
    * @returns a promise of one collection per cluster
    *   — with `cancel()` on it (round 128): a pending run rejects

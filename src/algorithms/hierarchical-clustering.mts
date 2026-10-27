@@ -45,6 +45,8 @@ export interface HierarchicalClusteringOptions {
   /** linkage criterion: 'min' (single), 'max' (complete), 'mean', or per-pair */
   linkage?: string;
   mode?: 'threshold' | 'dendrogram';
+  /** threshold mode merges pairs at most this far apart (default
+   * Infinity) */
   threshold?: number;
   addDendrogram?: boolean;
   dendrogramDepth?: number;
@@ -165,8 +167,11 @@ const mergeClosest = (
     }
   }
 
+  // threshold mode merges a pair at most `threshold` apart (round 150:
+  // SciPy's fcluster and R's cutree keep a merge at exactly t; v3
+  // stopped there); an Infinity minimum means no pair is left
   if (
-    (opts.mode === 'threshold' && min >= opts.threshold) ||
+    (opts.mode === 'threshold' && (min > opts.threshold || min === Infinity)) ||
     (opts.mode === 'dendrogram' && clusters.length === 1)
   ) {
     return false;
@@ -453,8 +458,10 @@ export const hierarchicalLane = (
  * nodes in attribute space — the adjacency is not consulted.  Starts with
  * one cluster per node and repeatedly merges the closest pair under
  * `linkage` ('min'/'single', 'max'/'complete', 'mean', or a custom
- * per-pair function).  In `threshold` mode merging stops once the closest
- * pair is farther apart than `threshold`, and the surviving clusters are
+ * per-pair function).  In `threshold` mode it merges every closest pair
+ * at most `threshold` apart — a merge at exactly `threshold` is kept, as
+ * SciPy's `fcluster` and R's `cutree` keep it (round 150; v3 stopped
+ * there) — and the surviving clusters are
  * returned flat; in `dendrogram` mode it merges to a single root, which is
  * then cut at `dendrogramDepth`.  Holds a dense N-by-N distance matrix, so
  * cost is quadratic in node count.

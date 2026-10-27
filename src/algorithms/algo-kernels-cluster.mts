@@ -444,8 +444,9 @@ export function hierarchicalKernel(input: HierarchicalKernelInput): {
       }
     }
 
+    // `hierarchicalRun`'s rule: merge at most `threshold` apart
     if (
-      (!dendrogram && min >= threshold) ||
+      (!dendrogram && (min > threshold || min === Infinity)) ||
       (dendrogram && activeCount === 1)
     ) {
       break;

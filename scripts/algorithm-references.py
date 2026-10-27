@@ -154,6 +154,11 @@ def barbell():
     return graph('barbell', False, range(12), edges, 'two 6-cliques joined by 3 edges')
 
 
+# on a line and one step off it, so every pairwise distance that the
+# thresholds below meet is an exact integer
+GRID_POINTS = [[0, 0], [1, 0], [2, 0], [5, 0], [6, 0], [6, 2], [10, 0]]
+
+
 def blobs(rng):
     # three 2-D blobs; the first point is the middle of its blob, so it is
     # an exemplar for affinity propagation (the node-0 case)
@@ -478,13 +483,24 @@ def proximity(G, refs):
 def clustering(points, karate_g, refs):
     X = np.array(points)
 
-    # v4's 'mean' linkage is size-weighted: SciPy's 'average'; it merges
-    # while the closest pair is < threshold, fcluster cuts at <= t
+    # v4's 'mean' linkage is size-weighted: SciPy's 'average'; both merge
+    # while the closest pair is <= t (round 150; v4 stopped at t before)
     for linkage_name, method in (('single', 'single'), ('complete', 'complete'), ('mean', 'average')):
         Z = linkage(X, method=method, metric='euclidean')
         for t in (1.5, 3.0, 6.0):
-            lab = fcluster(Z, t=t - 1e-12, criterion='distance')
+            lab = fcluster(Z, t=t, criterion='distance')
             refs['hierarchicalClustering'][f'{linkage_name}-{t}'] = sorted(
+                np.flatnonzero(lab == l).tolist() for l in np.unique(lab))
+
+    # integer points, so merges land exactly on the thresholds: the
+    # boundary the blobs above never reach (round 150: a merge at t
+    # is kept)
+    Xg = np.array(GRID_POINTS, dtype=float)
+    for linkage_name, method in (('single', 'single'), ('complete', 'complete'), ('mean', 'average')):
+        Z = linkage(Xg, method=method, metric='euclidean')
+        for t in (1.0, 2.0, 3.0):
+            lab = fcluster(Z, t=t, criterion='distance')
+            refs['hierarchicalClustering'][f'grid-{linkage_name}-{t}'] = sorted(
                 np.flatnonzero(lab == l).tolist() for l in np.unique(lab))
 
     C0 = np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]])
@@ -589,6 +605,7 @@ def main():
         'versions': {'networkx': nx.__version__, 'scipy': scipy.__version__, 'numpy': np.__version__},
         'graphs': G,
         'points': points,
+        'gridPoints': GRID_POINTS,
         'references': refs,
     }, indent=1) + '\n')
     print(f'wrote {OUT.relative_to(ROOT)}')

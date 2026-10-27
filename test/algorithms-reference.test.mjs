@@ -25,7 +25,7 @@ const FIXTURE = JSON.parse(
     'utf8',
   ),
 );
-const { graphs, points, references: REF } = FIXTURE;
+const { graphs, points, gridPoints, references: REF } = FIXTURE;
 const cpu = { executor: 'cpu' };
 const weight = (e) => e.data('w');
 
@@ -627,10 +627,10 @@ describe('algorithms against NetworkX / SciPy references', function () {
   });
 
   describe('clustering', function () {
-    const pointsCy = () => {
+    const pointsCy = (set = points) => {
       const cy = cytoscape({
         headless: true,
-        elements: points.map(([x, y], i) => ({ data: { id: `p${i}`, x, y } })),
+        elements: set.map(([x, y], i) => ({ data: { id: `p${i}`, x, y } })),
       });
 
       return cy;
@@ -644,8 +644,10 @@ describe('algorithms against NetworkX / SciPy references', function () {
 
     for (const [key, ref] of Object.entries(REF.hierarchicalClustering)) {
       it(`hierarchicalClustering ${key}`, async function () {
-        const [linkage, threshold] = key.split('-');
-        const res = await pointsCy()
+        // `grid-` cases sit merges exactly on the threshold
+        const grid = key.startsWith('grid-');
+        const [linkage, threshold] = key.replace(/^grid-/, '').split('-');
+        const res = await pointsCy(grid ? gridPoints : points)
           .nodes()
           .hierarchicalClustering({
             attributes,

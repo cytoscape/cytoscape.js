@@ -323,6 +323,31 @@ describe('gpu/algorithms: clustering', function () {
       }
     });
 
+    it('threshold mode keeps a merge at exactly the threshold (round 150)', async function () {
+      // 0, 1 and 5, 6 on a line: at threshold 1 the unit gaps merge
+      // (SciPy's fcluster and R's cutree keep a merge at t; v3 kept
+      // four singletons).  Both merge loops: a named linkage runs the
+      // kernel, any other linkage string the per-pair closure path.
+      var line = cytoscape({
+        elements: [0, 1, 5, 6].map((x) => ({ data: { id: 'x' + x, x } })),
+      });
+      var sets = (clusters) =>
+        clusters.map((c) => ids(c).sort().join(',')).sort();
+
+      for (var linkage of ['min', 'per-pair']) {
+        var clusters = await line.elements().hierarchicalClustering({
+          distance: 'euclidean',
+          attributes: [(n) => n.data('x')],
+          linkage,
+          threshold: 1,
+        });
+
+        expect(sets(clusters), linkage).to.deep.equal(['x0,x1', 'x5,x6']);
+      }
+
+      line.destroy();
+    });
+
     it('threshold mode with default Infinity merges everything', async function () {
       var clusters = await cy.elements().hierarchicalClustering({
         distance: 'euclidean',

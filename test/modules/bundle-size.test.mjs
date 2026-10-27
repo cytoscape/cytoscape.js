@@ -113,7 +113,12 @@ keep) put the four unminified artifacts over their gzip rows: 1,789,986 /
 481,277; 1,789,925 / 481,267; 1,943,608 / 518,129; 1,943,547 / 518,116
 (raw / gzip, row order below).  Those rows go to about 1% over that
 landing, raw and gzip.  The minified artifacts measure 619,104 / 191,627
-and 698,456 / 210,350, inside their rows, which do not move.
+and 698,456 / 210,350, inside their rows, which do not move.  At the
+round's close the four measure 1,795,041 / 482,800; 1,794,980 / 482,791;
+1,949,743 / 519,944; 1,949,682 / 519,932, against 1,780,696 / 476,872
+for the headless ESM build at the round's start (+0.8% raw, +1.2% gzip,
+all of it the round's options, kernels and their JSDoc), and the
+minified pair 620,166 / 192,000 and 700,155 / 210,888.
 
 Needs the built bundles (`test:modules` builds first).
 */

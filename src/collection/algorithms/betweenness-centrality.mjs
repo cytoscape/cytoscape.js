@@ -139,7 +139,8 @@ let elesfn = ({
         }
 
         if( w != V[s].id() ){
-          C.set( w, C.get( w ) + e[w] );
+          let dependency = directed ? e[w] : e[w] / 2;// if it is undirected, we divide by 2 to account for double counting
+          C.set( w, C.get( w ) + dependency );
         }
       }
     }

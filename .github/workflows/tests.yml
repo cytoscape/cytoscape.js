@@ -138,14 +138,14 @@ jobs:
       run: npx playwright test --project=${{ matrix.project }}
     - name: Upload latest golden captures
       if: always() && matrix.project == 'visual'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: golden-current
         path: playwright-tests/golden-current/
         retention-days: 7
     - name: Upload failure artifacts
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: playwright-${{ matrix.project }}
         path: test-results/

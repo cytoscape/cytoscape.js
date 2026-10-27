@@ -63,7 +63,7 @@ Below are the steps performed by the "Feature Release Test" GitHub Action:
 
 9. **Archive Code Coverage Results**:
    - Action: Archives code coverage results in case of test failure.
-   - Uses: `actions/upload-artifact@v3`.
+   - Uses: `actions/upload-artifact@v7`.
 
 10. **Publish Package to npmjs**:
     - Action: Publishes the package to npmjs.

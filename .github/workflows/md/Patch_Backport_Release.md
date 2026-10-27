@@ -93,7 +93,7 @@ The "Patch Release Test" GitHub Action comprises the following steps:
 
 15. **Archive Code Coverage Results**:
     - Action: Archives code coverage results in case of test failure.
-    - Uses: `actions/upload-artifact@v3`.
+    - Uses: `actions/upload-artifact@v7`.
 
 16. **Publish Package to npmjs**:
     - Action: Publishes the package to npmjs.

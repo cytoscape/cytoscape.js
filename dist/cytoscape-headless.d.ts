@@ -7366,7 +7366,11 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
   closenessCentralityNormalised: this['closenessCentralityNormalized'];
   /**
    * Betweenness centrality — how often each node lies on shortest paths
-   * between other pairs.  Async (round 65): returns a promise, and
+   * between other pairs: the sum over pairs s ≠ v ≠ t of the share of
+   * shortest s–t paths through v, each unordered pair counted once when
+   * undirected (Freeman's definition, NetworkX's and igraph's
+   * unnormalized score; v3 counted it twice — round 150, #3543).
+   * `betweennessNormalized` divides by the largest score.  Async (round 65): returns a promise, and
    * `executor` ('cpu' | 'gpu' | 'workers' | 'auto', default 'auto')
    * picks where the Brandes sweep runs.  Weighted runs have no GPU
    * path: 'auto' takes the worker pool (round 74 — one source range

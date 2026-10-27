@@ -321,10 +321,59 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     var res = await cy.elements().betweennessCentrality();
 
     expect(res.betweenness(a)).to.equal(0);
-    expect(res.betweenness(b).toFixed(2)).to.equal('1.67');
-    expect(res.betweenness(c).toFixed(2)).to.equal('5.33');
-    expect(res.betweenness(d).toFixed(2)).to.equal('1.67');
-    expect(res.betweenness(e).toFixed(2)).to.equal('5.33');
+    expect(res.betweenness(b).toFixed(2)).to.equal('0.83');
+    expect(res.betweenness(c).toFixed(2)).to.equal('2.67');
+    expect(res.betweenness(d).toFixed(2)).to.equal('0.83');
+    expect(res.betweenness(e).toFixed(2)).to.equal('2.67');
+  });
+
+  // #3543: each unordered pair counts once (Freeman), not once from each
+  // end — v3 and v4 before round 150 returned twice these
+  it('eles.betweennessCentrality() counts an undirected pair once', async function () {
+    var path = cytoscape({
+      headless: true,
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 'bc', source: 'b', target: 'c' } },
+      ],
+    });
+    var g1032 = cytoscape({
+      headless: true,
+      elements: [
+        ...['n0', 'n1', 'n2', 'n3', 'n4'].map((id) => ({ data: { id } })),
+        ...[
+          ['n0', 'n1'],
+          ['n1', 'n2'],
+          ['n1', 'n4'],
+          ['n2', 'n3'],
+          ['n3', 'n4'],
+        ].map(([source, target]) => ({
+          data: { id: source + target, source, target },
+        })),
+      ],
+    });
+
+    for (const executor of ['cpu', 'workers']) {
+      var und = await path.elements().betweennessCentrality({ executor });
+      var dir = await path
+        .elements()
+        .betweennessCentrality({ executor, directed: true });
+      var res = await g1032.elements().betweennessCentrality({ executor });
+
+      expect(und.betweenness(path.$id('b')), executor).to.equal(1);
+      expect(und.betweennessNormalized(path.$id('b')), executor).to.equal(1);
+      expect(dir.betweenness(path.$id('b')), executor).to.equal(1);
+      expect(
+        ['n1', 'n2', 'n3', 'n4'].map((id) => res.betweenness(g1032.$id(id))),
+        executor,
+      ).to.eql([3.5, 1, 0.5, 1]);
+    }
+
+    path.destroy();
+    g1032.destroy();
   });
 
   it('eles.betweennessCentrality() unweighted directed', async function () {
@@ -340,11 +389,11 @@ describe('gpu/algorithms: pageRank + centralities', function () {
   it('eles.betweennessCentrality() weighted undirected', async function () {
     var res = await cy.elements().betweennessCentrality({ weight });
 
-    expect(res.betweenness(a)).to.equal(1);
+    expect(res.betweenness(a)).to.equal(0.5);
     expect(res.betweenness(b)).to.equal(0);
-    expect(res.betweenness(c)).to.equal(10);
+    expect(res.betweenness(c)).to.equal(5);
     expect(res.betweenness(d)).to.equal(0);
-    expect(res.betweenness(e)).to.equal(6);
+    expect(res.betweenness(e)).to.equal(3);
   });
 
   it('eles.betweennessCentrality() weighted directed', async function () {

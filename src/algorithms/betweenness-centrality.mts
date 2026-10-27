@@ -190,13 +190,22 @@ export const betweennessCentralityWorkers = (
   try {
     const n = input.view.nodeSlots.length;
     const index = input.view.index;
+    const directed = input.options.directed === true;
     const { rowPtr, colIdx, w } = brandesCsr(
       input.view,
-      input.options.directed === true,
+      directed,
       input.options.weight ?? undefined,
     );
 
-    return runBetweennessWorkerSnapshot(pool, index, n, rowPtr, colIdx, w);
+    return runBetweennessWorkerSnapshot(
+      pool,
+      index,
+      n,
+      directed,
+      rowPtr,
+      colIdx,
+      w,
+    );
   } catch (error) {
     return Promise.reject(error);
   }
@@ -207,6 +216,7 @@ const runBetweennessWorkerSnapshot = async (
   pool: AlgoWorkers,
   index: Map<number, number>,
   n: number,
+  directed: boolean,
   rowPtr: Int32Array,
   colIdx: Int32Array,
   w: Float64Array | null,
@@ -227,7 +237,7 @@ const runBetweennessWorkerSnapshot = async (
     }
   }
 
-  return bcResultFromIndex(index, C, max);
+  return bcResultFromIndex(index, C, max, directed);
 };
 
 /**
@@ -307,24 +317,34 @@ export const buildBrandesNeighbors = (
 
 /**
  * Wrap accumulated betweenness scores as the public accessors — shared
- * by both executors.
+ * by every executor.  Brandes' sweep from every source counts each
+ * unordered pair of an undirected graph twice, once from either end, so
+ * an undirected run halves the raw score (Brandes 2001, Freeman's
+ * definition; round 150, #3543).  The normalized score is a ratio and
+ * needs no halving.
  *
  * @param view — the subgraph view
- * @param C — per-dense-index betweenness
- * @param max — the maximum score, for normalization
+ * @param C — per-dense-index dependency sums
+ * @param max — the maximum of `C`, for normalization
+ * @param directed — whether the sweep followed edge direction
  * @returns the result object
  */
 export const bcResultFrom = (
   view: ReturnType<typeof subgraph>,
   C: ArrayLike<number>,
   max: number,
-): BetweennessCentralityResult => bcResultFromIndex(view.index, C, max);
+  directed: boolean,
+): BetweennessCentralityResult =>
+  bcResultFromIndex(view.index, C, max, directed);
 
 const bcResultFromIndex = (
   index: Map<number, number>,
   C: ArrayLike<number>,
   max: number,
+  directed: boolean,
 ): BetweennessCentralityResult => {
+  const scale = directed ? 1 : 0.5;
+
   const denseOf = (node: Collection): number | undefined => {
     const slot = firstNodeSlotArg(node, 'node');
 
@@ -335,7 +355,7 @@ const bcResultFromIndex = (
     betweenness(node: Collection): number | undefined {
       const i = denseOf(node);
 
-      return i == null ? undefined : C[i];
+      return i == null ? undefined : C[i] * scale;
     },
 
     betweennessNormalized(node: Collection): number {
@@ -454,5 +474,5 @@ export const betweennessCentrality = (
     }
   }
 
-  return bcResultFrom(view, C, max);
+  return bcResultFrom(view, C, max, directed);
 };

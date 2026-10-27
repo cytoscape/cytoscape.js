@@ -957,10 +957,10 @@ fixture graphs (weighted, directed, disconnected, multigraph,
 negative-weight; 30+ nodes) and compares with what NetworkX 3.7, SciPy
 and NumPy compute, recorded once in `test/fixtures/algorithm-references.json`
 by `scripts/algorithm-references.py`.  The references compute v4's
-definitions where those keep v3's: undirected betweenness is not halved,
-and closeness is measured from the node.  Two v3 definitions did not
-survive it (see the deviations below): PageRank's damping and
-`bellmanFord`'s undirected negative edges.  The comparison found three defects inherited from v3, fixed:
+definitions where those keep v3's: closeness is measured from the node.
+Three v3 definitions did not survive it (see the deviations below):
+PageRank's damping, `bellmanFord`'s undirected negative edges and, in
+round 150, undirected betweenness counting each pair twice.  The comparison found three defects inherited from v3, fixed:
 `affinityPropagation` dropped the members of an exemplar at index 0 and
 shifted later assignments; `median()`, behind its `preference:
 'median'`, read one past the middle; and `hopcroftTarjanBiconnected`
@@ -7788,6 +7788,14 @@ fragment premium is **unmeasurable at scene level** on real hardware
   A 2-node cycle over one edge is that node, edge, node — the collection
   holds the edge once.  Positive-weight and directed results are
   unchanged.
+- **Undirected `betweenness()` counts each pair once** (round 150,
+  #3543).  Brandes' sweep from every source reaches each unordered pair
+  `{s, t}` from both ends, and Brandes (2001) halves the sum for an
+  undirected graph; v3 never did, so its scores were twice Freeman's
+  definition and twice NetworkX's and igraph's (path a–b–c gave 2 for b,
+  not 1).  v4 halves the raw score on every executor.  Directed scores
+  and `betweennessNormalized()` (a ratio to the maximum) are unchanged;
+  a v3 value is twice v4's.
 
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over

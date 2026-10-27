@@ -87,3 +87,15 @@ The reference specs compare against cached JSON; no spec runs Python or R.
 `npm run -s verify` per commit; `npm run -s test:node:quiet`,
 `npm run -s test:throws:quiet` and `npm run build:types` for the new
 options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
+
+### Progress
+
+- **Item 1 landed (27 October).**  `bcResultFrom` takes the run's
+  `directed` flag and halves the raw score of an undirected run, so the
+  CPU, workers and GPU lanes change together; `betweennessNormalized`
+  is a ratio and is unchanged.  The NetworkX reference compares
+  directly (the `scale = 2` is gone, 50 values halved), the hand
+  fixtures in `test/algorithms-centralities.test.mjs` are halved, and a
+  new spec pins #3543's path and the #1032 graph (3.5 / 1 / 0.5 / 1) on
+  `cpu` and `workers`.  Control: with the halving disabled that spec
+  fails, with it restored it passes.

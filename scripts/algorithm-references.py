@@ -13,7 +13,7 @@ The specs never run Python; the JSON is the checked-in record.
 
 Each reference is chosen to compute *v4's* definition, which is v3's where
 the two differ from a textbook — every such mapping is noted at its call
-(e.g. undirected betweenness is NetworkX's doubled).  Where no library computes v4's exact
+(e.g. closeness measured from the node).  Where no library computes v4's exact
 definition (SimRank's fixed point, random walk with an absorbing sink,
 Markov clustering, affinity propagation) the reference is a short NumPy
 transcription of the published algorithm, not of v4's code.
@@ -320,14 +320,14 @@ def centralities(G, refs):
             'classic': per_node(g, classic),
         }
 
-    # betweenness: v4 does not halve undirected scores
+    # betweenness, NetworkX's unnormalized definition (round 150 halved
+    # v4's undirected scores to it)
     for name, weighted in (('karate', False), ('wu', True), ('wd', True)):
         g = G[name]
         b = nx.betweenness_centrality(nx_graph(g), normalized=False, weight='w' if weighted else None)
-        scale = 1 if g['directed'] else 2
         refs['betweennessCentrality'][name] = {
             'weighted': weighted,
-            'betweenness': per_node(g, {n: scale * v for n, v in b.items()}),
+            'betweenness': per_node(g, b),
         }
 
     # Katz at half the convergence radius

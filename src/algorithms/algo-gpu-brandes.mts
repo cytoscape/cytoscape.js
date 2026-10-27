@@ -158,7 +158,7 @@ export const betweennessCentralityGpu = async (
   const n = view.nodeSlots.length;
 
   if (n === 0) {
-    return bcResultFrom(view, [], 0);
+    return bcResultFrom(view, [], 0, directed);
   }
 
   const { neighbors } = buildBrandesNeighbors(view, directed);
@@ -221,5 +221,5 @@ export const betweennessCentralityGpu = async (
     }
   }
 
-  return bcResultFrom(view, cOut, max);
+  return bcResultFrom(view, cOut, max, directed);
 };

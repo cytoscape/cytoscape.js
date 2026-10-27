@@ -14,7 +14,7 @@ to check by hand; these catch what a 6-node graph cannot.
 
 The references compute v4's definitions, which keep v3's where v3
 differed from a textbook; the generator notes each mapping at its call
-(undirected betweenness doubled, closeness measured from the node).
+(closeness measured from the node).
 Every async algorithm runs with `executor: 'cpu'`: the
 GPU lanes are f32 and have their own parity specs.
 */

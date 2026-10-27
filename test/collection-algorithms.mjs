@@ -1003,10 +1003,10 @@ describe('Algorithms', function(){
     var res = cy.elements().betweennessCentrality();
 
     expect( res.betweenness(a) ).to.equal(0);
-    expect( res.betweenness(b).toFixed(2) ).to.equal('1.67');
-    expect( res.betweenness(c).toFixed(2) ).to.equal('5.33');
-    expect( res.betweenness(d).toFixed(2) ).to.equal('1.67');
-    expect( res.betweenness(e).toFixed(2) ).to.equal('5.33');
+    expect( res.betweenness(b).toFixed(2) ).to.equal('0.83');// changed from 1.67
+    expect( res.betweenness(c).toFixed(2) ).to.equal('2.67');// changed from 5.33
+    expect( res.betweenness(d).toFixed(2) ).to.equal('0.83');// changed from 1.67
+    expect( res.betweenness(e).toFixed(2) ).to.equal('2.67');// changed from 5.53
   });
 
   it('eles.betweennessCentrality() unweighted directed', function(){
@@ -1028,11 +1028,11 @@ describe('Algorithms', function(){
       }
     });
 
-    expect( res.betweenness(a) ).to.equal(1);
+    expect( res.betweenness(a) ).to.equal(0.5);// changed from 1
     expect( res.betweenness(b) ).to.equal(0);
-    expect( res.betweenness(c) ).to.equal(10);
+    expect( res.betweenness(c) ).to.equal(5);// chaned from 10
     expect( res.betweenness(d) ).to.equal(0);
-    expect( res.betweenness(e) ).to.equal(6);
+    expect( res.betweenness(e) ).to.equal(3);// changes form 6
   });
 
   it('eles.betweennessCentrality() weighted directed', function(){

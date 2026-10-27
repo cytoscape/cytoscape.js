@@ -5,7 +5,28 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-10-18 for Round 149's manual feature demos and golden coverage audit.
+- **Last updated**: 2026-10-27 for Round 150's algorithm definitions against the reference libraries.
+
+Round 150 changes six algorithm defaults to the standard definitions
+that NetworkX, igraph and the literature use, after a review found the
+reference script adjusting library numbers to fit v4. Undirected
+betweenness is halved ([#3543](https://github.com/cytoscape/cytoscape.js/issues/3543)),
+`pageRank` is undirected by default, and classic closeness is
+(n − 1)/Σd with the Wasserman–Faust correction. Hierarchical
+clustering now merges at exactly the threshold. The restarting walk
+returns to the seeds from a dead end, and MCL runs up to 100 passes.
+New options reach the other libraries' conventions: closeness
+`direction`, a `normalization` choice on the normalized centralities,
+effective resistance `weightAs`, RWR `dangling` and MCL
+`pruneThreshold`. Every algorithm is now checked against each library
+that implements it: NetworkX, SciPy, scikit-learn, scikit-fuzzy and
+`markov_clustering` in Python, and igraph, `stats`, `cluster`, `e1071`
+and `MCL` in R, from cached fixtures generated in one locked pixi
+environment. Four places where the libraries disagree with each other
+are pinned, not tolerated. The round also fixed an intermittent force
+layout defect on Node: V8 could overwrite the spectral seed's first
+eigenvalue, so a layout sometimes started from the plain scatter. See
+the [Round 150 record](plan/rounds/2026-10-27-01-rnd0150-landed-algorithm-definitions-against-reference-libraries.md).
 
 Round 149 adds 31 bounded feature views plus eight API-workflow contexts to
 the main debug harness, with 55 canonical feature states, visible

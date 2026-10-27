@@ -215,8 +215,8 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   GPU parity spec runs thresholds 0.05, 0.1 and 0.2 on both executors
   and requires one to move the partition.  Controls: disabling the CPU
   prune fails four of the eight cases; skipping the GPU pass fails the
-  browser spec.  No fixture needs more than 20 passes, so the cap's
-  change is untested by a reference; it is a default, documented.
+  browser spec.  No reference fixture needs more than 20 passes; the
+  closing entry below pins the cap with a ring that does.
   Also renamed the pixi tasks to `refs-py` and `refs-r`: a task named
   `python` shadowed the interpreter, so `pixi run python -c …` ran the
   generator instead.
@@ -276,3 +276,46 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   `auto_unbox` writes a one-member vector as a scalar, so every set is
   wrapped in `I()`; igraph 2.3 marks an unreached node's BFS distance
   −1, not NA.  The two `PLANNED_PATHS` entries left with the files.
+- **Closed (27 October).**  The points the step-3 hand-back left open:
+  - **The Bun parity tier** runs: `mise.toml` now installs Bun (1.4.4)
+    beside Node, and `npm run -s test:bun:quiet` passes, every stage.
+  - **MCL's 100-pass default** is pinned.  An unweighted 10-ring is
+    symmetric and leaves that state only through rounding: NumPy
+    measured 50 passes, and 22–42 under relative noise from 1e-12 to
+    1e-6, every run a partition.  At `maxIterations: 20` every node's
+    set still overlaps its neighbours'.  The Node spec and a GPU spec
+    pin that shape (overlapping sets at 20, a partition by default)
+    rather than one partition, since which way the symmetry breaks is
+    rounding.  Controls: `MARKOV_MAX_ITERATIONS` set back to 20 fails
+    the Node spec; the GPU loop capped at 20 fails the browser spec.
+  - **The one-off failures had two causes.**  The Bun throw-probe
+    failure was this session's own: it read `force-worker.mts` while
+    a control's temporary `throw` was in it.  The `force-worker.test.mjs`
+    "bit-identical" failure was a real, user-facing defect.  Its
+    in-thread reference was the `init: 'scatter'` result, because
+    `spectralSeed` read its first eigenvalue as 1.86e-10 instead of
+    489,888 and kept the scatter.  Logged inside the seed: `e1 =
+    eig(null)` returned the right λ, and after `e2 = eig(e1.v)` the
+    same `e1.lambda` read `e2.lambda` to the last digit, with `e1 !==
+    e2` — Node 24.18's V8 let the second call's store land in the
+    first returned object's double field.  It is timing-dependent: 0
+    failures in 128 direct runs, 64 isolated spec runs, three plain
+    `test:js` runs carrying 20 copies of the spec, and 20,000-call
+    loops under `--always-turbofan`, `--always-osr`, `--no-maglev` and
+    `--always-sparkplug`; 11 of 14 throw-instrumented `test:js` runs
+    with the copies failed.  `eig` now fills a caller-owned vector and
+    returns λ as a number (`src/layout/force-init.mts`), and six
+    instrumented runs with the copies passed.  The spec also asserts
+    the run emitted no `error`, so a failing worker names its cause.
+    `test:throws` and `verify`'s earlier one-off failures were not kept
+    and are not attributed.
+  - **Bundle size:** at the close the unminified headless ESM build is
+    1,795,041 / 482,800 bytes (raw / gzip) against 1,780,696 / 476,872
+    at the round's start (+0.8% / +1.2%), inside the raised rows; the
+    minified pair grew 2.3 KB raw and 1.0 KB gzip, inside unchanged
+    rows.  The ratchet note records the four closing measurements.
+  - **The full suite passed:** `npm run -s test:quiet` (the Node tier
+    and every Playwright project; Chromium on the RX 580, WebKit
+    skipping WebGPU) and `npm run -s test:bun:quiet`.  The run's
+    golden captures are committed for the status gallery; no reference
+    moved.

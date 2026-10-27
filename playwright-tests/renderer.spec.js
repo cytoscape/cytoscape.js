@@ -730,6 +730,40 @@ test.describe('Renderer', () => {
 
   }); // Rounded edges
 
+  for( const target of ['viewport', 'node'] ){
+    test(`draws every frame during a ${target} animation (issue #3544)`, async ({ page }) => {
+      const drawsPerFrame = await page.evaluate(async target => {
+        const cy = window.cy;
+        const node = cy.add({ data: { id: 'a' }, position: { x: 100, y: 100 } });
+        const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+        const animated = target === 'viewport' ? cy : node;
+        const properties = target === 'viewport'
+          ? { zoom: 2, pan: { x: -100, y: -100 } }
+          : { position: { x: 300, y: 300 } };
+        let draws = 0;
+        const onRender = () => draws++;
+
+        cy.on('render', onRender);
+        animated.animate(properties, { duration: 10000 });
+        await frame();
+        await frame(); // allow the animation to request its first draw
+
+        const counts = [];
+        for( let i = 0; i < 10; i++ ){
+          draws = 0;
+          await frame();
+          counts.push(draws);
+        }
+
+        animated.stop(true);
+        cy.off('render', onRender);
+        return counts;
+      }, target);
+
+      expect(drawsPerFrame).toEqual(Array(10).fill(1));
+    });
+  }
+
   test.describe('with layout', () => {
 
     test('single node cose layout with bounding box', async ({ page }) => {

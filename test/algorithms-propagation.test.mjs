@@ -325,6 +325,41 @@ describe('algorithms: the propagation families (round 70)', function () {
   describe('eles.effectiveResistance()', function () {
     var g = (els) => cytoscape({ elements: els });
 
+    it('reads weights as resistances under weightAs (round 150)', async function () {
+      // a –1– b –3– c.  As conductances: R(a, c) = 1 + 1/3 over a
+      // volume of 2·(1 + 3).  As resistances: R(a, c) = 1 + 3 over a
+      // volume of 2·(1 + 1/3) — conductances, not the raw weights,
+      // which would give 32 rather than 32/3.
+      var path = g([
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { source: 'a', target: 'b', w: 1 } },
+        { data: { source: 'b', target: 'c', w: 3 } },
+      ]);
+      var weight = (e) => e.data('w');
+      var a = path.$id('a');
+      var c = path.$id('c');
+
+      for (var executor of ['cpu', 'workers']) {
+        var asC = await path
+          .elements()
+          .effectiveResistance({ weight, executor });
+        var asR = await path
+          .elements()
+          .effectiveResistance({ weight, weightAs: 'resistance', executor });
+
+        expect(asC.resistance(a, c), executor).to.be.closeTo(4 / 3, 1e-12);
+        expect(asC.commuteTime(a, c), executor).to.be.closeTo(32 / 3, 1e-12);
+        expect(asR.resistance(a, c), executor).to.be.closeTo(4, 1e-12);
+        expect(asR.commuteTime(a, c), executor).to.be.closeTo(32 / 3, 1e-12);
+      }
+
+      expect(() =>
+        path.elements().effectiveResistance({ weightAs: 'ohms' }),
+      ).to.throw(TypeError, /weightAs/);
+    });
+
     it('answers the series, parallel and triangle circuit identities', async function () {
       var path = g([
         { data: { id: 'a' } },

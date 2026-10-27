@@ -595,17 +595,24 @@ describe('algorithms against NetworkX / SciPy references', function () {
     }
 
     for (const [name, ref] of Object.entries(REF.effectiveResistance)) {
-      it(`effectiveResistance on ${name}`, async function () {
+      it(`effectiveResistance on ${name}, weights both ways`, async function () {
         const { g, eles, node } = build(name);
-        const res = await eles.effectiveResistance({ weight, ...cpu });
 
-        perPair(
-          g,
-          (a, b) => res.resistance(node(a), node(b)),
-          ref,
-          1e-10,
-          'resistance',
-        );
+        for (const weightAs of ['conductance', 'resistance']) {
+          const res = await eles.effectiveResistance({
+            weight,
+            weightAs,
+            ...cpu,
+          });
+
+          perPair(
+            g,
+            (a, b) => res.resistance(node(a), node(b)),
+            ref[weightAs],
+            1e-10,
+            `resistance, weights as ${weightAs}s`,
+          );
+        }
       });
     }
 

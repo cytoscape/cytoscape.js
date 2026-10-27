@@ -7830,6 +7830,16 @@ igraph and graph-tool; classic already carries n − 1); and
 `katzCentrality` takes `'l2'` (÷ the Euclidean norm, NetworkX's
 `normalized=True`).
 
+**`effectiveResistance` reads weights as conductances, or as
+resistances on request** (round 150).  The papers that define the
+weighted measure (Ghosh–Boyd–Saberi 2006, Spielman–Srivastava 2008)
+and v4's other Laplacians take a weight as a conductance, and that
+stays the default.  NetworkX's `resistance_distance` defaults to the
+opposite (`invert_weight=True`), so `weightAs: 'resistance'` builds
+the Laplacian from 1/w for callers who want its numbers;
+`commuteTime`'s volume sums conductances either way.  Pairs in
+different components still answer Infinity, where NetworkX raises.
+
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over
   `cy.extent()` — the viewport in model coordinates — so the drawing

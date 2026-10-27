@@ -20,6 +20,14 @@ MCL-shaped one: the GPU wins at every density.
 Edges are undirected with positive weights (a non-positive
 conductance throws); parallel edges sum, loops drop.  Pairs in
 different components answer Infinity.  No v3 counterpart.
+
+A weight is a conductance by default — the convention of the papers
+that define the weighted measure (Ghosh–Boyd–Saberi 2006, Spielman–
+Srivastava 2008) and of v4's other Laplacians.  NetworkX's
+`resistance_distance` defaults to reading it as a resistance
+(`invert_weight=True`); `weightAs: 'resistance'` does the same here
+(round 150), building the Laplacian from 1/w, so the component volumes
+`commuteTime` multiplies by sum conductances either way.
 */
 
 import type { Collection } from '../collection.mjs';
@@ -53,6 +61,12 @@ import { GROUP_EDGES } from '../contract.mjs';
 
 export interface EffectiveResistanceOptions {
   weight?: WeightFn;
+  /**
+   * what `weight` measures (round 150): `'conductance'` (default, a
+   * heavier edge conducts more) or `'resistance'` (a heavier edge
+   * resists more — NetworkX's `invert_weight=True` default)
+   */
+  weightAs?: 'conductance' | 'resistance';
   /** where the run executes; see `AlgoExecutor` (default 'auto') */
   executor?: AlgoExecutor;
 }
@@ -68,16 +82,38 @@ export interface EffectiveResistanceResult {
 }
 
 /**
+ * What a run's `weight` measures, validated.
+ *
+ * @param options — the caller's options
+ * @returns 'conductance' or 'resistance'
+ * @throws if `weightAs` is neither
+ */
+export const resistanceWeightAs = (
+  options: EffectiveResistanceOptions,
+): 'conductance' | 'resistance' => {
+  const weightAs = options.weightAs ?? 'conductance';
+
+  if (weightAs !== 'conductance' && weightAs !== 'resistance') {
+    throw new TypeError(
+      "`weightAs` must be 'conductance' or 'resistance' — got " +
+        String(options.weightAs),
+    );
+  }
+
+  return weightAs;
+};
+
+/**
  * The shifted dense system both executors invert: B = L + J-blocks
  * over the deduped undirected conductances, plus the component id and
  * volume arrays the accessors read.
  *
  * @param view — the subgraph view
- * @param options — the caller's options (weight)
+ * @param options — the caller's options (weight, weightAs)
  * @returns the row-major B, per-node component ids, and per-component
  *   volumes (Σ weighted degrees)
  * @throws if the weight function answers a non-positive or
- *   non-finite number for any edge
+ *   non-finite number for any edge, or `weightAs` is invalid
  */
 export const buildResistanceSystem = (
   view: SubgraphView,
@@ -85,6 +121,7 @@ export const buildResistanceSystem = (
 ): { b: Float64Array; comp: Int32Array; volumes: Float64Array } => {
   const { endpoints, index, cy } = view;
   const weight = options.weight;
+  const asResistance = resistanceWeightAs(options) === 'resistance';
   const n = view.nodeSlots.length;
   const b = new Float64Array(n * n);
   const parent = new Int32Array(n);
@@ -130,15 +167,19 @@ export const buildResistanceSystem = (
     if (!(w > 0) || !Number.isFinite(w)) {
       throw new TypeError(
         'effectiveResistance needs positive finite edge weights ' +
-          `(conductances) — \`weight\` answered ${String(w)}`,
+          `(${asResistance ? 'resistances' : 'conductances'}) — ` +
+          `\`weight\` answered ${String(w)}`,
       );
     }
 
-    // the weighted Laplacian: degrees on the diagonal, −w off it
-    b[s * n + s] += w;
-    b[t * n + t] += w;
-    b[s * n + t] -= w;
-    b[t * n + s] -= w;
+    // the weighted Laplacian over conductances: degrees on the
+    // diagonal, −c off it
+    const c = asResistance ? 1 / w : w;
+
+    b[s * n + s] += c;
+    b[t * n + t] += c;
+    b[s * n + t] -= c;
+    b[t * n + s] -= c;
     parent[find(s)] = find(t);
   }
 
@@ -243,14 +284,17 @@ export const resistanceResultFrom = (
  * @param coll — the calling collection
  * @param options — `{ weight, executor }`
  * @returns a promise of the `{ resistance, commuteTime }` accessors
- * @throws if `executor` is invalid; rejects if an edge weight is not
- *   positive
+ * @throws if `executor` or `weightAs` is invalid; rejects if an edge
+ *   weight is not positive
  */
 export const effectiveResistanceAsync = (
   coll: Collection,
   options: EffectiveResistanceOptions = {},
 ): AlgoRun<EffectiveResistanceResult> => {
   const executor = resolveExecutor(options.executor);
+
+  resistanceWeightAs(options); // an invalid weightAs throws at the call site
+
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
 

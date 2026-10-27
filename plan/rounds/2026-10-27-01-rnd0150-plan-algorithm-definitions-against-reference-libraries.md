@@ -154,3 +154,16 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   in the R reference.  Controls: perturbing each divisor fails eight
   of the nine affected cases (the ninth is directed betweenness, which
   the undirected-halving perturbation does not touch).
+- **Item 6 landed (27 October).**  `weightAs: 'conductance' |
+  'resistance'`, validated synchronously, is read in
+  `buildResistanceSystem`, which every lane shares: a resistance w
+  enters the Laplacian as the conductance 1/w, so the component volumes
+  `commuteTime` multiplies by sum conductances in both modes.  The
+  NetworkX reference records `resistance_distance` both ways
+  (`invert_weight=False` and its default `True`) and the spec runs
+  both settings; a hand spec pins a weighted path's resistance and
+  commute time on `cpu` and `workers` — the commute time is 32/3 both
+  ways, and summing raw weights as the volume would give 32.  Control:
+  ignoring `weightAs` fails all three cases.  The GPU parity spec is
+  unweighted, so it cannot see the option; the GPU lane builds its
+  system through the same function.

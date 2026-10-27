@@ -445,25 +445,31 @@ def proximity(G, refs):
                 out[f'{lap}-{t}'] = matrix(g, sla.expm(-t * L))
         refs['heatKernel'][name] = out
 
-    # effective resistance with weights as conductances
+    # effective resistance, weights read both ways: as conductances
+    # (v4's default, invert_weight=False) and as resistances
+    # (NetworkX's default, v4's weightAs: 'resistance', round 150)
     for name in ('wu', 'disc'):
         g = G[name]
         Gx = nx_graph(g)
         comps = list(nx.connected_components(Gx))
         comp = {n: i for i, c in enumerate(comps) for n in c}
         sub = [Gx.subgraph(c) for c in comps]  # NetworkX needs it connected
-        rows = []
-        for a in g['nodes']:
-            row = []
-            for b in g['nodes']:
-                if a == b:
-                    row.append(0.0)
-                elif comp[a] != comp[b]:
-                    row.append(None)
-                else:
-                    row.append(nx.resistance_distance(sub[comp[a]], a, b, weight='w', invert_weight=False))
-            rows.append(row)
-        refs['effectiveResistance'][name] = rows
+        ref = {}
+        for key, invert in (('conductance', False), ('resistance', True)):
+            rows = []
+            for a in g['nodes']:
+                row = []
+                for b in g['nodes']:
+                    if a == b:
+                        row.append(0.0)
+                    elif comp[a] != comp[b]:
+                        row.append(None)
+                    else:
+                        row.append(nx.resistance_distance(sub[comp[a]], a, b, weight='w',
+                                                          invert_weight=invert))
+                rows.append(row)
+            ref[key] = rows
+        refs['effectiveResistance'][name] = ref
 
     g = G['wd']
     refs['motifCensus']['wd'] = nx.triadic_census(nx_graph(g))

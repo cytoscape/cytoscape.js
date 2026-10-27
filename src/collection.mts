@@ -3662,7 +3662,10 @@ export class Collection<
 
   /**
    * Effective resistance and commute time — the graph as a resistor
-   * network (weights are conductances): `resistance(a, b)` from the
+   * network.  Weights are conductances by default, the convention of
+   * the papers that define the weighted measure; `weightAs:
+   * 'resistance'` reads them as resistances, NetworkX's default (round
+   * 150).  `resistance(a, b)` comes from the
    * Laplacian pseudo-inverse, `commuteTime(a, b)` the expected
    * round-trip steps of the random walk (component volume ×
    * resistance).  Pairs in different components answer Infinity.
@@ -3672,12 +3675,12 @@ export class Collection<
    * 'auto' takes the GPU on size alone.  v4-only — v3 has no
    * counterpart.
    *
-   * @param options — `{ weight, executor }`
+   * @param options — `{ weight, weightAs, executor }`
    * @returns a promise of the `{ resistance, commuteTime }` accessors
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` is invalid; rejects if an edge weight is
-   *   not positive or `executor: 'gpu'` is unavailable
+   * @throws if `executor` or `weightAs` is invalid; rejects if an edge
+   *   weight is not positive or `executor: 'gpu'` is unavailable
    */
   effectiveResistance(
     options?: EffectiveResistanceOptions,

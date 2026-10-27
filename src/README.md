@@ -7796,6 +7796,15 @@ fragment premium is **unmeasurable at scene level** on real hardware
   not 1).  v4 halves the raw score on every executor.  Directed scores
   and `betweennessNormalized()` (a ratio to the maximum) are unchanged;
   a v3 value is twice v4's.
+- **`pageRank` is undirected by default** (round 150).  v3 had no
+  `directed` option and always followed the stored source → target, so
+  on a graph meant as undirected the ranks depended on how each edge
+  happened to be stored (the karate club, stored lower id first, gave
+  node 0 almost the lowest rank).  v4 takes `directed` like the other
+  centralities, default `false`: each edge is walked both ways, as
+  NetworkX and igraph do.  `directed: true` reproduces v3.  The
+  benchmark rows and stamped crossovers keep `directed: true`, the
+  workload they were measured on.
 
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over

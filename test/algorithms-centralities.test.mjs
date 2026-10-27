@@ -78,14 +78,55 @@ describe('gpu/algorithms: pageRank + centralities', function () {
     });
     var rankOfA = async (opts) =>
       (
-        await pair
-          .elements()
-          .pageRank({ precision: 1e-30, iterations: 1000, ...opts })
+        await pair.elements().pageRank({
+          precision: 1e-30,
+          iterations: 1000,
+          directed: true,
+          ...opts,
+        })
       ).rank(pair.$id('a'));
 
     expect(await rankOfA({})).to.be.closeTo(1 / 2.85, 1e-12);
     expect(await rankOfA({ dampingFactor: 0.5 })).to.be.closeTo(0.4, 1e-12);
     expect(await rankOfA({ dampingFactor: 1 })).to.be.closeTo(1 / 3, 1e-12);
+  });
+
+  it('eles.pageRank(): walks an undirected edge both ways by default', async function () {
+    // a – b – c: undirected, b holds two of the four arc ends, so
+    // r_b = (1 − α)/3 + α·(r_a + r_c) and r_a = r_c = (1 − α)/3 + α·r_b/2
+    // give r_b = (1 + 2α)/(3 + 3α) — 2.7/5.55 at α = 0.85.  Directed, the
+    // stored a → b → c makes c the sink and the largest rank instead.
+    var path = cytoscape({
+      elements: [
+        { data: { id: 'a' } },
+        { data: { id: 'b' } },
+        { data: { id: 'c' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 'bc', source: 'b', target: 'c' } },
+      ],
+    });
+    var opts = { precision: 1e-30, iterations: 1000 };
+
+    for (const executor of ['cpu', 'workers']) {
+      var und = await path.elements().pageRank({ ...opts, executor });
+      var dir = await path
+        .elements()
+        .pageRank({ ...opts, executor, directed: true });
+
+      expect(und.rank(path.$id('b')), executor).to.be.closeTo(
+        2.7 / 5.55,
+        1e-12,
+      );
+      expect(und.rank(path.$id('a')), executor).to.be.closeTo(
+        und.rank(path.$id('c')),
+        1e-15,
+      );
+      expect(dir.rank(path.$id('c')), executor).to.be.greaterThan(
+        dir.rank(path.$id('b')),
+      );
+    }
+
+    path.destroy();
   });
 
   it('eles.pageRank(): validates dampingFactor synchronously', function () {

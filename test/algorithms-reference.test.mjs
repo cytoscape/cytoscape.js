@@ -307,9 +307,11 @@ describe('algorithms against NetworkX / SciPy references', function () {
         const [name, ...rest] = key.split('-');
         const weighted = rest.includes('w');
         const dampingFactor = Number(rest.at(-1).slice(1));
-        const { g, eles, node } = build(name);
+        const { g, eles, node, directed } = build(name);
         const res = await eles.pageRank({
           dampingFactor,
+          // `-dir` reads an undirected graph's edge list as stored
+          directed: directed || rest.includes('dir'),
           precision: 1e-30,
           iterations: 100000,
           ...(weighted ? { weight } : {}),

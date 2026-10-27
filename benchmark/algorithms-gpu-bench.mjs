@@ -148,12 +148,14 @@ const FAMILIES = [
     op: `(cy, executor) =>
       cy.elements().markovClustering({ executor }).then((cs) => cs.length)`,
   },
+  // directed: the verdicts were measured on one arc per edge, before
+  // round 150 made undirected (two arcs) the default
   {
     key: 'pageRank',
     sizes: [512, 1024, 2048],
     kind: 'graph',
     op: `(cy, executor) =>
-      cy.elements().pageRank({ executor })
+      cy.elements().pageRank({ executor, directed: true })
         .then((r) => r.rank(cy.nodes()[0]))`,
   },
   // 65.10: the sparse CPU iteration owns sparse graphs outright, so the
@@ -166,7 +168,7 @@ const FAMILIES = [
     sizes: [512, 1024, 2048],
     kind: 'graph-dense',
     op: `(cy, executor) =>
-      cy.elements().pageRank({ executor })
+      cy.elements().pageRank({ executor, directed: true })
         .then((r) => r.rank(cy.nodes()[0]))`,
   },
   {

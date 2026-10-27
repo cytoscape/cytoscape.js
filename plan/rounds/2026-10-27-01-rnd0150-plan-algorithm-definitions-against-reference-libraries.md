@@ -99,3 +99,16 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   new spec pins #3543's path and the #1032 graph (3.5 / 1 / 0.5 / 1) on
   `cpu` and `workers`.  Control: with the halving disabled that spec
   fails, with it restored it passes.
+- **Item 2 landed (27 October).**  `buildPageRankSparse`, which every
+  lane shares, emits an undirected edge as both arcs with the edge's
+  weight; `directed: true` keeps the single stored arc.  The NetworkX
+  reference now passes karate and `wu` undirected and keeps karate read
+  as a digraph as the `-dir` cases, so both settings are compared.  A
+  new spec pins a path's undirected ranks (r_b = (1 + 2α)/(3 + 3α)) on
+  `cpu` and `workers`; the dangling-node spec, the headless smoke test,
+  the cross-runtime smoke's directed chain and the benchmark rows pass
+  `directed: true`, since each was written
+  for or measured on one arc per edge.  Control: forcing `directed`
+  fails the new spec and both undirected karate cases.  One `test:node` run failed `force-worker.test.mjs`'s bit-identical
+  check; it passed alone three times and in the next full run, and
+  touches no PageRank code.

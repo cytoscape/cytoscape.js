@@ -3298,12 +3298,16 @@ export class Collection<
   }
 
   /**
-   * PageRank over the (directed) subgraph.  Async (round 65): returns a
+   * PageRank over the subgraph.  Undirected by default since round 150
+   * — each edge is walked both ways, as NetworkX and igraph do — and
+   * `directed: true` follows source → target only, v3's sole behaviour.
+   * Async (round 65): returns a
    * promise, and `executor` ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1)
    * picks where the power method runs; 'cpu' is the reproducible
    * reference.
    *
-   * @param options — `{ dampingFactor, precision, iterations, executor }`;
+   * @param options — `{ dampingFactor, precision, iterations, weight,
+   *   directed, executor }`;
    *   `dampingFactor` is the textbook α in (0, 1], default 0.85 (v3's
    *   d was α = 1/(2 − d), default 0.8)
    * @returns a promise of `{ rank }`, a per-node accessor

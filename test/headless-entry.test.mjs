@@ -39,7 +39,7 @@ describe('cytoscape/headless (round 131)', function () {
     expect(cy.headless()).to.equal(true);
     expect(cy.nodes().length).to.equal(2);
 
-    var ranks = await cy.elements().pageRank({ iterations: 5 });
+    var ranks = await cy.elements().pageRank({ iterations: 5, directed: true });
 
     expect(ranks.rank(cy.$id('b'))).to.be.greaterThan(ranks.rank(cy.$id('a')));
   });

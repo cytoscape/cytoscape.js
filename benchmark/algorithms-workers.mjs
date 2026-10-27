@@ -261,7 +261,9 @@ const OFFLOAD_FAMILIES = [
     op: (cy, executor) =>
       cy
         .elements()
-        .pageRank({ weight, executor })
+        // directed: the crossover was stamped on one arc per edge, before
+        // round 150 made undirected (two arcs) the default
+        .pageRank({ weight, executor, directed: true })
         .then((r) => r.rank(cy.nodes()[0])),
   },
   {

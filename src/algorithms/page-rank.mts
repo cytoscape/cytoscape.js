@@ -36,6 +36,11 @@ export interface PageRankOptions {
   precision?: number;
   iterations?: number;
   weight?: WeightFn;
+  /**
+   * walk edges source → target only (default false: an undirected run
+   * walks each edge both ways, as NetworkX and igraph do — round 150)
+   */
+  directed?: boolean;
   /** where the run executes; see `AlgoExecutor` (default 'auto') */
   executor?: AlgoExecutor;
 }
@@ -166,7 +171,10 @@ export const resolvePageRankDamping = (options: PageRankOptions): number => {
  * plus the dangling set — the sources with no out-edges, which the
  * dense form gave a uniform 1/n column.  Loops are excluded and edges
  * outside the collection ignored, exactly as the dense build did, so
- * the two executors agree within the parity suite's tolerances.
+ * the two executors agree within the parity suite's tolerances.  An
+ * undirected run (the default since round 150) emits each edge as both
+ * arcs, each carrying the edge's weight; a directed one follows the
+ * stored source → target only, as v3 always did.
  *
  * The textbook matrix is M = α·P + α·D/n + (1 − α)/n·J (P the
  * normalized links, D the dangling columns).  Every iterate is
@@ -175,7 +183,8 @@ export const resolvePageRankDamping = (options: PageRankOptions): number => {
  * (1 − α)/(α·n) in `additionalProb`.
  *
  * @param coll — the calling collection
- * @param options — the caller's options (weight, dampingFactor)
+ * @param options — the caller's options (weight, dampingFactor,
+ *   directed)
  * @returns the view, node count, live edge count, the triplets and the
  *   dangling indices
  */
@@ -196,15 +205,24 @@ export const buildPageRankSparse = (
   const view = subgraph(coll);
   const { endpoints, index, nodeSlots } = view;
   const weightOf = weightAt(view, options.weight);
+  const directed = options.directed === true;
   const n = nodeSlots.length;
   const additionalProb = (1 - dampingFactor) / (dampingFactor * n);
 
-  const m = view.edgeSlots.length;
+  const m = view.edgeSlots.length * (directed ? 1 : 2);
   const srcs = new Int32Array(m);
   const dsts = new Int32Array(m);
   const ws = new Float64Array(m);
   const columnSum = new Float64Array(n);
   let edges = 0;
+
+  const arc = (sIdx: number, tIdx: number, w: number): void => {
+    srcs[edges] = sIdx;
+    dsts[edges] = tIdx;
+    ws[edges] = w;
+    columnSum[sIdx] += w;
+    edges++;
+  };
 
   for (const e of view.edgeSlots) {
     const sSlot = endpoints[e * 2];
@@ -223,11 +241,11 @@ export const buildPageRankSparse = (
 
     const w = weightOf(e);
 
-    srcs[edges] = sIdx;
-    dsts[edges] = tIdx;
-    ws[edges] = w;
-    columnSum[sIdx] += w;
-    edges++;
+    arc(sIdx, tIdx, w);
+
+    if (!directed) {
+      arc(tIdx, sIdx, w);
+    }
   }
 
   for (let e = 0; e < edges; e++) {

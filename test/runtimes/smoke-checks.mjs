@@ -204,7 +204,7 @@ export const smokeOneBundle = async (cytoscape, label, control = null) => {
 
   const ranks = await cy
     .elements()
-    .pageRank({ iterations: 20, executor: 'cpu' });
+    .pageRank({ iterations: 20, directed: true, executor: 'cpu' });
   const rank = (id) => ranks.rank(cy.$id(id));
 
   near(

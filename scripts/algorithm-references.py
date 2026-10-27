@@ -292,17 +292,19 @@ def structure(G, refs):
 
 def centralities(G, refs):
     # PageRank: v4's dampingFactor is NetworkX's alpha (v3's d was
-    # alpha = 1/(2 - d); v4 took the textbook definition).  It is always
-    # directed: an undirected graph's edges count source ->
-    # target as stored, so the reference reads the edge list as a digraph
-    for name, weighted in (('karate', False), ('wd', False), ('wd', True)):
+    # alpha = 1/(2 - d); v4 took the textbook definition).  An undirected
+    # graph walks each edge both ways, as NetworkX does (round 150); the
+    # '-dir' cases read its edge list as a digraph, v4's `directed: true`
+    for name, weighted, as_digraph in (('karate', False, False), ('karate', False, True),
+                                       ('wu', True, False), ('wd', False, False), ('wd', True, False)):
         g = G[name]
-        D = nx_graph({**g, 'directed': True}, multi=True)
+        D = nx_graph({**g, 'directed': True} if as_digraph else g, multi=True)
         for d in (0.85, 0.5):
             pr = nx.pagerank(D,
                              alpha=d, weight='w' if weighted else None,
                              tol=1e-15, max_iter=10000)
-            refs['pageRank'][f'{name}{"-w" if weighted else ""}-d{d}'] = per_node(g, pr)
+            key = f'{name}{"-dir" if as_digraph else ""}{"-w" if weighted else ""}-d{d}'
+            refs['pageRank'][key] = per_node(g, pr)
 
     # closeness from each node, harmonic (sum 1/d) and classic (1/sum d)
     for name, weighted in (('karate', False), ('wu', True), ('wd', True), ('disc', True)):

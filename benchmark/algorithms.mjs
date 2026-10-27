@@ -135,8 +135,11 @@ cmp('algo: degreeCentrality (one root)', ctx, (c) =>
 );
 
 if (N <= 1000) {
+  // round 150: v4 walks undirected by default; v3 has no option and is
+  // always directed (it ignores the flag), so the row compares like
+  // with like
   await cmpAsync('algo: pageRank (20 iters)', ctx, (c) =>
-    c.eles.pageRank({ iterations: 20 }),
+    c.eles.pageRank({ iterations: 20, directed: true }),
   );
 
   // round 33.2: the weighted branch is the one that actually runs the

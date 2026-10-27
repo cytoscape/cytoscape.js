@@ -180,6 +180,11 @@ export const PLANNED_PATHS = {
   // this list as 131.2–131.6 made the files resolve
   // round 107 (id-keyed reconcile) landed 2026-09-28: its
   // src/store/patch.mts entry left this list when the file began resolving
+  // round 150 — the R algorithm references
+  'scripts/algorithm-references.R':
+    'planned by round 150 (algorithm definitions against the reference libraries)',
+  'test/fixtures/algorithm-references-r.json':
+    'planned by round 150 (algorithm definitions against the reference libraries)',
 };
 
 /**

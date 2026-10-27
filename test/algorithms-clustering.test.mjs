@@ -555,6 +555,42 @@ describe('gpu/algorithms: clustering', function () {
       ).not.to.throw();
     });
 
+    it('runs up to 100 passes by default (round 150; v3 stopped at 20)', async function () {
+      // An unweighted ring is symmetric, so MCL leaves it only through
+      // rounding and settles after ~50 passes; at 20 every node's set
+      // still overlaps its neighbours'.  NumPy measured 50 passes, and
+      // 22 to 42 with relative noise from 1e-12 to 1e-6, every run a
+      // partition.
+      var n = 10;
+      var ring = cytoscape({
+        elements: [
+          ...Array.from({ length: n }, (_, i) => ({ data: { id: 'r' + i } })),
+          ...Array.from({ length: n }, (_, i) => ({
+            data: { source: 'r' + i, target: 'r' + ((i + 1) % n) },
+          })),
+        ],
+      });
+      var sizes = (clusters) => clusters.map((c) => c.length);
+
+      var capped = await ring
+        .elements()
+        .markovClustering({ maxIterations: 20 });
+      var settled = await ring.elements().markovClustering();
+
+      // control: at v3's cap the sets overlap, one per node
+      expect(capped.length).to.equal(n);
+      expect(sizes(capped).reduce((a, b) => a + b)).to.be.above(n);
+
+      var seen = settled.flatMap((c) => ids(c)).sort();
+      expect(seen).to.deep.equal(
+        ring
+          .nodes()
+          .map((v) => v.id())
+          .sort(),
+      );
+      expect(settled.length).to.be.within(2, n - 1);
+    });
+
     it('every node lands in exactly one cluster', async function () {
       var clusters = await cy.elements().mcl({
         inflateFactor: 1.8,

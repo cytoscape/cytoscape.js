@@ -148,6 +148,44 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
     ).toBe(true);
   });
 
+  test('markovClustering: the GPU loop runs past 20 passes by default', async ({
+    page,
+  }) => {
+    // round 150: an unweighted ring leaves its symmetric state only
+    // through rounding, ~50 passes in f64 and over 20 even at 1e-6
+    // relative noise, so the two executors may break it differently —
+    // what is pinned is the shape: overlapping sets at v3's cap of 20, a
+    // partition by default
+    const out = await page.evaluate(async () => {
+      const n = 10;
+      const cy = cytoscape({
+        elements: [
+          ...Array.from({ length: n }, (_, i) => ({ data: { id: 'r' + i } })),
+          ...Array.from({ length: n }, (_, i) => ({
+            data: { source: 'r' + i, target: 'r' + ((i + 1) % n) },
+          })),
+        ],
+      });
+      const run = async (opts) =>
+        (
+          await cy.elements().markovClustering({ ...opts, executor: 'gpu' })
+        ).map((c) => c.map((e) => e.id()));
+
+      return {
+        n,
+        capped: await run({ maxIterations: 20 }),
+        settled: await run({}),
+      };
+    });
+
+    expect(out.capped.length).toBe(out.n);
+    expect(out.capped.flat().length).toBeGreaterThan(out.n);
+    expect(out.settled.flat().sort()).toEqual(
+      Array.from({ length: out.n }, (_, i) => 'r' + i).sort(),
+    );
+    expect(out.settled.length).toBeGreaterThan(1);
+  });
+
   test('pageRank: same ordering, ranks within 1e-4, sums to 1', async ({
     page,
   }) => {

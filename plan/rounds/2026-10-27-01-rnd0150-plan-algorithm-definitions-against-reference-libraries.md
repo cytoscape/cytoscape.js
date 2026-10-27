@@ -180,3 +180,20 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   per-pair one; a custom *distance* still runs the kernel).  Controls:
   restoring `>=` in either loop fails that loop's case, and in the
   kernel six of the nine grid cases.
+- **Item 8 landed (27 October).**  `dangling: 'restart' | 'absorb'`,
+  default `'restart'`, validated synchronously by both entries.  No
+  solver changed: restarting at the dead ends adds the rank-one
+  p₀·1_Dᵀ to W, which by Sherman–Morrison scales the absorbing solution
+  by a scalar, and since the restarting walk is stochastic that scalar
+  is 1/Σ p_a — so the seed form divides its vector by its sum and
+  `rwrProximityResultFrom`, which every proximity lane (CPU, workers,
+  GPU) returns through, divides each column by its own.  The NetworkX
+  reference adds `pagerank(alpha = 1 − c, personalization = {seed: 1})`
+  per column (its default dangling rule is the personalization) beside
+  the exact NumPy absorbing solve, and both rules match to 1e-10.  The
+  round 70 spec that pinned the leak now pins both rules on a two-node
+  sink by hand (2/3, 1/3 against 1/2, 1/4) on `cpu` and `workers`; a
+  new GPU spec runs a chain into three sinks under both rules and
+  checks restart's columns sum to 1 and absorb's leak.  Control:
+  forcing absorb fails the hand spec and the `wd` reference (`wu` is
+  connected and undirected, so its two rules agree).

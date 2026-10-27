@@ -18,10 +18,21 @@ Neumann iteration S′ = (1−c)·W·S + c·I, one matmul per step on the
 GPU tier beside MCL.
 
 Conventions: parallel edges sum their weights, loops are excluded,
-and the undirected default walks each edge both ways.  A directed
-node with no out-edges absorbs the walk (its column leaks — scores on
-such graphs can sum below 1), documented rather than redistributed.
+and the undirected default walks each edge both ways.  A node with no
+out-edges (a directed sink, or an isolated node) sends the walk back
+to the seeds by default — NetworkX's personalised PageRank and
+Langville–Meyer's strongly preferential form (round 150) — so every
+score vector sums to 1; `dangling: 'absorb'` keeps round 70's leaky
+walk, where such a node absorbs the walker and scores can sum below 1.
 No v3 counterpart.
+
+The restart costs nothing extra.  Every lane solves the absorbing
+walk, p_a = c·(I − (1−c)·W)⁻¹·p₀; restarting at the dead ends adds
+the rank-one p₀·1_Dᵀ to W, and by Sherman–Morrison the solution is
+p_a scaled by 1/(1 − ((1−c)/c)·Σ_D p_a) — and since that walk is
+stochastic its solution sums to 1, so the scale is simply 1/Σ p_a.
+Each result is renormalized to sum 1 per seed vector (per column for
+the proximity matrix) and no solver changes.
 */
 
 import type { Collection } from '../collection.mjs';
@@ -47,6 +58,13 @@ export interface RandomWalkWithRestartOptions {
   /** walk out-edges only */
   directed?: boolean;
   weight?: WeightFn;
+  /**
+   * where a walker at a node with no out-edges goes (round 150):
+   * `'restart'` (default) back to the seeds, as NetworkX's personalised
+   * PageRank does, so scores sum to 1; `'absorb'` nowhere — the walk
+   * ends there and its mass is lost, round 70's behaviour
+   */
+  dangling?: 'restart' | 'absorb';
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * The seed form has no GPU path; the proximity form takes the GPU
    * from `GPU_MIN_N` nodes at any density (72.6). */
@@ -87,6 +105,55 @@ export const resolveRestartProbability = (
   }
 
   return c;
+};
+
+/**
+ * Whether a walk restarts at its seeds from a dead end, validated.
+ *
+ * @param options — the caller's options
+ * @returns true for 'restart' (the default), false for 'absorb'
+ * @throws if `dangling` is neither
+ */
+export const walkRestartsAtDangling = (
+  options: RandomWalkWithRestartOptions,
+): boolean => {
+  const dangling = options.dangling ?? 'restart';
+
+  if (dangling !== 'restart' && dangling !== 'absorb') {
+    throw new TypeError(
+      "`dangling` must be 'restart' or 'absorb' — got " +
+        String(options.dangling),
+    );
+  }
+
+  return dangling === 'restart';
+};
+
+/**
+ * Rescale an absorbing-walk solution to the restarting walk's: divide
+ * by its sum (see the module note).  A vector that already sums to 1 —
+ * a graph with no dead end — is unchanged up to the solver's tolerance.
+ *
+ * @param p — the absorbing solution, rescaled in place
+ * @param n — its length
+ * @param stride — the step between its entries (n for a matrix column)
+ * @param start — the first entry's index
+ */
+const restartAtDangling = (
+  p: Float64Array,
+  n: number,
+  stride = 1,
+  start = 0,
+): void => {
+  let sum = 0;
+
+  for (let i = 0; i < n; i++) {
+    sum += p[start + i * stride];
+  }
+
+  for (let i = 0; i < n; i++) {
+    p[start + i * stride] /= sum;
+  }
 };
 
 /**
@@ -219,8 +286,8 @@ export const solveWalk = (
  * @param options — `{ seeds, restartProbability, maxIterations,
  *   tolerance, directed, weight, executor }`
  * @returns a promise of the `{ score }` accessor
- * @throws if `executor` or `restartProbability` is invalid, or if
- *   `seeds` holds no node of the collection
+ * @throws if `executor`, `restartProbability` or `dangling` is
+ *   invalid, or if `seeds` holds no node of the collection
  */
 export const randomWalkWithRestartAsync = (
   coll: Collection,
@@ -228,6 +295,7 @@ export const randomWalkWithRestartAsync = (
 ): AlgoRun<RandomWalkWithRestartResult> => {
   const executor = resolveExecutor(options.executor);
   const c = resolveRestartProbability(options);
+  const restart = walkRestartsAtDangling(options);
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
   const p0 = seedDistribution(view, options.seeds);
@@ -246,6 +314,10 @@ export const randomWalkWithRestartAsync = (
         options.maxIterations ?? 200,
         options.tolerance ?? 0.000001,
       );
+
+      if (restart) {
+        restartAtDangling(p, n);
+      }
 
       return {
         score(node: Collection): number | undefined {
@@ -321,7 +393,7 @@ export const seedDistribution = (
  * @param coll — the calling collection
  * @param options — as the seed form, minus `seeds`
  * @returns a promise of the `{ proximity }` accessor
- * @throws if `executor` or `restartProbability` is invalid
+ * @throws if `executor`, `restartProbability` or `dangling` is invalid
  */
 export const randomWalkWithRestartProximityAsync = (
   coll: Collection,
@@ -329,7 +401,9 @@ export const randomWalkWithRestartProximityAsync = (
 ): AlgoRun<RandomWalkWithRestartProximityResult> => {
   const executor = resolveExecutor(options.executor);
 
-  resolveRestartProbability(options); // an invalid restart throws here
+  // an invalid restart probability or dangling rule throws here
+  resolveRestartProbability(options);
+  walkRestartsAtDangling(options);
 
   const view = subgraph(coll);
   const n = view.nodeSlots.length;
@@ -401,23 +475,35 @@ export const rwrProximityWorkers = async (
     }
   }
 
-  return rwrProximityResultFrom(view, matrix);
+  return rwrProximityResultFrom(view, matrix, options);
 };
 
 /**
- * Wrap a proximity matrix as the public accessor — shared by both
- * executors.  Column s holds the walk restarting at s, so the
- * accessor reads `matrix[to · n + from]`.
+ * Wrap a proximity matrix as the public accessor — shared by every
+ * executor.  Column s holds the walk restarting at s, so the
+ * accessor reads `matrix[to · n + from]`.  Each lane solves the
+ * absorbing walk; under `dangling: 'restart'` each column is rescaled
+ * here to the restarting walk's (see the module note).
  *
  * @param view — the subgraph view the matrix was computed from
- * @param matrix — the row-major proximity matrix
+ * @param absorbing — the row-major proximity matrix of the absorbing
+ *   walk
+ * @param options — the caller's options (`dangling`)
  * @returns the result object
  */
 export const rwrProximityResultFrom = (
   view: SubgraphView,
-  matrix: ArrayLike<number>,
+  absorbing: ArrayLike<number>,
+  options: RandomWalkWithRestartOptions,
 ): RandomWalkWithRestartProximityResult => {
   const n = view.nodeSlots.length;
+  const matrix = Float64Array.from(absorbing);
+
+  if (walkRestartsAtDangling(options)) {
+    for (let s = 0; s < n; s++) {
+      restartAtDangling(matrix, n, n, s);
+    }
+  }
 
   const denseOf = (node: Collection, name: string): number | undefined => {
     const slot = firstNodeSlot(view, node, name);
@@ -468,5 +554,5 @@ export const rwrProximity = (
     }
   }
 
-  return rwrProximityResultFrom(view, matrix);
+  return rwrProximityResultFrom(view, matrix, options);
 };

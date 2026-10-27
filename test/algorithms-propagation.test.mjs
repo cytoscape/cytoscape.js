@@ -49,17 +49,46 @@ describe('algorithms: the propagation families (round 70)', function () {
       expect(r.score(cy.$id('b'))).to.be.closeTo(0.5, 1e-9);
     });
 
-    it('a directed sink absorbs the walk (documented leak)', async function () {
-      var r = await cy.elements().randomWalkWithRestart({
+    it('a directed sink restarts the walk at the seeds (round 150)', async function () {
+      var opts = {
         seeds: cy.$id('a'),
         restartProbability: 0.5,
         directed: true,
         tolerance: 1e-12,
-      });
+      };
+      var r = await cy.elements().randomWalkWithRestart(opts);
 
-      // only the restart feeds a; b receives and never returns
-      expect(r.score(cy.$id('a'))).to.be.closeTo(0.5, 1e-9);
-      expect(r.score(cy.$id('b'))).to.be.closeTo(0.25, 1e-9);
+      // b, a dead end, sends its walker back to a:
+      // p_a = c + (1 − c)·p_b and p_b = (1 − c)·p_a give 2/3 and 1/3
+      expect(r.score(cy.$id('a'))).to.be.closeTo(2 / 3, 1e-9);
+      expect(r.score(cy.$id('b'))).to.be.closeTo(1 / 3, 1e-9);
+
+      // the proximity form's column a, on both CPU lanes
+      for (var executor of ['cpu', 'workers']) {
+        var prox = await cy.elements().randomWalkWithRestartProximity({
+          ...opts,
+          seeds: undefined,
+          executor,
+        });
+
+        expect(
+          prox.proximity(cy.$id('a'), cy.$id('a')),
+          executor,
+        ).to.be.closeTo(2 / 3, 1e-9);
+        expect(
+          prox.proximity(cy.$id('a'), cy.$id('b')),
+          executor,
+        ).to.be.closeTo(1 / 3, 1e-9);
+      }
+
+      var absorbed = await cy
+        .elements()
+        .randomWalkWithRestart({ ...opts, dangling: 'absorb' });
+
+      // 'absorb', round 70's leak: only the restart feeds a; b receives
+      // and never returns
+      expect(absorbed.score(cy.$id('a'))).to.be.closeTo(0.5, 1e-9);
+      expect(absorbed.score(cy.$id('b'))).to.be.closeTo(0.25, 1e-9);
     });
 
     it('validates seeds, restartProbability and executor synchronously', function () {
@@ -77,6 +106,14 @@ describe('algorithms: the propagation families (round 70)', function () {
           .elements()
           .randomWalkWithRestart({ seeds: cy.$id('a'), executor: 'tpu' }),
       ).to.throw(TypeError, /executor/);
+      expect(() =>
+        cy
+          .elements()
+          .randomWalkWithRestart({ seeds: cy.$id('a'), dangling: 'leak' }),
+      ).to.throw(TypeError, /dangling/);
+      expect(() =>
+        cy.elements().randomWalkWithRestartProximity({ dangling: 'leak' }),
+      ).to.throw(TypeError, /dangling/);
     });
 
     it('the proximity form agrees with the seed form column by column', async function () {

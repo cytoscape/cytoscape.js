@@ -4909,6 +4909,13 @@ interface RandomWalkWithRestartOptions {
   /** walk out-edges only */
   directed?: boolean;
   weight?: WeightFn;
+  /**
+   * where a walker at a node with no out-edges goes (round 150):
+   * `'restart'` (default) back to the seeds, as NetworkX's personalised
+   * PageRank does, so scores sum to 1; `'absorb'` nowhere — the walk
+   * ends there and its mass is lost, round 70's behaviour
+   */
+  dangling?: 'restart' | 'absorb';
   /** where the run executes; see `AlgoExecutor` (default 'auto').
    * The seed form has no GPU path; the proximity form takes the GPU
    * from `GPU_MIN_N` nodes at any density (72.6). */
@@ -7559,17 +7566,20 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * distribution scores every node by proximity to the seeds.  Async
    * (round 70); the vector iteration is O(E) per step on the CPU, so
    * there is no GPU path — an explicit `executor: 'gpu'` rejects and
-   * points at `randomWalkWithRestartProximity`.  On directed graphs a
-   * node with no out-edges absorbs the walk (scores can sum below 1).
+   * points at `randomWalkWithRestartProximity`.  A node with no
+   * out-edges sends the walker back to the seeds (`dangling:
+   * 'restart'`, default since round 150 — NetworkX's personalised
+   * PageRank), so scores sum to 1; `dangling: 'absorb'` ends the walk
+   * there instead, round 70's behaviour, and scores can sum below 1.
    * v4-only — v3 has no counterpart.
    *
    * @param options — `{ seeds, restartProbability, maxIterations,
-   *   tolerance, directed, weight, executor }`
+   *   tolerance, directed, weight, dangling, executor }`
    * @returns a promise of the `{ score }` accessor
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` or `restartProbability` is invalid, or if
-   *   `seeds` holds no node of the collection
+   * @throws if `executor`, `restartProbability` or `dangling` is
+   *   invalid, or if `seeds` holds no node of the collection
    */
   randomWalkWithRestart(options?: RandomWalkWithRestartOptions): AlgoRun<RandomWalkWithRestartResult>;
   /**
@@ -7581,15 +7591,18 @@ declare class Collection<NodeData = Untyped, EdgeData = DefaultEdgeData<NodeData
    * 74 — bit-identical to 'cpu') and the dense Neumann iteration on
    * the GPU — under 'auto' the GPU from 256 nodes at any density
    * (round 72.6 measured it ahead everywhere), else the pool from 128.
-   * All-pairs (O(n²) memory).  v4-only — v3 has no counterpart.
+   * All-pairs (O(n²) memory).  `dangling` is the seed form's: dead
+   * ends restart at the column's node by default (round 150), or
+   * absorb.  v4-only — v3 has no counterpart.
    *
    * @param options — `{ restartProbability, maxIterations, tolerance,
-   *   directed, weight, executor }`
+   *   directed, weight, dangling, executor }`
    * @returns a promise of the `{ proximity }` accessor
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` or `restartProbability` is invalid; rejects
-   *   if `executor: 'gpu'` is unavailable in this environment
+   * @throws if `executor`, `restartProbability` or `dangling` is
+   *   invalid; rejects if `executor: 'gpu'` is unavailable in this
+   *   environment
    */
   randomWalkWithRestartProximity(options?: RandomWalkWithRestartOptions): AlgoRun<RandomWalkWithRestartProximityResult>;
   /**

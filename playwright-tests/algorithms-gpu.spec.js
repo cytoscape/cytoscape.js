@@ -1313,6 +1313,74 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
     expect(out.worstColumnSum).toBeGreaterThan(0.999);
   });
 
+  test('randomWalkWithRestartProximity: directed sinks restart or absorb on both executors (round 150)', async ({
+    page,
+  }) => {
+    const out = await page.evaluate(async () => {
+      // a directed chain into three sinks: every column reaches a dead
+      // end, so 'restart' must renormalize the GPU's absorbing solve
+      // exactly as the CPU's
+      const els = [];
+
+      for (let i = 0; i < 40; i++) {
+        els.push({ data: { id: 'n' + i } });
+      }
+
+      for (let i = 0; i < 37; i++) {
+        els.push({ data: { source: 'n' + i, target: 'n' + (i + 1) } });
+
+        if (i % 4 === 0) {
+          els.push({ data: { source: 'n' + i, target: 'n' + (37 + (i % 3)) } });
+        }
+      }
+
+      const cy = cytoscape({ elements: els });
+      const nodes = cy.nodes();
+      const rows = {};
+
+      for (const dangling of ['restart', 'absorb']) {
+        const opts = { restartProbability: 0.3, directed: true, dangling };
+        const cpu = await cy
+          .elements()
+          .randomWalkWithRestartProximity({ ...opts, executor: 'cpu' });
+        const gpu = await cy
+          .elements()
+          .randomWalkWithRestartProximity({ ...opts, executor: 'gpu' });
+        let maxDelta = 0;
+        let minSum = Infinity;
+        let maxSum = 0;
+
+        for (let s = 0; s < nodes.length; s++) {
+          let colSum = 0;
+
+          for (let t = 0; t < nodes.length; t++) {
+            const g = gpu.proximity(nodes[s], nodes[t]);
+
+            colSum += g;
+            maxDelta = Math.max(
+              maxDelta,
+              Math.abs(cpu.proximity(nodes[s], nodes[t]) - g),
+            );
+          }
+
+          minSum = Math.min(minSum, colSum);
+          maxSum = Math.max(maxSum, colSum);
+        }
+
+        rows[dangling] = { maxDelta, minSum, maxSum };
+      }
+
+      return rows;
+    });
+
+    expect(out.restart.maxDelta).toBeLessThan(1e-4);
+    expect(out.absorb.maxDelta).toBeLessThan(1e-4);
+    // restart conserves every column; absorb leaks at the sinks
+    expect(out.restart.minSum).toBeGreaterThan(0.999);
+    expect(out.restart.maxSum).toBeLessThan(1.001);
+    expect(out.absorb.minSum).toBeLessThan(0.9);
+  });
+
   test('heatKernel: within 1e-4, symmetric, rows conserve heat', async ({
     page,
   }) => {

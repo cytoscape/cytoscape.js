@@ -97,7 +97,7 @@ export const rwrProximityGpu = async (
   assertFits(ctx, n * n * 4, 'randomWalkWithRestartProximity');
 
   if (n === 0) {
-    return rwrProximityResultFrom(view, []);
+    return rwrProximityResultFrom(view, [], options);
   }
 
   const walk = buildWalkArcs(view, options);
@@ -171,5 +171,5 @@ export const rwrProximityGpu = async (
     buffer.destroy();
   }
 
-  return rwrProximityResultFrom(view, out);
+  return rwrProximityResultFrom(view, out, options);
 };

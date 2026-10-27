@@ -7850,6 +7850,17 @@ different components still answer Infinity, where NetworkX raises.
   equals the threshold exactly — rare on real-valued attributes, common
   on integer ones.
 
+**Random walk with restart: dead ends restart at the seeds** (round
+150).  Round 70's walk ended at a node with no out-edges (a directed
+sink, or an isolated node), so scores could sum below 1.  NetworkX's
+personalised PageRank and the PageRank literature (Langville–Meyer's
+strongly preferential form) send that walker back to the restart
+distribution instead, and `dangling: 'restart'` — the default — does
+the same; `'absorb'` keeps the leak.  No solver changed: with restarts
+the walk is stochastic, so its solution is the absorbing walk's
+divided by its own sum (a Sherman–Morrison identity), and every lane
+renormalizes its result per seed vector or matrix column.
+
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over
   `cy.extent()` — the viewport in model coordinates — so the drawing

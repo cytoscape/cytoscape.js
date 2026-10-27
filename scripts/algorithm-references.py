@@ -421,8 +421,9 @@ def proximity(G, refs):
             np.fill_diagonal(S, 1)
         refs['simRank'][name] = matrix(g, S)
 
-    # random walk with restart, solved exactly: K = c (I - (1 - c) P^T)^-1,
-    # where a node with no out-edges absorbs the walk (a zero row of P)
+    # random walk with restart.  dangling: 'absorb' solved exactly,
+    # K = c (I - (1 - c) P^T)^-1, where a node with no out-edges absorbs
+    # the walk (a zero row of P)
     for name in ('wd', 'wu'):
         g = G[name]
         A = adjacency(g)
@@ -432,10 +433,21 @@ def proximity(G, refs):
         K = c * np.linalg.inv(np.eye(len(A)) - (1 - c) * P.T)
         p0 = np.zeros(len(A))
         p0[0] = 1
+        # dangling: 'restart' (v4's default since round 150) is NetworkX's
+        # personalized PageRank, whose dead ends jump back to the
+        # personalization; alpha is the follow probability 1 - c
+        D = nx_graph({**g, 'directed': True}, multi=True) if g['directed'] else nx_graph(g, multi=True)
+        restart = np.zeros((len(A), len(A)))  # [to][from]
+        for s, seed in enumerate(g['nodes']):
+            pr = nx.pagerank(D, alpha=1 - c, personalization={seed: 1}, weight='w',
+                             tol=1e-15, max_iter=100000)
+            restart[:, s] = [pr[t] for t in g['nodes']]
         refs['randomWalkWithRestart'][name] = {
             'seed': g['nodes'][0],
             'score': [finite(float(v)) for v in K @ p0],
             'proximity': matrix(g, K.T),  # [from][to]
+            'scoreRestart': [finite(float(v)) for v in restart[:, 0]],
+            'proximityRestart': matrix(g, restart.T),
         }
 
     # the heat kernel exp(-tL), combinatorial and normalised Laplacians

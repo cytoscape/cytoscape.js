@@ -543,36 +543,43 @@ describe('algorithms against NetworkX / SciPy references', function () {
     }
 
     for (const [name, ref] of Object.entries(REF.randomWalkWithRestart)) {
-      it(`randomWalkWithRestart on ${name}, scores and proximity`, async function () {
+      it(`randomWalkWithRestart on ${name}, scores and proximity, both dangling rules`, async function () {
         const { g, eles, node, directed } = build(name);
-        const opts = {
-          directed,
-          weight,
-          restartProbability: 0.15,
-          tolerance: 1e-15,
-          maxIterations: 100000,
-          ...cpu,
-        };
-        const walk = await eles.randomWalkWithRestart({
-          ...opts,
-          seeds: node(ref.seed),
-        });
-        const prox = await eles.randomWalkWithRestartProximity(opts);
 
-        perNode(
-          g,
-          (id) => walk.score(node(id)),
-          Object.fromEntries(g.nodes.map((id, i) => [id, ref.score[i]])),
-          1e-10,
-          'score',
-        );
-        perPair(
-          g,
-          (a, b) => prox.proximity(node(a), node(b)),
-          ref.proximity,
-          1e-10,
-          'proximity',
-        );
+        for (const dangling of ['absorb', 'restart']) {
+          const opts = {
+            directed,
+            weight,
+            dangling,
+            restartProbability: 0.15,
+            tolerance: 1e-15,
+            maxIterations: 100000,
+            ...cpu,
+          };
+          const suffix = dangling === 'restart' ? 'Restart' : '';
+          const walk = await eles.randomWalkWithRestart({
+            ...opts,
+            seeds: node(ref.seed),
+          });
+          const prox = await eles.randomWalkWithRestartProximity(opts);
+
+          perNode(
+            g,
+            (id) => walk.score(node(id)),
+            Object.fromEntries(
+              g.nodes.map((id, i) => [id, ref['score' + suffix][i]]),
+            ),
+            1e-10,
+            `score, ${dangling}`,
+          );
+          perPair(
+            g,
+            (a, b) => prox.proximity(node(a), node(b)),
+            ref['proximity' + suffix],
+            1e-10,
+            `proximity, ${dangling}`,
+          );
+        }
       });
     }
 

@@ -248,3 +248,31 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   library here (scikit-learn-extra is not on conda-forge's current
   stack); R's `cluster::pam` covers it in step 3.  31 new cases, all
   passing on the first run.
+- **Step 3 landed (27 October): the R reference.**
+  `scripts/algorithm-references.R` reads the Python fixture's graphs
+  and points and writes `test/fixtures/algorithm-references-r.json`;
+  `test/algorithms-reference-r.test.mjs` compares, 86 cases, every one
+  passing: igraph's `distances` (Dijkstra, Johnson all-pairs,
+  Bellman–Ford and its negative-cycle error), `mst`, strong
+  `components`, `biconnected_components` / `articulation_points`,
+  `min_cut`, `bfs` / `dfs`, `has_eulerian_path`, `page_rank` (all ten
+  cases), `degree(normalized = TRUE)`, `closeness` and
+  `harmonic_centrality` in both directions (raw and normalized),
+  `betweenness` (raw and normalized), `alpha_centrality` (Katz),
+  `count_triangles` / `transitivity`, Jaccard `similarity`,
+  `triad_census`, and personalized `page_rank` for the restarting
+  walk; `stats::hclust` + `cutree` on the blobs and the grid,
+  `stats::kmeans` (Lloyd), `cluster::pam` (v4's kMedoids from PAM's
+  medoids keeps PAM's partition — the first reference kMedoids has had),
+  `e1071::cmeans` (the fixed point to 1e-6) and `MCL::mcl`.  Four
+  convention splits, each converted or pinned in the spec rather than
+  tolerated: igraph's normalized closeness is r/Σd over the reachable
+  nodes (v4 and NetworkX multiply by r/(n − 1), the conversion uses the
+  reached counts the script records); igraph scores a node with no
+  neighbours as Jaccard-similar to itself (1, where NetworkX's set
+  arithmetic and v4 answer 0/0 as 0); R's `MCL` lumps every one-node
+  cluster into one unless `allow1 = TRUE` (the script passes it); and,
+  from step 2, scikit-learn's strict agglomerative threshold.  jsonlite's
+  `auto_unbox` writes a one-member vector as a scalar, so every set is
+  wrapped in `I()`; igraph 2.3 marks an unreached node's BFS distance
+  −1, not NA.  The two `PLANNED_PATHS` entries left with the files.

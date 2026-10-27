@@ -962,9 +962,17 @@ shortest paths, spanning forest, strong components and search;
 scikit-learn for agglomerative clustering, k-means and affinity
 propagation; scikit-fuzzy for fuzzy c-means; Python `markov_clustering`
 for MCL; and NetworkX's BFS, DFS and Euler-trail checks — in one locked
-pixi environment (`scripts/references/`).  Where the libraries split
-on a convention the spec pins each: scikit-learn's agglomerative
-threshold does not merge at exactly t, SciPy's and R's (and v4's) do.  The references compute v4's
+pixi environment (`scripts/references/`).  R is the second reference:
+`scripts/algorithm-references.R` runs igraph, `stats`, `cluster`,
+`e1071` and `MCL` on the same graphs and points, and
+`test/algorithms-reference-r.test.mjs` compares (86 cases).  Where the
+libraries split on a convention the spec pins each: scikit-learn's
+agglomerative threshold does not merge at exactly t, SciPy's and R's
+(and v4's) do; igraph's normalized closeness is r/Σd over the reachable
+nodes, NetworkX's and v4's multiply by r/(n − 1); igraph scores an
+isolated node's Jaccard similarity with itself 1, NetworkX's set
+arithmetic and v4 0; R's `MCL` lumps singletons together unless
+`allow1`.  The references compute v4's
 definitions where those keep v3's: closeness is measured from the node.
 Three v3 definitions did not survive it (see the deviations below):
 PageRank's damping, `bellmanFord`'s undirected negative edges and, in

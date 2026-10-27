@@ -177,7 +177,8 @@
   {"data":{"id":"2026-10-11-01","label":"2026-10-11-01 Alpha interview follow-up questions and review gates","kind":"note","seq":193}},
   {"data":{"id":"2026-10-12-01","label":"2026-10-12-01 Bun, documentation and table benchmark interview","kind":"note","seq":194}},
   {"data":{"id":"2026-10-12-02","label":"2026-10-12-02 Graph algorithm documentation contracts","kind":"note","seq":195}},
-  {"data":{"id":"149","label":"149 Manual feature demos and golden coverage audit","kind":"planned","seq":196}}
+  {"data":{"id":"149","label":"149 Manual feature demos and golden coverage audit","kind":"planned","seq":196}},
+  {"data":{"id":"150","label":"150 Algorithm definitions against the reference libraries","kind":"planned","seq":197}}
 ],"edges":[
   {"data":{"id":"2026-07-22-01->2026-07-22-02","source":"2026-07-22-01","target":"2026-07-22-02","family":"2026-07-22-01"}},
   {"data":{"id":"2026-07-22-01->2026-07-22-03","source":"2026-07-22-01","target":"2026-07-22-03","family":"2026-07-22-01"}},
@@ -640,5 +641,9 @@
   {"data":{"id":"43->149","source":"43","target":"149","family":"104 107 125 135 143 146 147 148 43 57 80 82"}},
   {"data":{"id":"57->149","source":"57","target":"149","family":"104 107 125 135 143 146 147 148 43 57 80 82"}},
   {"data":{"id":"80->149","source":"80","target":"149","family":"104 107 125 135 143 146 147 148 43 57 80 82"}},
-  {"data":{"id":"82->149","source":"82","target":"149","family":"104 107 125 135 143 146 147 148 43 57 80 82"}}
+  {"data":{"id":"82->149","source":"82","target":"149","family":"104 107 125 135 143 146 147 148 43 57 80 82"}},
+  {"data":{"id":"2026-10-12-02->150","source":"2026-10-12-02","target":"150","family":"2026-10-12-02 65 69 70"}},
+  {"data":{"id":"65->150","source":"65","target":"150","family":"2026-10-12-02 65 69 70"}},
+  {"data":{"id":"69->150","source":"69","target":"150","family":"2026-10-12-02 65 69 70"}},
+  {"data":{"id":"70->150","source":"70","target":"150","family":"2026-10-12-02 65 69 70"}}
 ]}}

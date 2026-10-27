@@ -121,6 +121,11 @@ describe('layout: the force simulation on a worker (round 129.3)', function () {
 
         const remote = cytoscape({ elements: elements() });
         const before = _forceWorkerStats();
+        // a worker that fails under the run lands the seed positions and
+        // says why only here — name it, rather than a bare position diff
+        const errors = [];
+
+        remote.on('error', (evt, message) => errors.push(message));
         const layout = remote.layout({
           name: 'force',
           seed: 4,
@@ -132,6 +137,7 @@ describe('layout: the force simulation on a worker (round 129.3)', function () {
         layout.run();
         await layout.promise();
 
+        expect(errors).to.deep.equal([]);
         expect(_forceWorkerStats().runs).to.equal(before.runs + 1);
         expect(positionsOf(remote)).to.deep.equal(reference);
         expect(reference.length).to.be.greaterThan(3);

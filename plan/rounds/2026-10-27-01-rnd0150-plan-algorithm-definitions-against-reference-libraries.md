@@ -60,11 +60,19 @@ The reference specs compare against cached JSON; no spec runs Python or R.
 - No library equivalent: SimRank, the heat kernel (SciPy `expm` only) and
   affinity propagation's message schedule outside scikit-learn stay on
   their NumPy transcriptions.
-- **Environment:** pixi through mise (`pixi` is in mise's registry), one
-  `pixi.toml` for both the R and Python reference environments from
-  conda-forge, locked; it replaces `.venv-refs`.  A CRAN package that
-  conda-forge lacks (possibly `MCL`) is installed into the pixi
-  environment by the R script.
+- **Environment** (landed first, since every item regenerates the
+  fixture): `scripts/references/pixi.toml` and its `pixi.lock`, one
+  conda-forge environment for both references — Python 3.13 with
+  NetworkX 3.7, SciPy 1.18.1 and NumPy 2.5.4 (the versions the first
+  fixture was recorded with), scikit-learn, scikit-fuzzy and
+  `markov_clustering` (PyPI); R 4.5 with igraph, cluster, e1071, MCL and
+  jsonlite, all on conda-forge.  It replaces the unlocked venv and
+  the pip requirements file beside the script.  Pixi itself is
+  installed standalone or through mise (it is in mise's registry).
+  Regenerating the existing fixture in it moved the 14th significant
+  digit of 333 values (max relative change 3.0e-14, the heat kernel's
+  `expm`): the BLAS build differs from the pip wheels'.  The fixture is
+  re-recorded from the locked environment, and the spec passes unchanged.
 
 ### Order
 
@@ -72,7 +80,7 @@ The reference specs compare against cached JSON; no spec runs Python or R.
    match and the docs in the same commit.
 2. The Python reference widened (new algorithms, scikit-learn,
    scikit-fuzzy, `markov_clustering`, both settings of every new option).
-3. The pixi environment, the R reference script and fixture, and its spec.
+3. The R reference script and fixture, and its spec.
 
 ### Verification
 

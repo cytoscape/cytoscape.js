@@ -1,10 +1,10 @@
 """Reference values for v4's graph algorithms, from NetworkX / SciPy / NumPy.
 
-Run once, by hand, when a fixture graph or a reference changes:
+Run once, by hand, when a fixture graph or a reference changes, in the
+locked environment of scripts/references/pixi.toml (pixi installs it on
+first run):
 
-    python3 -m venv .venv-refs
-    .venv-refs/bin/pip install -r scripts/algorithm-references.requirements.txt
-    .venv-refs/bin/python scripts/algorithm-references.py
+    pixi run --manifest-path scripts/references/pixi.toml python
 
 It writes test/fixtures/algorithm-references.json: the fixture graphs, and
 per algorithm the values an independent implementation computes on them.

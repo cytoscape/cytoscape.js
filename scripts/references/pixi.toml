@@ -1,0 +1,35 @@
+# The reference environments behind test/fixtures/algorithm-references*.json:
+# the libraries v4's graph algorithms are checked against.  pixi.lock pins
+# every version; NetworkX, SciPy and NumPy are also pinned here, since the
+# first fixture was recorded with them.  Run by hand when a fixture graph or a reference changes:
+#
+#   pixi run --manifest-path scripts/references/pixi.toml python
+#   pixi run --manifest-path scripts/references/pixi.toml r
+#
+# The specs never run these; the JSON is the checked-in record.
+
+[workspace]
+name = "cytoscape-algorithm-references"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+[dependencies]
+python = "3.13.*"
+networkx = "==3.7"
+scipy = "==1.18.1"
+numpy = "==2.5.4"
+scikit-learn = "*"
+scikit-fuzzy = "*"
+r-base = "4.5.*"
+r-igraph = "*"
+r-cluster = "*"
+r-e1071 = "*"
+r-mcl = "*"
+r-jsonlite = "*"
+
+[pypi-dependencies]
+markov-clustering = "*"
+
+[tasks]
+python = "python ../algorithm-references.py"
+r = "Rscript ../algorithm-references.R"

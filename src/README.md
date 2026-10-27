@@ -956,7 +956,15 @@ pointing at the dense form.
 fixture graphs (weighted, directed, disconnected, multigraph,
 negative-weight; 30+ nodes) and compares with what NetworkX 3.7, SciPy
 and NumPy compute, recorded once in `test/fixtures/algorithm-references.json`
-by `scripts/algorithm-references.py`.  The references compute v4's
+by `scripts/algorithm-references.py`.  Round 150 made it every library
+that has the algorithm: SciPy's `csgraph` beside NetworkX for the
+shortest paths, spanning forest, strong components and search;
+scikit-learn for agglomerative clustering, k-means and affinity
+propagation; scikit-fuzzy for fuzzy c-means; Python `markov_clustering`
+for MCL; and NetworkX's BFS, DFS and Euler-trail checks — in one locked
+pixi environment (`scripts/references/`).  Where the libraries split
+on a convention the spec pins each: scikit-learn's agglomerative
+threshold does not merge at exactly t, SciPy's and R's (and v4's) do.  The references compute v4's
 definitions where those keep v3's: closeness is measured from the node.
 Three v3 definitions did not survive it (see the deviations below):
 PageRank's damping, `bellmanFord`'s undirected negative edges and, in

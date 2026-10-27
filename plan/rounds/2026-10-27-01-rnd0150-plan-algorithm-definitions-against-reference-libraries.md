@@ -220,3 +220,31 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   Also renamed the pixi tasks to `refs-py` and `refs-r`: a task named
   `python` shadowed the interpreter, so `pixi run python -c …` ran the
   generator instead.
+- **Step 2 landed (27 October): the Python reference widened.**  New
+  library checks, all cached in the fixture:
+  - NetworkX: BFS (the reachable set, visited in nondecreasing depth)
+    and DFS (the reachable set) on karate, `wd` and `disc`; Hierholzer
+    against `has_eulerian_path` / `is_eulerian` on five new graphs — a
+    circuit, a path, a directed circuit, a star (none) and two disjoint
+    triangles (even degrees, no single trail) — and every trail v4
+    finds must use each edge once, chained end to end.
+  - SciPy `csgraph` on `wu`, `wd` and `disc`: `floyd_warshall`,
+    `dijkstra` and `bellman_ford` against v4's three; breadth- and
+    depth-first reach; `minimum_spanning_tree` against `kruskal`;
+    strong `connected_components` against `tarjanStronglyConnected`.
+  - scikit-learn: `AgglomerativeClustering` on the blobs and the grid
+    (all linkages and thresholds), `KMeans` (Lloyd, from the SciPy
+    case's centroids) and `AffinityPropagation` (precomputed
+    −euclidean similarity, both preferences).  scikit-learn's
+    `distance_threshold` does not merge at exactly t — "at or above
+    which clusters will not be merged" — the opposite of SciPy's
+    `fcluster`, R's `cutree` and v4 since item 7; the grid cases pin
+    v4 just under t against it, recording the split rather than hiding
+    it.
+  - scikit-fuzzy `cmeans` (m = 2) from a seeded membership: v4 seeds at
+    random, so the spec compares the fixed point, centroids and every
+    membership to 1e-6 in x order.
+  Degree centrality landed with item 5.  kMedoids has no Python
+  library here (scikit-learn-extra is not on conda-forge's current
+  stack); R's `cluster::pam` covers it in step 3.  31 new cases, all
+  passing on the first run.

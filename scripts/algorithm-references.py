@@ -33,6 +33,10 @@ if os.environ.get('PYTHONHASHSEED') != '0':
 
 import markov_clustering as mc
 import networkx as nx
+import skfuzzy
+import sklearn
+from scipy.sparse import csgraph
+from sklearn.cluster import AffinityPropagation, AgglomerativeClustering, KMeans
 import numpy as np
 import scipy
 import scipy.linalg as sla
@@ -145,6 +149,24 @@ def twins():
              (3, 4, 1), (4, 5, 1), (4, 5, 1), (5, 6, 1), (6, 7, 1), (7, 5, 1)]
     return graph('twins', False, range(8), edges,
                  'parallel pairs that are the only link: a leaf and a bridge')
+
+
+def euler_graphs():
+    # Hierholzer's cases (round 150): a circuit (two triangles on node
+    # 2), a path (one pendant edge makes 0 and 5 odd), a directed
+    # circuit, four odd nodes (none), and two disjoint triangles — every
+    # degree even, but no single trail covers both
+    tri2 = [(0, 1, 1), (1, 2, 1), (2, 0, 1), (2, 3, 1), (3, 4, 1), (4, 2, 1)]
+    return [
+        graph('euler-circuit', False, range(5), tri2, 'two triangles sharing node 2'),
+        graph('euler-path', False, range(6), tri2 + [(0, 5, 1)], 'the same plus a pendant edge'),
+        graph('euler-directed', True, range(4), [(0, 1, 1), (1, 2, 1), (2, 0, 1), (2, 3, 1), (3, 2, 1)],
+              'a balanced digraph'),
+        graph('euler-none', False, range(5), [(0, 1, 1), (0, 2, 1), (0, 3, 1), (0, 4, 1)],
+              'a star: four odd nodes'),
+        graph('euler-split', False, range(6), [(0, 1, 1), (1, 2, 1), (2, 0, 1), (3, 4, 1), (4, 5, 1), (5, 3, 1)],
+              'two disjoint triangles: even degrees, disconnected edges'),
+    ]
 
 
 def barbell():
@@ -270,6 +292,32 @@ def shortest_paths(G, refs):
         refs['kruskal'][name] = {
             'weight': sum(w for _, _, w in T.edges(data='w')),
             'edges': T.number_of_edges(),
+        }
+
+
+def search(G, refs):
+    # breadth- and depth-first search from the first node: the reachable
+    # set and NetworkX's BFS depths (visit order inside a level, and a
+    # DFS's order, follow adjacency order, which no two libraries share)
+    for name in ('karate', 'wd', 'disc'):
+        g = G[name]
+        Gx = nx_graph(g)
+        root = g['nodes'][0]
+        depth = nx.single_source_shortest_path_length(Gx, root)
+        refs['search'][name] = {
+            'root': root,
+            'depth': {n: depth[n] for n in g['nodes'] if n in depth},
+            'dfsReach': sorted(nx.dfs_preorder_nodes(Gx, root), key=g['nodes'].index),
+        }
+
+    # Hierholzer: whether an Euler trail exists, and which kind
+    for g in G.values():
+        if not g['name'].startswith('euler-'):
+            continue
+        Gx = nx_graph(g, multi=True)
+        refs['hierholzer'][g['name']] = {
+            'hasPath': nx.has_eulerian_path(Gx),
+            'isCircuit': nx.is_eulerian(Gx),
         }
 
 
@@ -582,6 +630,96 @@ def clustering(points, karate_g, refs, G_ALL):
             }
 
 
+def scipy_graphs(G, refs):
+    # SciPy's csgraph, a second implementation of the shortest-path,
+    # spanning-tree, component and search families (round 150).  It
+    # reads a dense matrix, so the simple graphs only: a zero entry is
+    # no edge, and every fixture weight is at least 1.
+    for name in ('wu', 'wd', 'disc'):
+        g = G[name]
+        A = adjacency(g)
+        directed = g['directed']
+        D = csgraph.floyd_warshall(A, directed=directed)
+        dij = csgraph.dijkstra(A, directed=directed, indices=0)
+        bf = csgraph.bellman_ford(A, directed=directed, indices=0)
+        unit = (A > 0).astype(float)
+        bfs_order = csgraph.breadth_first_order(unit, 0, directed=directed,
+                                                return_predecessors=False)
+        dfs_order = csgraph.depth_first_order(unit, 0, directed=directed,
+                                              return_predecessors=False)
+        ref = {
+            'floydWarshall': matrix(g, D),
+            'dijkstra': [finite(float(v)) for v in dij],
+            'bellmanFord': [finite(float(v)) for v in bf],
+            'bfsReach': sorted(g['nodes'][i] for i in bfs_order),
+            'dfsReach': sorted(g['nodes'][i] for i in dfs_order),
+        }
+        if not directed:
+            T = csgraph.minimum_spanning_tree(A)
+            ref['kruskal'] = {'weight': finite(float(T.sum())), 'edges': int(T.nnz)}
+        else:
+            k, labels = csgraph.connected_components(A, directed=True, connection='strong')
+            ref['strong'] = sorted(sorted(g['nodes'][i] for i in np.flatnonzero(labels == c))
+                                   for c in range(k))
+        refs['scipyCsgraph'][name] = ref
+
+
+def sklearn_and_skfuzzy(points, refs):
+    X = np.array(points)
+
+    # scikit-learn's AgglomerativeClustering: 'mean' is its 'average'.
+    # Its distance_threshold does NOT merge at exactly the threshold
+    # ("at or above which clusters will not be merged") — the opposite
+    # of SciPy's fcluster and R's cutree, which v4 follows since round
+    # 150 — so the grid cases record that convention for the spec to
+    # pin against v4 just under the threshold
+    for set_name, P, ts in (('blobs', X, (1.5, 3.0, 6.0)),
+                            ('grid', np.array(GRID_POINTS, dtype=float), (1.0, 2.0, 3.0))):
+        for linkage_name, method in (('single', 'single'), ('complete', 'complete'), ('mean', 'average')):
+            for t in ts:
+                lab = AgglomerativeClustering(n_clusters=None, distance_threshold=t,
+                                              linkage=method).fit(P).labels_
+                refs['sklearn'][f'agglomerative-{set_name}-{linkage_name}-{t}'] = sorted(
+                    np.flatnonzero(lab == l).tolist() for l in np.unique(lab))
+
+    # k-means from the SciPy case's fixed centroids, Lloyd's algorithm
+    C0 = np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]])
+    km = KMeans(n_clusters=3, init=C0, n_init=1, max_iter=100, tol=0,
+                algorithm='lloyd').fit(X)
+    refs['sklearn']['kMeans'] = {
+        'initial': C0.tolist(),
+        'clusters': [np.flatnonzero(km.labels_ == k).tolist() for k in range(3)],
+        'centroids': [[finite(float(v)) for v in c] for c in km.cluster_centers_],
+    }
+
+    # affinity propagation on -euclidean similarity; scikit-learn adds
+    # a tiny seeded noise to break ties, so exemplars match where the
+    # data has none
+    S = -squareform(pdist(X))
+    for pref in (-20.0, -8.0):
+        ap = AffinityPropagation(affinity='precomputed', preference=pref, damping=0.5,
+                                 convergence_iter=100, max_iter=1000, random_state=0).fit(S)
+        refs['sklearn'][f'affinityPropagation-pref{pref:g}'] = {
+            'exemplars': sorted(ap.cluster_centers_indices_.tolist()),
+            'clusters': sorted(np.flatnonzero(ap.labels_ == k).tolist()
+                               for k in range(len(ap.cluster_centers_indices_))),
+        }
+
+    # fuzzy c-means (m = 2): scikit-fuzzy from a fixed membership.  v4
+    # seeds at random, so the spec compares the fixed point, which the
+    # blobs make unique up to the clusters' order: centroids sorted by
+    # x, and each point's memberships in that order
+    rng = np.random.default_rng(150)
+    U0 = rng.random((3, len(X)))
+    U0 /= U0.sum(0)
+    cntr, U, *_ = skfuzzy.cmeans(X.T, c=3, m=2, error=1e-12, maxiter=10000, init=U0)
+    order = np.argsort(cntr[:, 0])
+    refs['skfuzzy']['cmeans'] = {
+        'centroids': [[finite(float(v)) for v in cntr[k]] for k in order],
+        'membership': [[finite(float(U[k, i])) for k in order] for i in range(len(X))],
+    }
+
+
 def affinity_propagation(S, damping=0.5, max_iter=1000, conv=100):
     n = len(S)
     R = np.zeros((n, n))
@@ -621,7 +759,8 @@ def affinity_propagation(S, damping=0.5, max_iter=1000, conv=100):
 def main():
     rng = random.Random(20261019)
     graphs = [karate(), weighted_undirected(rng), weighted_directed(rng), disconnected(rng),
-              negative_dag(rng), negative_cycle(), multigraph(rng), barbell(), twins()]
+              negative_dag(rng), negative_cycle(), multigraph(rng), barbell(), twins(),
+              *euler_graphs()]
     G = {g['name']: g for g in graphs}
     points = blobs(rng)
     names = ['dijkstra', 'floydWarshall', 'bellmanFord', 'kruskal', 'tarjanStronglyConnected',
@@ -629,19 +768,24 @@ def main():
              'betweennessCentrality', 'katzCentrality', 'triangleCount', 'neighborhoodSimilarity',
              'simRank', 'randomWalkWithRestart', 'heatKernel', 'effectiveResistance',
              'motifCensus', 'hierarchicalClustering', 'kMeans', 'affinityPropagation',
-             'markovClustering']
+             'markovClustering', 'search', 'hierholzer', 'scipyCsgraph', 'sklearn', 'skfuzzy']
     refs = {n: {} for n in names}
 
     shortest_paths(G, refs)
+    search(G, refs)
     structure(G, refs)
     centralities(G, refs)
     proximity(G, refs)
     clustering(points, G['karate'], refs, G)
+    scipy_graphs(G, refs)
+    sklearn_and_skfuzzy(points, refs)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         'generator': 'scripts/algorithm-references.py',
-        'versions': {'networkx': nx.__version__, 'scipy': scipy.__version__, 'numpy': np.__version__},
+        'versions': {'networkx': nx.__version__, 'scipy': scipy.__version__, 'numpy': np.__version__,
+                     'scikit-learn': sklearn.__version__, 'scikit-fuzzy': skfuzzy.__version__,
+                     'markov_clustering': getattr(mc, '__version__', '0.0.6.dev0')},
         'graphs': G,
         'points': points,
         'gridPoints': GRID_POINTS,

@@ -230,6 +230,167 @@ describe('algorithms against NetworkX / SciPy references', function () {
     }
   });
 
+  describe('search and Euler trails', function () {
+    for (const [name, ref] of Object.entries(REF.search)) {
+      it(`breadthFirstSearch on ${name}: the reachable set, level by level`, function () {
+        const { eles, node, directed } = build(name);
+        const { path } = eles.breadthFirstSearch({
+          root: node(ref.root),
+          directed,
+        });
+        const order = path.nodes().map((n) => n.id());
+
+        expect([...order].sort()).to.deep.equal(Object.keys(ref.depth).sort());
+
+        // BFS visits by nondecreasing depth
+        for (let i = 1; i < order.length; i++) {
+          expect(
+            ref.depth[order[i]],
+            `${order[i]} after ${order[i - 1]}`,
+          ).to.be.at.least(ref.depth[order[i - 1]]);
+        }
+      });
+
+      it(`depthFirstSearch on ${name}: the reachable set`, function () {
+        const { eles, node, directed } = build(name);
+        const { path } = eles.depthFirstSearch({
+          root: node(ref.root),
+          directed,
+        });
+
+        expect(
+          path
+            .nodes()
+            .map((n) => n.id())
+            .sort(),
+        ).to.deep.equal([...ref.dfsReach].sort());
+      });
+    }
+
+    for (const [name, ref] of Object.entries(REF.hierholzer)) {
+      it(`hierholzer on ${name}: exists exactly when NetworkX says, and is a trail`, function () {
+        const { g, eles, directed } = build(name);
+        const res = eles.hierholzer({ directed });
+
+        expect(res.found, 'found').to.equal(ref.hasPath);
+
+        if (!res.found) {
+          return;
+        }
+
+        // every edge exactly once, chained end to end
+        const edges = res.trail.edges();
+
+        expect(edges.map((e) => e.id()).sort()).to.deep.equal(
+          g.edges.map(([id]) => id).sort(),
+        );
+
+        const ends = (e) => [e.source().id(), e.target().id()];
+        const starts = directed ? [ends(edges[0])[0]] : ends(edges[0]);
+        const walks = starts.filter((start) => {
+          let at = start;
+
+          return edges.every((e) => {
+            const [s, t] = ends(e);
+
+            if (at === s) {
+              at = t;
+            } else if (!directed && at === t) {
+              at = s;
+            } else {
+              return false;
+            }
+
+            return true;
+          });
+        });
+
+        expect(walks, 'the edges chain into one walk').to.not.be.empty;
+      });
+    }
+  });
+
+  describe('SciPy csgraph', function () {
+    for (const [name, ref] of Object.entries(REF.scipyCsgraph)) {
+      it(`shortest paths on ${name}: floydWarshall, dijkstra, bellmanFord`, async function () {
+        const { g, eles, node, directed } = build(name);
+        const root = node(g.nodes[0]);
+        const fw = await eles.floydWarshall({ weight, directed, ...cpu });
+        const dij = eles.dijkstra({ root, weight, directed });
+        const bf = eles.bellmanFord({ root, weight, directed });
+
+        perPair(
+          g,
+          (a, b) => fw.distance(node(a), node(b)),
+          ref.floydWarshall,
+          1e-9,
+          'floydWarshall',
+        );
+        g.nodes.forEach((id, i) => {
+          near(
+            dij.distanceTo(node(id)),
+            ref.dijkstra[i],
+            1e-9,
+            `dijkstra ${id}`,
+          );
+          near(
+            bf.distanceTo(node(id)),
+            ref.bellmanFord[i],
+            1e-9,
+            `bellmanFord ${id}`,
+          );
+        });
+      });
+
+      it(`search on ${name}: breadth- and depth-first reach`, function () {
+        const { g, eles, node, directed } = build(name);
+        const root = node(g.nodes[0]);
+        const reach = (fn) =>
+          fn({ root, directed })
+            .path.nodes()
+            .map((n) => n.id())
+            .sort();
+
+        expect(reach((o) => eles.breadthFirstSearch(o))).to.deep.equal(
+          [...ref.bfsReach].sort(),
+        );
+        expect(reach((o) => eles.depthFirstSearch(o))).to.deep.equal(
+          [...ref.dfsReach].sort(),
+        );
+      });
+
+      if (ref.kruskal) {
+        it(`kruskal on ${name}: SciPy's minimum spanning forest`, function () {
+          const { eles } = build(name);
+          const tree = eles.kruskal(weight);
+
+          expect(tree.edges().length).to.equal(ref.kruskal.edges);
+          expect(
+            tree.edges().reduce((sum, e) => sum + e.data('w'), 0),
+          ).to.be.closeTo(ref.kruskal.weight, 1e-9);
+        });
+      }
+
+      if (ref.strong) {
+        it(`tarjanStronglyConnected on ${name}: SciPy's strong components`, function () {
+          const { eles } = build(name);
+          const { components } = eles.tarjanStronglyConnected();
+
+          expect(
+            components
+              .map((c) =>
+                c
+                  .nodes()
+                  .map((n) => n.id())
+                  .sort(),
+              )
+              .sort(),
+          ).to.deep.equal(ref.strong.map((c) => [...c].sort()).sort());
+        });
+      }
+    }
+  });
+
   describe('structure', function () {
     it('tarjanStronglyConnected on wd', function () {
       const { eles } = build('wd');
@@ -703,6 +864,111 @@ describe('algorithms against NetworkX / SciPy references', function () {
         expect(indexSets(res)).to.deep.equal(ref.clusters);
       });
     }
+
+    // scikit-learn (round 150): agglomerative, k-means and affinity
+    // propagation, a second library beside SciPy and the NumPy
+    // transcription
+    for (const [key, ref] of Object.entries(REF.sklearn).filter(([key]) =>
+      key.startsWith('agglomerative-'),
+    )) {
+      it(`hierarchicalClustering against scikit-learn, ${key}`, async function () {
+        const [, set, linkage, t] = key.split('-');
+        // scikit-learn does not merge at exactly the threshold, where
+        // v4 (SciPy, R) does; the grid's merges sit exactly on it, so
+        // v4 runs just under it to reproduce scikit-learn's convention
+        const threshold = set === 'grid' ? Number(t) - 1e-9 : Number(t);
+        const res = await pointsCy(set === 'grid' ? gridPoints : points)
+          .nodes()
+          .hierarchicalClustering({
+            attributes,
+            linkage,
+            mode: 'threshold',
+            threshold,
+            ...cpu,
+          });
+
+        expect(indexSets(res)).to.deep.equal(
+          [...ref].sort((a, b) => a[0] - b[0]),
+        );
+      });
+    }
+
+    it('kMeans against scikit-learn from the same centroids', async function () {
+      const ref = REF.sklearn.kMeans;
+      const res = await pointsCy()
+        .nodes()
+        .kMeans({
+          k: ref.initial.length,
+          attributes,
+          testMode: true,
+          testCentroids: ref.initial.map((c) => [...c]),
+          maxIterations: 100,
+          sensitivityThreshold: 0,
+          ...cpu,
+        });
+
+      expect(indexSets(res)).to.deep.equal(
+        ref.clusters.filter((c) => c.length > 0).sort((a, b) => a[0] - b[0]),
+      );
+    });
+
+    for (const [key, ref] of Object.entries(REF.sklearn).filter(([key]) =>
+      key.startsWith('affinityPropagation-'),
+    )) {
+      it(`affinityPropagation against scikit-learn, ${key}`, async function () {
+        const res = await pointsCy()
+          .nodes()
+          .affinityPropagation({
+            attributes,
+            damping: 0.5,
+            preference: Number(key.split('pref')[1]),
+            ...cpu,
+          });
+
+        expect(indexSets(res)).to.deep.equal(ref.clusters);
+      });
+    }
+
+    it("fuzzyCMeans reaches scikit-fuzzy's fixed point", async function () {
+      // v4 seeds its memberships at random; the blobs give one fixed
+      // point up to the clusters' order, which the membership-weighted
+      // centroids put in x order, as the reference does
+      const ref = REF.skfuzzy.cmeans;
+      const cy = pointsCy();
+      const nodes = cy.nodes();
+      const res = await nodes.fuzzyCMeans({
+        k: 3,
+        m: 2,
+        attributes,
+        sensitivityThreshold: 1e-12,
+        maxIterations: 10000,
+        ...cpu,
+      });
+      const U = res.degreeOfMembership;
+      const centroidX = [0, 1, 2].map((k) => {
+        let num = 0;
+        let den = 0;
+
+        nodes.forEach((n, i) => {
+          const w = U[i][k] ** 2;
+
+          num += w * n.data('x');
+          den += w;
+        });
+
+        return num / den;
+      });
+      const order = [0, 1, 2].sort((a, b) => centroidX[a] - centroidX[b]);
+
+      order.forEach((k, j) =>
+        near(centroidX[k], ref.centroids[j][0], 1e-6, `centroid ${j} x`),
+      );
+      ref.membership.forEach((row, i) =>
+        order.forEach((k, j) =>
+          near(U[i][k], row[j], 1e-6, `membership of ${i} in ${j}`),
+        ),
+      );
+    });
 
     const mclSets = (res) =>
       res.map((c) => c.map((n) => Number(n.id())).sort((a, b) => a - b));

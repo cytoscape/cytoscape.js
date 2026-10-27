@@ -742,12 +742,18 @@ export interface MarkovKernelInput extends KernelInput {
   expandFactor: number;
   inflateFactor: number;
   maxIterations: number;
+  /** entries under this drop to 0 after each inflation, each column's
+   * largest kept (0: no pruning) */
+  pruneThreshold: number;
 }
 
 /**
  * MCL's alternation of expansion (a matrix power) and inflation (an
  * element-wise power, re-normalized) until the matrix stops changing
- * to four decimal places or the cap runs out.
+ * to four decimal places or the cap runs out.  With a
+ * `pruneThreshold`, each inflated matrix then drops its entries under
+ * it, keeping every column's largest — Python `markov_clustering`'s
+ * `prune`, which does not renormalize either (round 150).
  *
  * @param input — the start matrix and the knobs
  * @returns the converged matrix
@@ -757,6 +763,7 @@ export function markovKernel(input: MarkovKernelInput): { M: Float64Array } {
   const expandFactor = input.expandFactor;
   const inflateFactor = input.inflateFactor;
   const maxIterations = input.maxIterations;
+  const pruneThreshold = input.pruneThreshold;
   const n2 = n * n;
   let M = input.M;
 
@@ -827,6 +834,24 @@ export function markovKernel(input: MarkovKernelInput): { M: Float64Array } {
     return true;
   };
 
+  const prune = (A: Float64Array): void => {
+    for (let col = 0; col < n; col++) {
+      let top = 0;
+
+      for (let row = 1; row < n; row++) {
+        if (A[row * n + col] > A[top * n + col]) {
+          top = row;
+        }
+      }
+
+      for (let row = 0; row < n; row++) {
+        if (row !== top && A[row * n + col] < pruneThreshold) {
+          A[row * n + col] = 0;
+        }
+      }
+    }
+  };
+
   let isStillMoving = true;
   let iterations = 0;
 
@@ -836,6 +861,10 @@ export function markovKernel(input: MarkovKernelInput): { M: Float64Array } {
     const expanded = expand(M);
 
     M = inflate(expanded);
+
+    if (pruneThreshold > 0) {
+      prune(M);
+    }
 
     if (!hasConverged(M, expanded)) {
       isStillMoving = true;

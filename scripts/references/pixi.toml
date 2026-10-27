@@ -3,8 +3,8 @@
 # every version; NetworkX, SciPy and NumPy are also pinned here, since the
 # first fixture was recorded with them.  Run by hand when a fixture graph or a reference changes:
 #
-#   pixi run --manifest-path scripts/references/pixi.toml python
-#   pixi run --manifest-path scripts/references/pixi.toml r
+#   pixi run --manifest-path scripts/references/pixi.toml refs-py
+#   pixi run --manifest-path scripts/references/pixi.toml refs-r
 #
 # The specs never run these; the JSON is the checked-in record.
 
@@ -31,5 +31,5 @@ r-jsonlite = "*"
 markov-clustering = "*"
 
 [tasks]
-python = "python ../algorithm-references.py"
-r = "Rscript ../algorithm-references.R"
+refs-py = "python ../algorithm-references.py"
+refs-r = "Rscript ../algorithm-references.R"

@@ -22,6 +22,36 @@ import { gpuCall } from './gpu-registry.mjs';
 export const MARKOV_OFFLOAD_MIN_N = 64;
 import { GROUP_EDGES, GROUP_NODES } from '../contract.mjs';
 
+/**
+ * The default iteration cap: 100 since round 150, as Python
+ * `markov_clustering` and R `MCL`.  v3's 20 could stop a graph short of
+ * its fixed point and answer clusters read off a half-iterated matrix;
+ * a run that converged sooner is unchanged.
+ */
+export const MARKOV_MAX_ITERATIONS = 100;
+
+/**
+ * The `pruneThreshold`, validated.
+ *
+ * @param options — the caller's options
+ * @returns the threshold (0 when omitted: no pruning)
+ * @throws if it is not a finite number in [0, 1)
+ */
+export const resolvePruneThreshold = (
+  options: MarkovClusteringOptions,
+): number => {
+  const t = options.pruneThreshold ?? 0;
+
+  if (typeof t !== 'number' || !(t >= 0 && t < 1)) {
+    throw new TypeError(
+      '`pruneThreshold` must be a number in [0, 1) — got ' +
+        String(options.pruneThreshold),
+    );
+  }
+
+  return t;
+};
+
 /** A similarity function: maps an edge to a numeric contribution. */
 export type MarkovAttributeFn = (edge: Collection) => number;
 
@@ -29,7 +59,15 @@ export interface MarkovClusteringOptions {
   expandFactor?: number;
   inflateFactor?: number;
   multFactor?: number;
+  /** the iteration cap (default 100 since round 150, as Python
+   * `markov_clustering` and R `MCL`; v3's was 20) */
   maxIterations?: number;
+  /**
+   * after each inflation, drop entries under this to 0, keeping each
+   * column's largest (default 0: no pruning) — Python
+   * `markov_clustering`'s `pruning_threshold` (round 150)
+   */
+  pruneThreshold?: number;
   attributes?: MarkovAttributeFn[];
   /** where the run executes; see `AlgoExecutor` (default 'auto') */
   executor?: AlgoExecutor;
@@ -65,6 +103,9 @@ export const markovClusteringAsync = (
   options: MarkovClusteringOptions = {},
 ): AlgoRun<Collection[]> => {
   const executor = resolveExecutor(options.executor);
+
+  resolvePruneThreshold(options); // an invalid threshold throws here
+
   const n = subgraph(coll).nodeSlots.length;
 
   // measured crossover (65.8, amd gcn-4): 70x GPU at n=256 and n^3
@@ -114,7 +155,8 @@ export const markovLane = (
           M: built.M,
           expandFactor: options.expandFactor ?? 2,
           inflateFactor: options.inflateFactor ?? 2,
-          maxIterations: options.maxIterations ?? 20,
+          maxIterations: options.maxIterations ?? MARKOV_MAX_ITERATIONS,
+          pruneThreshold: resolvePruneThreshold(options),
         },
       };
     },

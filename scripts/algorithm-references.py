@@ -4,7 +4,7 @@ Run once, by hand, when a fixture graph or a reference changes, in the
 locked environment of scripts/references/pixi.toml (pixi installs it on
 first run):
 
-    pixi run --manifest-path scripts/references/pixi.toml python
+    pixi run --manifest-path scripts/references/pixi.toml refs-py
 
 It writes test/fixtures/algorithm-references.json: the fixture graphs, and
 per algorithm the values an independent implementation computes on them.
@@ -31,6 +31,7 @@ from pathlib import Path
 if os.environ.get('PYTHONHASHSEED') != '0':
     os.execve(sys.executable, [sys.executable, *sys.argv], {**os.environ, 'PYTHONHASHSEED': '0'})
 
+import markov_clustering as mc
 import networkx as nx
 import numpy as np
 import scipy
@@ -492,7 +493,7 @@ def proximity(G, refs):
     refs['motifCensus']['wd'] = nx.triadic_census(nx_graph(g))
 
 
-def clustering(points, karate_g, refs):
+def clustering(points, karate_g, refs, G_ALL):
     X = np.array(points)
 
     # v4's 'mean' linkage is size-weighted: SciPy's 'average'; both merge
@@ -534,25 +535,51 @@ def clustering(points, karate_g, refs):
 
     # Markov clustering on the karate club, v3's flavour: self-loops set to
     # multFactor 1, expand 2, inflate 2, stop when the inflated and expanded
-    # matrices agree to 4 decimals, clusters read at 3 decimals
+    # matrices agree to 4 decimals (at most 100 passes since round 150),
+    # clusters read at 3 decimals
     g = karate_g
     n = len(g['nodes'])
+
+    def read_clusters(M):
+        n = len(M)
+        clusters, seen = [], set()
+        for i in range(n):
+            c = [j for j in range(n) if np.floor(M[i, j] * 1000 + 0.5) / 1000 > 0]
+            if c and tuple(c) not in seen:
+                seen.add(tuple(c))
+                clusters.append(c)
+        return clusters
+
     M = adjacency(g, weighted=False)
     np.fill_diagonal(M, 1)
     M /= M.sum(0)
-    for _ in range(20):
+    for _ in range(100):
         E = M @ M
         M = E ** 2
         M /= M.sum(0)
         if np.array_equal(np.floor(M * 1e4 + 0.5) / 1e4, np.floor(E * 1e4 + 0.5) / 1e4):
             break
-    clusters, seen = [], set()
-    for i in range(n):
-        c = [j for j in range(n) if np.floor(M[i, j] * 1000 + 0.5) / 1000 > 0]
-        if c and tuple(c) not in seen:
-            seen.add(tuple(c))
-            clusters.append(c)
-    refs['markovClustering']['karate'] = clusters
+    refs['markovClustering']['karate'] = read_clusters(M)
+
+    # the Python markov_clustering package's own iteration (expand,
+    # inflate, then prune entries under the threshold keeping each
+    # column's largest; stop on np.allclose between passes), unpruned
+    # and pruned — v4's pruneThreshold.  0.001 is its default and moves
+    # nothing here; 0.05 and 0.1 change the clusters on both graphs.
+    # Its get_clusters reports every nonzero entry, which unpruned leaves
+    # tiny but nonzero, so the converged matrix is read with v4's
+    # 3-decimal rule
+    for name in ('karate', 'wu'):
+        A = adjacency(G_ALL[name], weighted=False)
+        n = len(A)
+        for t in (0.0, 0.001, 0.05, 0.1):
+            R = mc.run_mcl(A, expansion=2, inflation=2, loop_value=1, iterations=100,
+                           pruning_threshold=t)
+            refs['markovClustering'][f'{name}-mc-{t}'] = {
+                'graph': name,
+                'pruneThreshold': t,
+                'clusters': read_clusters(np.asarray(R.todense() if hasattr(R, 'todense') else R)),
+            }
 
 
 def affinity_propagation(S, damping=0.5, max_iter=1000, conv=100):
@@ -609,7 +636,7 @@ def main():
     structure(G, refs)
     centralities(G, refs)
     proximity(G, refs)
-    clustering(points, G['karate'], refs)
+    clustering(points, G['karate'], refs, G)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({

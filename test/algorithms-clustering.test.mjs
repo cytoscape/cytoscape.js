@@ -541,6 +541,20 @@ describe('gpu/algorithms: clustering', function () {
       expect(ids(clusters[2])).to.deep.equal(['11', '66', '77', '123']);
     });
 
+    it('validates pruneThreshold synchronously (round 150)', function () {
+      for (var bad of [-0.1, 1, NaN, '0.1']) {
+        expect(
+          () => cy.elements().markovClustering({ pruneThreshold: bad }),
+          String(bad),
+        ).to.throw(TypeError, /pruneThreshold/);
+      }
+
+      // control: the bounds' inside edge runs
+      expect(() =>
+        cy.elements().markovClustering({ pruneThreshold: 0 }),
+      ).not.to.throw();
+    });
+
     it('every node lands in exactly one cluster', async function () {
       var clusters = await cy.elements().mcl({
         inflateFactor: 1.8,

@@ -197,3 +197,26 @@ options; `npm run -s test:playwright:quiet` for the GPU betweenness lane.
   checks restart's columns sum to 1 and absorb's leak.  Control:
   forcing absorb fails the hand spec and the `wd` reference (`wu` is
   connected and undirected, so its two rules agree).
+- **Item 9 landed (27 October).**  `MARKOV_MAX_ITERATIONS = 100`
+  replaces the 20 in the offload lane and the GPU path.
+  `pruneThreshold` (validated synchronously, in [0, 1)) runs after each
+  inflation in `markovKernel` and, on the GPU, as `PRUNE_COLUMNS`, one
+  invocation per column, dispatched only when the threshold is
+  positive; neither renormalizes after pruning, as `markov_clustering`
+  does not.  The NumPy transcription runs up to 100 passes (karate
+  converges well within 20, so its clusters did not move), and the
+  reference now runs Python `markov_clustering` itself on karate and
+  `wu` at thresholds 0, 0.001 (its default, which moves nothing here),
+  0.05 and 0.1 (which do).  Its `get_clusters` counts every nonzero
+  entry — unpruned that leaves tiny values, which read as overlapping
+  clusters — so its converged matrix is read with v4's 3-decimal rule;
+  all eight cases match v4 despite the two stopping criteria differing
+  (successive-pass `allclose` there, expanded-vs-inflated here).  The
+  GPU parity spec runs thresholds 0.05, 0.1 and 0.2 on both executors
+  and requires one to move the partition.  Controls: disabling the CPU
+  prune fails four of the eight cases; skipping the GPU pass fails the
+  browser spec.  No fixture needs more than 20 passes, so the cap's
+  change is untested by a reference; it is a default, documented.
+  Also renamed the pixi tasks to `refs-py` and `refs-r`: a task named
+  `python` shadowed the interpreter, so `pixi run python -c …` ran the
+  generator instead.

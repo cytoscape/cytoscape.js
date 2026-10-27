@@ -3819,14 +3819,19 @@ export class Collection<
    * Async (round 65): returns a promise, and `executor`
    * ('cpu' | 'gpu' | 'auto', default 'auto'; 'workers' runs the reference on one pool worker, round 129.1) picks where the
    * expand/inflate iteration runs; 'cpu' is the reproducible reference.
+   * `maxIterations` defaults to 100 (round 150, as Python
+   * `markov_clustering` and R `MCL`; v3's 20 could stop short of the
+   * fixed point), and `pruneThreshold` (default 0) drops each inflated
+   * matrix's entries under it, keeping each column's largest, as
+   * `markov_clustering`'s `pruning_threshold` does.
    *
    * @param options — `{ attributes, expandFactor, inflateFactor,
-   *   multFactor, maxIterations, executor }`
+   *   multFactor, maxIterations, pruneThreshold, executor }`
    * @returns a promise of one collection per cluster
    *   — with `cancel()` on it (round 128): a pending run rejects
    *   with `CancelledError`, a `'cpu'` run has already completed
-   * @throws if `executor` is invalid; rejects if `executor: 'gpu'` is
-   *   unavailable in this environment
+   * @throws if `executor` or `pruneThreshold` is invalid; rejects if
+   *   `executor: 'gpu'` is unavailable in this environment
    */
   markovClustering(
     options?: MarkovClusteringOptions,

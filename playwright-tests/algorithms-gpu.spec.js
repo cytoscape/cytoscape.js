@@ -112,12 +112,40 @@ test.describe('gpu-vs-cpu algorithm parity', () => {
       const gpu = await cy
         .elements()
         .markovClustering({ ...opts, executor: 'gpu' });
+      // round 150's pruneThreshold: the GPU's per-column prune pass
+      // against the CPU kernel's
+      const pruned = {};
 
-      return { cpu: cpu.map(ids), gpu: gpu.map(ids) };
+      for (const pruneThreshold of [0.05, 0.1, 0.2]) {
+        const run = async (executor) =>
+          (
+            await cy
+              .elements()
+              .markovClustering({ ...opts, pruneThreshold, executor })
+          ).map(ids);
+
+        pruned[pruneThreshold] = {
+          cpu: await run('cpu'),
+          gpu: await run('gpu'),
+        };
+      }
+
+      return { cpu: cpu.map(ids), gpu: gpu.map(ids), pruned };
     });
 
     expect(out.gpu).toEqual(out.cpu);
     expect(out.cpu.length).toBe(3); // the fixture's known partition
+
+    for (const [t, row] of Object.entries(out.pruned)) {
+      expect(row.gpu, `pruneThreshold ${t}`).toEqual(row.cpu);
+    }
+
+    // pruning has to move something, or the pass above proves nothing
+    expect(
+      Object.values(out.pruned).some(
+        (row) => JSON.stringify(row.cpu) !== JSON.stringify(out.cpu),
+      ),
+    ).toBe(true);
   });
 
   test('pageRank: same ordering, ranks within 1e-4, sums to 1', async ({

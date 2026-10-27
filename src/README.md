@@ -7861,6 +7861,15 @@ the walk is stochastic, so its solution is the absorbing walk's
 divided by its own sum (a Sherman–Morrison identity), and every lane
 renormalizes its result per seed vector or matrix column.
 
+- **`markovClustering` iterates up to 100 times by default** (round
+  150).  v3's cap was 20; Python `markov_clustering` and R `MCL` use
+  100, and a graph that has not converged by 20 passes answers clusters
+  read off a half-iterated matrix.  Runs that converged sooner are
+  unchanged.  The new `pruneThreshold` (default 0, exact) drops each
+  inflated matrix's entries under it, keeping every column's largest,
+  as `markov_clustering`'s `pruning_threshold` does — on the CPU kernel
+  and as a per-column WGSL pass.
+
 - **`breadthfirst` is sized by the viewport in pixels, not by the
   zoomed extent** (round 125.4).  v3 spreads its rows and ranks over
   `cy.extent()` — the viewport in model coordinates — so the drawing

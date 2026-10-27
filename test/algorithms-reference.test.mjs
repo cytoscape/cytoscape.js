@@ -704,13 +704,28 @@ describe('algorithms against NetworkX / SciPy references', function () {
       });
     }
 
+    const mclSets = (res) =>
+      res.map((c) => c.map((n) => Number(n.id())).sort((a, b) => a - b));
+
     it('markovClustering on the karate club', async function () {
       const { eles } = build('karate');
       const res = await eles.markovClustering(cpu);
 
-      expect(
-        res.map((c) => c.map((n) => Number(n.id())).sort((a, b) => a - b)),
-      ).to.deep.equal(REF.markovClustering.karate);
+      expect(mclSets(res)).to.deep.equal(REF.markovClustering.karate);
     });
+
+    for (const [key, ref] of Object.entries(REF.markovClustering).filter(
+      ([key]) => key.includes('-mc-'),
+    )) {
+      it(`markovClustering against Python markov_clustering, ${key}`, async function () {
+        const { eles } = build(ref.graph);
+        const res = await eles.markovClustering({
+          pruneThreshold: ref.pruneThreshold,
+          ...cpu,
+        });
+
+        expect(mclSets(res)).to.deep.equal(ref.clusters);
+      });
+    }
   });
 });

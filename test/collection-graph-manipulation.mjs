@@ -96,6 +96,50 @@ describe('Collection graph manipulation', function(){
       expect( cy.elements() ).to.have.length(0);
     });
 
+    it('should remove compound nodes with ids that are Object.prototype keys', function(){
+      cy = cytoscape({
+        elements: [
+          { data: { id: 'p' } },
+          { data: { id: 'toString', parent: 'p' } },
+          { data: { id: 'b', parent: 'p' } },
+          { data: { id: 'constructor' } },
+          { data: { id: 'valueOf', parent: 'constructor' } }
+        ]
+      });
+
+      cy.getElementById('toString').remove();
+
+      expect( cy.getElementById('toString') ).to.have.length(0);
+      expect( cy.getElementById('p').children().map( n => n.id() ) ).to.deep.equal(['b']);
+
+      cy.getElementById('constructor').remove();
+
+      expect( cy.getElementById('constructor') ).to.have.length(0);
+      expect( cy.getElementById('valueOf') ).to.have.length(0);
+    });
+
+    it('should update the style of a parent with an Object.prototype key id when its last child is removed', function(){
+      cy = cytoscape({
+        styleEnabled: true,
+        style: [
+          { selector: 'node:parent', style: { 'background-color': 'red' } },
+          { selector: 'node:childless', style: { 'background-color': 'blue' } }
+        ],
+        elements: [
+          { data: { id: 'constructor' } },
+          { data: { id: 'a', parent: 'constructor' } }
+        ]
+      });
+
+      let parent = cy.getElementById('constructor');
+      let red = parent.style('background-color');
+
+      cy.getElementById('a').remove();
+
+      expect( parent.isChildless() ).to.be.true;
+      expect( parent.style('background-color') ).to.not.equal( red );
+    });
+
   });
 
   describe('ele.removed()', function(){
@@ -176,6 +220,40 @@ describe('Collection graph manipulation', function(){
       cy.$('#child').move({ parent: null });
 
       expect( cy.$('#child').parent().length ).to.equal(0);
+    });
+
+    it('should move a node with an Object.prototype key id to another parent', function(){
+      cy = cytoscape({
+        elements: [
+          { data: { id: 'p1' } },
+          { data: { id: 'p2' } },
+          { data: { id: 'constructor', parent: 'p1' } }
+        ]
+      });
+
+      cy.getElementById('constructor').move({ parent: 'p2' });
+
+      expect( cy.getElementById('constructor').parent().id() ).to.equal('p2');
+      expect( cy.getElementById('p1').children() ).to.have.length(0);
+      expect( cy.getElementById('p2').children().map( n => n.id() ) ).to.deep.equal(['constructor']);
+    });
+
+    it('should move an edge with an Object.prototype key id', function(){
+      cy = cytoscape({
+        elements: [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } },
+          { data: { id: 'toString', source: 'a', target: 'b' } }
+        ]
+      });
+
+      cy.getElementById('toString').move({ target: 'c' });
+
+      expect( cy.getElementById('toString').target().id() ).to.equal('c');
+      expect( cy.getElementById('b').connectedEdges() ).to.have.length(0);
+      expect( cy.getElementById('c').connectedEdges().map( e => e.id() ) ).to.deep.equal(['toString']);
+      expect( cy.edges() ).to.have.length(1);
     });
 
     it('should move descendants and connected edges', function(){

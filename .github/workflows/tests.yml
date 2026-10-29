@@ -10,8 +10,16 @@ jobs:
   # `npm run test:node` is the same chain a developer gets from `npm test`
   # minus the Playwright half, so there is one definition of it, in
   # package.json rather than here.
+  #
+  # Round 151: the Node tier runs on Windows and macOS as well, so a path,
+  # shell or line-ending assumption breaks here rather than for a user.
   ci-node:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    name: ci-node (${{ matrix.os }})
     # No `timeout-minutes`: the 15-minute cap was killing runs (2026-08-05).
     # Falls back to GitHub's 360-minute job default, which is a backstop rather
     # than a budget.  Re-impose a cap once the suite's real wall-clock is known.
@@ -47,14 +55,23 @@ jobs:
   # runtime bump that breaks the job is handled like a
   # browser bump breaking a golden: read the failure, then move the pin —
   # never widen the assertion.
+  #
+  # Round 151 adds Windows and macOS legs at `latest` only; the floor stays a
+  # Linux leg, to bound the matrix.
   ci-bun:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     # see the note on `ci-node` above
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest]
         bun-version: ['1.4.0', 'latest']
-    name: ci-bun (${{ matrix.bun-version }})
+        include:
+        - os: windows-latest
+          bun-version: latest
+        - os: macos-latest
+          bun-version: latest
+    name: ci-bun (${{ matrix.bun-version }}, ${{ matrix.os }})
     steps:
     - uses: actions/checkout@v6
     # Node runs install, typecheck/lint/build tooling; Bun runs the test suites.
@@ -77,6 +94,7 @@ jobs:
   # Node tier's isolate smoke (`test/modules/isolate-smoke.test.mjs`) is the
   # per-run gate that needs nothing installed; if workerd proves flaky on
   # runners, this drops to a release-time run and the record says so.
+  # Linux-only (round 151): it tests the bundle on workerd, not the host OS.
   ci-workerd:
     runs-on: ubuntu-latest
     name: ci-workerd
@@ -94,8 +112,13 @@ jobs:
 
   # v4's browser tier, one job per Playwright project.  Each installs only
   # the browser it drives; only `visual` and `parity` need v3's bundle.
+  #
+  # Round 151: `renderer` also runs on Windows (Chromium) and
+  # `renderer-webkit` on macOS (WebKit on Metal).  `visual` and `parity`
+  # stay Linux-only: their goldens are SwiftShader pixels rasterised on
+  # Linux, and another OS would need its own baselines.
   ci-browser:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     # see the note on `ci-node` above
     strategy:
       fail-fast: false
@@ -103,13 +126,23 @@ jobs:
         include:
         - project: renderer
           browser: chromium
+          os: ubuntu-latest
         - project: renderer-webkit
           browser: webkit
+          os: ubuntu-latest
         - project: visual
           browser: chromium
+          os: ubuntu-latest
         - project: parity
           browser: chromium
-    name: ci-browser (${{ matrix.project }})
+          os: ubuntu-latest
+        - project: renderer
+          browser: chromium
+          os: windows-latest
+        - project: renderer-webkit
+          browser: webkit
+          os: macos-latest
+    name: ci-browser (${{ matrix.project }}, ${{ matrix.os }})
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-node@v6
@@ -147,12 +180,13 @@ jobs:
       if: failure()
       uses: actions/upload-artifact@v7
       with:
-        name: playwright-${{ matrix.project }}
+        name: playwright-${{ matrix.project }}-${{ matrix.os }}
         path: test-results/
         retention-days: 7
 
   # v3 — kept self-contained in v3/ for comparison benchmarks and parity work
-  # (round 42).  It builds and tests as its own project.
+  # (round 42).  It builds and tests as its own project.  Frozen, so it
+  # stays Linux-only (round 151).
   ci-v3:
     runs-on: ubuntu-latest
     # see the note on `ci-node` above

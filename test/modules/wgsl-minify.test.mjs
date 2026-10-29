@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -56,7 +56,7 @@ const taggedFiles = (dir = join(root, 'src'), out = []) => {
       name.endsWith('.mts') &&
       /\b(wgsl|glsl)`/.test(readFileSync(p, 'utf8'))
     ) {
-      out.push(relative(root, p));
+      out.push(relative(root, p).split(sep).join('/'));
     }
   }
 

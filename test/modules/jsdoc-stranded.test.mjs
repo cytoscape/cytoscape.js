@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Round 36.6.  The stranded doc block is this codebase's most repeated
 // defect — eleven instances across rounds 26.1, 26.3, 26.4, 34.4, 34.5
@@ -150,7 +151,7 @@ describe('gpu stranded-doc-block audit (round 36)', function () {
       // _query; it is the file the round's own fix touched, so a
       // regression there shows up here
       const r = auditStrandedComments(
-        new URL('../../src/core.mts', import.meta.url).pathname,
+        fileURLToPath(new URL('../../src/core.mts', import.meta.url)),
       );
 
       expect(r.stranded).to.deep.equal([]);

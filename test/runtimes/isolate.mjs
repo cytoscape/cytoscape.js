@@ -111,7 +111,8 @@ for (const [expr, expected] of [
 }
 
 const cytoscape = (await load(bundle)).default;
-const label = bundle.split('/').pop();
+// either separator: fileURLToPath gives `\` on Windows (round 151)
+const label = bundle.split(/[\\/]/).pop();
 
 checks.assert(
   typeof cytoscape === 'function',

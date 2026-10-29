@@ -19,6 +19,8 @@
 // build.
 
 import fs from 'node:fs';
+import { sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import ts from 'typescript-compiler-api';
 
 /** The v4 public type surface, as exported from `cytoscape`. */
@@ -299,6 +301,14 @@ for (const name of ['headless', 'headless-gpu']) {
 // the field's type, show that overload's own doc block on hover, and keep
 // the untyped read `unknown`.
 
+// An absolute path with `/` separators: a file URL's `.pathname` is
+// `/D:/…` on Windows, and the language service names files with `/`, so
+// the probe's own name must match it (round 151).
+const probePath = (rel) =>
+  fileURLToPath(new URL(rel, import.meta.url))
+    .split(sep)
+    .join('/');
+
 const HOVER_PROBE = (specifier) => `import cytoscape from '${specifier}';
 interface N { weight: number; label: string }
 interface E { kind: 'a' | 'b' }
@@ -313,8 +323,8 @@ for (const name of [
   'cytoscape-headless',
   'cytoscape-headless-gpu',
 ]) {
-  const dts = new URL(`../dist/${name}.d.ts`, import.meta.url).pathname;
-  const file = new URL('../build/types-probe.ts', import.meta.url).pathname;
+  const dts = probePath(`../dist/${name}.d.ts`);
+  const file = probePath('../build/types-probe.ts');
   const text = HOVER_PROBE(dts.replace(/\.d\.ts$/, '.js'));
   const readFile = (f) => (f === file ? text : fs.readFileSync(f, 'utf8'));
   const service = ts.createLanguageService({

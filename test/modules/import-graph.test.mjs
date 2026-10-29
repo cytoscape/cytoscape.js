@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /*
@@ -43,6 +43,10 @@ allowlist for it would go stale by insertion (the round-37.1 lesson).
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const SRC = join(ROOT, 'src');
+
+// repo-relative with `/`, so keys match the specs' spellings on Windows too
+// (round 151)
+const repoPath = (file) => relative(ROOT, file).split(sep).join('/');
 
 /**
  * Modules under `src` may import from outside `src`.  Empty, and meant to
@@ -165,24 +169,24 @@ const allEdges = () => {
           bare.set(spec, []);
         }
 
-        bare.get(spec).push(relative(ROOT, file));
+        bare.get(spec).push(repoPath(file));
         continue;
       }
 
       const target = resolve(dirname(file), spec);
 
-      if (target.startsWith(SRC + '/')) {
+      if (target.startsWith(SRC + sep)) {
         internal++;
         continue;
       }
 
-      const key = relative(ROOT, target);
+      const key = repoPath(target);
 
       if (!outward.has(key)) {
         outward.set(key, []);
       }
 
-      outward.get(key).push(relative(ROOT, file));
+      outward.get(key).push(repoPath(file));
     }
   }
 
@@ -235,7 +239,7 @@ const chain = (seen, file) => {
   const out = [];
 
   for (let f = file; f != null; f = seen.get(f)) {
-    out.unshift(relative(SRC, f));
+    out.unshift(relative(SRC, f).split(sep).join('/'));
   }
 
   return out.join(' → ');
@@ -368,7 +372,7 @@ describe('import graph: the tiers (round 131)', function () {
 
     return {
       seen,
-      bad: [...seen.keys()].filter((f) => forbidden.test(relative(ROOT, f))),
+      bad: [...seen.keys()].filter((f) => forbidden.test(repoPath(f))),
     };
   };
 
@@ -423,7 +427,7 @@ describe('import graph: the tiers (round 131)', function () {
       'cytoscape/headless-gpu reaches the renderer tier',
     ).to.deep.equal([]);
     // it does carry the device tier: the kernels and the force host
-    const rel = new Set([...seen.keys()].map((f) => relative(ROOT, f)));
+    const rel = new Set([...seen.keys()].map((f) => repoPath(f)));
 
     expect(rel.has('src/algorithms/gpu-lanes.mts')).to.equal(true);
     expect(rel.has('src/gpu/headless-force-host.mts')).to.equal(true);
@@ -437,7 +441,7 @@ describe('import graph: the tiers (round 131)', function () {
     // must still be seen to reach the renderer, the pointer and the
     // kernels through the same walk
     const rel = new Set(
-      [...reach('src/index.mts').keys()].map((f) => relative(ROOT, f)),
+      [...reach('src/index.mts').keys()].map((f) => repoPath(f)),
     );
 
     for (const f of [

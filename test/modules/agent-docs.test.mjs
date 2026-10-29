@@ -22,7 +22,8 @@ import { join } from 'node:path';
 import { expect } from 'chai';
 
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
-const NOTES_DIR = join('docs', 'agents');
+// `/`, not join(): it is matched against Markdown links (round 151)
+const NOTES_DIR = 'docs/agents';
 
 /** What a session pays to load `AGENTS.md`, in bytes. */
 const BUDGET = 16 * 1024;

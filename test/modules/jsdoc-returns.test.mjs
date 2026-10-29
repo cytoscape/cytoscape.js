@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Round 36.1.  The precedent is test/modules/throw-coverage.test.mjs and
 // test/modules/bench-coverage.test.mjs: a tool's own parser gets a fixture
@@ -257,7 +258,7 @@ describe('gpu @returns audit (round 36)', function () {
       // the guard the sibling audits carry: a regex change that audits
       // nothing must not read as a clean report
       const r = auditReturnTags(
-        new URL('../../src/collection.mts', import.meta.url).pathname,
+        fileURLToPath(new URL('../../src/collection.mts', import.meta.url)),
       );
 
       expect(r.tagged).to.be.at.least(50);

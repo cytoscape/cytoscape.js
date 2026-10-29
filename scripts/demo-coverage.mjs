@@ -7,6 +7,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import cytoscape from '../src/index.mjs';
 import {
   ALIASES,
@@ -1240,7 +1241,7 @@ export const manifestMatches = (actual, expected) =>
 
 const manifestPath = new URL('../docs/demo-coverage.json', import.meta.url);
 
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const report = await collectManualCoverage();
   const missingProperties = report.properties.filter(
     (row) => row.manual == null,

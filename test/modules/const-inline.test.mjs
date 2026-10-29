@@ -372,7 +372,10 @@ export const f = (n) => wgsl\`array<f32, \${n}>\`;
         }
       }
 
-      const file = join(dir, id.slice(SRC.length + 1).replaceAll('/', '__'));
+      const file = join(
+        dir,
+        id.slice(SRC.length + 1).replaceAll(/[\\/]/g, '__'),
+      );
 
       writeFileSync(file, splice(out.code, edits));
 

@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, posix, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
@@ -589,9 +589,8 @@ describe('status site: what the runtime asks for', function () {
 
 /** Resolve a page-relative url the way a browser would. */
 function relativeFrom(page, url) {
-  const parts = join(dirname(page), url).split('/');
-
-  return parts.join('/');
+  // posix: a url's separator is `/` on every OS (round 151)
+  return posix.join(posix.dirname(page), url);
 }
 
 describe('status site: the harness mirror', function () {
@@ -723,7 +722,7 @@ describe('status site: internal links', function () {
 
         const target = url.startsWith('/')
           ? url.slice(1)
-          : join(dirname(op.to), url).split('/').join('/');
+          : posix.join(posix.dirname(op.to), url);
 
         if (!written.has(target.split('#')[0])) {
           broken.push(`${op.to} -> ${url}`);

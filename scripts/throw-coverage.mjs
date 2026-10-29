@@ -63,7 +63,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { isAbsolute, join, relative, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   instrumentThrowSource,
@@ -75,6 +75,13 @@ import {
 } from './runtime-test-results.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+/**
+ * A repo-relative path with `/` separators, the spelling the probe hooks
+ * record and UNREACHABLE uses (round 151: `relative()` alone gives
+ * `src\wire.mts` on Windows, which matched no hit and no exemption).
+ */
+const repoPath = (file) => relative(ROOT, file).split(sep).join('/');
 const SRC_DIR = join(ROOT, 'src');
 
 const boundedTail = (value, limit = 6_000) => {
@@ -262,7 +269,7 @@ const gpuFiles = (dir = SRC_DIR, out = []) => {
     if (statSync(p).isDirectory()) {
       gpuFiles(p, out);
     } else if (name.endsWith('.mts')) {
-      out.push(relative(ROOT, p));
+      out.push(repoPath(p));
     }
   }
 
@@ -696,7 +703,7 @@ export const parseLcov = (text) => {
         throw new Error(`lcov source escapes the repository: ${source}`);
       }
 
-      cur = currentFileOutside ? null : relativePath;
+      cur = currentFileOutside ? null : relativePath.split(sep).join('/');
       currentLines = new Set();
       currentCounts = new Map();
       declaredLines = null;

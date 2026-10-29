@@ -1458,7 +1458,33 @@ export const getBarrelCurveConstants = ( width, height ) => ({
   ctrlPtOffsetPct: 0.05
 });
 
-// Separating Axis Theorem (SAT) to determine if two polygons intersect. 
+export const getRotatedLabelBox = (bb, lx, ly, theta, ox, oy, th) => {
+  let lx1 = bb.x1 - th - ox;
+  let lx2 = bb.x2 + th - ox;
+  let ly1 = bb.y1 - th - oy;
+  let ly2 = bb.y2 + th - oy;
+
+  if (theta) {
+    let cos = Math.cos(theta);
+    let sin = Math.sin(theta);
+    let rotate = (x, y) => {
+      x = x - lx;
+      y = y - ly;
+      return { x: x * cos - y * sin + lx + ox, y: x * sin + y * cos + ly + oy };
+    };
+
+    return [rotate(lx1, ly1), rotate(lx2, ly1), rotate(lx2, ly2), rotate(lx1, ly2)];
+  } else {
+    return [
+      { x: lx1 + ox, y: ly1 + oy },
+      { x: lx2 + ox, y: ly1 + oy },
+      { x: lx2 + ox, y: ly2 + oy },
+      { x: lx1 + ox, y: ly2 + oy },
+    ];
+  }
+};
+
+// Separating Axis Theorem (SAT) to determine if two polygons intersect.
 // The function takes two polygons as input and returns a boolean value indicating 
 // whether the two polygons intersect.
 export function satPolygonIntersection(poly1, poly2) {
@@ -1501,5 +1527,47 @@ export function satPolygonIntersection(poly1, poly2) {
   }
 
   return true; // polygons intersect
+}
+
+function doLinesIntersect(p1, p2, q1, q2) {
+  function ccw(a, b, c) {
+    return (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
+  }
+  return ccw(p1, q1, q2) !== ccw(p2, q1, q2) && ccw(p1, p2, q1) !== ccw(p1, p2, q2);
+}
+
+function pointInPolygon(point, polygon) {
+  let inside = false;
+
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    let pi = polygon[i];
+    let pj = polygon[j];
+    let intersects = (pi.y > point.y) !== (pj.y > point.y) &&
+      point.x < (pj.x - pi.x) * (point.y - pi.y) / (pj.y - pi.y) + pi.x;
+
+    if (intersects) {
+      inside = !inside;
+    }
+  }
+
+  return inside;
+}
+
+// Whether the line segment p1-p2 intersects, or is contained by, the given polygon.
+export function segmentIntersectsPolygon(p1, p2, polygon) {
+  if (pointInPolygon(p1, polygon)) {
+    return true;
+  }
+
+  for (let i = 0; i < polygon.length; i++) {
+    let q1 = polygon[i];
+    let q2 = polygon[(i + 1) % polygon.length];
+
+    if (doLinesIntersect(p1, p2, q1, q2)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 

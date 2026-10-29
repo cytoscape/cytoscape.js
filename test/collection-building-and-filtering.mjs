@@ -110,6 +110,10 @@ describe('Collection building and filtering', function(){
     expect( min.ele.same(n1) ).to.be.true;
   });
 
+  it('eles.polygonIntersection() returns an empty collection for an empty polygon test', function(){
+    expect( cy.collection().polygonIntersection([ { x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 } ]).empty() ).to.be.true;
+  });
+
   it('eles.merge()', function(){
     var eles = cy.collection();
 

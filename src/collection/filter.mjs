@@ -1,5 +1,7 @@
 import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
+import { satPolygonIntersection, segmentIntersectsPolygon, makeBoundingBox } from '../math.mjs';
+import { getLabelPolygon } from './dimensions/bounds.mjs';
 
 let elesfn = ({
   nodes: function( selector ){
@@ -378,7 +380,101 @@ let elesfn = ({
       value: min,
       ele: minEle
     };
-  }
+  },
+
+  withinBox: function(box) {
+    const cy = this.cy();
+    const r = cy.renderer();
+    if( cy.styleEnabled() ){ this.recalculateRenderedStyle(); }
+    const x2 = box.x2 != null ? box.x2 : box.x1 + box.w;
+    const y2 = box.y2 != null ? box.y2 : box.y1 + box.h;
+    const bb = makeBoundingBox({
+      x1: Math.min(box.x1, x2), x2: Math.max(box.x1, x2),
+      y1: Math.min(box.y1, y2), y2: Math.max(box.y1, y2)
+    });
+    const allInBox = r.getAllInBox(bb.x1, bb.y1, bb.x2, bb.y2);
+    const col = this;
+    return this.spawn( allInBox.filter(ele => col.has(ele)) );
+  },
+
+  hit: function(pos, options) {
+    const cy = this.cy();
+    const r = cy.renderer();
+    if( cy.styleEnabled() ){ this.recalculateRenderedStyle(); }
+    return this.spawn( r.hitTestAt(pos.x, pos.y, this, options) );
+  },
+
+  polygonIntersection: function(polygon) {
+    const eles = this;
+    const cy = eles.cy();
+
+    if( cy.styleEnabled() ){
+      this.recalculateRenderedStyle();
+    }
+
+    const matches = [];
+
+    for (let i = 0; i < eles.length; i++) {
+      const ele = eles[i];
+      ele.boundingBox();
+
+      if (ele.isEdge()) {
+        const rs = ele._private.rscratch;
+        const rstyle = ele._private.rstyle;
+        let pts = rstyle.bezierPts || rstyle.linePts || rstyle.haystackPts;
+
+        if ((!pts || pts.length < 2) && rs.startX != null && rs.startY != null && rs.endX != null && rs.endY != null) {
+          pts = [
+            { x: rs.startX, y: rs.startY },
+            { x: rs.endX, y: rs.endY }
+          ];
+        }
+
+        if (pts && pts.length > 1) {
+          let bodyMatched = false;
+
+          for (let k = 0; k < pts.length - 1 && !bodyMatched; k++) {
+            if (segmentIntersectsPolygon(pts[k], pts[k + 1], polygon)) {
+              matches.push(ele);
+              bodyMatched = true;
+            }
+          }
+
+          if (bodyMatched) { continue; }
+        }
+      } else {
+        const bb = ele._private.bodyBounds;
+
+        if (bb) {
+          const bodyPoly = [
+            { x: bb.x1, y: bb.y1 },
+            { x: bb.x2, y: bb.y1 },
+            { x: bb.x2, y: bb.y2 },
+            { x: bb.x1, y: bb.y2 }
+          ];
+
+          if (satPolygonIntersection(bodyPoly, polygon)) {
+            matches.push(ele);
+            continue;
+          }
+        }
+      }
+
+      const labels = ele.isEdge() ? ['main', 'source', 'target'] : ['main'];
+      let labelMatched = false;
+
+      for (let j = 0; j < labels.length && !labelMatched; j++) {
+        const labelPoly = getLabelPolygon(ele, labels[j]);
+
+        if (labelPoly && labelPoly.length && satPolygonIntersection(labelPoly, polygon)) {
+          matches.push(ele);
+          labelMatched = true;
+        }
+      }
+    }
+
+    return this.spawn(matches);
+  },
 });
 
 // aliases

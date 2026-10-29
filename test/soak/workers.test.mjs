@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import cytoscape from '../../src/index.mjs';
 import {
@@ -29,6 +29,10 @@ Runs under `--expose-gc` (`npm run test:soak`).
 */
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+// a src module as a quoted file URL, for a child's inline script: a bare
+// `D:\…` path reads as a URL with scheme `d:` (round 151)
+const srcUrl = (file) =>
+  JSON.stringify(pathToFileURL(resolve(ROOT, 'src', file)).href);
 
 const ring = (n) => {
   const els = [];
@@ -300,7 +304,7 @@ describe('soak: the algorithm worker pool', () => {
 
   it('a child process exits on its own after a workers run (the unref claim)', function () {
     const script = `
-      import cytoscape from '${ROOT}/src/index.mjs';
+      import cytoscape from ${srcUrl('index.mjs')};
       const els = [];
       for (let i = 0; i < 300; i++) els.push({ data: { id: 'n' + i } });
       for (let i = 0; i < 300; i++) els.push({ data: { source: 'n' + i, target: 'n' + ((i + 1) % 300), w: 1 + (i % 5) } });

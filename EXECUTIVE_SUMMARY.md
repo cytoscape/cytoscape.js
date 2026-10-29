@@ -5,7 +5,21 @@ The v4 rewrite: a columnar model and a WebGPU renderer, per
 
 - **Status**: not released. `cytoscape@3` remains the shipping library.
 - **Scope of this record**: the v4 prototype, from **2026-07-22**.
-- **Last updated**: 2026-10-27 for Round 150's algorithm definitions against the reference libraries.
+- **Last updated**: 2026-10-29 for Round 151's Windows and macOS CI runners.
+
+Round 151 runs CI on Windows and macOS as well as Linux: the Node tier,
+Bun latest and the `renderer` / `renderer-webkit` browser projects. The
+pixel goldens, workerd and v3 stay on Linux. The new jobs found only
+portability defects in the test tooling and specs, none in the library:
+temp-directory and path-separator assumptions, Node given Windows paths
+where it needs file URLs, CRLF checkouts, and commands spawned without
+Windows quoting. Before the fixes, the JSDoc and throw-coverage audits
+on Windows matched nothing and so checked nothing. Neither runner reaches
+a WebGPU adapter, so the Windows and macOS browser jobs run only the
+non-GPU specs (17 and 16; 256 on Linux). A force-layout teardown race
+(`layout-cancel`, positions not restored after `destroy()`) and the
+existing cancellation timing flakes stay open for a later round. See the
+[Round 151 record](plan/rounds/2026-10-29-01-rnd0151-landed-windows-and-macos-ci-runners.md).
 
 Round 150 changes six algorithm defaults to the standard definitions
 that NetworkX, igraph and the literature use, after a review found the
@@ -440,7 +454,7 @@ Earlier, round 145 (29 September) was a correctness fix:
 | Style parity | v4 accepts 162 of v3's 291 style property names by the inventory reader's count (round 85.4 restored the per-side padding quartet; round 76 added `text-border-style` and the mid-arrow widths); the rest dropped by decision |
 | Bundle | Built 5 Oct, minified / gzipped: `cytoscape` 1,029,507 / 294,389 bytes; `cytoscape/headless` 617,371 / 190,879 bytes; `cytoscape/headless-gpu` 696,384 / 209,483 bytes. Both slim minified entries stay below the 1,000,000-byte edge budget; every slim raw/gzip pair has a measured ratchet. Import and constant-inlining gates keep the tiers separate and the tables out of minified output. |
 | Runtimes | Node ≥ 24 and Bun ≥ 1.4.0 run the headless bundles and worker paths. Bun 1.4.0/1.4.3 pass the full public/module/soak/throws tier with exact Node parity; no Bun WebGPU compute or renderer is promised. Deno support is withdrawn. Edge isolates use cytoscape/headless, gated in a WinterTC-shaped isolate and on workerd. Other environments retain their measured support-matrix rows in src/README.md. |
-| CI | Node, browser, Bun and workerd jobs gate. Bun runs full native verification and bundle smoke at 1.4.0 and latest stable; local final checks passed on 1.4.0 and 1.4.3. Deno jobs are removed. |
+| CI | Node, browser, Bun and workerd jobs gate. Bun runs full native verification and bundle smoke at 1.4.0 and latest stable; local final checks passed on 1.4.0 and 1.4.3. The Node tier, Bun latest and the `renderer` / `renderer-webkit` projects also run on Windows and macOS; those browser jobs reach no WebGPU adapter, so they run the non-GPU specs only. Goldens, workerd and v3 are Linux-only. Cancellation timing specs fail intermittently. Deno jobs are removed. |
 
 ---
 
@@ -2205,7 +2219,7 @@ The release path:
 | | |
 |---|---|
 | Documentation site | The scoped prose/API source pass is complete, including twelve non-demo v3 section equivalents, v4 additions and style/layout catalogs. Five v3 API disposition questions remain. Site/template integration, demos and deployment are still open. |
-| Cross-platform validation | macOS/Metal, Windows/D3D12, real-device touch |
+| Cross-platform validation | macOS/Metal and Windows/D3D12 rendering (CI on both runs only the non-GPU specs), real-device touch |
 | Release engineering | The release workflows are still v3's, and are marked as not yet adapted |
 | Release bake | Alpha/beta cycle, external-consumer smoke, then **4.0.0** |
 

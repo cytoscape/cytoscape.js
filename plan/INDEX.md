@@ -18,8 +18,8 @@ A round can land with an item held open; the round file says which.
 
 | State | Rounds |
 | --- | --- |
-| landed | 7–48, 52–70, 72–76, 79–80, 82, 85–124, 126–136, 138–148, 150 |
-| planned | 49–51, 71, 77–78, 81, 83–84, 125, 137, 149, 151 |
+| landed | 7–48, 52–70, 72–76, 79–80, 82, 85–124, 126–136, 138–148, 150–151 |
+| planned | 49–51, 71, 77–78, 81, 83–84, 125, 137, 149 |
 
 ## The sections
 
@@ -224,4 +224,4 @@ A round can land with an item held open; the round file says which.
 | 195 | — | 2026-10-12 | note | [Graph algorithm documentation contracts](rounds/2026-10-12-02-rnd0000-note-graph-algorithm-documentation-contracts.md) |
 | 196 | 149 | 2026-10-18 | plan | [Manual feature demos and golden coverage audit](rounds/2026-10-18-01-rnd0149-plan-manual-feature-demos-and-golden-coverage-audit.md) |
 | 197 | 150 | 2026-10-27 | landed | [Algorithm definitions against the reference libraries](rounds/2026-10-27-01-rnd0150-landed-algorithm-definitions-against-reference-libraries.md) |
-| 198 | 151 | 2026-10-29 | plan | [Windows and macOS CI runners](rounds/2026-10-29-01-rnd0151-plan-windows-and-macos-ci-runners.md) |
+| 198 | 151 | 2026-10-29 | landed | [Windows and macOS CI runners](rounds/2026-10-29-01-rnd0151-landed-windows-and-macos-ci-runners.md) |

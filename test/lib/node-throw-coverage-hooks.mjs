@@ -8,6 +8,7 @@ import {
   mkdirSync,
   readFileSync,
   renameSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
 import { join, relative, sep } from 'node:path';
@@ -49,7 +50,17 @@ const instrumentCached = async (file, source, sites) => {
   const tmp = `${path}.${process.pid}.${Math.random()}`;
 
   writeFileSync(tmp, JSON.stringify(transformed));
-  renameSync(tmp, path);
+
+  try {
+    renameSync(tmp, path);
+  } catch (error) {
+    // Windows refuses a rename onto a file another process has just
+    // written or holds open (EPERM / EACCES), where POSIX replaces it
+    // (round 151).  The key fixes the content, so losing the race is
+    // harmless: keep theirs.
+    if (!existsSync(path)) throw error;
+    rmSync(tmp, { force: true });
+  }
 
   return transformed;
 };

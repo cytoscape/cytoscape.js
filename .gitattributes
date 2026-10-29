@@ -1,0 +1,4 @@
+# LF in every checkout, Windows included (round 151).  Specs read checked-in
+# text line by line (the docs generator spec walks dist/cytoscape.d.ts until
+# a bare `}`), and the Windows runners' core.autocrlf checked it out CRLF.
+* text=auto eol=lf

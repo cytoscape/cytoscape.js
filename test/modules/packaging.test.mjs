@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { execFileSync } from 'node:child_process';
+import spawn from 'cross-spawn';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -110,11 +110,18 @@ function pathToConfigUrl() {
 
 /** The file list `npm pack` would ship, from npm itself. */
 function packedFiles() {
-  const json = execFileSync('npm', ['pack', '--dry-run', '--json'], {
+  // cross-spawn: on Windows `npm` is npm.cmd, which execFileSync cannot
+  // start (round 151)
+  const run = spawn.sync('npm', ['pack', '--dry-run', '--json'], {
     cwd: ROOT,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   });
+
+  if (run.error) throw run.error;
+  if (run.status !== 0) throw new Error(`npm pack exited ${run.status}`);
+
+  const json = run.stdout;
 
   return JSON.parse(json)[0].files.map((f) => f.path);
 }

@@ -13,7 +13,11 @@
  * twin, and this wrapper does not try to be a progress UI.
  */
 import { Buffer } from 'node:buffer';
-import { spawn } from 'node:child_process';
+// cross-spawn, not `spawn(…, { shell: true })` on Windows: the shell form
+// joined the arguments unquoted, so `C:\Program Files\…\node.exe` and
+// `-e` code split apart (round 151).  It resolves `.cmd` shims (tsc,
+// oxlint, rolldown) and quotes for cmd.exe.
+import spawn from 'cross-spawn';
 
 const rawArgs = process.argv.slice(2);
 const args = rawArgs[0] === '--' ? rawArgs.slice(1) : rawArgs;
@@ -25,7 +29,6 @@ if (args.length === 0) {
 
 const child = spawn(args[0], args.slice(1), {
   stdio: ['inherit', 'pipe', 'pipe'],
-  shell: process.platform === 'win32',
 });
 
 const stdoutChunks = [];

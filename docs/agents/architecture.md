@@ -66,7 +66,7 @@ routes, these files explain.
 
 ## `.github/workflows/`
 
-- `.github/workflows/`: CI and release workflows.  `tests.yml` runs both projects; the three release workflows are still v3's and are **marked as not yet adapted** (round 50 owns them) — they stay at the root only because GitHub reads workflows nowhere else.
+- `.github/workflows/`: CI and release workflows.  `tests.yml` runs both projects — v4's Node tier, Bun latest and the `renderer` / `renderer-webkit` projects on Linux, Windows and macOS (round 151), everything else on Linux only; the three release workflows are still v3's and are **marked as not yet adapted** (round 50 owns them) — they stay at the root only because GitHub reads workflows nowhere else.
 
 ## `v3/` — frozen (see `v3/AGENTS.md`)
 

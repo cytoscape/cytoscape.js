@@ -6,6 +6,7 @@ import {
   parseBunJunit,
   parseNodeTestEvents,
 } from '../../scripts/runtime-test-results.mjs';
+import nodeTestEventsReporter from '../../scripts/node-test-events-reporter.mjs';
 
 const sourceFile = 'test/fixtures/runtime-controls.mjs';
 const wrapperFile = '/tmp/runtime-controls/suite.test.mjs';
@@ -350,5 +351,29 @@ describe('runtime test result normalization', () => {
         wrapperToSource,
       ),
     ).to.throw('declares 3 tests, observed 2');
+  });
+});
+
+describe('the Node events reporter (round 151)', () => {
+  // On Windows a hook's `npm` spawn failed with an error that referenced
+  // itself; JSON.stringify threw inside the reporter and the file's every
+  // result was lost.  The reporter must emit the event, failureType intact.
+  it('emits an event whose error is circular', async () => {
+    const error = new Error('spawn npm ENOENT');
+    error.failureType = 'hookFailed';
+    error.error = error;
+    const lines = [];
+
+    for await (const line of nodeTestEventsReporter([
+      { type: 'test:complete', data: { name: 'x', details: { error } } },
+    ])) {
+      lines.push(line);
+    }
+
+    const event = JSON.parse(lines[0]);
+
+    expect(event.data.details.error.failureType).to.equal('hookFailed');
+    expect(event.data.details.error.error).to.equal('[Circular]');
+    expect(event.data.formattedError).to.include('spawn npm ENOENT');
   });
 });

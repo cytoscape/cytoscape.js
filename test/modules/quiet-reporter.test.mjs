@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { expect } from 'chai';
 
 /*
@@ -38,7 +38,12 @@ const runReporter = (...fixtureNames) => {
   try {
     const stdout = execFileSync(
       NODE_BINARY,
-      ['--test', `--test-reporter=${REPORTER}`, ...fixtureNames.map(fixture)],
+      // a URL: Node reads a `D:\…` reporter path as scheme `d:` (round 151)
+      [
+        '--test',
+        `--test-reporter=${pathToFileURL(REPORTER).href}`,
+        ...fixtureNames.map(fixture),
+      ],
       { cwd: ROOT, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
 

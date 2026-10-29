@@ -525,6 +525,11 @@ export const parseBunJunit = (text, wrapperToSource) => {
   const sourceToWrapper = new Map(
     [...wrapperToSource].map(([wrapper, source]) => [source, resolve(wrapper)]),
   );
+  // keyed by resolved path, as the lookups below are: on Windows resolve()
+  // turns `/tmp/…` into `D:\tmp\…` (round 151)
+  const sourceOf = new Map(
+    [...wrapperToSource].map(([wrapper, source]) => [resolve(wrapper), source]),
+  );
 
   if (root.attrs.tests == null) {
     throw new Error('Bun JUnit testsuites root is missing its test count');
@@ -542,7 +547,7 @@ export const parseBunJunit = (text, wrapperToSource) => {
           throw new Error('Bun JUnit wrapper testsuite is missing its file');
         }
 
-        currentFile = wrapperToSource.get(resolve(node.attrs.file));
+        currentFile = sourceOf.get(resolve(node.attrs.file));
 
         if (currentFile == null) {
           throw new Error(
@@ -587,7 +592,7 @@ export const parseBunJunit = (text, wrapperToSource) => {
         );
       }
 
-      const file = wrapperToSource.get(resolve(attrs.file));
+      const file = sourceOf.get(resolve(attrs.file));
 
       if (file == null || (currentFile != null && currentFile !== file)) {
         throw new Error(

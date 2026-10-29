@@ -57,6 +57,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -388,7 +389,9 @@ const collectNodeProbe = () => {
 
 /** Collect native LCOV and exact throw hits from the Bun public suite. */
 const collectBunCoverage = () => {
-  const dir = mkdtempSync(join(tmpdir(), 'throw-cov-bun-'));
+  // the real path: Bun's JUnit report names each wrapper by it, and on
+  // macOS tmpdir() is under /var, a symlink to /private/var (round 151)
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), 'throw-cov-bun-')));
   const wrapperDir = join(dir, 'wrappers');
   const coverageDir = join(dir, 'coverage');
   const probeLogPath = join(dir, 'throw-probe.jsonl');

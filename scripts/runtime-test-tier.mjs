@@ -209,14 +209,15 @@ const nodeCommand = (file) => [
   '--import',
   'tsx',
   '--import',
-  NODE_PRELOAD,
+  // a URL, not a path: Node reads `D:\…` as a URL with scheme `d:`
+  pathToFileURL(NODE_PRELOAD).href,
   ...(file.includes(
     `${join('test', 'soak')}${process.platform === 'win32' ? '\\' : '/'}`,
   )
     ? ['--expose-gc']
     : []),
   '--test',
-  `--test-reporter=${NODE_REPORTER}`,
+  `--test-reporter=${pathToFileURL(NODE_REPORTER).href}`,
   file,
 ];
 

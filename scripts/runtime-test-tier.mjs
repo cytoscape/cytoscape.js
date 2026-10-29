@@ -1,7 +1,14 @@
 import { Buffer } from 'node:buffer';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
-import { availableParallelism } from 'node:os';
+import {
+  mkdtemp,
+  readFile,
+  readdir,
+  realpath,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
+import { availableParallelism, tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -313,8 +320,12 @@ const runNode = async (files) => {
 const resolveBun = () => process.env.BUN_BINARY || 'bun';
 
 const runBun = async (files) => {
-  const tempDir = await mkdtemp(
-    join(process.env.TMPDIR ?? '/tmp', 'cytoscape-bun-tests-'),
+  // `tmpdir()`, not a '/tmp' fallback: Windows has none (round 151).  And
+  // the real path, because Bun's JUnit report names each wrapper by it: on
+  // macOS TMPDIR is under /var, a symlink to /private/var, so wrappers keyed
+  // by the symlinked path matched no reported suite.
+  const tempDir = await realpath(
+    await mkdtemp(join(tmpdir(), 'cytoscape-bun-tests-')),
   );
   temporaryDirectories.add(tempDir);
   const junitFile = join(tempDir, 'junit.xml');

@@ -1,6 +1,6 @@
 import * as is from '../is.mjs';
 import Selector from '../selector/index.mjs';
-import { satPolygonIntersection, makeBoundingBox } from '../math.mjs';
+import { satPolygonIntersection, segmentIntersectsPolygon, makeBoundingBox } from '../math.mjs';
 import { getLabelPolygon } from './dimensions/bounds.mjs';
 
 let elesfn = ({
@@ -417,19 +417,46 @@ let elesfn = ({
     for (let i = 0; i < eles.length; i++) {
       const ele = eles[i];
       ele.boundingBox();
-      const bb = ele._private.bodyBounds;
 
-      if (bb) {
-        const bodyPoly = [
-          { x: bb.x1, y: bb.y1 },
-          { x: bb.x2, y: bb.y1 },
-          { x: bb.x2, y: bb.y2 },
-          { x: bb.x1, y: bb.y2 }
-        ];
+      if (ele.isEdge()) {
+        const rs = ele._private.rscratch;
+        const rstyle = ele._private.rstyle;
+        let pts = rstyle.bezierPts || rstyle.linePts || rstyle.haystackPts;
 
-        if (satPolygonIntersection(bodyPoly, polygon)) {
-          matches.push(ele);
-          continue;
+        if ((!pts || pts.length < 2) && rs.startX != null && rs.startY != null && rs.endX != null && rs.endY != null) {
+          pts = [
+            { x: rs.startX, y: rs.startY },
+            { x: rs.endX, y: rs.endY }
+          ];
+        }
+
+        if (pts && pts.length > 1) {
+          let bodyMatched = false;
+
+          for (let k = 0; k < pts.length - 1 && !bodyMatched; k++) {
+            if (segmentIntersectsPolygon(pts[k], pts[k + 1], polygon)) {
+              matches.push(ele);
+              bodyMatched = true;
+            }
+          }
+
+          if (bodyMatched) { continue; }
+        }
+      } else {
+        const bb = ele._private.bodyBounds;
+
+        if (bb) {
+          const bodyPoly = [
+            { x: bb.x1, y: bb.y1 },
+            { x: bb.x2, y: bb.y1 },
+            { x: bb.x2, y: bb.y2 },
+            { x: bb.x1, y: bb.y2 }
+          ];
+
+          if (satPolygonIntersection(bodyPoly, polygon)) {
+            matches.push(ele);
+            continue;
+          }
         }
       }
 

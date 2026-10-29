@@ -13,11 +13,18 @@
 // Run directly (`node scripts/jsdoc-coverage.mjs [--verbose]`) for a report;
 // `test/jsdoc-coverage.test.mjs` imports `audit()` and enforces the thresholds.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC_DIR = join(ROOT, 'src');
+
+/**
+ * A file's repo-relative path with `/` separators, the spelling `PUBLIC_API`
+ * uses.  `relative()` alone gives `src\index.mts` on Windows, which matched
+ * no entry, so the audit there checked nothing (round 151).
+ */
+const repoPath = (file) => relative(ROOT, file).split(sep).join('/');
 
 /**
  * The v4 public API: the files whose exported classes a consumer of
@@ -266,7 +273,7 @@ function hasDocAbove(lines, i) {
  */
 export function auditFile(file) {
   const lines = readFileSync(file, 'utf8').split('\n');
-  const rel = relative(ROOT, file);
+  const rel = repoPath(file);
   const missing = [];
   // every public member this scan saw, for consumers that need the
   // surface itself rather than its documentation state (round 33.12's
@@ -472,7 +479,7 @@ function memberBody(lines, i) {
  */
 export function auditThrowTags(file) {
   const lines = readFileSync(file, 'utf8').split('\n');
-  const rel = relative(ROOT, file);
+  const rel = repoPath(file);
   const missing = [];
   let tagged = 0;
   let currentClass = null;
@@ -557,7 +564,7 @@ export function auditThrowTags(file) {
  */
 export function auditParamTags(file) {
   const lines = readFileSync(file, 'utf8').split('\n');
-  const rel = relative(ROOT, file);
+  const rel = repoPath(file);
   const missing = [];
   let tagged = 0;
   let currentClass = null;
@@ -824,7 +831,7 @@ const VOID_RETURN_RE = /^(?:void|Promise\s*<\s*void\s*>|undefined|never|this)$/;
  */
 export function auditReturnTags(file) {
   const lines = readFileSync(file, 'utf8').split('\n');
-  const rel = relative(ROOT, file);
+  const rel = repoPath(file);
   const missing = [];
   let tagged = 0;
   let currentClass = null;
@@ -933,7 +940,7 @@ export function auditReturnTags(file) {
  */
 export function auditStrandedComments(file) {
   const lines = readFileSync(file, 'utf8').split('\n');
-  const rel = relative(ROOT, file);
+  const rel = repoPath(file);
   const stranded = [];
   let openedAt = -1;
 
@@ -1034,7 +1041,7 @@ export function audit() {
     .map(auditThrowTags)
     .filter((f) => f.tagged + f.missing.length > 0);
   const publicSources = sources().filter((f) =>
-    PUBLIC_API.includes(relative(ROOT, f)),
+    PUBLIC_API.includes(repoPath(f)),
   );
   const paramTags = publicSources.map(auditParamTags);
   const returnTags = publicSources.map(auditReturnTags);

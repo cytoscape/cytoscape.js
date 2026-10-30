@@ -132,12 +132,12 @@ describe('Collection graph manipulation', function(){
       });
 
       let parent = cy.getElementById('constructor');
-      let red = parent.style('background-color');
+      expect( parent.style('background-color') ).to.equal('rgb(255,0,0)');
 
       cy.getElementById('a').remove();
 
       expect( parent.isChildless() ).to.be.true;
-      expect( parent.style('background-color') ).to.not.equal( red );
+      expect( parent.style('background-color') ).to.equal('rgb(0,0,255)');
     });
 
   });

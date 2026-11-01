@@ -74,6 +74,42 @@ describe('Algorithms', function(){
     }
 
 
+    it('mean linkage merges every node at an unlimited threshold', function() {
+      const result = nodes.hierarchicalClustering({
+        linkage: 'mean',
+        attributes: options.attributes,
+        threshold: Infinity
+      });
+      expect(result.length).to.equal(1);
+      expect(result[0].same(nodes)).to.be.true;
+    });
+
+    it('mean linkage builds a complete dendrogram', function() {
+      const result = nodes.hierarchicalClustering({
+        linkage: 'mean',
+        attributes: options.attributes,
+        mode: 'dendrogram',
+        dendrogramDepth: 0
+      });
+      expect(result.length).to.equal(1);
+      expect(result[0].same(nodes)).to.be.true;
+    });
+
+    it('mean linkage weights merged distances by cluster size', function() {
+      const graph = cytoscape({
+        elements: [0, 1, 3, 10].map((score, i) => ({ data: { id: String(i), score } }))
+      });
+      const result = graph.nodes().hierarchicalClustering({
+        linkage: 'mean',
+        attributes: [node => node.data('score')],
+        threshold: 8.5
+      });
+      // The final distance is (10 + 9 + 7) / 3, not an unweighted 8.25.
+      expect(result.map(cluster => cluster.map(node => node.data('score')).sort((a, b) => a - b)))
+        .to.have.deep.members([[0, 1, 3], [10]]);
+      graph.destroy();
+    });
+
     it('clusters should be returned in an array', function() {
       expect(clusters).to.exist;
       expect(clusters.constructor === Array).to.be.true;

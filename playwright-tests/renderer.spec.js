@@ -769,4 +769,94 @@ test.describe('Renderer', () => {
 
   }); // with layout
 
+
+  test.describe('wheel zoom', () => {
+    // each event's zoom ratio for a sequence of wheel deltas
+    const wheel = async (page, deltas) => page.evaluate(deltas => {
+      const cy = window.cy;
+      const { x, y } = cy.container().getBoundingClientRect();
+
+      return deltas.map(deltaY => {
+        const before = cy.zoom();
+
+        cy.container().dispatchEvent(new WheelEvent('wheel', {
+          deltaY, deltaMode: 0, clientX: x + 100, clientY: y + 100, bubbles: true, cancelable: true
+        }));
+
+        return cy.zoom() / before;
+      });
+    }, deltas);
+
+    const notchZoom = notches => Math.pow(10, notches * -3 / 250);
+    const preciseZoom = delta => Math.pow(10, delta / -250);
+
+    const expectZooms = (actual, expected) => {
+      expect(actual.length).toBe(expected.length);
+      actual.forEach((zoom, i) => expect(zoom).toBeCloseTo(expected[i], 6));
+    };
+
+    // the fifth event is the first one to use the sampled factor
+    const sample = [120, 120, 120, 120, 120];
+    const trackpad = [-20.34375, -2.015625, -69.1875, 44.8125, 4.078125];
+
+    test('keeps the notch speed after using a trackpad (#3535)', async ({ page }) => {
+      await wheel(page, sample);
+      await wheel(page, trackpad);
+      expectZooms(await wheel(page, [-120, 120]), [notchZoom(-1), notchZoom(1)]);
+    });
+
+    test('zooms trackpad deltas precisely after a mouse sample', async ({ page }) => {
+      await wheel(page, sample);
+      expectZooms(await wheel(page, trackpad), trackpad.map(preciseZoom));
+    });
+
+    test('ignores integer trackpad deltas far below the notch size', async ({ page }) => {
+      const deltas = [1, 2, 3, 4, 5, 6, 10, 10, 10];
+      await wheel(page, sample);
+      expectZooms(await wheel(page, deltas), deltas.map(preciseZoom));
+      expectZooms(await wheel(page, [120]), [notchZoom(1)]);
+    });
+
+    test('ignores single integer deltas that share a divisor with the notch size', async ({ page }) => {
+      await wheel(page, sample);
+      expectZooms(await wheel(page, [30]), [preciseZoom(5)]);
+      expectZooms(await wheel(page, [120]), [notchZoom(1)]);
+      await wheel(page, [90, 45, 60, 40]);
+      expectZooms(await wheel(page, [120]), [notchZoom(1)]);
+    });
+
+    test('scales coalesced notches', async ({ page }) => {
+      await wheel(page, sample);
+      expectZooms(await wheel(page, [240, -360]), [notchZoom(2), notchZoom(-3)]);
+    });
+
+    test('recovers from a sample of only coalesced notches', async ({ page }) => {
+      await wheel(page, [240, 240, 240, 240, 240]);
+      expectZooms(await wheel(page, [120, 120, 240]), [preciseZoom(5), notchZoom(1), notchZoom(2)]);
+    });
+
+    test('recovers from a coalesced sample without a divisor of it', async ({ page }) => {
+      await wheel(page, [240, 240, 240, 240, 240]);
+      expectZooms(await wheel(page, [360, 360, 120]), [preciseZoom(5), notchZoom(3), notchZoom(1)]);
+    });
+
+    test('adapts to a new notch size', async ({ page }) => {
+      await wheel(page, sample);
+      expectZooms(await wheel(page, [100, 100, 100]), [preciseZoom(5), notchZoom(1), notchZoom(1)]);
+      expectZooms(await wheel(page, [-120, -120]), [preciseZoom(-5), notchZoom(-1)]);
+    });
+
+    test('adapts to a new fractional notch size', async ({ page }) => {
+      const notch = 400 / 3;
+      await wheel(page, sample);
+      expectZooms(await wheel(page, [notch, notch]), [preciseZoom(notch), notchZoom(1)]);
+    });
+
+    test('scales coalesced notches of a fractional notch size', async ({ page }) => {
+      const notch = 100 / 1.1; // e.g. a notch of 100 at a page zoom of 110%
+      await wheel(page, [notch, notch, notch, notch, notch]);
+      expectZooms(await wheel(page, [notch, notch + notch, notch + notch + notch]), [notchZoom(1), notchZoom(2), notchZoom(3)]);
+    });
+  }); // wheel zoom
+
 }); // renderer

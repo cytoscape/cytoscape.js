@@ -1043,7 +1043,8 @@ BRp.load = function(){
   var inaccurateScrollDevice;
   var inaccurateScrollFactor = 100000; // base of inaccurate wheel deltas (e.g. base 5 could yield wheels of 10, 25, 50, etc.)
   var sampledScrollFactor; // value of inaccurateScrollFactor right after sampling
-  var wheelFactorMaxReduction = 4; // how far inaccurateScrollFactor may fall below sampledScrollFactor
+  var wheelFactorMaxReduction = 4; // smaller deltas (relative to sampledScrollFactor) can't be notches
+  var unconfirmedMagnitude = null; // delta magnitude that didn't fit inaccurateScrollFactor on the previous event
 
   var allAreSameMagnitude = function(list) {
     var firstMag = Math.abs(list[0]);
@@ -1112,17 +1113,22 @@ BRp.load = function(){
 
       isWheelNotch = math.isIntegerMultiple(magnitude, inaccurateScrollFactor);
 
-      if (!isWheelNotch) {
-        // the sample may have been unlucky (e.g. only coalesced notches), so keep
-        // updating the factor -- but only by a bounded amount, since a precise
-        // delta can coincidentally share a small divisor with the factor
+      if (isWheelNotch || magnitude * wheelFactorMaxReduction < sampledScrollFactor) {
+        unconfirmedMagnitude = null;
+      } else if (magnitude === unconfirmedMagnitude) {
+        // the same magnitude twice in a row is a notch that the factor doesn't fit,
+        // e.g. after an unlucky sample (only coalesced notches) or from another mouse
         var commonFactor = math.gcdMultipleZeroIfNonInt([inaccurateScrollFactor, magnitude]);
 
-        if (commonFactor * wheelFactorMaxReduction >= sampledScrollFactor) {
-          inaccurateScrollFactor = commonFactor;
-          isWheelNotch = true;
-          // console.log('Updated inaccurateScrollFactor beyond sample:', inaccurateScrollFactor);
-        }
+        inaccurateScrollFactor = commonFactor * wheelFactorMaxReduction >= sampledScrollFactor ? commonFactor : magnitude;
+        unconfirmedMagnitude = null;
+        isWheelNotch = true;
+        // console.log('Updated inaccurateScrollFactor beyond sample:', inaccurateScrollFactor);
+      } else {
+        // might be a notch, but could also be a precise delta: an integer is
+        // suspect, so clamp it, whereas a fractional delta is most likely precise
+        unconfirmedMagnitude = magnitude;
+        clamp = is.integer(magnitude);
       }
     }
 

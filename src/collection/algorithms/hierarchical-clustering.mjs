@@ -66,13 +66,15 @@ let mergeClosest = function( clusters, index, dists, mins, opts ) {
     merged = {
       left: c1,
       right: c2,
-      key: c1.key
+      key: c1.key,
+      size: c1.size + c2.size
     };
   }
   else {
     merged = {
       value: c1.value.concat(c2.value),
-      key: c1.key
+      key: c1.key,
+      size: c1.size + c2.size
     };
   }
 
@@ -261,7 +263,8 @@ let hierarchicalClustering = function( options ){
     let cluster = {
       value: (opts.mode === 'dendrogram') ? nodes[n] : [ nodes[n] ],
       key:   n,
-      index: n
+      index: n,
+      size: 1
     };
     clusters[n] = cluster;
     index[n]    = cluster;

@@ -586,7 +586,7 @@ elesfn.inside = function(){
 elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
   let self = this;
   let elesToRemove = [];
-  let elesToRemoveIds = {};
+  let elesToRemoveIds = new Set();
   let cy = self._private.cy;
 
   // add connected edges
@@ -607,11 +607,11 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
   }
 
   function add( ele ){
-    let alreadyAdded =  elesToRemoveIds[ ele.id() ];
+    let alreadyAdded = elesToRemoveIds.has( ele.id() );
     if( (removeFromPool && ele.removed()) || alreadyAdded ){
       return;
     } else {
-      elesToRemoveIds[ ele.id() ] = true;
+      elesToRemoveIds.add( ele.id() );
     }
 
     if( ele.isNode() ){
@@ -648,7 +648,7 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
   }
 
   let alteredParents = [];
-  alteredParents.ids = {};
+  alteredParents.ids = new Set();
 
   function removeChildRef( parent, ele ){
     ele = ele[0];
@@ -661,8 +661,8 @@ elesfn.remove = function( notifyRenderer = true, removeFromPool = true ){
 
     ele._private.parent = null; // remove child => parent ref
 
-    if( !alteredParents.ids[ pid ] ){
-      alteredParents.ids[ pid ] = true;
+    if( !alteredParents.ids.has( pid ) ){
+      alteredParents.ids.add( pid );
       alteredParents.push( parent );
     }
   }

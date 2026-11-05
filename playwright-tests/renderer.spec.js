@@ -800,11 +800,13 @@ test.describe('Renderer', () => {
       expect(result.empty).toEqual([]);
     }); // polygonIntersection() matches a node whose body intersects the polygon
 
-    test('polygonIntersection() matches a diagonal edge\'s empty bounding-box corner', async ({ page }) => {
+    test('polygonIntersection() excludes a diagonal edge\'s empty bounding-box corner', async ({ page }) => {
       const ids = await page.evaluate(() => {
         const cy = window.cy;
 
         cy.elements().remove();
+
+        cy.style().selector('edge').style('curve-style', 'straight').update();
 
         cy.add([
           { data: { id: 'c' }, position: { x: 100, y: 100 } },
@@ -824,10 +826,69 @@ test.describe('Renderer', () => {
         return cy.edges().polygonIntersection(cornerPolygon).map(ele => ele.id());
       });
 
-      // documented limitation: the body test uses the axis-aligned bounding
-      // box, so a polygon in its empty corner still counts as a match
-      expect(ids).toEqual(['cd']);
-    }); // polygonIntersection() matches a diagonal edge's empty bounding-box corner
+      expect(ids).toEqual([]);
+    }); // polygonIntersection() excludes a diagonal edge's empty bounding-box corner
+
+    for (const curve of ['bezier', 'unbundled-bezier', 'self', 'compound']) {
+      test(`polygonIntersection() includes the ends of every ${curve} span`, async ({ page }) => {
+        const results = await page.evaluate(curve => {
+          const cy = window.cy;
+
+          cy.elements().remove();
+          cy.style().fromJson([
+            { selector: 'node', style: { width: 10, height: 10 } },
+            {
+              selector: 'edge',
+              style: {
+                'curve-style': curve === 'unbundled-bezier' ? curve : 'bezier',
+                'control-point-distances': [200, -200],
+                'control-point-weights': [0.33, 0.67],
+                'control-point-step-size': 200,
+                'loop-direction': '0deg',
+                'loop-sweep': '90deg'
+              }
+            }
+          ]).update();
+
+          cy.add([
+            { data: { id: 'p' } },
+            { data: { id: 'c', parent: 'p' }, position: { x: 100, y: 100 } },
+            { data: { id: 'd' }, position: { x: 1100, y: 100 } },
+            { data: { id: 'cd', source: curve === 'compound' ? 'p' : 'c', target: curve === 'self' || curve === 'compound' ? 'c' : 'd' } },
+            { data: { id: 'parallel', source: 'c', target: 'd' } }
+          ]);
+
+          const edge = cy.$('#cd');
+          edge.recalculateRenderedStyle();
+          const rs = edge[0]._private.rscratch;
+          const pts = rs.allpts;
+          const matches = [];
+
+          // The renderer samples at t = 0.05 through 0.95. Query the
+          // missing ends of every span, including internal junctions.
+          for (let i = 0; i + 5 < pts.length; i += 4) {
+            for (const t of [0.02, 0.98]) {
+              const x = (1 - t) ** 2 * pts[i] + 2 * t * (1 - t) * pts[i + 2] + t ** 2 * pts[i + 4];
+              const y = (1 - t) ** 2 * pts[i + 1] + 2 * t * (1 - t) * pts[i + 3] + t ** 2 * pts[i + 5];
+              const polygon = [
+                { x: x - 2, y: y - 2 }, { x: x + 2, y: y - 2 },
+                { x: x + 2, y: y + 2 }, { x: x - 2, y: y + 2 }
+              ];
+
+              matches.push(edge.polygonIntersection(polygon).map(ele => ele.id()));
+            }
+          }
+
+          return { type: rs.edgeType, matches };
+        }, curve);
+
+        expect(results.type).toBe(curve === 'unbundled-bezier' ? 'multibezier' : curve);
+        expect(results.matches.length).toBeGreaterThan(0);
+        for (const ids of results.matches) {
+          expect(ids).toEqual(['cd']);
+        }
+      });
+    }
   }); // spatial queries
 
 }); // renderer

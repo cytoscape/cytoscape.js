@@ -423,6 +423,22 @@ let elesfn = ({
         const rstyle = ele._private.rstyle;
         let pts = rstyle.bezierPts || rstyle.linePts || rstyle.haystackPts;
 
+        if (rstyle.bezierPts && rs.allpts && rs.allpts.length >= 6) {
+          // Cached Bezier samples omit t = 0 and t = 1. Include each
+          // span's endpoints without changing the renderer's sample cache.
+          const spans = (rs.allpts.length - 2) / 4;
+          const samplesPerSpan = rstyle.bezierPts.length / spans;
+          pts = [{ x: rs.allpts[0], y: rs.allpts[1] }];
+
+          for (let k = 0; k < spans; k++) {
+            for (let j = 0; j < samplesPerSpan; j++) {
+              pts.push(rstyle.bezierPts[k * samplesPerSpan + j]);
+            }
+
+            pts.push({ x: rs.allpts[k * 4 + 4], y: rs.allpts[k * 4 + 5] });
+          }
+        }
+
         if ((!pts || pts.length < 2) && rs.startX != null && rs.startY != null && rs.endX != null && rs.endY != null) {
           pts = [
             { x: rs.startX, y: rs.startY },

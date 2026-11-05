@@ -30,6 +30,10 @@ describe('Collection graph manipulation', function(){
   });
 
 
+  afterEach(function(){
+    cy.destroy();
+  });
+
   describe('eles.remove()', function(){
 
     it('should remove a single element', function(){

@@ -840,6 +840,19 @@ test.describe('Renderer', () => {
       expectZooms(await wheel(page, [360, 360, 120]), [preciseZoom(5), notchZoom(3), notchZoom(1)]);
     });
 
+    test('recovers from a sample of five coalesced notches', async ({ page }) => {
+      await wheel(page, [600, 600, 600, 600, 600]);
+      const zooms = await wheel(page, [-120, -120, -120]);
+      expectZooms(zooms.slice(1), [notchZoom(-1), notchZoom(-1)]);
+    });
+
+    test('recovers from fractional coalescing with alternating single and double notches', async ({ page }) => {
+      const notch = 100 / 1.1;
+      await wheel(page, Array(5).fill(notch * 2));
+      const zooms = await wheel(page, [-notch, -notch * 2, -notch, -notch * 2, -notch]);
+      expectZooms(zooms.slice(2), [notchZoom(-1), notchZoom(-2), notchZoom(-1)]);
+    });
+
     test('adapts to a new notch size', async ({ page }) => {
       await wheel(page, sample);
       expectZooms(await wheel(page, [100, 100, 100]), [preciseZoom(5), notchZoom(1), notchZoom(1)]);

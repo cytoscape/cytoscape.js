@@ -143,6 +143,66 @@ test.describe('Renderer', () => {
     }
   });
 
+  test.describe('backgrounding', () => {
+    for( const explicitNone of [false, true] ){
+      for( const containment of ['inside', 'over'] ){
+        const background = explicitNone ? 'explicit none' : 'default';
+
+        test(`nodes without images do not restyle on draw (${background}, ${containment})`, async ({ page }) => {
+          const result = await page.evaluate(async ({ explicitNone, containment }) => {
+            const cy = window.cy;
+            const style = { 'background-image-containment': containment };
+
+            if( explicitNone ){
+              style['background-image'] = 'none';
+            }
+
+            cy.style().selector('node').style(style).update();
+
+            const firstRender = cy.promiseOn('render');
+            cy.add([
+              { data: { id: 'parent' } },
+              { data: { id: 'child', parent: 'parent' }, position: { x: 100, y: 100 } },
+              { data: { id: 'standalone' }, position: { x: 300, y: 100 } }
+            ]);
+            await firstRender;
+
+            const styleChanges = [];
+            const backgrounding = [];
+            const recordBackgrounding = () => {
+              backgrounding.push(cy.nodes(':backgrounding').map(node => node.id()));
+            };
+
+            cy.on('style', 'node', event => {
+              styleChanges.push({ id: event.target.id(), backgrounding: event.target.backgrounding() });
+            });
+
+            recordBackgrounding();
+
+            // Compound parents bypass the texture cache and draw on each pan.
+            // Await rendered frames so this cannot pass without drawing them.
+            for( let i = 0; i < 5; i++ ){
+              const rendered = cy.promiseOn('render');
+              cy.panBy({ x: 1, y: 0 });
+              await rendered;
+              recordBackgrounding();
+            }
+
+            // Export also draws the leaves directly, rather than reusing textures.
+            const png = cy.png({ full: true });
+            recordBackgrounding();
+
+            return { styleChanges, backgrounding, png };
+          }, { explicitNone, containment });
+
+          expect(result.png).toMatch(/^data:image\/png;base64,/);
+          expect(result.backgrounding).toEqual(Array.from({ length: 7 }, () => []));
+          expect(result.styleChanges).toEqual([]);
+        });
+      }
+    }
+  });
+
   test.describe('node style', () => {
     test.beforeEach(async ({ page }) => {
       await page.evaluate(() => {

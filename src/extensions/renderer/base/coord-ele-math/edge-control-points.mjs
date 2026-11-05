@@ -357,7 +357,7 @@ BRp.findTaxiPoints = function( edge, pairInfo ){
     const side1 = c1 + sgn * size1/2;
     const side2 = c2 - sgn * size2/2;
 
-    return sgn * (side2 - side1) > 0 ? (side1 + side2)/2 : (c1 + c2)/2;
+    return sgn * (side2 - side1) >= 0 ? (side1 + side2)/2 : (c1 + c2)/2;
   };
 
   let isExplicitDir = false;

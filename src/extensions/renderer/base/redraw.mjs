@@ -61,6 +61,8 @@ BRp.startRenderLoop = function(){
       // - pre frame hooks (calculations, texture caches, style, etc.)
       // - any drawing
     } else if( r.requestedFrame && !r.skipFrame ){
+      r.requestedFrame = false; // preserve redraw requests made by callbacks or rendering
+
       beforeRenderCallbacks( r, true, requestTime );
 
       var startTime = util.performanceNow();
@@ -90,8 +92,6 @@ BRp.startRenderLoop = function(){
 
       // use a weighted average with a bias from the previous average so we don't spike so easily
       r.averageRedrawTime = r.averageRedrawTime / 2 + duration / 2;
-
-      r.requestedFrame = false;
     } else {
       beforeRenderCallbacks( r, false, requestTime );
     }

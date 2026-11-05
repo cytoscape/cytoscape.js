@@ -761,6 +761,34 @@ describe('Algorithms', function(){
       expect(Math.abs(sum - 1)).to.be.below(0.0001);
   });
 
+  it('eles.pageRank(): exact ranks for the damping factor', function() {
+    // Exact solution of r = d * S * r + (1 - d) / 6, where S is the column-stochastic
+    // link matrix and the dangling nodes e and f link to every node
+    var expected = {
+      0.8: { a: 625/6438, b: 875/6438, c: 325/2146, d: 295/2146, e: 613/2146, f: 413/2146 },
+      0.85: {
+        a: 1920000/20472421, b: 2736000/20472421, c: 3082800/20472421,
+        d: 2793460/20472421, e: 11918961/40944842, f: 7961361/40944842
+      }
+    };
+
+    [0.8, 0.85].forEach(function( dampingFactor ){
+      var res = cy.elements().pageRank({ dampingFactor: dampingFactor, precision: 1e-20, iterations: 1000 });
+
+      cy.nodes().forEach(function( node ){
+        expect(Math.abs(res.rank(node) - expected[dampingFactor][node.id()])).to.be.below(1e-9);
+      });
+    });
+  });
+
+  it('eles.pageRank(): dampingFactor = 0 gives every node the same rank', function() {
+    var res = cy.elements().pageRank({ dampingFactor: 0 });
+
+    cy.nodes().forEach(function( node ){
+      expect(Math.abs(res.rank(node) - 1/6)).to.be.below(1e-9);
+    });
+  });
+
   it('eles.degreeCentrality() unweighted undirected alpha = 0', function(){
     var res = {};
     cy.nodes().forEach(function (ele) {

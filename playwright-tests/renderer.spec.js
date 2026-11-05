@@ -49,6 +49,100 @@ test.describe('Renderer', () => {
     expect(numNodes).toBe(1);
   });
 
+  test.describe('image export', () => {
+    for( const [name, options] of [
+      ['viewport', {}],
+      ['scaled viewport', { scale: 1.5 }],
+      ['full graph', { full: true, scale: 0.718394 }]
+    ] ){
+      test(`fills the entire ${name} PNG with an opaque background`, async ({ page }) => {
+        const minimumAlpha = await page.evaluate(async options => {
+          const cy = window.cy;
+          const zoom = 0.718394;
+          const pan = { x: 123456.7, y: -123456.7 };
+          cy.add([
+            { data: { id: 'a' }, position: { x: (100 - pan.x) / zoom, y: (100 - pan.y) / zoom } },
+            { data: { id: 'b' }, position: { x: (240 - pan.x) / zoom, y: (200 - pan.y) / zoom } }
+          ]);
+          cy.zoom(zoom);
+          cy.pan(pan);
+
+          const image = new Image();
+          image.src = cy.png({ ...options, bg: '#ffffff' });
+          await image.decode();
+          const canvas = document.createElement('canvas');
+          canvas.width = image.width;
+          canvas.height = image.height;
+          const context = canvas.getContext('2d');
+          context.drawImage(image, 0, 0);
+          const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+          let minimum = 255;
+
+          for( let i = 3; i < data.length; i += 4 ){
+            minimum = Math.min(minimum, data[i]);
+          }
+
+          return minimum;
+        }, options);
+
+        expect(minimumAlpha).toBe(255);
+      });
+    }
+
+    for( const format of ['png', 'jpg'] ){
+      test(`fills the ${format} background under a translucent triangle-cross arrow`, async ({ page }) => {
+        const maxDifference = await page.evaluate(async format => {
+          const cy = window.cy;
+          cy.add([
+            { data: { id: 'a' }, position: { x: 450, y: 300 } },
+            { data: { id: 'b' }, position: { x: 200, y: 150 } },
+            { data: { id: 'ab', source: 'a', target: 'b' } }
+          ]);
+          // triangle-cross arrows are drawn without Path2D, so their path stays on the context
+          cy.edges().style({
+            'curve-style': 'straight',
+            'target-arrow-shape': 'triangle-cross',
+            'arrow-scale': 6,
+            width: 6,
+            opacity: 0.4
+          });
+
+          const getPixels = async src => {
+            const image = new Image();
+            image.src = src;
+            await image.decode();
+            const canvas = document.createElement('canvas');
+            canvas.width = image.width;
+            canvas.height = image.height;
+            const context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0);
+            return context.getImageData(0, 0, canvas.width, canvas.height).data;
+          };
+
+          // the transparent export over a white background is what the export with a white bg should look like
+          const transparent = await getPixels(cy.png());
+          const actual = await getPixels(cy[format]({ bg: '#ffffff', quality: 1 }));
+          let max = 0;
+
+          for( let i = 0; i < transparent.length; i += 4 ){
+            const alpha = transparent[i + 3] / 255;
+
+            for( let j = 0; j < 3; j++ ){
+              const expected = transparent[i + j] * alpha + 255 * (1 - alpha);
+              max = Math.max(max, Math.abs(actual[i + j] - expected));
+            }
+
+            max = Math.max(max, 255 - actual[i + 3]);
+          }
+
+          return max;
+        }, format);
+
+        expect(maxDifference).toBeLessThan(16);
+      });
+    }
+  });
+
   test.describe('node style', () => {
     test.beforeEach(async ({ page }) => {
       await page.evaluate(() => {
@@ -636,6 +730,40 @@ test.describe('Renderer', () => {
 
   }); // Rounded edges
 
+  for( const target of ['viewport', 'node'] ){
+    test(`draws every frame during a ${target} animation (issue #3544)`, async ({ page }) => {
+      const drawsPerFrame = await page.evaluate(async target => {
+        const cy = window.cy;
+        const node = cy.add({ data: { id: 'a' }, position: { x: 100, y: 100 } });
+        const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+        const animated = target === 'viewport' ? cy : node;
+        const properties = target === 'viewport'
+          ? { zoom: 2, pan: { x: -100, y: -100 } }
+          : { position: { x: 300, y: 300 } };
+        let draws = 0;
+        const onRender = () => draws++;
+
+        cy.on('render', onRender);
+        animated.animate(properties, { duration: 10000 });
+        await frame();
+        await frame(); // allow the animation to request its first draw
+
+        const counts = [];
+        for( let i = 0; i < 10; i++ ){
+          draws = 0;
+          await frame();
+          counts.push(draws);
+        }
+
+        animated.stop(true);
+        cy.off('render', onRender);
+        return counts;
+      }, target);
+
+      expect(drawsPerFrame).toEqual(Array(10).fill(1));
+    });
+  }
+
   test.describe('with layout', () => {
 
     test('single node cose layout with bounding box', async ({ page }) => {
@@ -890,5 +1018,64 @@ test.describe('Renderer', () => {
       });
     }
   }); // spatial queries
+
+  test.describe('webgl', () => {
+
+    test('viewport change redraws screen even if picking occurs before frame (issue #3536)', async ({ page }) => {
+      const result = await page.evaluate(async () => {
+        const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+        const cy = cytoscape({
+          container: document.getElementById('cytoscape'),
+          renderer: { name: 'canvas', webgl: true },
+          elements: [
+            { data: { id: 'a' }, position: { x: 100, y: 100 } },
+            { data: { id: 'b' }, position: { x: 300, y: 200 } }
+          ]
+        });
+
+        await frame();
+        await frame();
+
+        const r = cy.renderer();
+
+        // Mark the drag layer as pending before the picking query
+        r.data.canvasNeedsRedraw[r.DRAG] = true;
+
+        // Change zoom
+        cy.zoom(2);
+        const needsRedrawAfterZoom = r.data.canvasNeedsRedraw[r.NODE];
+
+        // Query picking buffer before screen animation frame runs (as mousemove does)
+        r.findNearestElements(50, 50);
+        const needsRedrawAfterPicking = r.data.canvasNeedsRedraw[r.NODE];
+        const dragNeedsRedrawAfterPicking = r.data.canvasNeedsRedraw[r.DRAG];
+
+        // Wait for screen render frame
+        await frame();
+        await frame();
+
+        const needsRedrawAfterScreenDraw = r.data.canvasNeedsRedraw[r.NODE];
+        const dragNeedsRedrawAfterScreenDraw = r.data.canvasNeedsRedraw[r.DRAG];
+
+        cy.destroy();
+
+        return {
+          needsRedrawAfterZoom,
+          needsRedrawAfterPicking,
+          needsRedrawAfterScreenDraw,
+          dragNeedsRedrawAfterPicking,
+          dragNeedsRedrawAfterScreenDraw
+        };
+      });
+
+      expect(result.needsRedrawAfterZoom).toBe(true);
+      expect(result.needsRedrawAfterPicking).toBe(true);
+      expect(result.needsRedrawAfterScreenDraw).toBe(false);
+      expect(result.dragNeedsRedrawAfterPicking).toBe(true);
+      expect(result.dragNeedsRedrawAfterScreenDraw).toBe(false);
+    });
+
+  }); // webgl
 
 }); // renderer

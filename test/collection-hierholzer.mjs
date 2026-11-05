@@ -55,6 +55,100 @@ describe('Algorithms', function(){
       return ele.isNode();
     }
 
+    function makeGraph( nodeIds, edgeData ){
+      return cytoscape({
+        headless: true,
+        elements: nodeIds.map(id => ({ data: { id } })).concat(
+          edgeData.map(([id, source, target]) => ({ data: { id, source, target } }))
+        )
+      });
+    }
+
+    function expectTrail( collection, options ){
+      let res = collection.hierholzer(options);
+      expect(res.found).to.equal(true);
+      expect(res.trail.edges().map(ele2id).sort()).to.deep.equal(collection.edges().map(ele2id).sort());
+      expect(res.trail.every(ele => collection.has(ele))).to.equal(true);
+      expect(res.trail[0].id()).to.equal(options.root.slice(1));
+      return res;
+    }
+
+    [false, true].forEach(directed => {
+      let direction = directed ? 'directed' : 'undirected';
+
+      [
+        ['outgoing', ['bc', 'b', 'c']],
+        ['incoming', ['ca', 'c', 'a']],
+        ['internal', ['ba', 'b', 'a']],
+        ['loop', ['aa', 'a', 'a']]
+      ].forEach(([name, excludedEdge]) => {
+        it('ignores excluded ' + name + ' edges (' + direction + ')', function(){
+          let graph = makeGraph(['a', 'b', 'c'], [['ab', 'a', 'b'], excludedEdge]);
+          let subset = graph.elements().filter('#a, #b, #ab');
+          let res = expectTrail(subset, { root: '#a', directed });
+          expect(res.trail.map(ele2id)).to.deep.equal(['a', 'ab', 'b']);
+          graph.destroy();
+        });
+      });
+
+      it('ignores edges whose endpoints are outside the subset (' + direction + ')', function(){
+        let graph = makeGraph(['a', 'b', 'c'], [['ab', 'a', 'b'], ['bc', 'b', 'c']]);
+        expectTrail(graph.elements().not('#c, #bc'), { root: '#a', directed });
+        let res = graph.elements().not('#c').hierholzer({ root: '#a', directed });
+        expect(res.found).to.equal(true);
+        expect(res.trail.map(ele2id)).to.deep.equal(['a', 'ab', 'b']);
+        graph.destroy();
+      });
+
+      it('uses subset degrees even when the full graph has no trail (' + direction + ')', function(){
+        let graph = makeGraph(['a', 'b', 'c', 'd'], [
+          ['ab', 'a', 'b'], ['ac', 'a', 'c'], ['ad', 'a', 'd']
+        ]);
+        expect(graph.elements().hierholzer({ root: '#a', directed }).found).to.equal(false);
+        expectTrail(graph.elements().filter('#a, #b, #ab'), { root: '#a', directed });
+        graph.destroy();
+      });
+
+      it('rejects subset degree imbalance hidden by excluded edges (' + direction + ')', function(){
+        let graph = makeGraph(['a', 'b', 'c', 'd'], [
+          ['ab', 'a', 'b'], ['ac', 'a', 'c'], ['ad', 'a', 'd'],
+          ['ba', 'b', 'a'], ['ca', 'c', 'a'], ['da', 'd', 'a']
+        ]);
+        expectTrail(graph.elements(), { root: '#a', directed });
+        let res = graph.elements().not('#ba, #ca, #da').hierholzer({ root: '#a', directed });
+        expect(res.found).to.equal(false);
+        expect(res.trail).to.equal(undefined);
+        graph.destroy();
+      });
+
+      it('preserves loops and parallel edges in a subset (' + direction + ')', function(){
+        let graph = makeGraph(['a', 'b', 'c'], [
+          ['aa', 'a', 'a'], ['ab1', 'a', 'b'], ['ab2', 'a', 'b'],
+          ['ba1', 'b', 'a'], ['ba2', 'b', 'a'], ['bc', 'b', 'c']
+        ]);
+        expectTrail(graph.elements().not('#bc, #c'), { root: '#a', directed });
+        graph.destroy();
+      });
+
+      it('rejects disconnected edge components (' + direction + ')', function(){
+        let graph = makeGraph(['a', 'b'], [['aa', 'a', 'a'], ['bb', 'b', 'b']]);
+        let res = graph.elements().hierholzer({ root: '#a', directed });
+        expect(res.found).to.equal(false);
+        expect(res.trail).to.equal(undefined);
+        graph.destroy();
+      });
+
+      it('preserves automatic roots and rejects an invalid trail root (' + direction + ')', function(){
+        let graph = makeGraph(['a', 'b', 'c'], [['ab', 'a', 'b'], ['bc', 'b', 'c']]);
+        let subset = graph.elements().not('#bc');
+        let res = subset.hierholzer({ directed });
+        expect(res.found).to.equal(true);
+        expect(res.trail.edges().map(ele2id)).to.deep.equal(['ab']);
+        expect(subset.hierholzer({ root: '#c', directed }).found).to.equal(false);
+        graph.destroy();
+      });
+    });
+
     it('eles.hierholzer(): directed', function(){
       var options = {
         root: "#0",

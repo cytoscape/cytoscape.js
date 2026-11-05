@@ -59,7 +59,7 @@ let elesfn = ({
 
     // Add additional probability based on damping factor
     // Also, take into account columns that have sum = 0
-    let p = 1.0 / numNodes + additionalProb; // Shorthand
+    let p = dampingFactor / numNodes + additionalProb; // Shorthand
 
     // Traverse matrix, column by column
     for( let j = 0; j < numNodes; j++ ){
@@ -74,7 +74,7 @@ let elesfn = ({
         for( let i = 0; i < numNodes; i++ ){
           let n = i * numNodes + j;
 
-          matrix[n] = matrix[n] / columnSum[j] + additionalProb;
+          matrix[n] = dampingFactor * matrix[n] / columnSum[j] + additionalProb;
         }
       }
     }

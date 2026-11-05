@@ -2,6 +2,7 @@
 
 import * as util from '../../../util/index.mjs';
 import {drawPreparedRoundCorner} from "../../../round.mjs";
+import { getArrowScale } from '../../../style/arrow-scale.mjs';
 
 let CRp = {};
 
@@ -364,7 +365,7 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
     self.colorStrokeStyle( context, [255, 255, 255], 1 );
 
     self.drawArrowShape( edge, context,
-      arrowClearFill, edgeWidth, arrowShape, arrowWidth, x, y, angle
+      arrowClearFill, edgeWidth, arrowShape, arrowWidth, x, y, angle, prefix
     );
 
     context.globalCompositeOperation = gco;
@@ -375,20 +376,20 @@ CRp.drawArrowhead = function( context, edge, prefix, x, y, angle, opacity ){
   self.colorStrokeStyle( context, color, opacity );
 
   self.drawArrowShape( edge, context,
-    arrowFill, edgeWidth, arrowShape, arrowWidth, x, y, angle
+    arrowFill, edgeWidth, arrowShape, arrowWidth, x, y, angle, prefix
   );
 };
 
-CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, shapeWidth, x, y, angle ){
+CRp.drawArrowShape = function( edge, context, fill, edgeWidth, shape, shapeWidth, x, y, angle, prefix ){
   let r = this;
   let usePaths = this.usePaths() && shape !== 'triangle-cross';
   let pathCacheHit = false;
   let path;
   let canvasContext = context;
   let translation = { x, y };
-  let scale = edge.pstyle( 'arrow-scale' ).value;
-  let size = this.getArrowWidth( edgeWidth, scale );
   let shapeImpl = r.arrowShapes[ shape ];
+  let scale = getArrowScale( edge, prefix );
+  let size = this.getArrowWidth( edgeWidth, scale );
 
   if( usePaths ){
     let cache = r.arrowPathCache = r.arrowPathCache || [];

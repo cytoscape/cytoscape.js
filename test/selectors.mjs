@@ -90,6 +90,11 @@ describe('Selectors', function(){
   itSelects('[weight < 2]', 'n1', 'n1n2');
   itSelects('[weight <= 2]', 'n1', 'n2', 'n1n2');
   itSelects('[weight !< 2]', 'n2', 'nparent');
+  itSelects('[weight *= 2]', 'n2');
+  itSelects('[weight ^= 3]', 'nparent');
+  itSelects('[weight $= 1]', 'n1', 'n1n2');
+  itSelects('[weight !*= 2]', 'n1', 'nparent', 'nparent2', 'n1n2', 'nparentLoop', 'n3.item');
+  itSelects('[foo *= 1]');
   itSelects('[emptystr = ""]', 'n1');
   itSelects('[emptystr != ""]', 'n2', 'nparent', 'nparent2', 'n1n2', 'nparentLoop', 'n3.item');
   itSelects('[arrayval.0 = "index0"]', 'n1');

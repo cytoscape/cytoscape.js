@@ -803,4 +803,64 @@ test.describe('Renderer', () => {
 
   }); // with layout
 
+
+  test.describe('webgl', () => {
+
+    test('viewport change redraws screen even if picking occurs before frame (issue #3536)', async ({ page }) => {
+      const result = await page.evaluate(async () => {
+        const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+        const cy = cytoscape({
+          container: document.getElementById('cytoscape'),
+          renderer: { name: 'canvas', webgl: true },
+          elements: [
+            { data: { id: 'a' }, position: { x: 100, y: 100 } },
+            { data: { id: 'b' }, position: { x: 300, y: 200 } }
+          ]
+        });
+
+        await frame();
+        await frame();
+
+        const r = cy.renderer();
+
+        // Mark the drag layer as pending before the picking query
+        r.data.canvasNeedsRedraw[r.DRAG] = true;
+
+        // Change zoom
+        cy.zoom(2);
+        const needsRedrawAfterZoom = r.data.canvasNeedsRedraw[r.NODE];
+
+        // Query picking buffer before screen animation frame runs (as mousemove does)
+        r.findNearestElements(50, 50);
+        const needsRedrawAfterPicking = r.data.canvasNeedsRedraw[r.NODE];
+        const dragNeedsRedrawAfterPicking = r.data.canvasNeedsRedraw[r.DRAG];
+
+        // Wait for screen render frame
+        await frame();
+        await frame();
+
+        const needsRedrawAfterScreenDraw = r.data.canvasNeedsRedraw[r.NODE];
+        const dragNeedsRedrawAfterScreenDraw = r.data.canvasNeedsRedraw[r.DRAG];
+
+        cy.destroy();
+
+        return {
+          needsRedrawAfterZoom,
+          needsRedrawAfterPicking,
+          needsRedrawAfterScreenDraw,
+          dragNeedsRedrawAfterPicking,
+          dragNeedsRedrawAfterScreenDraw
+        };
+      });
+
+      expect(result.needsRedrawAfterZoom).toBe(true);
+      expect(result.needsRedrawAfterPicking).toBe(true);
+      expect(result.needsRedrawAfterScreenDraw).toBe(false);
+      expect(result.dragNeedsRedrawAfterPicking).toBe(true);
+      expect(result.dragNeedsRedrawAfterScreenDraw).toBe(false);
+    });
+
+  }); // webgl
+
 }); // renderer

@@ -88,4 +88,3 @@ describe('Taxi fallback turns (#3524)', function(){
     }
   }
 });
-

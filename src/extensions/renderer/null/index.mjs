@@ -14,8 +14,6 @@ NullRenderer.prototype = {
   notify: function(){ this.notifications++; },
   init: noop,
   isHeadless: function(){ return true; },
-  getAllInBox: function(){ return []; },
-  hitTestAt: function(){ return []; },
   png: throwImgErr,
   jpg: throwImgErr
 };

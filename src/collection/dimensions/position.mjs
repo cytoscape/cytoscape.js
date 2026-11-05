@@ -22,10 +22,6 @@ let beforePositionSet = function( eles, newPos, silent ){
       }
 
       ele.dirtyBoundingBoxCache();
-
-      if( ele.isNode() ){
-        ele.connectedEdges().dirtyBoundingBoxCache();
-      }
     }
   }
 };

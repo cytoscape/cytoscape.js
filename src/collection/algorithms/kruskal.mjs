@@ -6,6 +6,7 @@ let elesfn = ({
     weightFn = weightFn || ( edge => 1 );
 
     let { nodes, edges } = this.byGroup();
+    edges = edges.filter( edge => nodes.has(edge.source()) && nodes.has(edge.target()) );
     let numNodes = nodes.length;
     let forest = new Array(numNodes);
     let A = nodes; // assumes byGroup() creates new collections that can be safely mutated

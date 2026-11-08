@@ -547,10 +547,10 @@ export class AtlasManager {
         context.beginPath();
         context.rect(0, 0, bb.w, bb.h);
         context.clip();
-        opts.drawElement(context, ele, bb, true, true);
+        opts.drawElement(context, ele, bb, true, false); // opacity 1: the shader applies the live opacity
         context.restore();
       } else {
-        opts.drawElement(context, ele, bb, true, true);
+        opts.drawElement(context, ele, bb, true, false); // opacity 1: the shader applies the live opacity
       }
       drawn = true;
     });

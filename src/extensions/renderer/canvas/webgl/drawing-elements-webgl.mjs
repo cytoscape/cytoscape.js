@@ -217,6 +217,8 @@ export class ElementDrawingWebGL {
           float d = float(uAtlasSize);
           vTexCoord = vec2(texX / d, texY / d); // tex coords must be between 0 and 1
 
+          vColor = aColor; // alpha carries the element's live opacity (textures are drawn at opacity 1)
+
           gl_Position = vec4(uPanZoomMatrix * aTransform * vec3(position, 1.0), 1.0);
         }
         else if(aVertType == ${RECTANGLE} || aVertType == ${ELLIPSE} 
@@ -369,7 +371,8 @@ export class ElementDrawingWebGL {
         if(vVertType == ${TEXTURE}) {
           // look up the texel from the texture unit
           ${idxs.map(i => `if(vAtlasId == ${i}) outColor = texture(uTexture${i}, vTexCoord);`).join('\n\telse ')}
-        } 
+          outColor *= vColor.a; // apply the element's live opacity (premultiplied alpha, so scale every channel)
+        }
         else if(vVertType == ${EDGE_ARROW}) {
           // mimics how canvas renderer uses context.globalCompositeOperation = 'destination-out';
           outColor = blend(vColor, uBGColor);
@@ -576,6 +579,18 @@ export class ElementDrawingWebGL {
     // Get the atlas and the texture coordinates, will draw the texture if it hasn't been drawn yet
     // May be more than one texture if for example the label has multiple lines
     const atlasInfoArray = atlasManager.getAtlasInfo(ele, type);
+
+    // Textures are drawn into the atlas at opacity 1 (the style key does not include opacity),
+    // so the element's live opacity is applied per instance in the shader. Labels also carry
+    // text-opacity, which the atlas draw left out for the same reason.
+    let opacity = 1;
+    if(!this.renderTarget.picking) {
+      opacity = ele.effectiveOpacity();
+      if(type !== 'node-body') {
+        opacity *= ele.pstyle('text-opacity').value;
+      }
+    }
+
     for(const atlasInfo of atlasInfoArray) {
       const { atlas, tex1, tex2 } = atlasInfo; // tex2 is used if the label wraps and there are two textures
 
@@ -602,6 +617,12 @@ export class ElementDrawingWebGL {
           texView[1] = tex.y;
           texView[2] = tex.w;
           texView[3] = tex.h;
+
+          const colorView = this.colorBuffer.getView(instance);
+          colorView[0] = opacity;
+          colorView[1] = opacity;
+          colorView[2] = opacity;
+          colorView[3] = opacity;
 
           const matrixView = this.transformBuffer.getMatrixView(instance);
           this.setTransformMatrix(ele, matrixView, opts, atlasInfo, first);

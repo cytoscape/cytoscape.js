@@ -101,7 +101,7 @@ export const median = ( arr, begin = 0, end = arr.length, copy = true, sort = tr
   let mid = Math.floor( len / 2 );
 
   if( len % 2 !== 0 ){
-    return arr[mid + 1 + off];
+    return arr[mid + off];
   } else {
     return ( arr[mid - 1 + off] + arr[mid + off] )/2;
   }

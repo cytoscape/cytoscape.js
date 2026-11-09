@@ -263,7 +263,12 @@ export class AtlasCollection {
     if(!this.scratch) {
       const { r, texSize, texRows, createTextureCanvas } = this;
       const texHeight = Math.floor(texSize / texRows);
-      this.scratch = createTextureCanvas(r, texSize, texHeight, 'scratch');
+      // Not the shared 'scratch' canvas: every Atlas in this collection draws wrapped
+      // textures through that one and clears it first (Atlas.draw -> drawWrapped), and
+      // _copyTextureToNewAtlas reads the source parts from this canvas while the target
+      // Atlas may be drawing a wrapped texture at the same time. Sharing left every
+      // wrapped-to-wrapped copy blank during garbage collection.
+      this.scratch = createTextureCanvas(r, texSize, texHeight);
     }
     return this.scratch;
   }

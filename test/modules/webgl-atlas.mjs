@@ -51,6 +51,51 @@ function createAtlasManager(webglTexSize = 100, webglTexPerBatch = 16) {
 }
 
 
+// A canvas whose pixels remember what was drawn where, so a copy can be checked for content.
+// Only what Atlas and AtlasCollection call: save/restore/translate/scale, fillRect and
+// drawImage with the nine-argument form (and scale 1, which is what a row-high texture gets).
+function createPixelCanvas(r, width, height) {
+  const canvas = { width, height, pixels: new Map() };
+  const at = (x, y) => `${x},${y}`;
+  const stack = [];
+  let tx = 0, ty = 0;
+
+  canvas.clear = () => canvas.pixels.clear();
+  canvas.context = {
+    fillStyle: null,
+    save() { stack.push([ tx, ty ]); },
+    restore() { [ tx, ty ] = stack.pop(); },
+    translate(x, y) { tx += x; ty += y; },
+    scale(sx, sy) {
+      if(sx !== 1 || sy !== 1) {
+        throw new Error('this canvas only models scale 1');
+      }
+    },
+    fillRect(x, y, w, h) {
+      for(let i = 0; i < w; i++) {
+        for(let j = 0; j < h; j++) {
+          canvas.pixels.set(at(tx + x + i, ty + y + j), this.fillStyle);
+        }
+      }
+    },
+    drawImage(image, sx, sy, sw, sh, dx, dy, dw, dh) {
+      if(sw !== dw || sh !== dh) {
+        throw new Error('assuming width and height should be the same when drawing');
+      }
+      for(let i = 0; i < sw; i++) {
+        for(let j = 0; j < sh; j++) {
+          const p = image.pixels.get(at(sx + i, sy + j));
+          if(p !== undefined) {
+            canvas.pixels.set(at(tx + dx + i, ty + dy + j), p);
+          }
+        }
+      }
+    }
+  };
+  return canvas;
+}
+
+
 describe('webgl-atlas', function() {
 
   it('Atlas draws and wraps', function() {
@@ -355,4 +400,44 @@ describe('webgl-atlas', function() {
       expect(ai2.tex2).to. eql({ x: 90, y: 0, w: 0, h: 10 });
     }
   });
+
+  it('AtlasCollection garbage collection keeps the content of a wrapped texture that wraps again', function() {
+    // the manager hands every Atlas of a collection the same 'scratch' canvas
+    const sharedScratch = AtlasManager.prototype._cacheScratchCanvas(createPixelCanvas);
+    const ac = new AtlasCollection(null, 100, 4, sharedScratch); // row height 25
+    const fillWith = key => (context, bb) => {
+      context.fillStyle = key;
+      context.fillRect(0, 0, bb.w, bb.h);
+    };
+    const draw = (key, w) => ac.draw(key, { h: 25, w }, fillWith(key));
+
+    draw(1, 100);
+    draw(2, 75);
+    draw(3, 50);
+    draw(4, 100); // wraps: row 2 from x 25, then row 3 to x 25
+    draw(5, 50);
+    draw(6, 75);
+    draw(7, 75);
+    expect(ac.getAtlas(4).getOffsets(4)).to.eql([ { x: 25, y: 50, w: 75, h: 25 }, { x: 0, y: 75, w: 25, h: 25 } ]);
+
+    ac.markKeyForGC(2);
+    ac.markKeyForGC(5);
+    ac.markKeyForGC(7);
+    ac.gc();
+
+    const atlas = ac.getAtlas(4);
+    const [ s1, s2 ] = atlas.getOffsets(4); // wraps again in the new atlas
+    expect([ s1, s2 ]).to.eql([ { x: 50, y: 25, w: 50, h: 25 }, { x: 0, y: 50, w: 50, h: 25 } ]);
+
+    const px = atlas.canvas.pixels;
+    expect(px.get(`${s1.x},${s1.y}`)).to.equal(4);
+    expect(px.get(`${s1.x + s1.w - 1},${s1.y + s1.h - 1}`)).to.equal(4);
+    expect(px.get(`${s2.x},${s2.y}`)).to.equal(4);
+    expect(px.get(`${s2.x + s2.w - 1},${s2.y + s2.h - 1}`)).to.equal(4);
+
+    const [ t1 ] = atlas.getOffsets(3); // wrapped before, not after: copied through the scratch canvas too
+    expect(px.get(`${t1.x},${t1.y}`)).to.equal(3);
+    expect(px.get(`${t1.x + t1.w - 1},${t1.y + t1.h - 1}`)).to.equal(3);
+  });
+
 });

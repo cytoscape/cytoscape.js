@@ -825,6 +825,14 @@
 <p></p>
 <ul> 
     <li>
+        3.35
+        <ul>
+            <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.35.0+is%3Aclosed">3.35.0</a>
+            </li>
+        </ul>
+    </li>
+    <li>
         3.34
         <ul>
             <li>
@@ -11060,6 +11068,162 @@ nodes.removeStyle().forEach(<span class="hljs-function"><span class="hljs-keywor
 <button class="run run-inline-code"><span class="fa fa-play"></span></button>
 							</div>
 						</div>
+						<div class="function">
+							<div class="name" id="eles.withinBox">
+								<span class="fn-name">eles.withinBox()</span>  <a href="#eles.withinBox"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/building--filtering/eles.withinBox">&nbsp;</span><span id="collection/building--filtering/eles.withinBox">&nbsp;</span><span id="eles.withinBox">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get the elements in the collection that are within the given box, using the renderer’s box-selection rules.  Only interactive elements are considered.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">eles.withinBox( <span class="args-summary"><span class="comma">,&nbsp;</span>box</span> )</div>
+
+
+										<div class="descr"></div>
+										<ul class="args">
+												<li>
+													<span class="name">box</span>
+													
+													<span class="descr"><p>The box to test against, given as <code>{ x1, y1, x2, y2 }</code> or <code>{ x1, y1, w, h }</code> in <a href="#notation/position">model co-ordinates</a>.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p>This function proxies to the renderer’s box-selection logic, so the result matches what the user would select by dragging a selection box over the same area: it obeys each element’s <code>box-selection</code> style (<code>&#39;contain&#39;</code> or <code>&#39;overlap&#39;</code>) and, for labels, <code>box-select-labels</code>.</p>
+<p>Only interactive elements are considered (i.e. <code>events: yes</code>, <code>visibility: visible</code>, and taking up space) — an element with <code>box-selection: none</code> or that is otherwise non-interactive is never returned.</p>
+
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.hit">
+								<span class="fn-name">eles.hit()</span>  <a href="#eles.hit"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/building--filtering/eles.hit">&nbsp;</span><span id="collection/building--filtering/eles.hit">&nbsp;</span><span id="eles.hit">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get the interactive elements in the collection that are hit by the given position, sorted topmost first by z-order.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">eles.hit( <span class="args-summary"><span class="comma">,&nbsp;</span>pos [<span class="comma">,&nbsp;</span>options]</span> )</div>
+
+
+										<div class="descr"></div>
+										<ul class="args">
+												<li>
+													<span class="name"><a href="#notation/position">pos</a></span>
+													
+													<span class="descr"><p>The point to test, given as <code>{ x, y }</code> in <a href="#notation/position">model co-ordinates</a>.</p>
+</span>
+
+												</li>
+												<li>
+													<span class="name">options</span>
+													<span class="optional">[optional]</span>
+													<span class="descr"><p>An object containing options for the function.</p>
+</span>
+
+													<ul class="fields">
+															<li>
+																<span class="name">includeBody</span>
+																
+																<span class="descr"><p>A boolean indicating whether to hit test the body of the element (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeMainLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to hit test main (node or edge) <code>label</code>s (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeSourceLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to hit test (edge) <code>source-label</code>s (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">includeTargetLabels</span>
+																
+																<span class="descr"><p>A boolean indicating whether to hit test (edge) <code>target-label</code>s (default <code>true</code>).</p>
+</span>
+															</li>
+
+															<li>
+																<span class="name">isTouch</span>
+																
+																<span class="descr"><p>A boolean indicating whether to use touch-sized hit thresholds (default <code>false</code>).</p>
+</span>
+															</li>
+
+													</ul>
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p>This function uses its own hit-testing logic, separate from the renderer’s mouse/touch click handling. Nodes are tested by their shape; edges are tested by their line/curve and arrows; labels (including rotated labels) are tested by their actual polygon, not an axis-aligned box. The thresholds and edge-collision details are not guaranteed to exactly match what a real click resolves to.</p>
+<p>The returned collection is sorted topmost first by z-order, unlike a mouse click (which only ever resolves to a single topmost element) — this gives the full ranked list of everything under the point.</p>
+<p>Only interactive elements are considered, the same as <code>eles.withinBox()</code>.</p>
+
+							</div>
+						</div>
+						<div class="function">
+							<div class="name" id="eles.polygonIntersection">
+								<span class="fn-name">eles.polygonIntersection()</span>  <a href="#eles.polygonIntersection"><span class="fa fa-bookmark"></span></a>
+								<span id="collection/building--filtering/eles.polygonIntersection">&nbsp;</span><span id="collection/building--filtering/eles.polygonIntersection">&nbsp;</span><span id="eles.polygonIntersection">&nbsp;</span>
+							</div>
+
+
+
+							<div class="descr"><p>Get the elements in the collection whose body or label polygonal bounds intersect the specified convex polygon in <a href="#notation/position">model co-ordinates</a>, using the <a href="https://en.wikipedia.org/wiki/Hyperplane_separation_theorem">Separating Axis Theorem</a>.</p>
+</div>
+
+							<div class="formats">
+									<div class="format">
+											<div class="name">eles.polygonIntersection( <span class="args-summary"><span class="comma">,&nbsp;</span>polygon</span> )</div>
+
+
+										<div class="descr"></div>
+										<ul class="args">
+												<li>
+													<span class="name">polygon</span>
+													
+													<span class="descr"><p>An array of <code>{ x, y }</code> points defining the polygon to test against.</p>
+</span>
+
+												</li>
+										</ul>
+									</div>
+							</div>
+
+							<div class="details">
+									<h3 id="details">Details</h3>
+<p>For each element, the body is tested first; if it doesn’t intersect, each of the element’s labels is tested as a fallback (main label for nodes and edges, plus source/target labels for edges), so a rotated label is tested by its actual polygon rather than an axis-aligned box. An element matches if either its body or any of its labels intersects the given polygon.</p>
+<p>A node’s body is tested as an axis-aligned box. An edge’s body is tested as the straight-line segments between its rendered points (including intermediate samples and both endpoints of every curve span), so the test follows the edge’s actual path rather than its bounding box.</p>
+<p>This function uses the <a href="https://en.wikipedia.org/wiki/Hyperplane_separation_theorem">Separating Axis Theorem</a> for body/label polygon tests, which is only valid for convex polygons. Passing a concave polygon can produce false-positive matches.</p>
+<p>Unlike <a href="#eles.hit"><code>eles.hit()</code></a> and <a href="#eles.withinBox"><code>eles.withinBox()</code></a>, this function does not go through the renderer, so it also matches non-interactive elements.</p>
+<p>Because a node’s body test uses its axis-aligned bounding box, a node can match a polygon that only overlaps an empty corner of that box, not its actual shape.</p>
+
+							</div>
+						</div>
 
 					<h2 id="collection/traversing">Traversing <a href="#collection/traversing"><span class="fa fa-bookmark"></span></a></h2>
 
@@ -15103,7 +15267,8 @@ node {
 </li>
 <li><strong><code>&lt;pos&gt;-arrow-fill</code></strong> : The fill state of the edge’s source arrow; may be <code>filled</code> or <code>hollow</code>.</li>
 <li><strong><code>&lt;pos&gt;-arrow-width</code></strong> : The width of the edge’s source arrow shape; may be <code>match-line</code>, a number (pixel), or a string with units (<code>px</code> | <code>%</code> | <code>em</code>). The <code>%</code> unit is based on the edge <code>width</code>.</li>
-<li><strong><code>arrow-scale</code></strong> : Scaling for the arrow size; may be any number &gt;= 0.</li>
+<li><strong><code>&lt;pos&gt;-arrow-scale</code></strong> : Scaling for the size of the edge’s arrow at <code>&lt;pos&gt;</code>; may be any number &gt; 0, or <code>inherit</code> (default) to use the edge’s <code>arrow-scale</code>.</li>
+<li><strong><code>arrow-scale</code></strong> : Scaling for the arrow size; may be any number &gt; 0.  It applies to each arrow whose <code>&lt;pos&gt;-arrow-scale</code> is <code>inherit</code>.</li>
 </ul>
 <p>For each edge arrow property above, replace <code>&lt;pos&gt;</code> with one of</p>
 <ul>
@@ -15285,6 +15450,20 @@ node {
 <li><strong><code>overlay-padding</code></strong> : The area outside of the element within which the overlay is shown.</li>
 <li><strong><code>overlay-opacity</code></strong> : The opacity of the overlay.</li>
 <li><strong><code>overlay-shape</code></strong> : The shape of the node overlay; may be <code>round-rectangle</code> (default), <code>ellipse</code>. Doesn’t apply to edges.</li>
+<li><strong><code>overlay-fill</code></strong> : The filling style of the overlay; may be <code>solid</code> (default), <code>linear-gradient</code>, or <code>radial-gradient</code>.</li>
+<li><strong><code>overlay-gradient-stop-colors</code></strong> : The colours of the overlay gradient stops (e.g. <code>cyan magenta yellow</code>).</li>
+<li><strong><code>overlay-gradient-stop-positions</code></strong> : The positions of the overlay gradient stops (e.g. <code>0% 50% 100%</code>). If not specified or invalid, the stops will divide equally.</li>
+<li><strong><code>overlay-gradient-direction</code></strong> : For <code>overlay-fill: linear-gradient</code>, this property defines the direction of the overlay gradient.  The following values are accepted:<ul>
+<li><code>to-bottom</code> (default)</li>
+<li><code>to-top</code></li>
+<li><code>to-left</code></li>
+<li><code>to-right</code></li>
+<li><code>to-bottom-right</code></li>
+<li><code>to-bottom-left</code></li>
+<li><code>to-top-right</code></li>
+<li><code>to-top-left</code></li>
+</ul>
+</li>
 </ul>
 <h2 id="style/underlay">Underlay <a href="#style/underlay"><span class="fa fa-bookmark"></span></a></h2>
 <p>These properties allow for the creation of underlays behind nodes or edges, and are often used in a highlighted state.</p>
@@ -15293,6 +15472,20 @@ node {
 <li><strong><code>underlay-padding</code></strong> : The area outside of the element within which the underlay is shown.</li>
 <li><strong><code>underlay-opacity</code></strong> : The opacity of the underlay.</li>
 <li><strong><code>underlay-shape</code></strong> : The shape of the node underlay; may be <code>round-rectangle</code> (default), <code>ellipse</code>. Doesn’t apply to edges.</li>
+<li><strong><code>underlay-fill</code></strong> : The filling style of the underlay; may be <code>solid</code> (default), <code>linear-gradient</code>, or <code>radial-gradient</code>.</li>
+<li><strong><code>underlay-gradient-stop-colors</code></strong> : The colours of the underlay gradient stops (e.g. <code>cyan magenta yellow</code>).</li>
+<li><strong><code>underlay-gradient-stop-positions</code></strong> : The positions of the underlay gradient stops (e.g. <code>0% 50% 100%</code>). If not specified or invalid, the stops will divide equally.</li>
+<li><strong><code>underlay-gradient-direction</code></strong> : For <code>underlay-fill: linear-gradient</code>, this property defines the direction of the underlay gradient.  The following values are accepted:<ul>
+<li><code>to-bottom</code> (default)</li>
+<li><code>to-top</code></li>
+<li><code>to-left</code></li>
+<li><code>to-right</code></li>
+<li><code>to-bottom-right</code></li>
+<li><code>to-bottom-left</code></li>
+<li><code>to-top-right</code></li>
+<li><code>to-top-left</code></li>
+</ul>
+</li>
 </ul>
 <h2 id="style/ghost">Ghost <a href="#style/ghost"><span class="fa fa-bookmark"></span></a></h2>
 <p>The ghost properties allow for creating a ghosting effect, a semitransparent duplicate of the element drawn at an offset.</p>
@@ -17273,6 +17466,9 @@ A physics simulation layout that makes use of parallelism on the GPU to support 
 							<div class="section lvl3"><a class="toclink" href="#eles.reduce">eles.reduce() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.min">eles.min() </a></div>
 							<div class="section lvl3"><a class="toclink" href="#eles.max">eles.max() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.withinBox">eles.withinBox() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.hit">eles.hit() </a></div>
+							<div class="section lvl3"><a class="toclink" href="#eles.polygonIntersection">eles.polygonIntersection() </a></div>
 						<div class="section lvl2">
 							<span class="expander">
 								<span class="fa fa-caret-down expanded-icon"></span>

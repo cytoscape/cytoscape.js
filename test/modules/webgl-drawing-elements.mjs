@@ -9,6 +9,42 @@ const createBuffer = (size) => ({
   }
 });
 
+const createTextureDrawing = (renderTarget) => ({
+  atlasManager: {
+    getRenderTypeOpts: () => ({}),
+    getAtlasInfo: () => [ {
+      atlas: {},
+      bb: { x1: 0, y1: 0, w: 10, h: 10 },
+      tex1: { x: 0, y: 0, w: 10, h: 10 },
+      tex2: { x: 0, y: 0, w: 0, h: 0 }
+    } ]
+  },
+  batchManager: {
+    canAddToCurrentBatch: () => true,
+    getAtlasIndexForBatch: () => 0
+  },
+  _isVisible: () => true,
+  vertTypeBuffer: createBuffer(1),
+  indexBuffer: createBuffer(4),
+  atlasIdBuffer: createBuffer(1),
+  texBuffer: createBuffer(4),
+  colorBuffer: createBuffer(4),
+  transformBuffer: { getMatrixView: () => new Float32Array(9) },
+  setTransformMatrix(){},
+  renderTarget,
+  instanceCount: 0,
+  wrappedCount: 0,
+  maxInstances: 10,
+  endBatch(){}
+});
+
+const createTexturedEle = (effectiveOpacity, textOpacity) => ({
+  isEdge: () => false,
+  effectiveOpacity: () => effectiveOpacity,
+  pstyle: (name) => ({ 'text-opacity': { value: textOpacity } })[name]
+});
+
+
 describe('webgl-drawing-elements', function(){
 
   it('drawNode() uses effective opacity for simple-shape node body and border', function(){
@@ -81,6 +117,25 @@ describe('webgl-drawing-elements', function(){
     expect(lineWidthBuffer.view[1]).to.equal(-2);
     expect(drawing.simpleCount).to.equal(1);
     expect(drawing.instanceCount).to.equal(1);
+  });
+
+  it('drawTexture() carries the element\'s effective opacity in the colour alpha for a node body', function(){
+    const drawing = createTextureDrawing(RENDER_TARGET.SCREEN);
+    ElementDrawingWebGL.prototype.drawTexture.call(drawing, createTexturedEle(0.4, 0.5), 3, 'node-body');
+    expect(drawing.instanceCount).to.equal(1);
+    expect(drawing.colorBuffer.view[3]).to.be.closeTo(0.4, 0.000001);
+  });
+
+  it('drawTexture() multiplies text-opacity in for a label', function(){
+    const drawing = createTextureDrawing(RENDER_TARGET.SCREEN);
+    ElementDrawingWebGL.prototype.drawTexture.call(drawing, createTexturedEle(0.4, 0.5), 3, 'node-label');
+    expect(drawing.colorBuffer.view[3]).to.be.closeTo(0.2, 0.000001);
+  });
+
+  it('drawTexture() passes opacity 1 when picking', function(){
+    const drawing = createTextureDrawing(RENDER_TARGET.PICKING);
+    ElementDrawingWebGL.prototype.drawTexture.call(drawing, createTexturedEle(0.4, 0.5), 3, 'node-body');
+    expect(drawing.colorBuffer.view[3]).to.equal(1);
   });
 
 });

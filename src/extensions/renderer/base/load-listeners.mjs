@@ -1043,8 +1043,9 @@ BRp.load = function(){
   var inaccurateScrollDevice;
   var inaccurateScrollFactor = 100000; // base of inaccurate wheel deltas (e.g. base 5 could yield wheels of 10, 25, 50, etc.)
   var sampledScrollFactor; // value of inaccurateScrollFactor right after sampling
-  var wheelFactorMaxReduction = 4; // smaller deltas (relative to sampledScrollFactor) can't be notches
-  var unconfirmedMagnitude = null; // delta magnitude that didn't fit inaccurateScrollFactor on the previous event
+  var wheelFactorMaxReduction = 4; // a new factor below this reduction of sampledScrollFactor is replaced by the notch itself
+  var wheelNotchMaxReduction = 8; // smaller deltas (relative to sampledScrollFactor) can't be notches, e.g. after a sample of coalesced notches
+  var unconfirmedMagnitude = null; // delta magnitude that didn't fit inaccurateScrollFactor, notches of the factor since then aside
 
   var allAreSameMagnitude = function(list) {
     var firstMag = Math.abs(list[0]);
@@ -1113,7 +1114,9 @@ BRp.load = function(){
 
       isWheelNotch = math.isIntegerMultiple(magnitude, inaccurateScrollFactor);
 
-      if (isWheelNotch || magnitude * wheelFactorMaxReduction < sampledScrollFactor) {
+      if (isWheelNotch) {
+        // keeps a candidate across notches of the factor, e.g. single notches between double ones
+      } else if (magnitude * wheelNotchMaxReduction < sampledScrollFactor) {
         unconfirmedMagnitude = null;
       } else if (magnitude === unconfirmedMagnitude) {
         // the same magnitude twice in a row is a notch that the factor doesn't fit,

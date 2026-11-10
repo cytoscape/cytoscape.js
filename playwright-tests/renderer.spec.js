@@ -944,7 +944,31 @@ test.describe('Renderer', () => {
       const notch = 100 / 1.1;
       await wheel(page, Array(5).fill(notch * 2));
       const zooms = await wheel(page, [-notch, -notch * 2, -notch, -notch * 2, -notch]);
-      expectZooms(zooms.slice(2), [notchZoom(-1), notchZoom(-2), notchZoom(-1)]);
+      expectZooms(zooms, [notchZoom(-1), notchZoom(-2), notchZoom(-1), notchZoom(-2), notchZoom(-1)]);
+    });
+
+    test('recovers from fractional coalescing with varying notch counts', async ({ page }) => {
+      const notch = 100 / 1.1;
+      await wheel(page, Array(5).fill(notch * 2));
+      const counts = [-1, -3, -2, -1, -3, -2];
+      expectZooms(await wheel(page, counts.map(n => n * notch)), counts.map(notchZoom));
+    });
+
+    test('bounds an unconfirmed fractional coalesced notch before recovering', async ({ page }) => {
+      const notch = 100 / 1.1;
+      await wheel(page, Array(5).fill(notch * 2));
+      expectZooms(await wheel(page, [-3 * notch, -notch, -3 * notch]), [preciseZoom(-5), notchZoom(-1), notchZoom(-3)]);
+    });
+
+    test('keeps mouse-only notch scaling', async ({ page }) => {
+      await wheel(page, sample);
+      const counts = [-1, -2, -3, 1, 2, 3];
+      expectZooms(await wheel(page, counts.map(n => n * 120)), counts.map(notchZoom));
+    });
+
+    test('keeps trackpad-only precise scaling', async ({ page }) => {
+      await wheel(page, trackpad);
+      expectZooms(await wheel(page, trackpad), trackpad.map(preciseZoom));
     });
 
     test('adapts to a new notch size', async ({ page }) => {
@@ -956,7 +980,7 @@ test.describe('Renderer', () => {
     test('adapts to a new fractional notch size', async ({ page }) => {
       const notch = 400 / 3;
       await wheel(page, sample);
-      expectZooms(await wheel(page, [notch, notch]), [preciseZoom(notch), notchZoom(1)]);
+      expectZooms(await wheel(page, [notch, notch]), [preciseZoom(5), notchZoom(1)]);
     });
 
     test('scales coalesced notches of a fractional notch size', async ({ page }) => {

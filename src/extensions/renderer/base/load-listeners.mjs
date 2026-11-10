@@ -1118,6 +1118,13 @@ BRp.load = function(){
         // keeps a candidate across notches of the factor, e.g. single notches between double ones
       } else if (magnitude * wheelNotchMaxReduction < sampledScrollFactor) {
         unconfirmedMagnitude = null;
+      } else if (!is.integer(magnitude) && math.isIntegerMultiple(inaccurateScrollFactor, magnitude)) {
+        // Fractional mouse notches can divide a coalesced sample exactly, e.g.
+        // at non-default page zoom. Recover immediately instead of zooming by
+        // the raw pixel delta while waiting for an identical notch.
+        inaccurateScrollFactor = magnitude;
+        unconfirmedMagnitude = null;
+        isWheelNotch = true;
       } else if (magnitude === unconfirmedMagnitude) {
         // the same magnitude twice in a row is a notch that the factor doesn't fit,
         // e.g. after an unlucky sample (only coalesced notches) or from another mouse
@@ -1128,10 +1135,10 @@ BRp.load = function(){
         isWheelNotch = true;
         // console.log('Updated inaccurateScrollFactor beyond sample:', inaccurateScrollFactor);
       } else {
-        // might be a notch, but could also be a precise delta: an integer is
-        // suspect, so clamp it, whereas a fractional delta is most likely precise
+        // Might be a notch, but could also be a precise delta. Bound large
+        // fractional deltas too: they may be coalesced mouse notches.
         unconfirmedMagnitude = magnitude;
-        clamp = is.integer(magnitude);
+        clamp = is.integer(magnitude) || magnitude > inaccurateScrollFactor;
       }
     }
 

@@ -13,6 +13,8 @@ This function returns an object of the form:
 }
 ```
 
+On an undirected graph (the default, `directed: false`), `betweenness()` counts each pair of nodes once in each direction, so its values are twice those of the usual undirected definition: for the path `a`–`b`–`c`, `betweenness('#b')` is 2 rather than 1. Halve them to compare with other tools. `betweennessNormalized()` divides by the largest value, so it is not affected.
+
 ## Examples
 
 ```js

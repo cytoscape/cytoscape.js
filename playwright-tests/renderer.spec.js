@@ -143,6 +143,66 @@ test.describe('Renderer', () => {
     }
   });
 
+  test.describe('backgrounding', () => {
+    for( const explicitNone of [false, true] ){
+      for( const containment of ['inside', 'over'] ){
+        const background = explicitNone ? 'explicit none' : 'default';
+
+        test(`nodes without images do not restyle on draw (${background}, ${containment})`, async ({ page }) => {
+          const result = await page.evaluate(async ({ explicitNone, containment }) => {
+            const cy = window.cy;
+            const style = { 'background-image-containment': containment };
+
+            if( explicitNone ){
+              style['background-image'] = 'none';
+            }
+
+            cy.style().selector('node').style(style).update();
+
+            const firstRender = cy.promiseOn('render');
+            cy.add([
+              { data: { id: 'parent' } },
+              { data: { id: 'child', parent: 'parent' }, position: { x: 100, y: 100 } },
+              { data: { id: 'standalone' }, position: { x: 300, y: 100 } }
+            ]);
+            await firstRender;
+
+            const styleChanges = [];
+            const backgrounding = [];
+            const recordBackgrounding = () => {
+              backgrounding.push(cy.nodes(':backgrounding').map(node => node.id()));
+            };
+
+            cy.on('style', 'node', event => {
+              styleChanges.push({ id: event.target.id(), backgrounding: event.target.backgrounding() });
+            });
+
+            recordBackgrounding();
+
+            // Compound parents bypass the texture cache and draw on each pan.
+            // Await rendered frames so this cannot pass without drawing them.
+            for( let i = 0; i < 5; i++ ){
+              const rendered = cy.promiseOn('render');
+              cy.panBy({ x: 1, y: 0 });
+              await rendered;
+              recordBackgrounding();
+            }
+
+            // Export also draws the leaves directly, rather than reusing textures.
+            const png = cy.png({ full: true });
+            recordBackgrounding();
+
+            return { styleChanges, backgrounding, png };
+          }, { explicitNone, containment });
+
+          expect(result.png).toMatch(/^data:image\/png;base64,/);
+          expect(result.backgrounding).toEqual(Array.from({ length: 7 }, () => []));
+          expect(result.styleChanges).toEqual([]);
+        });
+      }
+    }
+  });
+
   test.describe('node style', () => {
     test.beforeEach(async ({ page }) => {
       await page.evaluate(() => {
@@ -730,6 +790,40 @@ test.describe('Renderer', () => {
 
   }); // Rounded edges
 
+  for( const target of ['viewport', 'node'] ){
+    test(`draws every frame during a ${target} animation (issue #3544)`, async ({ page }) => {
+      const drawsPerFrame = await page.evaluate(async target => {
+        const cy = window.cy;
+        const node = cy.add({ data: { id: 'a' }, position: { x: 100, y: 100 } });
+        const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+        const animated = target === 'viewport' ? cy : node;
+        const properties = target === 'viewport'
+          ? { zoom: 2, pan: { x: -100, y: -100 } }
+          : { position: { x: 300, y: 300 } };
+        let draws = 0;
+        const onRender = () => draws++;
+
+        cy.on('render', onRender);
+        animated.animate(properties, { duration: 10000 });
+        await frame();
+        await frame(); // allow the animation to request its first draw
+
+        const counts = [];
+        for( let i = 0; i < 10; i++ ){
+          draws = 0;
+          await frame();
+          counts.push(draws);
+        }
+
+        animated.stop(true);
+        cy.off('render', onRender);
+        return counts;
+      }, target);
+
+      expect(drawsPerFrame).toEqual(Array(10).fill(1));
+    });
+  }
+
   test.describe('with layout', () => {
 
     test('single node cose layout with bounding box', async ({ page }) => {
@@ -871,5 +965,65 @@ test.describe('Renderer', () => {
       expectZooms(await wheel(page, [notch, notch + notch, notch + notch + notch]), [notchZoom(1), notchZoom(2), notchZoom(3)]);
     });
   }); // wheel zoom
+
+
+  test.describe('webgl', () => {
+
+    test('viewport change redraws screen even if picking occurs before frame (issue #3536)', async ({ page }) => {
+      const result = await page.evaluate(async () => {
+        const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+
+        const cy = cytoscape({
+          container: document.getElementById('cytoscape'),
+          renderer: { name: 'canvas', webgl: true },
+          elements: [
+            { data: { id: 'a' }, position: { x: 100, y: 100 } },
+            { data: { id: 'b' }, position: { x: 300, y: 200 } }
+          ]
+        });
+
+        await frame();
+        await frame();
+
+        const r = cy.renderer();
+
+        // Mark the drag layer as pending before the picking query
+        r.data.canvasNeedsRedraw[r.DRAG] = true;
+
+        // Change zoom
+        cy.zoom(2);
+        const needsRedrawAfterZoom = r.data.canvasNeedsRedraw[r.NODE];
+
+        // Query picking buffer before screen animation frame runs (as mousemove does)
+        r.findNearestElements(50, 50);
+        const needsRedrawAfterPicking = r.data.canvasNeedsRedraw[r.NODE];
+        const dragNeedsRedrawAfterPicking = r.data.canvasNeedsRedraw[r.DRAG];
+
+        // Wait for screen render frame
+        await frame();
+        await frame();
+
+        const needsRedrawAfterScreenDraw = r.data.canvasNeedsRedraw[r.NODE];
+        const dragNeedsRedrawAfterScreenDraw = r.data.canvasNeedsRedraw[r.DRAG];
+
+        cy.destroy();
+
+        return {
+          needsRedrawAfterZoom,
+          needsRedrawAfterPicking,
+          needsRedrawAfterScreenDraw,
+          dragNeedsRedrawAfterPicking,
+          dragNeedsRedrawAfterScreenDraw
+        };
+      });
+
+      expect(result.needsRedrawAfterZoom).toBe(true);
+      expect(result.needsRedrawAfterPicking).toBe(true);
+      expect(result.needsRedrawAfterScreenDraw).toBe(false);
+      expect(result.dragNeedsRedrawAfterPicking).toBe(true);
+      expect(result.dragNeedsRedrawAfterScreenDraw).toBe(false);
+    });
+
+  }); // webgl
 
 }); // renderer

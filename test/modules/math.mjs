@@ -1,5 +1,5 @@
-import { expandBoundingBoxSides, makeBoundingBox, gcd, gcdMultipleZeroIfNonInt, isIntegerMultiple } from '../../src/math.mjs'
-import { describe } from 'mocha'
+import { expandBoundingBoxSides, makeBoundingBox, gcd, gcdMultipleZeroIfNonInt, isIntegerMultiple, median } from '../../src/math.mjs'
+import { describe, it, beforeEach } from 'mocha'
 import { expect } from 'chai'
 
 describe('Math', function(){
@@ -130,6 +130,40 @@ describe('Math', function(){
 
             expect( ( notch + notch + notch ) / notch ).not.equals( 3 );
             expect( isIntegerMultiple( notch + notch + notch, notch ) ).to.be.true;
+        });
+    });
+
+    describe('Median', function(){
+        it('single element array', function(){
+            expect( median([10]) ).equals( 10 );
+        });
+
+        it('odd-length array', function(){
+            expect( median([10, 20, 30]) ).equals( 20 );
+            expect( median([1, 2, 3, 4, 5]) ).equals( 3 );
+            expect( median([5, 1, 3]) ).equals( 3 );
+        });
+
+        it('even-length array', function(){
+            expect( median([10, 20]) ).equals( 15 );
+            expect( median([1, 2, 3, 4]) ).equals( 2.5 );
+            expect( median([4, 1, 3, 2]) ).equals( 2.5 );
+        });
+
+        it('array with non-finite placeholders (affinity propagation preference)', function(){
+            // 2-node AP matrix: 2 diagonal placeholders (-Infinity) + 2 finite similarities [-1, -1]
+            // finite similarities are [-1, -1], median is -1
+            expect( median([-Infinity, -1, -1, -Infinity]) ).equals( -1 );
+
+            // 3-node AP matrix: 3 diagonal placeholders (-Infinity) + 6 finite similarities
+            // finite similarities are [1, 2, 3, 4, 5, 6], median is (3 + 4) / 2 = 3.5
+            let S = [ -Infinity, 1, 2, 3, -Infinity, 4, 5, 6, -Infinity ];
+            expect( median( S ) ).equals( 3.5 );
+
+            // odd number of finite similarities with placeholders:
+            // 2 placeholders + 3 finite similarities [10, 20, 30] -> median is 20
+            expect( median([ -Infinity, 10, -Infinity, 30, 20 ]) ).equals( 20 );
+            expect( median([ NaN, 10, 20, 30 ]) ).equals( 20 );
         });
     });
 });

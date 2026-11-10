@@ -98,12 +98,18 @@ export const median = ( arr, begin = 0, end = arr.length, copy = true, sort = tr
   }
 
   let len = arr.length;
-  let mid = Math.floor( len / 2 );
+  let n = len - off;
 
-  if( len % 2 !== 0 ){
-    return arr[mid + 1 + off];
+  if( n === 0 ){
+    return arr[0];
+  }
+
+  let mid = Math.floor( n / 2 );
+
+  if( n % 2 !== 0 ){
+    return arr[off + mid];
   } else {
-    return ( arr[mid - 1 + off] + arr[mid + off] )/2;
+    return ( arr[off + mid - 1] + arr[off + mid] ) / 2;
   }
 };
 

@@ -272,6 +272,24 @@ describe('Algorithms', function(){
     expect( kruskal.same( eles(a, b, c, d, e, ae, cd, ab, bc) ) );
   });
 
+  it('eles.kruskal(): subgraph ignores edges with endpoints outside collection', function(){
+    var sub = eles(a, b, ab, bc);
+    var kruskal = sub.kruskal( function( ele ){
+      return ele.data('weight');
+    } );
+
+    expect( kruskal.same( eles(a, b, ab) ) ).to.be.true;
+  });
+
+  it('eles.kruskal(): subgraph ignores edges when source is outside collection', function(){
+    var sub = eles(c, bc);
+    var kruskal = sub.kruskal( function( ele ){
+      return ele.data('weight');
+    } );
+
+    expect( kruskal.same( eles(c) ) ).to.be.true;
+  });
+
 
   it('eles.aStar(): undirected, null heuristic, unweighted', function(){
       var options = {root: a,

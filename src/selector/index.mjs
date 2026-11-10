@@ -45,10 +45,29 @@ let Selector = function( selector ){
 
 let selfn = Selector.prototype;
 
+// Copy the mixins by defining their properties rather than assigning them.  When
+// Object.prototype is frozen (a hardening against prototype pollution), assigning
+// `toString` throws because the inherited property is read-only (the "override mistake").
+// Same keys as Object.assign: own enumerable string keys, then own enumerable symbols.
+let ownEnumerableKeys = obj => {
+  let keys = Object.keys( obj );
+
+  if( Object.getOwnPropertySymbols != null ){
+    keys = keys.concat( Object.getOwnPropertySymbols( obj ).filter( sym => Object.prototype.propertyIsEnumerable.call( obj, sym ) ) );
+  }
+
+  return keys;
+};
+
 [
   parse,
   matching
-].forEach( p => util.assign( selfn, p ) );
+].forEach( p => ownEnumerableKeys( p ).forEach( k => Object.defineProperty( selfn, k, {
+  value: p[ k ],
+  writable: true,
+  enumerable: true,
+  configurable: true
+} ) ) );
 
 selfn.text = function(){
   return this.inputText;

@@ -3343,6 +3343,14 @@ var gcdMultipleZeroIfNonInt = function gcdMultipleZeroIfNonInt(arr) {
   }
   return out;
 };
+
+// whether a is a positive integer multiple of b, tolerating floating-point error
+// (e.g. summed deltas: 90.9090909090909 * 3 / 90.9090909090909 can be 3.0000000000000004)
+var isIntegerMultiple = function isIntegerMultiple(a, b) {
+  var ratio = a / b;
+  var nearest = Math.round(ratio);
+  return nearest >= 1 && Math.abs(ratio - nearest) < 1e-6;
+};
 var deg2rad = function deg2rad(deg) {
   return Math.PI * deg / 180;
 };
@@ -4539,7 +4547,7 @@ var elesfn$o = {
 
     // Add additional probability based on damping factor
     // Also, take into account columns that have sum = 0
-    var p = 1.0 / numNodes + additionalProb; // Shorthand
+    var p = dampingFactor / numNodes + additionalProb; // Shorthand
 
     // Traverse matrix, column by column
     for (var _j = 0; _j < numNodes; _j++) {
@@ -4553,7 +4561,7 @@ var elesfn$o = {
         // Node jth has outgoing link, compute normalized probabilities
         for (var _i3 = 0; _i3 < numNodes; _i3++) {
           var _n3 = _i3 * numNodes + _j;
-          matrix[_n3] = matrix[_n3] / columnSum[_j] + additionalProb;
+          matrix[_n3] = dampingFactor * matrix[_n3] / columnSum[_j] + additionalProb;
         }
       }
     }
@@ -5727,12 +5735,14 @@ var mergeClosest = function mergeClosest(clusters, index, dists, mins, opts) {
     merged = {
       left: c1,
       right: c2,
-      key: c1.key
+      key: c1.key,
+      size: c1.size + c2.size
     };
   } else {
     merged = {
       value: c1.value.concat(c2.value),
-      key: c1.key
+      key: c1.key,
+      size: c1.size + c2.size
     };
   }
   clusters[c1.index] = merged;
@@ -5880,7 +5890,8 @@ var hierarchicalClustering = function hierarchicalClustering(options) {
     var cluster = {
       value: opts.mode === 'dendrogram' ? nodes[n] : [nodes[n]],
       key: n,
-      index: n
+      index: n,
+      size: 1
     };
     clusters[n] = cluster;
     index[n] = cluster;
@@ -10179,7 +10190,10 @@ var valCmp = function valCmp(fieldVal, operator, value) {
     operator = operator.replace('@', '');
     caseInsensitive = true;
   }
-  if (isFieldStr || isValStr || caseInsensitive) {
+
+  // substring operators always compare string representations, even for numbers
+  var isSubstrCmp = operator === '*=' || operator === '^=' || operator === '$=';
+  if (isFieldStr || isValStr || caseInsensitive || isSubstrCmp) {
     fieldStr = !isFieldStr && !isFieldNum ? '' : '' + fieldVal;
     valStr = '' + value;
   }
@@ -14743,7 +14757,7 @@ elesfn$1.remove = function () {
   var removeFromPool = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
   var self = this;
   var elesToRemove = [];
-  var elesToRemoveIds = {};
+  var elesToRemoveIds = new Set$1();
   var cy = self._private.cy;
 
   // add connected edges
@@ -14762,11 +14776,11 @@ elesfn$1.remove = function () {
     }
   }
   function add(ele) {
-    var alreadyAdded = elesToRemoveIds[ele.id()];
+    var alreadyAdded = elesToRemoveIds.has(ele.id());
     if (removeFromPool && ele.removed() || alreadyAdded) {
       return;
     } else {
-      elesToRemoveIds[ele.id()] = true;
+      elesToRemoveIds.add(ele.id());
     }
     if (ele.isNode()) {
       elesToRemove.push(ele); // nodes are removed last
@@ -14797,7 +14811,7 @@ elesfn$1.remove = function () {
     pllEdge.clearTraversalCache();
   }
   var alteredParents = [];
-  alteredParents.ids = {};
+  alteredParents.ids = new Set$1();
   function removeChildRef(parent, ele) {
     ele = ele[0];
     parent = parent[0];
@@ -14807,8 +14821,8 @@ elesfn$1.remove = function () {
 
     ele._private.parent = null; // remove child => parent ref
 
-    if (!alteredParents.ids[pid]) {
-      alteredParents.ids[pid] = true;
+    if (!alteredParents.ids.has(pid)) {
+      alteredParents.ids.add(pid);
       alteredParents.push(parent);
     }
   }
@@ -23965,6 +23979,18 @@ BRp$c.findTaxiPoints = function (edge, pairInfo) {
   };
   var dx = subDWH(pdx, dw);
   var dy = subDWH(pdy, dh);
+
+  // the middle of the gap between the facing sides of the nodes on one axis,
+  // or the middle between the centres if the nodes overlap on that axis
+  var midBetween = function midBetween(c1, c2, size1, size2) {
+    if (!dIncludesNodeBody) {
+      return (c1 + c2) / 2;
+    }
+    var sgn = signum(c2 - c1);
+    var side1 = c1 + sgn * size1 / 2;
+    var side2 = c2 - sgn * size2 / 2;
+    return sgn * (side2 - side1) >= 0 ? (side1 + side2) / 2 : (c1 + c2) / 2;
+  };
   var isExplicitDir = false;
   if (rawTaxiDir === AUTO) {
     taxiDir = Math.abs(dx) > Math.abs(dy) ? HORIZONTAL : VERTICAL;
@@ -24008,13 +24034,13 @@ BRp$c.findTaxiPoints = function (edge, pairInfo) {
       var lShapeInsideTgt = Math.abs(pdx) <= tgtW / 2;
       if (lShapeInsideSrc) {
         // horizontal Z-shape (direction not respected)
-        var x = (posPts.x1 + posPts.x2) / 2;
+        var x = midBetween(posPts.x1, posPts.x2, srcW, tgtW);
         var y1 = posPts.y1,
           y2 = posPts.y2;
         rs.segpts = [x, y1, x, y2];
       } else if (lShapeInsideTgt) {
         // vertical Z-shape (distance not respected)
-        var y = (posPts.y1 + posPts.y2) / 2;
+        var y = midBetween(posPts.y1, posPts.y2, srcH, tgtH);
         var x1 = posPts.x1,
           x2 = posPts.x2;
         rs.segpts = [x1, y, x2, y];
@@ -24028,13 +24054,13 @@ BRp$c.findTaxiPoints = function (edge, pairInfo) {
       var _lShapeInsideTgt = Math.abs(pdy) <= tgtH / 2;
       if (_lShapeInsideSrc) {
         // vertical Z-shape (direction not respected)
-        var _y = (posPts.y1 + posPts.y2) / 2;
+        var _y = midBetween(posPts.y1, posPts.y2, srcH, tgtH);
         var _x = posPts.x1,
           _x2 = posPts.x2;
         rs.segpts = [_x, _y, _x2, _y];
       } else if (_lShapeInsideTgt) {
         // horizontal Z-shape (turn distance not respected)
-        var _x3 = (posPts.x1 + posPts.x2) / 2;
+        var _x3 = midBetween(posPts.x1, posPts.x2, srcW, tgtW);
         var _y2 = posPts.y1,
           _y3 = posPts.y2;
         rs.segpts = [_x3, _y2, _x3, _y3];
@@ -26552,6 +26578,11 @@ BRp$3.load = function () {
   var wheelDeltaN = 4; // how many events to log
   var inaccurateScrollDevice;
   var inaccurateScrollFactor = 100000; // base of inaccurate wheel deltas (e.g. base 5 could yield wheels of 10, 25, 50, etc.)
+  var sampledScrollFactor; // value of inaccurateScrollFactor right after sampling
+  var wheelFactorMaxReduction = 4; // a new factor below this reduction of sampledScrollFactor is replaced by the notch itself
+  var wheelNotchMaxReduction = 8; // relative cutoff for small precise deltas
+  var wheelSmallDeltaMax = 15; // cap the cutoff so a heavily coalesced sample can't exclude ordinary mouse notches
+  var unconfirmedMagnitude = null; // delta magnitude that didn't fit inaccurateScrollFactor, notches of the factor since then aside
 
   var allAreSameMagnitude = function allAreSameMagnitude(list) {
     var firstMag = Math.abs(list[0]);
@@ -26595,6 +26626,7 @@ BRp$3.load = function () {
           if (factor > 1) {
             inaccurateScrollDevice = true;
             inaccurateScrollFactor = factor;
+            sampledScrollFactor = factor;
           }
         }
         // console.log('Sampled wheel deltas:', wds);
@@ -26606,10 +26638,37 @@ BRp$3.load = function () {
         clamp = true;
         // console.log('Clamping initial wheel events until we get a good sample');
       }
-    } else if (inaccurateScrollDevice) {
-      // keep updating
-      inaccurateScrollFactor = Math.min(Math.abs(delta), inaccurateScrollFactor);
-      // console.log('Keep updating inaccurateScrollFactor beyond sample in case we did not get the smallest possible val:', inaccurateScrollFactor);
+    }
+
+    // only multiples of the factor are wheel notches: the same page can also get
+    // precise deltas (e.g. from a trackpad), which must not affect the factor
+    var isWheelNotch = false;
+    if (inaccurateScrollDevice) {
+      var magnitude = Math.abs(delta);
+      isWheelNotch = isIntegerMultiple(magnitude, inaccurateScrollFactor);
+      if (isWheelNotch) ; else if (magnitude < Math.min(sampledScrollFactor / wheelNotchMaxReduction, wheelSmallDeltaMax)) {
+        unconfirmedMagnitude = null;
+      } else if (!integer(magnitude) && isIntegerMultiple(inaccurateScrollFactor, magnitude)) {
+        // Fractional mouse notches can divide a coalesced sample exactly, e.g.
+        // at non-default page zoom. Recover immediately instead of zooming by
+        // the raw pixel delta while waiting for an identical notch.
+        inaccurateScrollFactor = magnitude;
+        unconfirmedMagnitude = null;
+        isWheelNotch = true;
+      } else if (magnitude === unconfirmedMagnitude) {
+        // the same magnitude twice in a row is a notch that the factor doesn't fit,
+        // e.g. after an unlucky sample (only coalesced notches) or from another mouse
+        var commonFactor = gcdMultipleZeroIfNonInt([inaccurateScrollFactor, magnitude]);
+        inaccurateScrollFactor = commonFactor * wheelFactorMaxReduction >= sampledScrollFactor ? commonFactor : magnitude;
+        unconfirmedMagnitude = null;
+        isWheelNotch = true;
+        // console.log('Updated inaccurateScrollFactor beyond sample:', inaccurateScrollFactor);
+      } else {
+        // Might be a notch, but could also be a precise delta. Bound large
+        // fractional deltas too: they may be coalesced mouse notches.
+        unconfirmedMagnitude = magnitude;
+        clamp = integer(magnitude) || magnitude > inaccurateScrollFactor;
+      }
     }
     if (r.scrollingPage) {
       return;
@@ -26639,7 +26698,7 @@ BRp$3.load = function () {
         delta = signum(delta) * 5;
       }
       diff = delta / -250;
-      if (inaccurateScrollDevice) {
+      if (isWheelNotch) {
         diff /= inaccurateScrollFactor;
         diff *= 3;
       }
@@ -28088,6 +28147,8 @@ BRp$1.startRenderLoop = function () {
       return;
     }
     if (cy.batching()) ; else if (r.requestedFrame && !r.skipFrame) {
+      r.requestedFrame = false; // preserve redraw requests made by callbacks or rendering
+
       beforeRenderCallbacks(r, true, requestTime);
       var startTime = performanceNow();
       r.render(r.renderOptions);
@@ -28108,7 +28169,6 @@ BRp$1.startRenderLoop = function () {
 
       // use a weighted average with a bias from the previous average so we don't spike so easily
       r.averageRedrawTime = r.averageRedrawTime / 2 + duration / 2;
-      r.requestedFrame = false;
     } else {
       beforeRenderCallbacks(r, false, requestTime);
     }
@@ -30804,6 +30864,9 @@ CRp$6.drawNode = function (context, node, shiftToOriginWithBb) {
     var prevBging = _p.backgrounding;
     var totalCompleted = 0;
     for (var _i = 0; _i < image.length; _i++) {
+      if (!urlDefined[_i]) {
+        continue;
+      }
       var bgContainment = node.cy().style().getIndexedStyle(node, 'background-image-containment', 'value', _i);
       if (inside && bgContainment === 'over' || !inside && bgContainment === 'inside') {
         totalCompleted++;
@@ -34617,7 +34680,11 @@ function drawEle(r, index, ele) {
 }
 
 /**
- * Render one frame.
+ * Render one frame to the screen or to an offscreen picking framebuffer.
+ *
+ * @param {object} r The renderer instance.
+ * @param {object} [options] Render options.
+ * @param {object} renderTarget The render target (RENDER_TARGET.SCREEN or RENDER_TARGET.PICKING).
  */
 function renderWebgl(r, options, renderTarget) {
   var start;
@@ -34665,8 +34732,13 @@ function renderWebgl(r, options, renderTarget) {
       drawAxes(r);
       drawAtlases(r);
     }
-    r.data.canvasNeedsRedraw[r.NODE] = false;
-    r.data.canvasNeedsRedraw[r.DRAG] = false;
+
+    // Only clear screen canvas redraw flags when rendering to the screen.
+    // Offscreen picking passes should not clear screen redraw flags (#3536).
+    if (renderTarget.screen) {
+      r.data.canvasNeedsRedraw[r.NODE] = false;
+      r.data.canvasNeedsRedraw[r.DRAG] = false;
+    }
   }
   if (r.webglDebug) {
     // eslint-disable-next-line no-undef
@@ -35673,7 +35745,7 @@ sheetfn.appendToStyle = function (style) {
   return style;
 };
 
-var version = "3.34.4";
+var version = "3.34.5";
 
 var cytoscape = function cytoscape(options) {
   // if no options specified, use default

@@ -828,6 +828,9 @@
         3.34
         <ul>
             <li>
+                <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.34.5+is%3Aclosed">3.34.5</a>
+            </li>
+            <li>
                 <a target="_blank" href="https://github.com/cytoscape/cytoscape.js/issues?q&#x3D;milestone%3A3.34.4+is%3Aclosed">3.34.4</a>
             </li>
             <li>
@@ -13043,7 +13046,8 @@ tsc.components[<span class="hljs-number">0</span>].select();
   <span class="hljs-comment">/* alias : betweennessNormalised() */</span>
 }
 </code></pre>
-<button class="run run-inline-code"><span class="fa fa-play"></span></button><h3 id="examples">Examples</h3>
+<button class="run run-inline-code"><span class="fa fa-play"></span></button><p>On an undirected graph (the default, <code>directed: false</code>), <code>betweenness()</code> counts each pair of nodes once in each direction, so its values are twice those of the usual undirected definition: for the path <code>a</code>–<code>b</code>–<code>c</code>, <code>betweenness(&#39;#b&#39;)</code> is 2 rather than 1. Halve them to compare with other tools. <code>betweennessNormalized()</code> divides by the largest value, so it is not affected.</p>
+<h3 id="examples">Examples</h3>
 <pre><code class="language-js"><span class="hljs-keyword">var</span> bc = cy.$().bc();
 <span class="hljs-built_in">console</span>.log( <span class="hljs-string">&#x27;bc of j: &#x27;</span> + bc.betweenness(<span class="hljs-string">&#x27;#j&#x27;</span>) );
 </code></pre>

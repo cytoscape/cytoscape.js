@@ -937,7 +937,27 @@ test.describe('Renderer', () => {
     test('recovers from a sample of five coalesced notches', async ({ page }) => {
       await wheel(page, [600, 600, 600, 600, 600]);
       const zooms = await wheel(page, [-120, -120, -120]);
-      expectZooms(zooms.slice(1), [notchZoom(-1), notchZoom(-1)]);
+      expectZooms(zooms, [preciseZoom(-5), notchZoom(-1), notchZoom(-1)]);
+    });
+
+    for (const count of [9, 16]) {
+      test(`recovers from a sample of ${count} coalesced integer notches`, async ({ page }) => {
+        await wheel(page, Array(5).fill(count * 120));
+        expectZooms(await wheel(page, [-120, -120, -240]), [preciseZoom(-5), notchZoom(-1), notchZoom(-2)]);
+      });
+
+      test(`recovers immediately from a sample of ${count} coalesced fractional notches`, async ({ page }) => {
+        const notch = 100 / 1.1;
+        await wheel(page, Array(5).fill(count * notch));
+        expectZooms(await wheel(page, [-notch, -notch, -2 * notch]), [notchZoom(-1), notchZoom(-1), notchZoom(-2)]);
+      });
+    }
+
+    test('keeps small precise deltas after a heavily coalesced sample', async ({ page }) => {
+      await wheel(page, Array(5).fill(1080));
+      const deltas = [1, 2, 3, 4, 5, 6, 10, 10, 10];
+      expectZooms(await wheel(page, deltas), deltas.map(preciseZoom));
+      expectZooms(await wheel(page, [1080]), [notchZoom(1)]);
     });
 
     test('recovers from fractional coalescing with alternating single and double notches', async ({ page }) => {

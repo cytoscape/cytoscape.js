@@ -1044,7 +1044,8 @@ BRp.load = function(){
   var inaccurateScrollFactor = 100000; // base of inaccurate wheel deltas (e.g. base 5 could yield wheels of 10, 25, 50, etc.)
   var sampledScrollFactor; // value of inaccurateScrollFactor right after sampling
   var wheelFactorMaxReduction = 4; // a new factor below this reduction of sampledScrollFactor is replaced by the notch itself
-  var wheelNotchMaxReduction = 8; // smaller deltas (relative to sampledScrollFactor) can't be notches, e.g. after a sample of coalesced notches
+  var wheelNotchMaxReduction = 8; // relative cutoff for small precise deltas
+  var wheelSmallDeltaMax = 15; // cap the cutoff so a heavily coalesced sample can't exclude ordinary mouse notches
   var unconfirmedMagnitude = null; // delta magnitude that didn't fit inaccurateScrollFactor, notches of the factor since then aside
 
   var allAreSameMagnitude = function(list) {
@@ -1116,7 +1117,7 @@ BRp.load = function(){
 
       if (isWheelNotch) {
         // keeps a candidate across notches of the factor, e.g. single notches between double ones
-      } else if (magnitude * wheelNotchMaxReduction < sampledScrollFactor) {
+      } else if (magnitude < Math.min(sampledScrollFactor / wheelNotchMaxReduction, wheelSmallDeltaMax)) {
         unconfirmedMagnitude = null;
       } else if (!is.integer(magnitude) && math.isIntegerMultiple(inaccurateScrollFactor, magnitude)) {
         // Fractional mouse notches can divide a coalesced sample exactly, e.g.

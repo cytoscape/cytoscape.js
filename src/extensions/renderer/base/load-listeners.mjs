@@ -1042,6 +1042,11 @@ BRp.load = function(){
   var wheelDeltaN = 4; // how many events to log
   var inaccurateScrollDevice;
   var inaccurateScrollFactor = 100000; // base of inaccurate wheel deltas (e.g. base 5 could yield wheels of 10, 25, 50, etc.)
+  var sampledScrollFactor; // value of inaccurateScrollFactor right after sampling
+  var wheelFactorMaxReduction = 4; // a new factor below this reduction of sampledScrollFactor is replaced by the notch itself
+  var wheelNotchMaxReduction = 8; // relative cutoff for small precise deltas
+  var wheelSmallDeltaMax = 15; // cap the cutoff so a heavily coalesced sample can't exclude ordinary mouse notches
+  var unconfirmedMagnitude = null; // delta magnitude that didn't fit inaccurateScrollFactor, notches of the factor since then aside
 
   var allAreSameMagnitude = function(list) {
     var firstMag = Math.abs(list[0]);
@@ -1088,6 +1093,7 @@ BRp.load = function(){
           if (factor > 1) {
             inaccurateScrollDevice = true;
             inaccurateScrollFactor = factor;
+            sampledScrollFactor = factor;
           }
         }
         // console.log('Sampled wheel deltas:', wds);
@@ -1098,9 +1104,43 @@ BRp.load = function(){
         clamp = true;
         // console.log('Clamping initial wheel events until we get a good sample');
       }
-    } else if(inaccurateScrollDevice) { // keep updating
-      inaccurateScrollFactor = Math.min(Math.abs(delta), inaccurateScrollFactor);
-      // console.log('Keep updating inaccurateScrollFactor beyond sample in case we did not get the smallest possible val:', inaccurateScrollFactor);
+    }
+
+    // only multiples of the factor are wheel notches: the same page can also get
+    // precise deltas (e.g. from a trackpad), which must not affect the factor
+    var isWheelNotch = false;
+
+    if (inaccurateScrollDevice) {
+      var magnitude = Math.abs(delta);
+
+      isWheelNotch = math.isIntegerMultiple(magnitude, inaccurateScrollFactor);
+
+      if (isWheelNotch) {
+        // keeps a candidate across notches of the factor, e.g. single notches between double ones
+      } else if (magnitude < Math.min(sampledScrollFactor / wheelNotchMaxReduction, wheelSmallDeltaMax)) {
+        unconfirmedMagnitude = null;
+      } else if (!is.integer(magnitude) && math.isIntegerMultiple(inaccurateScrollFactor, magnitude)) {
+        // Fractional mouse notches can divide a coalesced sample exactly, e.g.
+        // at non-default page zoom. Recover immediately instead of zooming by
+        // the raw pixel delta while waiting for an identical notch.
+        inaccurateScrollFactor = magnitude;
+        unconfirmedMagnitude = null;
+        isWheelNotch = true;
+      } else if (magnitude === unconfirmedMagnitude) {
+        // the same magnitude twice in a row is a notch that the factor doesn't fit,
+        // e.g. after an unlucky sample (only coalesced notches) or from another mouse
+        var commonFactor = math.gcdMultipleZeroIfNonInt([inaccurateScrollFactor, magnitude]);
+
+        inaccurateScrollFactor = commonFactor * wheelFactorMaxReduction >= sampledScrollFactor ? commonFactor : magnitude;
+        unconfirmedMagnitude = null;
+        isWheelNotch = true;
+        // console.log('Updated inaccurateScrollFactor beyond sample:', inaccurateScrollFactor);
+      } else {
+        // Might be a notch, but could also be a precise delta. Bound large
+        // fractional deltas too: they may be coalesced mouse notches.
+        unconfirmedMagnitude = magnitude;
+        clamp = is.integer(magnitude) || magnitude > inaccurateScrollFactor;
+      }
     }
 
     if( r.scrollingPage ){ return; } // while scrolling, ignore wheel-to-zoom
@@ -1137,7 +1177,7 @@ BRp.load = function(){
 
       diff = delta / -250;
 
-      if (inaccurateScrollDevice) {
+      if (isWheelNotch) {
         diff /= inaccurateScrollFactor;
 
         diff *= 3;

@@ -132,6 +132,15 @@ export const gcdMultipleZeroIfNonInt = ( arr ) => {
   return out;
 };
 
+// whether a is a positive integer multiple of b, tolerating floating-point error
+// (e.g. summed deltas: 90.9090909090909 * 3 / 90.9090909090909 can be 3.0000000000000004)
+export const isIntegerMultiple = ( a, b ) => {
+  const ratio = a / b;
+  const nearest = Math.round( ratio );
+
+  return nearest >= 1 && Math.abs( ratio - nearest ) < 1e-6;
+};
+
 export const deg2rad = deg =>
   Math.PI * deg / 180;
 

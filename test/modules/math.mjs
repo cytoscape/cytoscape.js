@@ -1,4 +1,4 @@
-import { expandBoundingBoxSides, makeBoundingBox, gcd, gcdMultipleZeroIfNonInt } from '../../src/math.mjs'
+import { expandBoundingBoxSides, makeBoundingBox, gcd, gcdMultipleZeroIfNonInt, isIntegerMultiple } from '../../src/math.mjs'
 import { describe } from 'mocha'
 import { expect } from 'chai'
 
@@ -106,6 +106,30 @@ describe('Math', function(){
             // (shouldn't make a difference in terms of finding scroll factors,
             // but at least the function will behave as expected.)
             expect ( gcdMultipleZeroIfNonInt( [ 1, 1.1 ] ) ).equals( 0 );
+        });
+    });
+
+    describe('isIntegerMultiple()', function(){
+        it('accepts integer multiples', function(){
+            expect( isIntegerMultiple( 120, 120 ) ).to.be.true;
+            expect( isIntegerMultiple( 360, 120 ) ).to.be.true;
+        });
+
+        it('rejects non-multiples', function(){
+            expect( isIntegerMultiple( 180, 120 ) ).to.be.false;
+            expect( isIntegerMultiple( 2.015625, 120 ) ).to.be.false;
+            expect( isIntegerMultiple( 44.8125, 120 ) ).to.be.false;
+        });
+
+        it('rejects values too small to be a multiple', function(){
+            expect( isIntegerMultiple( 0.00001, 120 ) ).to.be.false;
+        });
+
+        it('tolerates floating-point error', function(){
+            const notch = 100 / 1.1;
+
+            expect( ( notch + notch + notch ) / notch ).not.equals( 3 );
+            expect( isIntegerMultiple( notch + notch + notch, notch ) ).to.be.true;
         });
     });
 });

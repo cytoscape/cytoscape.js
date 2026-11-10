@@ -178,6 +178,7 @@ export class ElementDrawingWebGL {
       in vec4 aPointAPointB;
       in vec4 aPointCPointD;
       in vec2 aLineWidth; // also used for node border width
+      in vec4 aDash; // dash length, gap length, line length before this segment, dash offset (0,0,0,0 = solid)
 
       // simple shapes
       in vec4 aCornerRadius; // for round-rectangle [top-right, bottom-right, top-left, bottom-left]
@@ -197,6 +198,8 @@ export class ElementDrawingWebGL {
       flat out vec4 vBorderColor;
       flat out vec2 vBorderWidth;
       flat out vec4 vIndex;
+      flat out vec4 vDash;
+      out float vLineDist; // distance along the edge, for dashes
       
       void main(void) {
         int vid = gl_VertexID;
@@ -250,6 +253,7 @@ export class ElementDrawingWebGL {
 
           gl_Position = vec4(uPanZoomMatrix * vec3(point, 1.0), 1.0);
           vColor = aColor;
+          vLineDist = position.x * length(xBasis);
         } 
         else if(aVertType == ${EDGE_CURVE_SEGMENT}) {
           vec2 pointA = aPointAPointB.xy;
@@ -259,6 +263,8 @@ export class ElementDrawingWebGL {
 
           // adjust the geometry so that the line is centered on the edge
           position.y = position.y - 0.5;
+
+          vLineDist = aDash.z + (position.x == 0.0 ? 0.0 : length(pointC - pointB));
 
           vec2 p0, p1, p2, pos;
           if(position.x == 0.0) { // The left side of the unit square
@@ -319,6 +325,7 @@ export class ElementDrawingWebGL {
         vAtlasId = aAtlasId;
         vVertType = aVertType;
         vIndex = aIndex;
+        vDash = aDash;
       }
     `;
 
@@ -345,6 +352,8 @@ export class ElementDrawingWebGL {
       flat in vec4 vCornerRadius;
       flat in vec4 vBorderColor;
       flat in vec2 vBorderWidth;
+      flat in vec4 vDash;
+      in float vLineDist;
 
       out vec4 outColor;
 
@@ -430,6 +439,12 @@ export class ElementDrawingWebGL {
         }
         else {
           outColor = vColor;
+          ${ renderTarget.picking ? '' : `
+          if(vDash.x > 0.0) { // dashed or dotted line: discard the gaps
+            float period = vDash.x + vDash.y;
+            if(mod(vLineDist + vDash.w, period) >= vDash.x) discard;
+          }`
+          }
         }
 
         ${ renderTarget.picking
@@ -456,6 +471,7 @@ export class ElementDrawingWebGL {
     program.aPointAPointB   = gl.getAttribLocation(program, 'aPointAPointB');
     program.aPointCPointD   = gl.getAttribLocation(program, 'aPointCPointD');
     program.aLineWidth      = gl.getAttribLocation(program, 'aLineWidth');
+    program.aDash           = gl.getAttribLocation(program, 'aDash');
     program.aColor          = gl.getAttribLocation(program, 'aColor');
     program.aCornerRadius   = gl.getAttribLocation(program, 'aCornerRadius');
     program.aBorderColor    = gl.getAttribLocation(program, 'aBorderColor');
@@ -500,6 +516,7 @@ export class ElementDrawingWebGL {
     this.pointAPointBBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointAPointB);
     this.pointCPointDBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aPointCPointD);
     this.lineWidthBuffer = util.createBufferDynamicDraw(gl, n, 'vec2', program.aLineWidth);
+    this.dashBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aDash);
     this.colorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aColor);
     this.cornerRadiusBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aCornerRadius);
     this.borderColorBuffer = util.createBufferDynamicDraw(gl, n, 'vec4', program.aBorderColor);
@@ -925,6 +942,7 @@ export class ElementDrawingWebGL {
     const width = edge.pstyle('width').pfValue;
     const color = edge.pstyle('line-color').value;
     const opacity = baseOpacity * lineOpacity;
+    const [ dash, gap, dashOffset ] = this._getLineDash(edge);
 
     if(points.length/2 + this.instanceCount > this.maxInstances) {
       this.endBatch();
@@ -941,6 +959,11 @@ export class ElementDrawingWebGL {
       util.toWebGLColor(color, opacity, colorView);
       const lineWidthBuffer = this.lineWidthBuffer.getView(instance);
       lineWidthBuffer[0] = width;
+      const dashView = this.dashBuffer.getView(instance);
+      dashView[0] = dash;
+      dashView[1] = gap;
+      dashView[2] = 0;
+      dashView[3] = dashOffset;
 
       const sourceTargetView = this.pointAPointBBuffer.getView(instance);
       sourceTargetView[0] = points[0]; // source x
@@ -954,6 +977,7 @@ export class ElementDrawingWebGL {
       }
 
     } else { // curved line
+      let lengthBefore = 0;
       for(let i = 0; i < points.length-2; i += 2) {
         const instance = this.instanceCount;
 
@@ -994,12 +1018,40 @@ export class ElementDrawingWebGL {
         pointCDView[2] = pDx;
         pointCDView[3] = pDy;
 
+        const dashView = this.dashBuffer.getView(instance);
+        dashView[0] = dash;
+        dashView[1] = gap;
+        dashView[2] = lengthBefore;
+        dashView[3] = dashOffset;
+        lengthBefore += Math.hypot(pCx - pBx, pCy - pBy);
+
         this.instanceCount++;
         if(this.instanceCount >= this.maxInstances) {
           this.endBatch();
         }
       }
     }
+  }
+
+  /**
+   * The dash pattern the canvas renderer would pass to setLineDash(), as [ dash, gap, offset ]
+   * in model units. Solid lines return zeros. A pattern with more than two entries uses its first two.
+   */
+  _getLineDash(edge) {
+    const lineStyle = edge.pstyle('line-style').value;
+    if(lineStyle === 'dotted') {
+      return [ 1, 1, 0 ];
+    }
+    if(lineStyle === 'dashed') {
+      const pattern = edge.pstyle('line-dash-pattern').pfValue;
+      const offset = edge.pstyle('line-dash-offset').pfValue;
+      if(pattern && pattern.length > 0 && pattern[0] > 0) {
+        const dash = pattern[0];
+        const gap = pattern.length > 1 ? pattern[1] : pattern[0];
+        return [ dash, gap, offset || 0 ];
+      }
+    }
+    return [ 0, 0, 0 ];
   }
 
   _isValidEdge(edge) {

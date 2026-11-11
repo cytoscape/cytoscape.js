@@ -81,6 +81,18 @@ describe('Collection compound nodes', function(){
     expect( n2.parent().same(n1) ).to.be.true;
   });
 
+  it('node.parent(selector) filters the parent of a single node', function(){
+    expect( n2.parent('#n1').same(n1) ).to.be.true;
+    expect( n2.parent('#n4').empty() ).to.be.true;
+    expect( n2.parent(function(){ return false; }).empty() ).to.be.true;
+    expect( n3.parent('#n1').empty() ).to.be.true;
+  });
+
+  it('nodes.parent(selector) filters the parents of several nodes', function(){
+    expect( n2.add(n3).parent('#n1').same(n1) ).to.be.true;
+    expect( n3.add(n4).parent('#n1').empty() ).to.be.true;
+  });
+
   it('nodes.parents()', function(){
     expect( n3.parents().same( n1.add(n2) ) ).to.be.true;
   });

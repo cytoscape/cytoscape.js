@@ -9,7 +9,7 @@ let elesfn = ({
     if( this.length === 1 ){
       let parent = this[0]._private.parent;
 
-      if( parent ){ return parent; }
+      if( parent ){ return parent.filter( selector ); }
     }
 
     for( let i = 0; i < this.length; i++ ){

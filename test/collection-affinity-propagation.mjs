@@ -875,5 +875,54 @@ describe('Algorithms', function() {
 
     });
 
+    describe('on a small one-dimensional data set', function() {
+      // two tight groups, with the first node being the exemplar of its group
+      var values = [ 0.1, 0, 0.2, 10.1, 10, 10.2 ];
+      var cy2;
+
+      var valuesOf = function( clusters ){
+        return clusters.map(function( cluster ){
+          return cluster.map(function( node ){
+            return node.data('value');
+          });
+        });
+      };
+
+      before(function() {
+        cy2 = cytoscape({
+          elements: values.map(function( value, i ){
+            return { data: { id: 'v' + i, value: value } };
+          })
+        });
+      });
+
+      after(function() {
+        cy2.destroy();
+      });
+
+      it('should assign every node when the first node is an exemplar', function() {
+        var clusters2 = cy2.nodes().affinityPropagation({
+          preference: -5,
+          damping: 0.8,
+          attributes: [ function( node ){ return node.data('value'); } ]
+        });
+
+        expect( valuesOf(clusters2) ).to.deep.equal([
+          [ 0.1, 0, 0.2 ],
+          [ 10.1, 10, 10.2 ]
+        ]);
+      });
+
+      it('should use the default damping and preference when they are not specified', function() {
+        var clusters2 = cy2.nodes().affinityPropagation({
+          attributes: [ function( node ){ return node.data('value'); } ]
+        });
+
+        var assigned = [].concat.apply( [], valuesOf(clusters2) ).sort(function( a, b ){ return a - b; });
+
+        expect( assigned ).to.deep.equal( values.slice().sort(function( a, b ){ return a - b; }) );
+      });
+    });
+
   });
 });

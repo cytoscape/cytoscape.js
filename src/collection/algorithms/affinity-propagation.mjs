@@ -21,8 +21,9 @@ let defaults = util.defaults({
 });
 
 let setOptions = function( options ) {
-  let dmp = options.damping;
-  let pref = options.preference;
+  let opts = defaults( options );
+  let dmp = opts.damping;
+  let pref = opts.preference;
 
   if( !(0.5 <= dmp && dmp < 1) ){
     util.error(`Damping must range on [0.5, 1).  Got: ${dmp}`);
@@ -33,7 +34,7 @@ let setOptions = function( options ) {
     util.error(`Preference must be one of [${validPrefs.map( p => `'${p}'` ).join(', ')}] or a number.  Got: ${pref}`);
   }
 
-  return defaults( options );
+  return opts;
 };
 
 if( process.env.NODE_ENV !== 'production' ){ /* eslint-disable no-console, no-unused-vars */
@@ -103,8 +104,8 @@ let assignClusters = function( n, S, exemplars ) {
       }
     }
 
-    if( index > 0 ){
-      clusters.push(index);
+    if( index >= 0 ){
+      clusters[i] = index;
     }
   }
 

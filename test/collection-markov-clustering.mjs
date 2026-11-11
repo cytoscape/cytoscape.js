@@ -206,4 +206,33 @@ describe('eles.markovClustering()', function() {
     }
   });
 
+  it('should not throw when a duplicate cluster follows a different cluster', function() {
+    // the triangle a-b-c gives the cluster { a, b, c } once per attractor,
+    // and the cluster { x } sits between the first and the other copies
+    var cy2 = cytoscape({
+      elements: {
+        nodes: [
+          { data: { id: 'a' } },
+          { data: { id: 'x' } },
+          { data: { id: 'b' } },
+          { data: { id: 'c' } }
+        ],
+        edges: [
+          { data: { source: 'a', target: 'b' } },
+          { data: { source: 'b', target: 'c' } },
+          { data: { source: 'a', target: 'c' } }
+        ]
+      }
+    });
+
+    var clusters2 = cy2.elements().markovClustering();
+    var ids = clusters2.map(function(cluster) {
+      return cluster.map(function(node) { return node.id(); }).sort().join(',');
+    }).sort();
+
+    expect(ids).to.deep.equal(['a,b,c', 'x']);
+
+    cy2.destroy();
+  });
+
 });

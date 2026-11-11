@@ -148,8 +148,9 @@ let isDuplicate = function( c1, c2 ) {
 let removeDuplicates = function( clusters ) {
 
   for (let i = 0; i < clusters.length; i++) {
-    for (let j = 0; j < clusters.length; j++) {
-      if (i != j && isDuplicate(clusters[i], clusters[j])) {
+    // go backwards so that removing a cluster does not shift the ones still to be checked
+    for (let j = clusters.length - 1; j > i; j--) {
+      if (isDuplicate(clusters[i], clusters[j])) {
         clusters.splice(j, 1);
       }
     }

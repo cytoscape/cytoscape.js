@@ -147,6 +147,30 @@ describe('Algorithms', function(){
         expect(subset.hierholzer({ root: '#c', directed }).found).to.equal(false);
         graph.destroy();
       });
+
+      it('uses the edges left at the start node after the first walk (' + direction + ')', function(){
+        // tail plus a triangle at y, listed so that the first walk ends before y runs out of edges
+        let tail = directed ? ['yx', 'y', 'x'] : ['xy', 'x', 'y'];
+        let graph = makeGraph(['x', 'y', 'z', 'w'], [
+          tail, ['yz', 'y', 'z'], ['zw', 'z', 'w'], ['wy', 'w', 'y']
+        ]);
+        expectTrail(graph.elements(), { root: '#y', directed });
+        let res = graph.elements().hierholzer({ directed });
+        expect(res.found).to.equal(true);
+        expect(res.trail.edges().length).to.equal(4);
+        graph.destroy();
+      });
+
+      it('does not start a circuit at an isolated node (' + direction + ')', function(){
+        let graph = makeGraph(['d', 'a', 'b', 'c'], [
+          ['ab', 'a', 'b'], ['bc', 'b', 'c'], ['ca', 'c', 'a']
+        ]);
+        let res = graph.elements().hierholzer({ directed });
+        expect(res.found).to.equal(true);
+        expect(res.trail.edges().map(ele2id).sort()).to.deep.equal(['ab', 'bc', 'ca']);
+        expect(res.trail[0].id()).to.not.equal('d');
+        graph.destroy();
+      });
     });
 
     it('eles.hierholzer(): directed', function(){

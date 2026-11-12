@@ -87,7 +87,12 @@ let elesfn = ({
         }
       }
     } else {
-      if (!startVertex) startVertex = eles[0].id();
+      if (!startVertex) {
+        // start a circuit at a node with edges, so an isolated node is not picked
+        let start = eles.nodes().filter(n => nodes[n.id()].length)[0] || eles.nodes()[0];
+        if (!start) return result;
+        startVertex = start.id();
+      }
     }
 
     const walk = (v) => {
@@ -114,15 +119,15 @@ let elesfn = ({
     let trail = [];
     let subtour = [];
     subtour = walk(startVertex);
-    while (subtour.length != 1) {
+    while (subtour.length) {
       if (nodes[subtour[0]].length == 0) {
-        trail.unshift(eles.getElementById(subtour.shift()));
-        trail.unshift(eles.getElementById(subtour.shift()));
+        trail.unshift(eles.getElementById(subtour.shift())); // node
+        if (subtour.length) trail.unshift(eles.getElementById(subtour.shift())); // edge
       } else {
+        // the node still has unused edges, including the start node: splice in a subtour
         subtour = walk(subtour.shift()).concat(subtour);
       }
     }
-    trail.unshift(eles.getElementById(subtour.shift())); // final node
 
     for (let d in nodes) {
       if (nodes[d].length) {

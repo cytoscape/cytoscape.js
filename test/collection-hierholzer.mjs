@@ -149,6 +149,41 @@ describe('Algorithms', function(){
       });
     });
 
+    it('eles.hierholzer(): finds the trail whatever the order of the edges', function(){
+      [
+        { directed: false, edges: ['xy', 'yz', 'zw', 'wy'] },
+        { directed: false, edges: ['yz', 'zw', 'wy', 'xy'] },
+        { directed: true, edges: ['yx', 'yz', 'zw', 'wy'] },
+        { directed: true, edges: ['yz', 'zw', 'wy', 'yx'] }
+      ].forEach(function( testCase ){
+        var graph = cytoscape({
+          elements: {
+            nodes: ['x', 'y', 'z', 'w'].map(id => ({ data: { id } })),
+            edges: testCase.edges.map(id => ({ data: { id, source: id[0], target: id[1] } }))
+          }
+        });
+        var res = graph.elements().hierholzer({ directed: testCase.directed });
+        expect(res.found, testCase.edges.join(' ')).to.equal(true);
+        expect(res.trail.edges().map(ele2id).sort()).to.deep.equal(testCase.edges.slice().sort());
+        graph.destroy();
+      });
+    });
+
+    it('eles.hierholzer(): does not start at an isolated node by default', function(){
+      var graph = cytoscape({
+        elements: {
+          nodes: ['d', 'a', 'b', 'c'].map(id => ({ data: { id } })),
+          edges: ['ab', 'bc', 'ca'].map(id => ({ data: { id, source: id[0], target: id[1] } }))
+        }
+      });
+      [false, true].forEach(function( directed ){
+        var res = graph.elements().hierholzer({ directed });
+        expect(res.found).to.equal(true);
+        expect(res.trail.edges().map(ele2id).sort()).to.deep.equal(['ab', 'bc', 'ca']);
+      });
+      graph.destroy();
+    });
+
     it('eles.hierholzer(): directed', function(){
       var options = {
         root: "#0",

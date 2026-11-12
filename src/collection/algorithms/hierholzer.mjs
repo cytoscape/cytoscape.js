@@ -87,7 +87,11 @@ let elesfn = ({
         }
       }
     } else {
-      if (!startVertex) startVertex = eles[0].id();
+      if (!startVertex) {
+        // start at a node that has edges, so that isolated nodes are not a dead end
+        let withEdges = eles.filter(ele => ele.isNode() && nodes[ele.id()].length > 0);
+        startVertex = (withEdges.length ? withEdges : eles)[0].id();
+      }
     }
 
     const walk = (v) => {
@@ -114,7 +118,8 @@ let elesfn = ({
     let trail = [];
     let subtour = [];
     subtour = walk(startVertex);
-    while (subtour.length != 1) {
+    // the last node of the subtour may also have unused edges left to walk
+    while (subtour.length != 1 || nodes[subtour[0]].length) {
       if (nodes[subtour[0]].length == 0) {
         trail.unshift(eles.getElementById(subtour.shift()));
         trail.unshift(eles.getElementById(subtour.shift()));

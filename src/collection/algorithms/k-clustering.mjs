@@ -208,6 +208,8 @@ let kMeans = function( options ){
       // Get all nodes that belong to this cluster
       let cluster = buildCluster( c, nodes, assignment );
 
+      clusters[c] = cy.collection( cluster ); // always assign, even when empty, so no index is left as a hole
+
       if ( cluster.length === 0 ) { // If cluster is empty, break out early & move to next cluster
         continue;
       }
@@ -233,11 +235,12 @@ let kMeans = function( options ){
       }
 
       centroids[c] = newCentroid;
-      clusters[c]  = cy.collection( cluster );
+    
     }
 
     iterations++;
   }
+
 
   return clusters;
 };

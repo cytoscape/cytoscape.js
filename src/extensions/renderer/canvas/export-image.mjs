@@ -18,11 +18,15 @@ CRp.bufferCanvasImage = function( options ){
   var eles = cy.mutableElements();
   var bb = eles.boundingBox();
   var ctrRect = this.findContainerClientCoords();
-  var width = options.full ? Math.ceil( bb.w ) : ctrRect[2];
-  var height = options.full ? Math.ceil( bb.h ) : ctrRect[3];
+  var hasEles = eles.length > 0;
+  var width = options.full && hasEles ? Math.ceil( bb.w ) : ctrRect[2];
+  var height = options.full && hasEles ? Math.ceil( bb.h ) : ctrRect[3];
   var specdMaxDims = is.number( options.maxWidth ) || is.number( options.maxHeight );
   var pxRatio = this.getPixelRatio();
   var scale = 1;
+
+  width = Math.max( 1, width || 0 );
+  height = Math.max( 1, height || 0 );
 
   if( options.scale !== undefined ){
     width *= options.scale;
@@ -33,11 +37,11 @@ CRp.bufferCanvasImage = function( options ){
     var maxScaleW = Infinity;
     var maxScaleH = Infinity;
 
-    if( is.number( options.maxWidth ) ){
+    if( is.number( options.maxWidth ) && width > 0 ){
       maxScaleW = scale * options.maxWidth / width;
     }
 
-    if( is.number( options.maxHeight ) ){
+    if( is.number( options.maxHeight ) && height > 0 ){
       maxScaleH = scale * options.maxHeight / height;
     }
 
@@ -52,6 +56,13 @@ CRp.bufferCanvasImage = function( options ){
     height *= pxRatio;
     scale *= pxRatio;
   }
+
+  if( !isFinite( scale ) || scale <= 0 ){
+    scale = 1;
+  }
+
+  width = Math.max( 1, Math.ceil( width ) );
+  height = Math.max( 1, Math.ceil( height ) );
 
   var buffCanvas = document.createElement( 'canvas' ); // eslint-disable-line no-undef
 
@@ -73,7 +84,9 @@ CRp.bufferCanvasImage = function( options ){
     var zsortedEles = this.getCachedZSortedEles();
 
     if( options.full ){ // draw the full bounds of the graph
-      buffCxt.translate( -bb.x1 * scale, -bb.y1 * scale );
+      if( hasEles && isFinite( bb.x1 ) && isFinite( bb.y1 ) ){
+        buffCxt.translate( -bb.x1 * scale, -bb.y1 * scale );
+      }
       buffCxt.scale( scale, scale );
 
       this.drawElements( buffCxt, zsortedEles );

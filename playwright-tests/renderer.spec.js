@@ -141,6 +141,90 @@ test.describe('Renderer', () => {
         expect(maxDifference).toBeLessThan(16);
       });
     }
+
+    test.describe('empty graph export (#3591)', () => {
+      test('exports valid image with full: true on an empty graph', async ({ page }) => {
+        const result = await page.evaluate(async () => {
+          const cy = window.cy;
+          const uri = cy.png({ full: true });
+          const image = new Image();
+          image.src = uri;
+          await image.decode();
+
+          return {
+            validUri: uri.startsWith('data:image/png;base64,'),
+            width: image.width,
+            height: image.height
+          };
+        });
+
+        expect(result.validUri).toBe(true);
+        expect(result.width).toBeGreaterThan(0);
+        expect(result.height).toBeGreaterThan(0);
+      });
+
+      test('exports valid image with full: true and maxWidth', async ({ page }) => {
+        const result = await page.evaluate(async () => {
+          const cy = window.cy;
+          const uri = cy.png({ full: true, maxWidth: 400 });
+          const image = new Image();
+          image.src = uri;
+          await image.decode();
+
+          return {
+            validUri: uri.startsWith('data:image/png;base64,'),
+            width: image.width,
+            height: image.height
+          };
+        });
+
+        expect(result.validUri).toBe(true);
+        expect(result.width).toBe(400);
+        expect(result.height).toBeGreaterThan(0);
+      });
+
+      test('resolves blob-promise with full: true on an empty graph', async ({ page }) => {
+        const result = await page.evaluate(async () => {
+          const cy = window.cy;
+          const blob = await cy.png({ full: true, maxWidth: 300, output: 'blob-promise' });
+
+          return {
+            isBlob: blob instanceof Blob,
+            size: blob.size,
+            type: blob.type
+          };
+        });
+
+        expect(result.isBlob).toBe(true);
+        expect(result.size).toBeGreaterThan(0);
+        expect(result.type).toBe('image/png');
+      });
+
+      test('fills background with full: true on an empty graph', async ({ page }) => {
+        const minimumAlpha = await page.evaluate(async () => {
+          const cy = window.cy;
+          const image = new Image();
+          image.src = cy.png({ full: true, bg: '#ffffff' });
+          await image.decode();
+
+          const canvas = document.createElement('canvas');
+          canvas.width = image.width;
+          canvas.height = image.height;
+          const context = canvas.getContext('2d');
+          context.drawImage(image, 0, 0);
+          const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+          let minimum = 255;
+
+          for( let i = 3; i < data.length; i += 4 ){
+            minimum = Math.min(minimum, data[i]);
+          }
+
+          return minimum;
+        });
+
+        expect(minimumAlpha).toBe(255);
+      });
+    });
   });
 
   test.describe('backgrounding', () => {

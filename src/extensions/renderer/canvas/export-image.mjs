@@ -61,8 +61,21 @@ CRp.bufferCanvasImage = function( options ){
     scale = 1;
   }
 
-  width = Math.max( 1, Math.ceil( width ) );
-  height = Math.max( 1, Math.ceil( height ) );
+  width = Math.ceil( width );
+  height = Math.ceil( height );
+
+  if( options.scale === undefined ){
+    if( is.number( options.maxWidth ) ){
+      width = Math.min( width, Math.floor( options.maxWidth ) );
+    }
+
+    if( is.number( options.maxHeight ) ){
+      height = Math.min( height, Math.floor( options.maxHeight ) );
+    }
+  }
+
+  width = Math.max( 1, width );
+  height = Math.max( 1, height );
 
   var buffCanvas = document.createElement( 'canvas' ); // eslint-disable-line no-undef
 

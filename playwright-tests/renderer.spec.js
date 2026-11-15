@@ -183,6 +183,26 @@ test.describe('Renderer', () => {
         expect(result.height).toBeGreaterThan(0);
       });
 
+      test('dimensions do not exceed maxWidth or maxHeight due to rounding', async ({ page }) => {
+        const result = await page.evaluate(async () => {
+          const cy = window.cy;
+          const uri = cy.png({ maxWidth: 3, maxHeight: 3 });
+          const image = new Image();
+          image.src = uri;
+          await image.decode();
+
+          return {
+            width: image.width,
+            height: image.height
+          };
+        });
+
+        expect(result.width).toBeLessThanOrEqual(3);
+        expect(result.height).toBeLessThanOrEqual(3);
+        expect(result.width).toBeGreaterThanOrEqual(1);
+        expect(result.height).toBeGreaterThanOrEqual(1);
+      });
+
       test('resolves blob-promise with full: true on an empty graph', async ({ page }) => {
         const result = await page.evaluate(async () => {
           const cy = window.cy;

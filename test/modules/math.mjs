@@ -1,4 +1,4 @@
-import { expandBoundingBoxSides, makeBoundingBox, gcd, gcdMultipleZeroIfNonInt, isIntegerMultiple } from '../../src/math.mjs'
+import { expandBoundingBoxSides, makeBoundingBox, gcd, gcdMultipleZeroIfNonInt, isIntegerMultiple, median } from '../../src/math.mjs'
 import { describe } from 'mocha'
 import { expect } from 'chai'
 
@@ -130,6 +130,34 @@ describe('Math', function(){
 
             expect( ( notch + notch + notch ) / notch ).not.equals( 3 );
             expect( isIntegerMultiple( notch + notch + notch, notch ) ).to.be.true;
+        });
+    });
+
+    describe('median()', function(){
+        it('calculates median for odd-length arrays', function(){
+            expect( median([10]) ).to.equal( 10 );
+            expect( median([10, 20, 30]) ).to.equal( 20 );
+            expect( median([1, 2, 3, 4, 5]) ).to.equal( 3 );
+            expect( median([5, 1, 3]) ).to.equal( 3 );
+            expect( median([50, 10, 30, 20, 40]) ).to.equal( 30 );
+        });
+
+        it('calculates median for even-length arrays', function(){
+            expect( median([10, 20]) ).to.equal( 15 );
+            expect( median([10, 20, 30, 40]) ).to.equal( 25 );
+            expect( median([40, 10, 30, 20]) ).to.equal( 25 );
+        });
+
+        it('supports begin and end bounds', function(){
+            const arr = [100, 10, 20, 30, 200];
+            expect( median(arr, 1, 4) ).to.equal( 20 );
+        });
+
+        it('preserves input array when copy is true', function(){
+            const orig = [3, 1, 2];
+            const result = median(orig, 0, 3, true);
+            expect( result ).to.equal( 2 );
+            expect( orig ).to.deep.equal( [3, 1, 2] );
         });
     });
 });

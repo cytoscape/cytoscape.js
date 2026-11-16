@@ -208,4 +208,7 @@ api.reject = function( val ){
   return new api(function( resolve, reject ){ reject( val ); });
 };
 
+// Prefer the native Promise implementation when available.
+// Use the internal Promise fallback only in environments
+// where the global Promise constructor is unavailable.
 export default typeof Promise !== 'undefined' ? Promise : api; // eslint-disable-line no-undef

@@ -121,8 +121,8 @@ export const gcd = ( a, b ) => {
 // you try to take the GCD of two floating-point numbers you will end up with
 // either zero or some extremely small number that is almost zero)
 export const gcdMultipleZeroIfNonInt = ( arr ) => {
-  var out = arr[0];
-  for ( var i = 0; i < arr.length; i++ ) {
+  let out = arr[0];
+  for ( let i = 0; i < arr.length; i++ ) {
       if ( !is.integer( arr[i] ) ) {
         return 0;
       } else if (i > 0) {
@@ -658,14 +658,14 @@ export const inBezierVicinity = ( x, y, x1, y1, x2, y2, x3, y3, tolerance ) => {
 export const solveQuadratic = ( a, b, c, val ) => {
   c -= val;
 
-  var r = b * b - 4 * a * c;
+  let r = b * b - 4 * a * c;
 
   if( r < 0 ){ return []; }
 
-  var sqrtR = Math.sqrt( r );
-  var denom = 2 * a;
-  var root1 = ( -b + sqrtR ) / denom;
-  var root2 = ( -b - sqrtR ) / denom;
+  let sqrtR = Math.sqrt( r );
+  let denom = 2 * a;
+  let root1 = ( -b + sqrtR ) / denom;
+  let root2 = ( -b - sqrtR ) / denom;
 
   return [ root1, root2 ];
 };
@@ -678,7 +678,7 @@ export const solveCubic = ( a, b, c, d, result ) => {
   // An implementation of the Cardano method from the year 1545
   // http://en.wikipedia.org/wiki/Cubic_function#The_nature_of_the_roots
 
-  var epsilon = 0.00001;
+  const epsilon = 0.00001;
 
   // avoid division by zero while keeping the overall expression close in value
   if( a === 0 ){

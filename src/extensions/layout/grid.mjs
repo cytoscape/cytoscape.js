@@ -82,8 +82,19 @@ GridLayout.prototype.run = function(){
       }
     };
 
-    let oRows = options.rows;
-    let oCols = options.cols != null ? options.cols : options.columns;
+    
+let oRows = options.rows;
+let oCols = options.cols != null ? options.cols : options.columns;
+
+// Ensure grid dimensions are positive integers
+if (oRows != null && (!Number.isInteger(oRows) || oRows <= 0)) {
+  oRows = undefined;
+}
+
+if (oCols != null && (!Number.isInteger(oCols) || oCols <= 0)) {
+  oCols = undefined;
+}
+
 
     // if rows or columns were set in options, use those values
     if( oRows != null && oCols != null ){

@@ -110,7 +110,7 @@ describe('Collection graph manipulation', function(){
 
   });
 
-  describe('ele.restore()', function(){
+    describe('ele.restore()', function(){
 
     it('should put back a node in the graph', function(){
       var n1 = cy.$('#n1').remove();
@@ -118,6 +118,25 @@ describe('Collection graph manipulation', function(){
       n1.restore();
       expect( n1.inside() ).to.be.true;
       expect( cy.$('#n1') ).to.have.length(1);
+    });
+
+    it('should restore a connected edge after restoring its node', function(){
+      var n1 = cy.$('#n1');
+      var edge = cy.$('#n1n2');
+
+      edge.remove();
+      n1.remove();
+
+      expect( cy.$('#n1') ).to.have.length(0);
+      expect( cy.$('#n1n2') ).to.have.length(0);
+
+      n1.restore();
+      edge.restore();
+
+      expect( cy.$('#n1') ).to.have.length(1);
+      expect( cy.$('#n1n2') ).to.have.length(1);
+      expect( edge.source().id() ).to.equal('n1');
+      expect( edge.target().id() ).to.equal('n2');
     });
 
   });

@@ -96,7 +96,7 @@ declare namespace cytoscape {
         h: number;
     }
 
-    type CssStyleDeclaration = any;
+    type CssStyleDeclaration = Css.Node | Css.Edge;
 
     interface ElementDefinition {
         group?: ElementGroup;

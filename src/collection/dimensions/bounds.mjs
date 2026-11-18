@@ -437,31 +437,9 @@ let updateBoundsFromLabel = function( bounds, ele, prefix ){
       let cos = Math.cos( theta );
       let sin = Math.sin( theta );
 
-      // rotation point (default value for center-center)
-      let xo = (lx1 + lx2)/2;
-      let yo = (ly1 + ly2)/2;
-
-      if( !isEdge ){
-        switch( labelHalign( halign.value ) ){
-          case 'left':
-            xo = lx2;
-            break;
-
-          case 'right':
-            xo = lx1;
-            break;
-        }
-
-        switch( labelValign( valign.value ) ){
-          case 'top':
-            yo = ly2;
-            break;
-
-          case 'bottom':
-            yo = ly1;
-            break;
-        }
-      }
+      // rotate about the label anchor, as the renderer and hit test do, so padding stays symmetric around the text
+      let xo = labelX + marginX;
+      let yo = labelY + marginY;
 
       let rotate = function( x, y ){
         x = x - xo;

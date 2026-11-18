@@ -305,6 +305,72 @@ test.describe('Renderer', () => {
       expect(bb.h).toBeGreaterThan(105);
     }); // polygon node bounding box extends beyond width and height for border
 
+    test('rotated label bounding box pivots on the label anchor for all alignments', async ({ page }) => {
+      const angles = [Math.PI / 6, Math.PI / 2, Math.PI, -Math.PI / 3];
+      const margins = [{ x: 0, y: 0 }, { x: 7, y: -5 }];
+
+      const results = await page.evaluate(({ angles, margins }) => {
+        const cy = window.cy;
+        const results = [];
+
+        // a zero-size node puts the label anchor on the node position for every alignment
+        cy.$('#a').position({ x: 100, y: 100 });
+
+        for( const margin of margins ){
+          for( const halign of ['left', 'center', 'right'] ){
+            for( const valign of ['top', 'center', 'bottom'] ){
+              const getBB = rotation => {
+                cy.style().fromJson([
+                  {
+                    selector: 'node',
+                    style: {
+                      'label': 'Hello',
+                      'width': 0,
+                      'height': 0,
+                      'text-halign': halign,
+                      'text-valign': valign,
+                      'text-rotation': rotation,
+                      'text-margin-x': margin.x,
+                      'text-margin-y': margin.y,
+                      'text-background-padding': 4
+                    }
+                  }
+                ]).update();
+
+                return cy.$('#a').boundingBox({ includeNodes: false, includeEdges: false, includeLabels: true });
+              };
+
+              const bb0 = getBB(0);
+
+              for( const angle of angles ){
+                results.push({ margin, halign, valign, angle, bb0, bb: getBB(angle) });
+              }
+            }
+          }
+        }
+
+        return results;
+      }, { angles, margins });
+
+      for( const { margin, halign, valign, angle, bb0, bb } of results ){
+        // the renderer rotates the label about its anchor: the node position plus the text margin
+        const xo = 100 + margin.x;
+        const yo = 100 + margin.y;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const corners = [[bb0.x1, bb0.y1], [bb0.x2, bb0.y1], [bb0.x2, bb0.y2], [bb0.x1, bb0.y2]].map(([x, y]) => ({
+          x: (x - xo) * cos - (y - yo) * sin + xo,
+          y: (x - xo) * sin + (y - yo) * cos + yo
+        }));
+        const name = `${halign}/${valign} at ${angle.toFixed(3)} rad, margin ${margin.x},${margin.y}`;
+
+        expect(bb.x1, name).toBeCloseTo(Math.min(...corners.map(p => p.x)), 5);
+        expect(bb.x2, name).toBeCloseTo(Math.max(...corners.map(p => p.x)), 5);
+        expect(bb.y1, name).toBeCloseTo(Math.min(...corners.map(p => p.y)), 5);
+        expect(bb.y2, name).toBeCloseTo(Math.max(...corners.map(p => p.y)), 5);
+      }
+    }); // rotated label bounding box pivots on the label anchor for all alignments
+
   });
 
   test.describe('straight edges', () => {

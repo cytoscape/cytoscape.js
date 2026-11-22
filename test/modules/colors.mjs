@@ -24,6 +24,12 @@ describe('colors', function(){
       expect( rgb2tuple('rgba(1, 2, 3, 1.5)') ).to.not.exist;
       expect( rgb2tuple('rgba(1, 2, 3, -0.5)') ).to.not.exist;
     });
+
+    it('rounds percentages and fractional channels to the nearest integer', function(){
+      expect( rgb2tuple('rgb(50%, 50%, 50%)') ).to.deep.equal([128, 128, 128]);
+      expect( rgb2tuple('rgb(10%, 20%, 30%)') ).to.deep.equal([26, 51, 77]);
+      expect( rgb2tuple('rgb(127.6, 0.5, 254.5)') ).to.deep.equal([128, 1, 255]);
+    });
   });
 
   describe('hsl2tuple', function(){
@@ -43,6 +49,13 @@ describe('colors', function(){
 
     it('rejects an out-of-range alpha', function(){
       expect( hsl2tuple('hsla(0, 100%, 50%, 1.5)') ).to.not.exist;
+    });
+
+    it('parses a hue with a fraction or an exponent', function(){
+      expect( hsl2tuple('hsl(120.5, 100%, 50%)').slice(0, 3) ).to.deep.equal([0, 255, 2]);
+      expect( hsl2tuple('hsl(0.5, 100%, 50%)').slice(0, 3) ).to.deep.equal([255, 2, 0]);
+      expect( hsl2tuple('hsl(-0.5, 100%, 50%)').slice(0, 3) ).to.deep.equal([255, 0, 2]);
+      expect( hsl2tuple('hsl(1e2, 100%, 50%)').slice(0, 3) ).to.deep.equal([85, 255, 0]);
     });
   });
 

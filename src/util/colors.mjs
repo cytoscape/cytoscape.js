@@ -39,7 +39,7 @@ export const hsl2tuple = hsl => {
   if( m ){
 
     // get hue
-    h = parseInt( m[1] );
+    h = parseFloat( m[1] );
     if( h < 0 ){
       h = ( 360 - (-1 * h % 360) ) % 360;
     } else if( h > 360 ){
@@ -103,7 +103,7 @@ export const rgb2tuple = rgb => {
 
       if( channel < 0 || channel > 255 ){ return; } // invalid channel value
 
-      ret.push( Math.floor( channel ) );
+      ret.push( Math.round( channel ) );
     }
 
     let atLeastOneIsPct = isPct[1] || isPct[2] || isPct[3];

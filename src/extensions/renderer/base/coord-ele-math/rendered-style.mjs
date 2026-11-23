@@ -59,9 +59,13 @@ BRp.registerCalculationListeners = function(){
         fn( willDraw, elesToUpdate );
       } }
 
-      r.recalculateRenderedStyle( elesToUpdate );
+      let toUpdate = elesToUpdate;
 
+      // reset the queue first: recalculating can re-queue elements (e.g. a compound parent's
+      // bounds update dirties its children), and those must be flushed on the next pass
       elesToUpdate = cy.collection();
+
+      r.recalculateRenderedStyle( toUpdate );
     }
   };
 

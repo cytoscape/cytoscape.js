@@ -790,6 +790,56 @@ test.describe('Renderer', () => {
 
   }); // Rounded edges
 
+  test('flushes elements re-queued while their rendered style is recalculated (issue #3600)', async ({ page }) => {
+    const result = await page.evaluate(async () => {
+      const cy = window.cy;
+      const r = cy.renderer();
+      const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+      const settle = async () => { for( let i = 0; i < 10; i++ ){ await frame(); } };
+
+      cy.add([
+        { data: { id: 'parent' } },
+        { data: { id: 'a', parent: 'parent' }, position: { x: 0, y: 0 } },
+        { data: { id: 'b', parent: 'parent' }, position: { x: 100, y: 0 } },
+        { data: { id: 'c' }, position: { x: 50, y: 200 } },
+        { data: { id: 'ac', source: 'a', target: 'c' } }
+      ]);
+
+      let recalculated = 0;
+      const recalculateEdgeProjections = r.recalculateEdgeProjections;
+      r.recalculateEdgeProjections = function( edges ){
+        recalculated += edges.length;
+        return recalculateEdgeProjections.apply(this, arguments);
+      };
+
+      const countRecalculations = () => {
+        recalculated = 0;
+        for( let i = 0; i < 100; i++ ){
+          cy.$('#ac').sourceEndpoint();
+        }
+        return recalculated;
+      };
+
+      await settle();
+      const afterAdd = countRecalculations();
+
+      // moving a child dirties its parent's compound bounds, so the next flush re-queues the child
+      cy.$('#a').position({ x: 20, y: 10 });
+      await settle();
+      const afterMove = countRecalculations();
+
+      r.recalculateEdgeProjections = recalculateEdgeProjections;
+
+      return {
+        afterAdd,
+        afterMove,
+        cleanConnected: cy.$('#a')[0]._private.rstyle.cleanConnected
+      };
+    });
+
+    expect(result).toEqual({ afterAdd: 0, afterMove: 0, cleanConnected: true });
+  });
+
   for( const target of ['viewport', 'node'] ){
     test(`draws every frame during a ${target} animation (issue #3544)`, async ({ page }) => {
       const drawsPerFrame = await page.evaluate(async target => {

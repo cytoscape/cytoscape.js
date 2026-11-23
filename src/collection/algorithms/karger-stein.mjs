@@ -80,7 +80,13 @@ const elesfn = ({
     let numNodes = nodes.length;
     let numEdges = edges.length;
     let numIter = Math.ceil( Math.pow( Math.log( numNodes ) / Math.LN2, 2 ) );
-    let stopSize = Math.floor( numNodes / sqrt2 );
+
+    // Karger-Stein contracts down to `stopSize` meta nodes and then runs two
+    // branches down to 2.  `stopSize` must therefore stay at 2 or more: with
+    // floor( 2 / sqrt(2) ) === 1 the first stage would already merge both nodes
+    // of a 2-node graph, leaving no edge to cut and reporting a cut of size 0
+    // with an empty second partition.
+    let stopSize = Math.max( 2, Math.floor( numNodes / sqrt2 ) );
 
     if( numNodes < 2 ){
       error( 'At least 2 nodes are required for Karger-Stein algorithm' );

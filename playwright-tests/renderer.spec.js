@@ -1285,4 +1285,92 @@ test.describe('Renderer', () => {
 
   }); // webgl
 
+  test.describe('labels', () => {
+
+    const longLabel = 'a label that is much longer than the first one';
+
+    test.beforeEach(async ({ page }) => {
+      await page.evaluate((longLabel) => {
+        const cy = window.cy;
+
+        cy.style().fromJson([
+          {
+            selector: 'node',
+            style: {
+              'label': 'data(label)',
+              'width': 10,
+              'height': 10
+            }
+          },
+          {
+            selector: 'node.big',
+            style: {
+              'font-size': 40
+            }
+          }
+        ]).update();
+
+        cy.add([
+          { data: { id: 'a', label: 'a' }, position: { x: 100, y: 100 } },
+          { data: { id: 'b', label: longLabel }, position: { x: 100, y: 300 } }
+        ]);
+      }, longLabel);
+    }); // beforeEach
+
+    test('boundingBox() in the same tick as a label change uses the new label', async ({ page }) => {
+      const result = await page.evaluate(async (longLabel) => {
+        const cy = window.cy;
+        const frames = n => new Promise(resolve => {
+          const step = () => (n-- > 0 ? requestAnimationFrame(step) : resolve());
+          step();
+        });
+        const a = cy.$('#a');
+
+        await frames(5);
+
+        a.data('label', longLabel);
+
+        const sameTick = a.boundingBox().w;
+
+        await frames(5);
+
+        return {
+          sameTick,
+          afterFrames: a.boundingBox().w,
+          expected: cy.$('#b').boundingBox().w
+        };
+      }, longLabel);
+
+      expect(result.sameTick).toBeCloseTo(result.expected);
+      expect(result.afterFrames).toBeCloseTo(result.expected);
+    });
+
+    test('boundingBox() in the same tick as a class change uses the new font size', async ({ page }) => {
+      const result = await page.evaluate(async () => {
+        const cy = window.cy;
+        const frames = n => new Promise(resolve => {
+          const step = () => (n-- > 0 ? requestAnimationFrame(step) : resolve());
+          step();
+        });
+        const a = cy.$('#a');
+
+        await frames(5);
+
+        const before = a.boundingBox().h;
+
+        a.addClass('big');
+
+        const sameTick = a.boundingBox().h;
+
+        await frames(5);
+
+        return { before, sameTick, afterFrames: a.boundingBox().h };
+      });
+
+      expect(result.sameTick).toBeGreaterThan(result.before);
+      expect(result.afterFrames).toBeCloseTo(result.sameTick);
+    });
+
+  }); // labels
+
 }); // renderer

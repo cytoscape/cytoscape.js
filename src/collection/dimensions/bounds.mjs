@@ -1012,6 +1012,14 @@ elesfn.boundingBox = function( options ){
     this.nodes().forEach(isDirty);
 
     if(styleEnabled) {
+      for (let i = 0; i < eles.length; i++) {
+        let _p = eles[i]._private;
+
+        if (_p.styleDirty) {
+          _p.rstyle.clean = false;
+        }
+      }
+
       this.recalculateRenderedStyle(useCache);
     }
 

@@ -765,6 +765,37 @@ describe('Algorithms', function(){
       expect(res.components[0].length + res.components[1].length + res.cut.length).to.equal(15);
   });
 
+  // Regression: with exactly two nodes, floor( 2 / sqrt(2) ) is 1, so the first
+  // contraction stage merged both meta nodes.  The graph was fully contracted
+  // before any cut was recorded, and the result was a cut of size 0 with an
+  // empty second partition instead of the real minimum cut.
+  it('eles.kargerStein() reports the minimum cut for a two-node graph', function() {
+      var mkTwoNode = function( numEdges ){
+        var eles = [
+          { data: { id: 'a' } },
+          { data: { id: 'b' } }
+        ];
+
+        for( var i = 0; i < numEdges; i++ ){
+          eles.push({ data: { id: 'e' + i, source: 'a', target: 'b' } });
+        }
+
+        return cytoscape({ headless: true, elements: eles });
+      };
+
+      [ 1, 2, 3 ].forEach( function( numEdges ){
+        var cyTwo = mkTwoNode( numEdges );
+        var res = cyTwo.elements().kargerStein();
+
+        // Every edge is a cut edge between the two nodes
+        expect( res.cut.length ).to.equal( numEdges );
+
+        // Neither side of the partition may be empty
+        expect( res.partition1.length ).to.equal( 1 );
+        expect( res.partition2.length ).to.equal( 1 );
+      });
+  });
+
 
   it('eles.pageRank(): 1', function() {
 

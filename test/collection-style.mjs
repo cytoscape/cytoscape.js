@@ -409,6 +409,80 @@ describe('Collection style', function(){
 
       expect( cy.$('#c').visible() ).to.be.false;
     });
+    it('derived visibility and effectiveOpacity() follow nested compound parents', function(){
+      cy.add([
+        { data: { id: 'g' } },
+        { data: { id: 'p', parent: 'g' } },
+        { data: { id: 'c', parent: 'p' } },
+        { data: { id: 'ce', source: 'c', target: 'n1' } }
+      ]);
+
+      var c = cy.$('#c');
+      var ce = cy.$('#ce');
+
+      cy.$('#g').style('opacity', 0.5);
+      cy.$('#p').style('opacity', 0.5);
+      c.style('opacity', 0.5);
+
+      expect( c.effectiveOpacity() ).to.equal(0.125);
+
+      cy.$('#g').style('display', 'none');
+
+      expect( c.visible() ).to.be.false;
+      expect( c.takesUpSpace() ).to.be.false;
+      expect( c.interactive() ).to.be.false;
+      expect( ce.visible() ).to.be.false;
+
+      cy.$('#g').style('display', 'element');
+      cy.$('#p').style('visibility', 'hidden');
+
+      expect( c.visible() ).to.be.false;
+      expect( c.takesUpSpace() ).to.be.true;
+      expect( c.interactive() ).to.be.false;
+
+      cy.$('#p').style('visibility', 'visible');
+
+      expect( c.visible() ).to.be.true;
+      expect( c.interactive() ).to.be.true;
+      expect( ce.visible() ).to.be.true;
+    });
+
+    it('derived style reads walk the parent chain without building parents() collections', function(){
+      cy.add([
+        { data: { id: 'g' } },
+        { data: { id: 'p', parent: 'g' } },
+        { data: { id: 'c', parent: 'p' } },
+        { data: { id: 'ce', source: 'c', target: 'n1' } }
+      ]);
+
+      cy.$('#g').style('opacity', 0.5);
+      cy.elements(':visible'); // apply the stylesheet before counting
+      cy.elements().addClass('foo'); // a style change clears the cached visible() results
+
+      var proto = Object.getPrototypeOf( cy.collection() );
+      var parents = proto.parents;
+      var calls = 0;
+
+      proto.parents = function(){
+        calls++;
+
+        return parents.apply( this, arguments );
+      };
+
+      try {
+        var c = cy.$('#c');
+
+        expect( cy.elements(':visible').length ).to.equal( cy.elements().length );
+        expect( c.effectiveOpacity() ).to.equal(0.5);
+        expect( c.takesUpSpace() ).to.be.true;
+        expect( c.interactive() ).to.be.true;
+        expect( cy.$('#ce').visible() ).to.be.true;
+      } finally {
+        proto.parents = parents;
+      }
+
+      expect( calls ).to.equal(0);
+    });
 
     it('ele.takesUpSpace() true by default', function(){
       expect( cy.$('#n1').takesUpSpace() ).to.be.true;

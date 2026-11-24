@@ -115,7 +115,7 @@ ConcentricLayout.prototype.run = function(){
   if( !options.avoidOverlap ){ // then strictly constrain to bb
     let firstLvlHasMulti = levels.length > 0 && levels[0].length > 1;
     let maxR = ( Math.min( bb.w, bb.h ) / 2 - minDist );
-    let rStep = maxR / ( levels.length + firstLvlHasMulti ? 1 : 0 );
+    let rStep = maxR / ( levels.length + ( firstLvlHasMulti ? 1 : 0 ) );
 
     minDist = Math.min( minDist, rStep );
   }

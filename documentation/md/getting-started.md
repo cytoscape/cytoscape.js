@@ -119,7 +119,7 @@ If you are running Cytoscape.js in [Node.js] or otherwise running it headlessly,
 
 ## Specifying basic options
 
-For visualisation, the `container`, [`elements`](#notation/elements-json), [`style`](#style), and [`layout`](#layouts) options usually should be set:
+For visualisation, the `container`, [`elements`](#notation/element-objects), [`style`](#style), and [`layout`](#layouts) options usually should be set:
 
 ```js
 var cy = cytoscape({

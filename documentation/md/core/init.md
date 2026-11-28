@@ -73,13 +73,13 @@ An instance of Cytoscape.js has a number of options that can be set on initialis
 **`container`** : A HTML DOM element in which the graph should be rendered.  This is unspecified if Cytoscape.js is run headlessly.  The container is expected to be an empty div with its own width and height set by the page's styles; the visualisation owns the div's contents.
 
 <span id="init-opts/elements"></span>
-**`elements`** : An array of [elements specified as plain objects](#notation/elements-json).  For convenience, this option can alternatively be specified as a promise that resolves to the elements JSON.
+**`elements`** : An array of [elements specified as plain objects](#notation/element-objects).  For convenience, this option can alternatively be specified as a promise that resolves to the element objects.
 
 <span id="init-opts/style"></span>
 **`style`** : The [stylesheet](#style) used to style the graph.  For convenience, this option can alternatively be specified as a promise that resolves to the stylesheet.
 
 <span id="init-opts/layout"></span>
-**`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a [layout's documentation](#layouts) for the options it supports.  If you want to specify your node positions yourself in your elements JSON, you can use the `preset` layout --- by default it does not set any positions, leaving your nodes in their current positions (i.e. specified in `options.elements` at initialisation time).
+**`layout`** : A plain object that specifies layout options.  Which layout is initially run is specified by the `name` field.  Refer to a [layout's documentation](#layouts) for the options it supports.  If you want to specify your node positions yourself in your element objects, you can use the `preset` layout --- by default it does not set any positions, leaving your nodes in their current positions (i.e. specified in `options.elements` at initialisation time).
 
 <span id="init-opts/data"></span>
 **`data`** : A plain object that contains [graph-level data](#cy.data) (i.e. data that does not belong to any particular node or edge).

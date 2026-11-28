@@ -76,9 +76,9 @@ In this documentation, "position" refers to model position unless otherwise stat
 
 A node's position can be set manually, or it can be set automatically using a [layout](#layouts).  Because the positions of two nodes influence the lengths of the edges in between them, a layout effectively sets edge lengths.
 
-## Elements JSON
+## Element Objects
 
-Examples are given that outline format of the elements JSON used to load elements into Cytoscape.js:
+Examples are given that outline the format of the element objects used to load elements into Cytoscape.js:
 
 ```js
 cytoscape({
@@ -92,7 +92,7 @@ cytoscape({
       // gives you nice debug messages if you mis-init elements
 
 
-      data: { // element data (put json serialisable dev data here)
+      data: { // element data (arbitrary user-defined data)
         id: 'n1', // mandatory (string) id for each element, assigned automatically on undefined
         parent: 'nparent', // indicates the compound node parent id; not defined => no parent
         // (`parent` can be effectively changed by `eles.move()`)
@@ -171,7 +171,7 @@ cytoscape({
 });
 ```
 
-The elements JSON may alternatively be in the following format, keyed by group:
+The element objects may alternatively be in the following format, keyed by group:
 
 ```js
 cytoscape({
